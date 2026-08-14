@@ -7,6 +7,7 @@ Boostque ships as five phases moving from a themed, localized, database-backed a
 ## Phases
 
 **Phase Numbering:**
+
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
@@ -21,73 +22,90 @@ Decimal phases appear between their surrounding integers in numeric order.
 ## Phase Details
 
 ### Phase 1: Foundation
+
 **Goal**: A themed, localized, three-tab app shell runs on both iOS and Android over a local, sync-ready database, with zero network dependency and DST-safe cycle math ready for later phases to build on.
 **Depends on**: Nothing (first phase)
 **Requirements**: DATA-01, DATA-02
 **Success Criteria** (what must be TRUE):
+
   1. App launches on an iOS simulator and an Android emulator to a three-tab shell (Stack / Calendar / Settings) styled with the mockup's palette, radii, and typography — with no network permission requested and no login or account step anywhere
   2. Shell and tab labels render from the active locale (system-detected uk/en, English fallback) with no hardcoded strings, and Ukrainian text doesn't clip in any container
   3. A user's data survives an app reinstall via OS-level device backup, because the local database (UUID primary keys, createdAt/updatedAt, soft-delete columns on every table) is included in backups by default
   4. Automated tests prove the cycle-math layer computes correct active/inactive days across a DST transition and a year boundary, before any screen consumes it
-**Plans**: 7 plans
+
+**Plans**: 1/7 plans executed
 
 Plans:
-- [ ] 01-01-PLAN.md — Tracer: scaffold at repo root, locked deps, bundled variable fonts, both-platform builds (wave 1)
+
+- [x] 01-01-PLAN.md — Tracer: scaffold at repo root, locked deps, bundled variable fonts, both-platform builds (wave 1)
 - [ ] 01-02-PLAN.md — Domain models + DST-safe cycle math, test-first (wave 2)
 - [ ] 01-03-PLAN.md — Design tokens + bqTheme() from the mockup palette (wave 2)
 - [ ] 01-04-PLAN.md — i18n infrastructure: gen-l10n, en/uk ARB, uk plurals, LocaleController (wave 2)
 - [ ] 01-05-PLAN.md — Sync-ready Drift schema (SyncColumns, unique keys, UTC storage, schema v1 snapshot) (wave 3)
 - [ ] 01-06-PLAN.md — Three-tab shell: AppShell + stubs + wired MaterialApp, en/uk widget tests (wave 3)
 - [ ] 01-07-PLAN.md — Repositories, idempotent dose materialization, Riverpod provider graph (wave 4)
+
 **UI hint**: yes
 
 ### Phase 2: Stack Management
+
 **Goal**: A user can build their supplement stack — add items from a bundled catalog or manually, edit and delete them — and configure exactly when and how much of each to take.
 **Depends on**: Phase 1
 **Requirements**: STACK-01, STACK-02, STACK-03, STACK-04, REGI-01, REGI-02, REGI-03, REGI-04
 **Success Criteria** (what must be TRUE):
+
   1. User can add a supplement by searching a bundled, locale-aware catalog, or by entering a name and dose description manually
   2. User's stack renders as cards showing name, dose, color tag, status (active/paused/planned), and a schedule summary
   3. User can configure a cyclic regimen (start date, on-days/off-days in 7-day steps) or a one-time course (start and inclusive end date), each with 1-6 daily time slots carrying their own time and dose label
   4. User can pause and resume a regimen; a paused regimen produces no doses and shows a PAUSED status
   5. User can edit or delete a supplement; deleting soft-deletes it along with its regimen and any future doses
+
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 3: Daily Tracking
+
 **Goal**: A user can see exactly what to take today (and browse recent days) and mark each dose taken or skipped with one tap — the daily loop that is Boostque's core value — running correctly end-to-end on both platforms.
 **Depends on**: Phase 2
 **Requirements**: TRACK-01, TRACK-02, TRACK-03, TRACK-04, DATA-03
 **Success Criteria** (what must be TRUE):
+
   1. User sees today's doses grouped into time blocks (morning/day/evening/night) alongside a day-progress ring reflecting taken vs. total
   2. User can mark any dose taken or skipped with one tap, and undo the mark
   3. User can browse past and current-week days; unmarked past doses render as neutrally-framed "missed" in the view, while the underlying database row stays pending
   4. Doses appear only on days a regimen's cycle is actually active, verified correct across DST transitions and year boundaries
   5. The full plan-see-mark-taken loop — add a supplement, configure a cycle, see it on Today, check it off — builds and runs correctly on an iOS simulator/device and an Android emulator/device (targetSdk 36)
+
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 4: Planner Views
+
 **Goal**: A user can see the shape of their supplement schedule over time — overlapping cycles, concurrent load, and a full year of coverage — framed as an editorial tracking aid, never medical guidance.
 **Depends on**: Phase 1, Phase 2
 **Requirements**: PLAN-01, PLAN-02, PLAN-03, PLAN-04
 **Success Criteria** (what must be TRUE):
+
   1. User can view a ~4-month Cycles gantt: one row per supplement, solid segments for active periods, lighter/hatched segments for planned periods, with a marker for today
   2. User can view a weekly concurrent-load chart against the editorial 5-substance line and tap a week to see its load, verdict, and active supplements
   3. User can view a 12-month Year matrix of per-supplement coverage bars (lighter = planned) and tap a month for a detail breakdown
   4. Every planner screen carries the educational-material disclaimer and presents the 5-substance limit as an editorial comfort rule, not a medical threshold
+
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 5: Localization & Settings
+
 **Goal**: The whole app — every screen built in Phases 2 through 4 — is genuinely bilingual by default and instantly switchable by the user.
 **Depends on**: Phase 2, Phase 3, Phase 4
 **Requirements**: L10N-01, L10N-02, L10N-03, L10N-04
 **Success Criteria** (what must be TRUE):
+
   1. Every screen displays correctly in Ukrainian with all four CLDR plural forms (one/few/many/other, including the 11-14 exception) and in English with correct singular/plural forms
   2. On first launch the app matches the device's system language when it's Ukrainian or English, and falls back to English for any other system language
   3. User can override the language in Settings; the change applies instantly across every open screen and persists across app restarts
   4. All dates, month names, and numbers throughout the app are locale-formatted, and adding a new language requires only one new ARB file with no code changes
+
 **Plans**: TBD
 **UI hint**: yes
 
@@ -98,7 +116,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/7 | Planned | - |
+| 1. Foundation | 1/7 | In Progress|  |
 | 2. Stack Management | 0/? | Not started | - |
 | 3. Daily Tracking | 0/? | Not started | - |
 | 4. Planner Views | 0/? | Not started | - |
