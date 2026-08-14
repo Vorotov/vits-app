@@ -1,0 +1,10 @@
+{
+  "@@locale": "uk",
+  "appTitle": "Boostque",
+  "tabStack": "Стек",
+  "tabCalendar": "Календар",
+  "tabSettings": "Налаштування",
+  "disclaimerEducational": "Освітній матеріал, не медична порада.",
+  "substancesCount": "{count, plural, one{{count} речовина} few{{count} речовини} many{{count} речовин} other{{count} речовини}}",
+  "weeksCount": "{count, plural, one{{count} тиждень} few{{count} тижні} many{{count} тижнів} other{{count} тижні}}"
+}

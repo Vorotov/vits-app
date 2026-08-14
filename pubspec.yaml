@@ -64,6 +64,10 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
 
+  # Required alongside l10n.yaml's `synthetic-package: false` — without it
+  # gen-l10n never runs on `flutter pub get` (see 01-RESEARCH.md Pitfall 3).
+  generate: true
+
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

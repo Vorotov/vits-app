@@ -1,0 +1,41 @@
+{
+  "@@locale": "en",
+  "appTitle": "Boostque",
+  "@appTitle": {
+    "description": "Application title"
+  },
+  "tabStack": "Stack",
+  "@tabStack": {
+    "description": "Bottom navigation tab label for the supplement stack screen"
+  },
+  "tabCalendar": "Calendar",
+  "@tabCalendar": {
+    "description": "Bottom navigation tab label for the calendar screen"
+  },
+  "tabSettings": "Settings",
+  "@tabSettings": {
+    "description": "Bottom navigation tab label for the settings screen"
+  },
+  "disclaimerEducational": "Educational material, not medical advice.",
+  "@disclaimerEducational": {
+    "description": "Educational disclaimer shown on screens with recommendations"
+  },
+  "substancesCount": "{count, plural, one{{count} substance} other{{count} substances}}",
+  "@substancesCount": {
+    "description": "Count of supplements in the user's stack",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "weeksCount": "{count, plural, one{{count} week} other{{count} weeks}}",
+  "@weeksCount": {
+    "description": "Count of weeks in a planner range",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+}
