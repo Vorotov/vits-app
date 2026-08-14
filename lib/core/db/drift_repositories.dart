@@ -15,7 +15,9 @@
 library;
 
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
 
+import '../domain/cycle_math.dart';
 import '../domain/models.dart' as domain;
 import '../domain/repositories.dart';
 import 'database.dart';
@@ -191,6 +193,106 @@ class DriftRegimenRepository implements RegimenRepository {
     return [
       for (final id in order) _toRegimen(regimenRows[id]!, slotsById[id]!),
     ];
+  }
+}
+
+/// Drift implementation of [IntakeRepository].
+class DriftIntakeRepository implements IntakeRepository {
+  DriftIntakeRepository(this.db);
+
+  final BoostqueDb db;
+
+  /// Idempotent materialization (D-22, RESEARCH Pattern 3).
+  ///
+  /// Inserts one pending IntakeLog per active slot for the calendar day of
+  /// [day] using `InsertMode.insertOrIgnore`: the unique (slotId, date) key
+  /// makes re-runs free, and — critically — an existing row's status is NEVER
+  /// touched (upsert modes are prohibited in this method; RESEARCH Pitfall 4).
+  /// The batch runs as a single transaction, so an interruption mid-write
+  /// leaves no partial multi-row state (DATA-02/concurrency).
+  ///
+  /// [isActiveOn] is the ONLY activity decision point — cycle/course/paused
+  /// logic lives solely in core/domain/cycle_math.dart.
+  @override
+  Future<void> ensureLogsForDay(DateTime day) async {
+    final utcDay = dateOnly(day);
+    final now = DateTime.now().toUtc();
+    // Active regimens with their active slots, via the regimen repository's
+    // canonical soft-delete-aware query.
+    final regimens = await DriftRegimenRepository(db).watchAll().first;
+
+    final entries = <IntakeLogsCompanion>[
+      for (final r in regimens)
+        if (isActiveOn(r, utcDay))
+          for (final slot in r.slots)
+            IntakeLogsCompanion.insert(
+              id: const Uuid().v4(),
+              regimenId: r.id,
+              slotId: slot.id,
+              date: utcDay,
+              status: domain.DoseStatus.pending,
+              createdAt: now,
+              updatedAt: now,
+            ),
+    ];
+    await db.batch((b) {
+      b.insertAll(db.intakeLogs, entries, mode: InsertMode.insertOrIgnore);
+    });
+  }
+
+  @override
+  Future<void> setStatus(String logId, domain.DoseStatus status) async {
+    final now = DateTime.now().toUtc();
+    await (db.update(db.intakeLogs)..where((t) => t.id.equals(logId))).write(
+      IntakeLogsCompanion(status: Value(status), updatedAt: Value(now)),
+    );
+  }
+
+  @override
+  Stream<List<DayDose>> watchDay(DateTime day) {
+    final utcDay = dateOnly(day);
+    final query = db.select(db.intakeLogs).join([
+      innerJoin(
+        db.regimenSlots,
+        db.regimenSlots.id.equalsExp(db.intakeLogs.slotId),
+      ),
+      innerJoin(
+        db.regimens,
+        db.regimens.id.equalsExp(db.intakeLogs.regimenId),
+      ),
+      innerJoin(
+        db.supplements,
+        db.supplements.id.equalsExp(db.regimens.supplementId),
+      ),
+    ])
+      ..where(db.intakeLogs.date.equals(utcDay) &
+          db.regimens.deletedAt.isNull() &
+          db.supplements.deletedAt.isNull())
+      ..orderBy([
+        OrderingTerm.asc(db.regimenSlots.minutesFromMidnight),
+        OrderingTerm.asc(db.intakeLogs.id),
+      ]);
+
+    return query.watch().map((rows) => rows.map((row) {
+          final log = row.readTable(db.intakeLogs);
+          final slotRow = row.readTable(db.regimenSlots);
+          final regimenRow = row.readTable(db.regimens);
+          final supplementRow = row.readTable(db.supplements);
+          final slot = domain.DoseSlot(
+            id: slotRow.id,
+            minutesFromMidnight: slotRow.minutesFromMidnight,
+            doseLabel: slotRow.doseLabel,
+          );
+          return DayDose(
+            logId: log.id,
+            supplement: _toSupplement(supplementRow),
+            // The embedded regimen carries the dose's own slot as context;
+            // full slot sets come from RegimenRepository.watchAll.
+            regimen: _toRegimen(regimenRow, [slot]),
+            slot: slot,
+            status: log.status,
+          );
+        }).toList());
   }
 }
 
