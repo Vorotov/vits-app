@@ -94,13 +94,35 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmap) | | |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| STACK-01 | Phase 2 | Pending |
+| STACK-02 | Phase 2 | Pending |
+| STACK-03 | Phase 2 | Pending |
+| STACK-04 | Phase 2 | Pending |
+| REGI-01 | Phase 2 | Pending |
+| REGI-02 | Phase 2 | Pending |
+| REGI-03 | Phase 2 | Pending |
+| REGI-04 | Phase 2 | Pending |
+| TRACK-01 | Phase 3 | Pending |
+| TRACK-02 | Phase 3 | Pending |
+| TRACK-03 | Phase 3 | Pending |
+| TRACK-04 | Phase 3 | Pending |
+| DATA-03 | Phase 3 | Pending |
+| PLAN-01 | Phase 4 | Pending |
+| PLAN-02 | Phase 4 | Pending |
+| PLAN-03 | Phase 4 | Pending |
+| PLAN-04 | Phase 4 | Pending |
+| L10N-01 | Phase 5 | Pending |
+| L10N-02 | Phase 5 | Pending |
+| L10N-03 | Phase 5 | Pending |
+| L10N-04 | Phase 5 | Pending |
 
 **Coverage:**
-- v1 requirements: 22 total
-- Mapped to phases: 0
-- Unmapped: 22 ⚠️ (pending roadmap)
+- v1 requirements: 23 total (corrected from the earlier "22 total" count in this file — the enumerated IDs across all six categories total 23)
+- Mapped to phases: 23
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-08-14*
-*Last updated: 2026-08-14 after initial definition*
+*Last updated: 2026-08-14 after roadmap creation — full traceability mapped across 5 phases*
