@@ -25,7 +25,7 @@ class BoostqueApp extends ConsumerWidget {
       onGenerateTitle: (context) => context.l10n.appTitle,
       theme: bqTheme(),
       locale: ref.watch(localeControllerProvider),
-      supportedLocales: const [Locale('en'), Locale('uk')],
+      supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       home: const AppShell(),
     );

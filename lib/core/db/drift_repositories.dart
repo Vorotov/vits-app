@@ -198,9 +198,14 @@ class DriftRegimenRepository implements RegimenRepository {
 
 /// Drift implementation of [IntakeRepository].
 class DriftIntakeRepository implements IntakeRepository {
-  DriftIntakeRepository(this.db);
+  DriftIntakeRepository(this.db, {RegimenRepository? regimens})
+      : _regimens = regimens ?? DriftRegimenRepository(db);
 
   final BoostqueDb db;
+
+  /// Regimen source consumed via the interface, not the concrete class —
+  /// repositories depend on repository contracts just like UI/state code does.
+  final RegimenRepository _regimens;
 
   /// Idempotent materialization (D-22, RESEARCH Pattern 3).
   ///
@@ -219,7 +224,7 @@ class DriftIntakeRepository implements IntakeRepository {
     final now = DateTime.now().toUtc();
     // Active regimens with their active slots, via the regimen repository's
     // canonical soft-delete-aware query.
-    final regimens = await DriftRegimenRepository(db).watchAll().first;
+    final regimens = await _regimens.watchAll().first;
 
     final entries = <IntakeLogsCompanion>[
       for (final r in regimens)

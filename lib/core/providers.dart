@@ -50,7 +50,10 @@ final regimenRepoProvider = Provider<RegimenRepository>(
 
 /// Intake-log persistence, typed against the domain interface (D-22).
 final intakeRepoProvider = Provider<IntakeRepository>(
-  (ref) => DriftIntakeRepository(ref.watch(dbProvider)),
+  (ref) => DriftIntakeRepository(
+    ref.watch(dbProvider),
+    regimens: ref.watch(regimenRepoProvider),
+  ),
 );
 
 /// Active supplements, live from the database (NOT autoDispose per D-23).

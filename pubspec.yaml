@@ -42,7 +42,9 @@ dependencies:
   shared_preferences: ^2.5.5
   flutter_localizations:
     sdk: flutter
-  intl: ^0.20.3
+# intl is required by generated l10n code; version is deliberately unpinned so
+  # flutter_localizations (SDK) owns resolution — never hand-pin (locked decision).
+  intl: any
 
 dev_dependencies:
   flutter_test:
