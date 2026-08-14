@@ -1,3 +1,4 @@
+import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -76,6 +77,94 @@ void main() {
       expect(BqSpace.xl, 32.0);
       expect(BqSpace.xxl, 48.0);
       expect(BqSpace.xxxl, 64.0);
+    });
+  });
+
+  group('bqTheme() — theme wiring from tokens', () {
+    final ThemeData t = bqTheme();
+
+    test('Material 3 + core surfaces', () {
+      expect(t.useMaterial3, isTrue);
+      expect(t.scaffoldBackgroundColor, BqColors.paper);
+      expect(t.colorScheme.primary, BqColors.accent);
+      expect(t.colorScheme.surface, BqColors.paper);
+    });
+
+    test('bundled Instrument Sans family — no runtime fetch (D-05)', () {
+      expect(t.textTheme.bodyMedium?.fontFamily, 'Instrument Sans');
+    });
+
+    test('heading role — 25 / w600 / -0.5 / 1.1 (D-24, UI-SPEC)', () {
+      final TextStyle? h = t.textTheme.headlineSmall;
+      expect(h?.fontSize, 25);
+      expect(h?.fontWeight, FontWeight.w600);
+      expect(h?.letterSpacing, -0.5);
+      expect(h?.height, 1.1);
+      expect(h?.color, BqColors.ink);
+    });
+
+    test('body role — 13 / w400 / 1.4 (UI-SPEC)', () {
+      final TextStyle? b = t.textTheme.bodyMedium;
+      expect(b?.fontSize, 13);
+      expect(b?.fontWeight, FontWeight.w400);
+      expect(b?.height, 1.4);
+      expect(b?.color, BqColors.ink);
+    });
+
+    test('NavigationBar theming (D-25)', () {
+      final NavigationBarThemeData nav = t.navigationBarTheme;
+      expect(nav.backgroundColor, BqColors.surfaceAlt);
+      expect(nav.elevation, 0);
+      expect(nav.indicatorColor, Colors.transparent);
+    });
+
+    test('NavigationBar label role — 10 / w500, accent/textFaint (D-25)', () {
+      final NavigationBarThemeData nav = t.navigationBarTheme;
+      final TextStyle? selected =
+          nav.labelTextStyle?.resolve({WidgetState.selected});
+      final TextStyle? unselected = nav.labelTextStyle?.resolve(const {});
+      expect(selected?.fontSize, 10);
+      expect(selected?.fontWeight, FontWeight.w500);
+      expect(selected?.color, BqColors.accent);
+      expect(unselected?.fontSize, 10);
+      expect(unselected?.fontWeight, FontWeight.w500);
+      expect(unselected?.color, BqColors.textFaint);
+    });
+
+    test('NavigationBar icon colors — accent selected / textFaint unselected',
+        () {
+      final NavigationBarThemeData nav = t.navigationBarTheme;
+      final IconThemeData? selected =
+          nav.iconTheme?.resolve({WidgetState.selected});
+      final IconThemeData? unselected = nav.iconTheme?.resolve(const {});
+      expect(selected?.color, BqColors.accent);
+      expect(unselected?.color, BqColors.textFaint);
+    });
+  });
+
+  group('BqText.mono — JetBrains Mono helper (UI-SPEC mono numerals)', () {
+    test('defaults', () {
+      final TextStyle s = BqText.mono();
+      expect(s.fontFamily, 'JetBrains Mono');
+      expect(s.fontSize, 11);
+      expect(s.color, BqColors.textMuted);
+      expect(s.fontWeight, FontWeight.w500);
+      expect(s.letterSpacing, 0.5);
+      expect(s.fontFeatures, contains(const FontFeature.tabularFigures()));
+    });
+
+    test('overrides', () {
+      final TextStyle s = BqText.mono(
+        size: 14,
+        color: BqColors.ink,
+        weight: FontWeight.w400,
+        letterSpacing: 0,
+      );
+      expect(s.fontFamily, 'JetBrains Mono');
+      expect(s.fontSize, 14);
+      expect(s.color, BqColors.ink);
+      expect(s.fontWeight, FontWeight.w400);
+      expect(s.letterSpacing, 0);
     });
   });
 }
