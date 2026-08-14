@@ -8,8 +8,8 @@
 Boostque is a supplement stack planner and tracker for iOS and Android. The
 user defines their supplement stack, schedules doses (including week-based
 on/off cycles), and tracks intake in a calendar with Day / Cycles / Year
-views. The visual design already exists as an HTML mockup in
-`claude_design_mockup/`.
+views. The visual design already exists as an HTML mockup; the authoritative
+file is `claude_design_mockup/Boostque v0.1.dc.html`.
 
 ## Decisions made
 
@@ -17,7 +17,7 @@ views. The visual design already exists as an HTML mockup in
 |---|---|
 | Framework | Flutter + Dart, single codebase for iOS and Android |
 | v1 scope | Stack tab + Calendar tab only |
-| Data | Local-only, on device; no accounts, no backend |
+| Data | Local-only, on device in v1; no accounts, no backend yet — but the architecture must be backend-ready (see Architecture) since a backend is planned for a later version |
 | Languages | Full i18n from day one: system-language detection plus an in-app language picker. Ships with Ukrainian and English; architecture supports adding any number of languages later by adding one translation file each |
 
 **Out of scope for v1** (planned for later, kept in mind architecturally):
@@ -32,6 +32,15 @@ notification scheduler can read "today's doses" without running app logic.
 - **State management:** Riverpod.
 - **Database:** Drift (typed, reactive SQLite). Calendar screens subscribe to
   queries and re-render automatically on data changes.
+- **Backend-ready by design (repository pattern):** UI and domain logic never
+  touch Drift directly — they depend on repository interfaces
+  (`SupplementRepository`, `RegimenRepository`, `IntakeRepository`). v1 ships
+  a local Drift implementation; a future backend becomes a second
+  implementation (or a sync layer behind the same interfaces) with zero
+  changes to screens or domain logic. To make future sync mechanically
+  possible, all rows use UUID primary keys (not auto-increment ints) and
+  carry `createdAt` / `updatedAt` timestamps, and deletes are soft
+  (`deletedAt`) so they can be propagated later.
 - **Structure:** feature-first.
 
 ```
@@ -103,6 +112,10 @@ mockup visually.
 
 ## Environment
 
-Development on macOS. Xcode 26.5 already installed. Flutter SDK via
-Homebrew; CocoaPods, Java (Temurin), and Android command-line tools to be
-installed during setup.
+Development on macOS. Xcode 26.5 and Flutter 3.47.0 (Homebrew) installed;
+CocoaPods, Java (Temurin), and Android command-line tools to be installed
+during setup.
+
+**Open item (decide before first store release):** final app name and bundle
+identifier. Development uses the placeholder `com.boostque.dev`; renaming
+before release is a mechanical, well-supported change.
