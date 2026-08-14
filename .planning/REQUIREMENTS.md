@@ -44,8 +44,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Data & Platform
 
-- [ ] **DATA-01**: All data is stored locally on device; the app is fully functional offline with no accounts
-- [ ] **DATA-02**: Schema is sync-ready (UUID PKs, createdAt/updatedAt, soft deletes) and the database is included in OS-level backups by default
+- [x] **DATA-01**: All data is stored locally on device; the app is fully functional offline with no accounts
+- [x] **DATA-02**: Schema is sync-ready (UUID PKs, createdAt/updatedAt, soft deletes) and the database is included in OS-level backups by default
 - [ ] **DATA-03**: App builds and runs the full loop on both iOS (simulator/device) and Android (targetSdk 36)
 
 ## v2 Requirements
@@ -94,8 +94,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 1 | Pending |
-| DATA-02 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Complete |
+| DATA-02 | Phase 1 | Complete |
 | STACK-01 | Phase 2 | Pending |
 | STACK-02 | Phase 2 | Pending |
 | STACK-03 | Phase 2 | Pending |
@@ -119,6 +119,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | L10N-04 | Phase 5 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 23 total (corrected from the earlier "22 total" count in this file — the enumerated IDs across all six categories total 23)
 - Mapped to phases: 23
 - Unmapped: 0 ✓
