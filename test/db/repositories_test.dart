@@ -15,11 +15,13 @@ void main() {
   late BoostqueDb db;
   late DriftSupplementRepository supps;
   late DriftRegimenRepository regs;
+  late DriftIntakeRepository intake;
 
   setUp(() {
     db = BoostqueDb.forTesting(NativeDatabase.memory());
     supps = DriftSupplementRepository(db);
     regs = DriftRegimenRepository(db);
+    intake = DriftIntakeRepository(db);
   });
 
   tearDown(() => db.close());
@@ -186,6 +188,104 @@ void main() {
       final raw = await db.select(db.regimens).get();
       expect(raw, hasLength(1));
       expect(raw.single.deletedAt, isNotNull);
+    });
+  });
+
+  group('IntakeRepository', () {
+    // Seeds Магній with a 56on/28off cycle starting 2026-08-01 and one
+    // 22:00 slot labeled '400 мг' (superpowers plan Task 6 fixture).
+    Future<void> seed() async {
+      await supps.upsert(s1);
+      await regs.upsert(r1());
+    }
+
+    test('ensureLogsForDay is idempotent: one pending DayDose per active slot',
+        () async {
+      await seed();
+      final day = DateTime.utc(2026, 8, 14);
+      await intake.ensureLogsForDay(day);
+      await intake.ensureLogsForDay(day); // DATA-01/concurrency: re-run free
+
+      final doses = await intake.watchDay(day).first;
+      expect(doses, hasLength(1),
+          reason: 'unique (slotId, date) + insertOrIgnore — no duplicates');
+      expect(doses.single.status, DoseStatus.pending);
+      expect(doses.single.supplement.name, 'Магній');
+      expect(doses.single.slot.minutesFromMidnight, 22 * 60);
+    });
+
+    test('no logs materialized on an off-cycle day', () async {
+      await seed();
+      final offDay = DateTime.utc(2026, 10, 1); // day 61 >= 56 -> break
+      await intake.ensureLogsForDay(offDay);
+      expect(await intake.watchDay(offDay).first, isEmpty,
+          reason: 'isActiveOn is the only activity decision point');
+    });
+
+    test('re-ensure preserves a recorded status (RESEARCH Pitfall 4)',
+        () async {
+      await seed();
+      final day = DateTime.utc(2026, 8, 14);
+      await intake.ensureLogsForDay(day);
+      final log = (await intake.watchDay(day).first).single;
+
+      await intake.setStatus(log.logId, DoseStatus.taken);
+      await intake.ensureLogsForDay(day); // must NOT reset status
+
+      final after = (await intake.watchDay(day).first).single;
+      expect(after.status, DoseStatus.taken,
+          reason: 'materialization never clobbers user-recorded status');
+      expect(after.logId, log.logId, reason: 'same row, not a replacement');
+    });
+
+    test('setStatus bumps updatedAt (T-01-16)', () async {
+      await seed();
+      final day = DateTime.utc(2026, 8, 14);
+      await intake.ensureLogsForDay(day);
+      final before = (await db.select(db.intakeLogs).get()).single;
+
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      await intake.setStatus(before.id, DoseStatus.skipped);
+
+      final after = (await db.select(db.intakeLogs).get()).single;
+      expect(after.status, DoseStatus.skipped);
+      expect(after.updatedAt.isAfter(before.updatedAt), isTrue);
+    });
+
+    test('two slots at the same minute produce two distinct logs '
+        '(DATA-01/adjacency)', () async {
+      await supps.upsert(s1);
+      await regs.upsert(r1(slots: const [
+        DoseSlot(id: 'slA', minutesFromMidnight: 480, doseLabel: '200 мг'),
+        DoseSlot(id: 'slB', minutesFromMidnight: 480, doseLabel: '200 мг'),
+      ]));
+      final day = DateTime.utc(2026, 8, 14);
+      await intake.ensureLogsForDay(day);
+
+      final rawLogs = await db.select(db.intakeLogs).get();
+      expect(rawLogs, hasLength(2),
+          reason: 'same-minute slots never merge or collide');
+      expect(rawLogs.map((l) => l.slotId).toSet(), {'slA', 'slB'});
+
+      final doses = await intake.watchDay(day).first;
+      expect(doses, hasLength(2));
+      expect(doses.map((d) => d.logId).toSet(), hasLength(2),
+          reason: 'log ids are distinct UUIDs');
+    });
+
+    test('watchDay orders by slot time ascending', () async {
+      await supps.upsert(s1);
+      await regs.upsert(r1(slots: const [
+        DoseSlot(id: 'slEve', minutesFromMidnight: 22 * 60, doseLabel: '400 мг'),
+        DoseSlot(id: 'slMorn', minutesFromMidnight: 8 * 60, doseLabel: '200 мг'),
+      ]));
+      final day = DateTime.utc(2026, 8, 14);
+      await intake.ensureLogsForDay(day);
+
+      final doses = await intake.watchDay(day).first;
+      expect(doses.map((d) => d.slot.minutesFromMidnight).toList(),
+          [8 * 60, 22 * 60],
+          reason: 'minutesFromMidnight asc, log id as tiebreak');
     });
   });
 }
