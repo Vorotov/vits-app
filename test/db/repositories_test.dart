@@ -8,7 +8,6 @@ library;
 import 'package:boostque/core/db/database.dart' show BoostqueDb, SupplementsCompanion;
 import 'package:boostque/core/db/drift_repositories.dart';
 import 'package:boostque/core/domain/models.dart';
-import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
