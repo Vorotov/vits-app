@@ -33,7 +33,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A user's data survives an app reinstall via OS-level device backup, because the local database (UUID primary keys, createdAt/updatedAt, soft-delete columns on every table) is included in backups by default
   4. Automated tests prove the cycle-math layer computes correct active/inactive days across a DST transition and a year boundary, before any screen consumes it
 
-**Plans**: 4/7 plans executed
+**Plans**: 6/7 plans executed
 
 Plans:
 
@@ -41,8 +41,8 @@ Plans:
 - [x] 01-02-PLAN.md — Domain models + DST-safe cycle math, test-first (wave 2)
 - [x] 01-03-PLAN.md — Design tokens + bqTheme() from the mockup palette (wave 2)
 - [x] 01-04-PLAN.md — i18n infrastructure: gen-l10n, en/uk ARB, uk plurals, LocaleController (wave 2)
-- [ ] 01-05-PLAN.md — Sync-ready Drift schema (SyncColumns, unique keys, UTC storage, schema v1 snapshot) (wave 3)
-- [ ] 01-06-PLAN.md — Three-tab shell: AppShell + stubs + wired MaterialApp, en/uk widget tests (wave 3)
+- [x] 01-05-PLAN.md — Sync-ready Drift schema (SyncColumns, unique keys, UTC storage, schema v1 snapshot) (wave 3)
+- [x] 01-06-PLAN.md — Three-tab shell: AppShell + stubs + wired MaterialApp, en/uk widget tests (wave 3)
 - [ ] 01-07-PLAN.md — Repositories, idempotent dose materialization, Riverpod provider graph (wave 4)
 
 **UI hint**: yes
@@ -116,7 +116,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 4/7 | In Progress|  |
+| 1. Foundation | 6/7 | In Progress|  |
 | 2. Stack Management | 0/? | Not started | - |
 | 3. Daily Tracking | 0/? | Not started | - |
 | 4. Planner Views | 0/? | Not started | - |
