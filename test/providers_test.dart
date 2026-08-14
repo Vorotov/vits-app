@@ -34,8 +34,9 @@ void main() {
   Future<List<StackEntry>> waitForEntries(int count) async {
     for (var i = 0; i < 200; i++) {
       final value = container.read(stackEntriesProvider);
-      final data = value.valueOrNull;
-      if (data != null && data.length == count) return data;
+      if (value case AsyncData(value: final data) when data.length == count) {
+        return data;
+      }
       await Future<void>.delayed(const Duration(milliseconds: 5));
     }
     fail('stackEntriesProvider never reached $count entries');
@@ -51,6 +52,10 @@ void main() {
 
   test('fresh install: streams emit [] and stackEntries is empty AsyncData '
       '(DATA-01/empty)', () async {
+    // Riverpod pauses unlistened providers; keep the graph active.
+    final sub = container.listen(stackEntriesProvider, (_, _) {});
+    addTearDown(sub.close);
+
     expect(await container.read(supplementsStreamProvider.future), isEmpty);
     expect(await container.read(regimensStreamProvider.future), isEmpty);
 
