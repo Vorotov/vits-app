@@ -1,0 +1,14 @@
+# Drift code-generation options.
+#
+# store_date_time_values_as_text: true — SQLite stores DateTime columns as
+# ISO-8601 strings (UTC values keep their trailing 'Z'), so a stored
+# DateTime.utc(y, m, d) reads back as an equal DateTime with isUtc == true.
+# Without this, drift's default unix-timestamp storage reads DateTimes back
+# as LOCAL time, silently breaking the UTC-midnight calendar identity that
+# D-13/D-18 require (equality with DateTime.utc fails on the isUtc flag).
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          store_date_time_values_as_text: true
