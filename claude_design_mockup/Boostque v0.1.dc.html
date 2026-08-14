@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#EAE9E4;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+a{color:#4A4E7C;text-decoration:none}
+a:hover{color:#2F3255}
+::-webkit-scrollbar{width:0;height:0}
+</style>
+</helmet>
+
+<div style="padding:48px 52px 72px;display:flex;flex-direction:column;gap:52px;color:#17171B">
+
+<div style="display:flex;flex-direction:column;gap:20px;max-width:1180px">
+<div style="display:flex;align-items:baseline;gap:14px">
+<div style="font:600 26px/1 'Instrument Sans',sans-serif;letter-spacing:-.02em">Boostque 0.1 — каркас мобільного застосунку</div>
+<div style="font:400 12px/1 'JetBrains Mono',monospace;color:#8E8E99">iOS · 390×844 · UA · 5 екранів</div>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(23,23,27,.12);border:1px solid rgba(23,23,27,.12);border-radius:10px;overflow:hidden">
+<div style="background:#F7F6F3;padding:16px 18px;display:flex;flex-direction:column;gap:8px">
+<div style="font:500 10px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.06em">ДОПУЩЕННЯ</div>
+<div style="font:400 12.5px/1.5 'Instrument Sans',sans-serif;color:#5C5C66">Версія 0.1 — тільки ведення стеку й планування. Оцінки, взаємодії, радник, підписка й онбординг сюди не входять.</div>
+</div>
+<div style="background:#F7F6F3;padding:16px 18px;display:flex;flex-direction:column;gap:8px">
+<div style="font:500 10px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.06em">ПАЛІТРА</div>
+<div style="display:flex;gap:6px;margin-top:2px">
+<div style="width:26px;height:26px;border-radius:6px;background:#4A4E7C"></div>
+<div style="width:26px;height:26px;border-radius:6px;background:#F7F6F3;border:1px solid rgba(23,23,27,.14)"></div>
+<div style="width:26px;height:26px;border-radius:6px;background:#17171B"></div>
+<div style="width:26px;height:26px;border-radius:6px;background:#23243A"></div>
+</div>
+<div style="font:400 12.5px/1.5 'Instrument Sans',sans-serif;color:#5C5C66">Один акцент (індиго), теплі нейтралі, Instrument Sans + JetBrains Mono для чисел.</div>
+</div>
+<div style="background:#F7F6F3;padding:16px 18px;display:flex;flex-direction:column;gap:8px">
+<div style="font:500 10px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.06em">ШКАЛА РИЗИКУ</div>
+<div style="display:flex;flex-direction:column;gap:5px">
+<div style="display:flex;align-items:center;gap:8px;font:400 12.5px/1 'Instrument Sans',sans-serif;color:#5C5C66"><span style="width:9px;height:9px;border-radius:50%;background:#3F7A6A"></span>спокійно</div>
+<div style="display:flex;align-items:center;gap:8px;font:400 12.5px/1 'Instrument Sans',sans-serif;color:#5C5C66"><span style="width:9px;height:9px;border-radius:50%;background:#B07A22"></span>увага</div>
+<div style="display:flex;align-items:center;gap:8px;font:400 12.5px/1 'Instrument Sans',sans-serif;color:#5C5C66"><span style="width:9px;height:9px;border-radius:50%;background:#A8443C"></span>ризик</div>
+</div>
+</div>
+<div style="background:#F7F6F3;padding:16px 18px;display:flex;flex-direction:column;gap:8px">
+<div style="font:500 10px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.06em">КОПІРАЙТ</div>
+<div style="font:400 12.5px/1.5 'Instrument Sans',sans-serif;color:#5C5C66">Лексика: цикл, перерва, слот, прийнято, одночасно. Ніде — обіцянок ефекту й закликів «пити».</div>
+</div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:12px">
+<div style="font:600 15px/1 'Instrument Sans',sans-serif">Стек</div>
+<div style="font:400 11.5px/1 'JetBrains Mono',monospace;color:#8E8E99">що я приймаю</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start">
+
+<div style="flex:none;display:flex;flex-direction:column;gap:10px">
+<div style="font:500 11px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.05em">01 · МІЙ СТЕК <span style="color:#B9B9C0">— пошук і додавання працюють</span></div>
+<div style="width:390px;height:844px;background:#F7F6F3;border-radius:42px;border:1px solid rgba(23,23,27,.14);box-shadow:0 20px 44px -20px rgba(23,23,27,.3);overflow:hidden;position:relative;display:flex;flex-direction:column">
+<div style="height:50px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 5px;font:600 14px/1 'Instrument Sans',sans-serif">
+<span>16:20</span>
+<span style="display:flex;gap:5px;align-items:flex-end">
+<span style="display:flex;gap:2px;align-items:flex-end"><span style="width:3px;height:5px;background:#17171B;border-radius:1px"></span><span style="width:3px;height:8px;background:#17171B;border-radius:1px"></span><span style="width:3px;height:11px;background:#17171B;border-radius:1px"></span></span>
+<span style="width:22px;height:11px;border:1.5px solid #17171B;border-radius:3px;padding:1.5px;display:block"><span style="display:block;width:72%;height:100%;background:#17171B;border-radius:1px"></span></span>
+</span>
+</div>
+<div style="flex:1;overflow:auto;padding:8px 20px 84px">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+<div>
+<div style="font:600 25px/1.1 'Instrument Sans',sans-serif;letter-spacing:-.02em">Мій стек</div>
+<div style="font:400 13px/1.4 'Instrument Sans',sans-serif;color:#8E8E99;margin-top:4px">{{ stackSummary }}</div>
+</div>
+<div style="width:38px;height:38px;border-radius:50%;background:#E4E3DD;border:1px solid rgba(23,23,27,.08);display:flex;align-items:center;justify-content:center;font:500 13px/1 'Instrument Sans',sans-serif;color:#5C5C66">ОК</div>
+</div>
+
+<div style="display:flex;gap:8px;margin-bottom:14px">
+<div onClick="{{ openAdd }}" style="flex:1;background:#4A4E7C;color:#FFFFFF;border-radius:12px;padding:13px;text-align:center;font:600 14px/1 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#3D4169">Додати добавку</div>
+<div onClick="{{ openCamera }}" style="width:48px;border-radius:12px;border:1px solid rgba(23,23,27,.14);background:#FFFFFF;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#F2F1EE">
+<span style="width:17px;height:14px;border:1.6px solid #5C5C66;border-radius:3px;display:flex;align-items:center;justify-content:center"><span style="width:6px;height:6px;border-radius:50%;border:1.6px solid #5C5C66"></span></span>
+</div>
+</div>
+
+<sc-if value="{{ freeLimited }}" hint-placeholder-val="{{ false }}">
+<div style="background:#EDEDF4;border:1px solid rgba(74,78,124,.18);border-radius:12px;padding:13px 14px;margin-bottom:14px;display:flex;gap:10px;align-items:center">
+<div style="font:400 12.5px/1.45 'Instrument Sans',sans-serif;color:#3D4169;flex:1">Free-план показує до 3 добавок. Ще {{ lockedCount }} у вашому стеку — доступні в Boostque Plus.</div>
+<div style="font:600 12.5px/1 'Instrument Sans',sans-serif;color:#4A4E7C;white-space:nowrap">Відкрити</div>
+</div>
+</sc-if>
+
+<div style="display:flex;align-items:center;justify-content:space-between;margin:0 2px 10px">
+<div style="font:500 10.5px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.06em">ДОБАВКИ</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:9px">
+<sc-for list="{{ stackItems }}" as="item" hint-placeholder-count="5">
+<div style="background:#FFFFFF;border:1px solid rgba(23,23,27,.09);border-radius:14px;padding:14px;display:flex;gap:12px;cursor:pointer" style-hover="border-color:rgba(74,78,124,.35)">
+<div style="width:4px;border-radius:3px;background:{{ item.fg }};flex:none;opacity:.85"></div>
+<div style="flex:1;min-width:0">
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+<div style="font:600 15px/1.3 'Instrument Sans',sans-serif">{{ item.name }}</div>
+</div>
+<div style="font:400 12.5px/1.4 'Instrument Sans',sans-serif;color:#8E8E99;margin-top:3px">{{ item.dose }}</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;align-items:center">
+<span style="font:500 10.5px/1 'JetBrains Mono',monospace;color:{{ item.statusFg }};background:{{ item.statusBg }};padding:5px 7px;border-radius:5px;letter-spacing:.03em">{{ item.status }}</span>
+<span style="font:400 11.5px/1 'Instrument Sans',sans-serif;color:#5C5C66;background:#F2F1EE;padding:5px 8px;border-radius:5px">{{ item.schedule }}</span>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+
+</div>
+
+<sc-if value="{{ addOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:rgba(23,23,27,.32);display:flex;align-items:flex-end">
+<div style="width:100%;background:#F7F6F3;border-radius:26px 26px 42px 42px;padding:10px 20px 26px;max-height:660px;display:flex;flex-direction:column">
+<div style="width:38px;height:4px;border-radius:2px;background:rgba(23,23,27,.16);margin:0 auto 16px"></div>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+<div style="font:600 18px/1.2 'Instrument Sans',sans-serif">Додати добавку</div>
+<div onClick="{{ closeAdd }}" style="font:400 13px/1 'Instrument Sans',sans-serif;color:#4A4E7C;cursor:pointer">Закрити</div>
+</div>
+<div style="display:flex;gap:1px;background:rgba(23,23,27,.09);border-radius:10px;padding:2px;margin-bottom:14px">
+<div onClick="{{ tabSearch }}" style="flex:1;text-align:center;padding:9px;border-radius:8px;font:500 13px/1 'Instrument Sans',sans-serif;cursor:pointer;background:{{ tabSearchBg }};color:{{ tabSearchFg }}">Пошук у базі</div>
+<div onClick="{{ tabCamera }}" style="flex:1;text-align:center;padding:9px;border-radius:8px;font:500 13px/1 'Instrument Sans',sans-serif;cursor:pointer;background:{{ tabCameraBg }};color:{{ tabCameraFg }}">Камера · етикетка</div>
+</div>
+<sc-if value="{{ isSearchTab }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;gap:10px;overflow:auto">
+<input value="{{ query }}" onChange="{{ onQuery }}" placeholder="Назва або діюча речовина" style="width:100%;padding:13px 14px;border-radius:11px;border:1px solid rgba(23,23,27,.14);background:#FFFFFF;font:400 14px/1.2 'Instrument Sans',sans-serif;color:#17171B;outline:none">
+<sc-for list="{{ results }}" as="r" hint-placeholder-count="4">
+<div onClick="{{ r.add }}" style="background:#FFFFFF;border:1px solid rgba(23,23,27,.09);border-radius:12px;padding:13px 14px;display:flex;align-items:center;gap:11px;cursor:pointer" style-hover="border-color:rgba(74,78,124,.4)">
+<div style="flex:1;min-width:0">
+<div style="font:600 14px/1.3 'Instrument Sans',sans-serif">{{ r.name }}</div>
+<div style="font:400 12px/1.4 'Instrument Sans',sans-serif;color:#8E8E99;margin-top:2px">{{ r.note }}</div>
+</div>
+<div style="font:500 20px/1 'Instrument Sans',sans-serif;color:#4A4E7C">+</div>
+</div>
+</sc-for>
+<sc-if value="{{ noResults }}" hint-placeholder-val="{{ false }}">
+<div style="padding:22px 6px;font:400 13px/1.5 'Instrument Sans',sans-serif;color:#8E8E99">Нічого не знайшли. Можна відсканувати етикетку — ми розпізнаємо склад і додамо вручну.</div>
+</sc-if>
+</div>
+</sc-if>
+<sc-if value="{{ isCameraTab }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:12px">
+<div style="height:280px;border-radius:14px;background:repeating-linear-gradient(135deg,#E4E3DD 0 10px,#EDECE7 10px 20px);border:1px solid rgba(23,23,27,.1);display:flex;align-items:center;justify-content:center;position:relative">
+<div style="position:absolute;inset:38px 28px;border:2px solid rgba(74,78,124,.55);border-radius:10px"></div>
+<div style="font:400 11px/1.5 'JetBrains Mono',monospace;color:#7A7A85;text-align:center">камера · OCR етикетки<br>[ живий кадр ]</div>
+</div>
+<div style="font:400 12.5px/1.5 'Instrument Sans',sans-serif;color:#5C5C66">Наведіть на склад на етикетці. Ми розпізнаємо форму речовини й дозування — це впливає на скор якості.</div>
+</div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+<div style="flex:none;position:relative;border-top:1px solid rgba(23,23,27,.08);background:#FBFBF9;padding:10px 22px 0;display:flex;justify-content:space-between">
+<sc-if value="{{ addClosed }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ openAdd }}" style="position:absolute;right:20px;top:-64px;display:flex;align-items:center;gap:9px;background:#4A4E7C;border-radius:26px;padding:14px 18px;box-shadow:0 10px 22px -8px rgba(74,78,124,.6);cursor:pointer" style-hover="background:#3D4169">
+<span style="font:400 18px/1 'Instrument Sans',sans-serif;color:#FFFFFF">+</span>
+<span style="font:600 14px/1 'Instrument Sans',sans-serif;color:#FFFFFF">Додати</span>
+</div>
+</sc-if>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:4px;background:#4A4E7C"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#4A4E7C">Стек</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:4px;border:1.6px solid #A0A0A9"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#A0A0A9">Календар</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:50%;border:1.6px solid #A0A0A9"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#A0A0A9">Радник</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:50% 50% 50% 4px;border:1.6px solid #A0A0A9"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#A0A0A9">Профіль</span></div>
+</div>
+<div style="height:24px;flex:none;display:flex;align-items:center;justify-content:center;background:#FBFBF9"><div style="width:134px;height:5px;border-radius:3px;background:rgba(23,23,27,.2)"></div></div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:12px">
+<div style="font:600 15px/1 'Instrument Sans',sans-serif">Календар і планування</div>
+<div style="font:400 11.5px/1 'JetBrains Mono',monospace;color:#8E8E99">день · цикли · рік · розклад</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start">
+
+<div style="flex:none;display:flex;flex-direction:column;gap:10px">
+<div style="font:500 11px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.05em">02 · КАЛЕНДАР <span style="color:#B9B9C0">— відмітки «прийнято» працюють</span></div>
+<div style="width:390px;height:844px;background:#F7F6F3;border-radius:42px;border:1px solid rgba(23,23,27,.14);box-shadow:0 20px 44px -20px rgba(23,23,27,.3);overflow:hidden;display:flex;flex-direction:column">
+<div style="height:50px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 5px;font:600 14px/1 'Instrument Sans',sans-serif">
+<span>16:20</span>
+<span style="display:flex;gap:5px;align-items:flex-end">
+<span style="display:flex;gap:2px;align-items:flex-end"><span style="width:3px;height:5px;background:#17171B;border-radius:1px"></span><span style="width:3px;height:8px;background:#17171B;border-radius:1px"></span><span style="width:3px;height:11px;background:#17171B;border-radius:1px"></span></span>
+<span style="width:22px;height:11px;border:1.5px solid #17171B;border-radius:3px;padding:1.5px;display:block"><span style="display:block;width:72%;height:100%;background:#17171B;border-radius:1px"></span></span>
+</span>
+</div>
+<div style="flex:none;padding:6px 20px 0">
+<div style="display:flex;align-items:flex-end;justify-content:space-between">
+<div>
+<div style="font:600 25px/1.1 'Instrument Sans',sans-serif;letter-spacing:-.02em">Сьогодні</div>
+<div style="font:400 13px/1.4 'Instrument Sans',sans-serif;color:#8E8E99;margin-top:4px">четвер, 13 серпня</div>
+</div>
+<div style="display:flex;align-items:center;gap:10px">
+<div style="width:46px;height:46px;border-radius:50%;background:{{ ringStyle }};display:flex;align-items:center;justify-content:center">
+<div style="width:36px;height:36px;border-radius:50%;background:#F7F6F3;display:flex;align-items:center;justify-content:center;font:500 12px/1 'JetBrains Mono',monospace;color:#3F7A6A;font-feature-settings:'tnum'">{{ takenCount }}/{{ totalDoses }}</div>
+</div>
+</div>
+</div>
+<div style="display:flex;gap:5px;margin-top:16px">
+<sc-for list="{{ weekDays }}" as="d" hint-placeholder-count="7">
+<div style="flex:1;border-radius:11px;padding:9px 0 10px;text-align:center;background:{{ d.bg }};border:1px solid {{ d.border }}">
+<div style="font:400 10px/1 'JetBrains Mono',monospace;color:{{ d.fg2 }}">{{ d.dow }}</div>
+<div style="font:500 14px/1 'Instrument Sans',sans-serif;color:{{ d.fg }};margin-top:6px">{{ d.num }}</div>
+<div style="width:4px;height:4px;border-radius:50%;background:{{ d.dot }};margin:7px auto 0"></div>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="flex:1;overflow:auto;padding:18px 20px 24px">
+<sc-for list="{{ blocks }}" as="b" hint-placeholder-count="4">
+<div style="margin-bottom:18px">
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:9px">
+<span style="font:500 13px/1 'JetBrains Mono',monospace;color:{{ b.timeFg }};font-feature-settings:'tnum'">{{ b.time }}</span>
+<span style="font:500 12.5px/1 'Instrument Sans',sans-serif;color:#5C5C66">{{ b.label }}</span>
+<span style="flex:1;height:1px;background:rgba(23,23,27,.09)"></span>
+<span style="font:400 11px/1 'JetBrains Mono',monospace;color:{{ b.tagFg }};background:{{ b.tagBg }};padding:4px 7px;border-radius:5px">{{ b.tag }}</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:7px">
+<sc-for list="{{ b.items }}" as="it" hint-placeholder-count="3">
+<div onClick="{{ it.toggle }}" style="background:{{ it.rowBg }};border:1px solid {{ it.rowBorder }};border-radius:13px;padding:13px 14px;display:flex;align-items:center;gap:12px;cursor:pointer" style-hover="border-color:rgba(74,78,124,.35)">
+<div style="width:24px;height:24px;border-radius:50%;border:1.8px solid {{ it.boxBorder }};background:{{ it.boxBg }};flex:none;display:flex;align-items:center;justify-content:center;font:600 12px/1 'Instrument Sans',sans-serif;color:#FFFFFF">{{ it.check }}</div>
+<div style="flex:1;min-width:0">
+<div style="display:flex;align-items:baseline;gap:7px">
+<span style="font:500 14.5px/1.3 'Instrument Sans',sans-serif;color:{{ it.nameFg }};text-decoration:{{ it.strike }}">{{ it.name }}</span>
+<span style="font:400 11.5px/1 'JetBrains Mono',monospace;color:#A0A0A9">{{ it.dose }}</span>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:7px">
+<sc-if value="{{ it.cycle }}" hint-placeholder-val="{{ true }}">
+<span style="font:400 11px/1 'JetBrains Mono',monospace;color:#5C5C66;background:#F2F1EE;padding:4px 7px;border-radius:5px">{{ it.cycle }}</span>
+</sc-if>
+<sc-if value="{{ it.note }}" hint-placeholder-val="{{ true }}">
+<span style="font:400 11px/1 'Instrument Sans',sans-serif;color:#5C5C66;background:#F2F1EE;padding:4px 7px;border-radius:5px">{{ it.note }}</span>
+</sc-if>
+<sc-if value="{{ it.warn }}" hint-placeholder-val="{{ true }}">
+<span style="font:400 11px/1 'Instrument Sans',sans-serif;color:{{ it.warnFg }};background:{{ it.warnBg }};padding:4px 7px;border-radius:5px">{{ it.warn }}</span>
+</sc-if>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+<div style="background:#FFFFFF;border:1px solid rgba(23,23,27,.09);border-radius:14px;padding:15px;display:flex;gap:11px;align-items:flex-start">
+<span style="width:9px;height:9px;border-radius:50%;background:#B07A22;margin-top:5px;flex:none"></span>
+<span style="font:400 12.5px/1.55 'Instrument Sans',sans-serif;color:#5C5C66;flex:1;text-wrap:pretty">Цинк і магній стоять у різних блоках навмисно: разом вони конкурують за засвоєння. Календар тримає між ними щонайменше 4 години.</span>
+</div>
+<div style="font:400 11.5px/1.5 'Instrument Sans',sans-serif;color:#A0A0A9;margin-top:16px;padding:0 4px">Розклад складено з ваших власних записів. Освітній матеріал, не медична порада.</div>
+</div>
+<div style="flex:none;border-top:1px solid rgba(23,23,27,.08);background:#FBFBF9;padding:10px 22px 0;display:flex;justify-content:space-between">
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:4px;border:1.6px solid #A0A0A9"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#A0A0A9">Стек</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:4px;background:#4A4E7C"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#4A4E7C">Календар</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:50%;border:1.6px solid #A0A0A9"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#A0A0A9">Радник</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:50% 50% 50% 4px;border:1.6px solid #A0A0A9"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#A0A0A9">Профіль</span></div>
+</div>
+<div style="height:24px;flex:none;display:flex;align-items:center;justify-content:center;background:#FBFBF9"><div style="width:134px;height:5px;border-radius:3px;background:rgba(23,23,27,.2)"></div></div>
+</div>
+</div>
+
+<div style="flex:none;display:flex;flex-direction:column;gap:10px">
+<div style="font:500 11px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.05em">03 · ЦИКЛИ <span style="color:#B9B9C0">— тижні на графіку клікаються</span></div>
+<div style="width:390px;height:844px;background:#F7F6F3;border-radius:42px;border:1px solid rgba(23,23,27,.14);box-shadow:0 20px 44px -20px rgba(23,23,27,.3);overflow:hidden;display:flex;flex-direction:column">
+<div style="height:50px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 5px;font:600 14px/1 'Instrument Sans',sans-serif">
+<span>16:20</span>
+<span style="display:flex;gap:5px;align-items:flex-end">
+<span style="display:flex;gap:2px;align-items:flex-end"><span style="width:3px;height:5px;background:#17171B;border-radius:1px"></span><span style="width:3px;height:8px;background:#17171B;border-radius:1px"></span><span style="width:3px;height:11px;background:#17171B;border-radius:1px"></span></span>
+<span style="width:22px;height:11px;border:1.5px solid #17171B;border-radius:3px;padding:1.5px;display:block"><span style="display:block;width:72%;height:100%;background:#17171B;border-radius:1px"></span></span>
+</span>
+</div>
+<div style="flex:none;padding:6px 20px 14px">
+<div style="font:600 25px/1.1 'Instrument Sans',sans-serif;letter-spacing:-.02em">Планувальник</div>
+<div style="font:400 13px/1.4 'Instrument Sans',sans-serif;color:#8E8E99;margin-top:4px">серпень — листопад 2026</div>
+<div style="display:flex;gap:1px;background:rgba(23,23,27,.09);border-radius:10px;padding:2px;margin-top:14px">
+<div style="flex:1;text-align:center;padding:9px;border-radius:8px;font:500 13px/1 'Instrument Sans',sans-serif;color:#5C5C66">Рік</div>
+<div style="flex:1;text-align:center;padding:9px;border-radius:8px;font:500 13px/1 'Instrument Sans',sans-serif;background:#FFFFFF;color:#17171B">Цикли</div>
+</div>
+</div>
+<div style="flex:1;overflow:auto;padding:0 20px 84px">
+<div style="display:flex;align-items:center;gap:9px;padding:12px 14px;border-radius:12px;background:{{ planSummaryBg }};margin-bottom:16px">
+<span style="font:500 13.5px/1.35 'Instrument Sans',sans-serif;color:{{ planSummaryFg }};flex:1">{{ planSummary }}</span>
+<span style="font:400 11px/1 'JetBrains Mono',monospace;color:{{ planSummaryFg }}">межа 5</span>
+</div>
+
+<div style="background:#FFFFFF;border:1px solid rgba(23,23,27,.09);border-radius:16px;padding:16px 14px 14px">
+<div style="display:flex;font:400 10.5px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.05em;margin-bottom:9px">
+<span style="width:25.4%">СЕРП</span><span style="width:24.6%">ВЕР</span><span style="width:25.4%">ЖОВ</span><span style="width:24.6%">ЛИС</span>
+</div>
+<div style="position:relative">
+<div style="position:absolute;top:0;bottom:0;left:{{ todayLeft }};width:1px;background:#17171B;opacity:.35"></div>
+<div style="position:absolute;left:25.4%;top:0;bottom:0;width:1px;background:rgba(23,23,27,.07)"></div>
+<div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(23,23,27,.07)"></div>
+<div style="position:absolute;left:75.4%;top:0;bottom:0;width:1px;background:rgba(23,23,27,.07)"></div>
+<div style="display:flex;flex-direction:column;gap:13px;position:relative">
+<sc-for list="{{ planRows }}" as="r" hint-placeholder-count="7">
+<div>
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px">
+<span style="font:500 13px/1.3 'Instrument Sans',sans-serif">{{ r.name }}</span>
+<span style="font:400 10.5px/1.3 'JetBrains Mono',monospace;color:#A0A0A9">{{ r.hint }}</span>
+</div>
+<div style="position:relative;height:11px;border-radius:6px;background:#F2F1EE">
+<sc-for list="{{ r.segs }}" as="s" hint-placeholder-count="1">
+<div style="position:absolute;top:0;height:11px;border-radius:6px;left:{{ s.left }};width:{{ s.width }};background:{{ s.bg }};border:1px solid {{ s.border }};box-sizing:border-box"></div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:15px;padding-top:13px;border-top:1px solid rgba(23,23,27,.07)">
+<span style="display:flex;align-items:center;gap:6px;font:400 11px/1 'Instrument Sans',sans-serif;color:#8E8E99"><span style="width:14px;height:8px;border-radius:4px;background:#4A4E7C"></span>приймаю</span>
+<span style="display:flex;align-items:center;gap:6px;font:400 11px/1 'Instrument Sans',sans-serif;color:#8E8E99"><span style="width:14px;height:8px;border-radius:4px;border:1px solid rgba(74,78,124,.45);background:repeating-linear-gradient(115deg,rgba(74,78,124,.18) 0 4px,rgba(74,78,124,.06) 4px 8px)"></span>заплановано</span>
+<span style="display:flex;align-items:center;gap:6px;font:400 11px/1 'Instrument Sans',sans-serif;color:#8E8E99"><span style="width:14px;height:8px;border-radius:4px;background:#A8443C"></span>є взаємодія</span>
+<span style="display:flex;align-items:center;gap:6px;font:400 11px/1 'Instrument Sans',sans-serif;color:#8E8E99"><span style="width:14px;height:8px;border-radius:4px;background:#F2F1EE"></span>пауза</span>
+</div>
+</div>
+
+<div style="background:#FFFFFF;border:1px solid rgba(23,23,27,.09);border-radius:16px;padding:16px 14px 14px;margin-top:12px">
+<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+<span style="font:500 10.5px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.06em">ОДНОЧАСНЕ НАВАНТАЖЕННЯ</span>
+<span style="font:400 10.5px/1 'JetBrains Mono',monospace;color:#A0A0A9">по тижнях</span>
+</div>
+<div style="position:relative;height:46px;display:flex;align-items:flex-end;gap:3px">
+<div style="position:absolute;left:0;right:0;bottom:22.8px;height:1px;background:repeating-linear-gradient(90deg,rgba(23,23,27,.22) 0 4px,transparent 4px 8px)"></div>
+<sc-for list="{{ loadWeeks }}" as="w" hint-placeholder-count="18">
+<div onClick="{{ w.pick }}" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer;opacity:{{ w.opacity }}">
+<div style="height:{{ w.over }};border-radius:2px 2px 0 0;background:#A8443C"></div>
+<div style="height:{{ w.h }};border-radius:2px;background:{{ w.bg }}"></div>
+</div>
+</sc-for>
+</div>
+<div style="display:flex;justify-content:space-between;font:400 10px/1 'JetBrains Mono',monospace;color:#A0A0A9;margin-top:7px">
+<span>1 серп</span><span>межа 5 · комфорт 3</span><span>30 лис</span>
+</div>
+</div>
+
+<div style="background:#FFFFFF;border:1px solid rgba(23,23,27,.09);border-radius:16px;padding:17px;margin-top:12px">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+<span><span style="display:block;font:600 15.5px/1.25 'Instrument Sans',sans-serif">{{ weekRange }}</span><span style="display:block;font:400 12px/1.4 'Instrument Sans',sans-serif;color:#8E8E99;margin-top:4px">{{ weekLoadLabel }} · {{ freeSlotHint }}</span></span>
+<span style="font:500 9.5px/1 'JetBrains Mono',monospace;color:{{ weekVerdictFg }};background:{{ weekVerdictBg }};padding:6px 8px;border-radius:5px;letter-spacing:.04em;white-space:nowrap">{{ weekVerdict }}</span>
+</div>
+<div style="display:flex;gap:5px;margin-top:14px">
+<sc-for list="{{ slotPips }}" as="p" hint-placeholder-count="5">
+<div style="flex:1;height:9px;border-radius:5px;background:{{ p.bg }};border:1px solid {{ p.border }};box-sizing:border-box"></div>
+</sc-for>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px">
+<sc-for list="{{ weekNames }}" as="n" hint-placeholder-count="5">
+<span style="font:400 11.5px/1 'Instrument Sans',sans-serif;color:#5C5C66;background:#F2F1EE;padding:6px 9px;border-radius:5px">{{ n }}</span>
+</sc-for>
+</div>
+<div style="font:400 13px/1.6 'Instrument Sans',sans-serif;color:#5C5C66;margin-top:14px;text-wrap:pretty">{{ weekNote }}</div>
+</div>
+
+<div style="display:flex;gap:8px;margin-top:12px">
+<div style="flex:1;padding:14px;border-radius:12px;border:1px solid rgba(23,23,27,.14);background:#FFFFFF;text-align:center;font:600 14px/1 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#F2F1EE">Зсунути цикл</div>
+<div style="flex:1;padding:14px;border-radius:12px;border:1px solid rgba(23,23,27,.14);background:#FFFFFF;text-align:center;font:600 14px/1 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#F2F1EE">Порівняти тижні</div>
+</div>
+<div style="font:400 11.5px/1.5 'Instrument Sans',sans-serif;color:#A0A0A9;margin-top:16px;padding:0 4px;text-wrap:pretty">Межа в 5 речовин — наше редакційне правило для зручності відстеження, а не медичний норматив. Освітній матеріал, не медична порада.</div>
+</div>
+<div style="flex:none;position:relative;border-top:1px solid rgba(23,23,27,.08);background:#FBFBF9;padding:10px 22px 0;display:flex;justify-content:space-between">
+<div style="position:absolute;right:20px;top:-64px;display:flex;align-items:center;gap:9px;background:#4A4E7C;border-radius:26px;padding:14px 18px;box-shadow:0 10px 22px -8px rgba(74,78,124,.6);cursor:pointer" style-hover="background:#3D4169">
+<span style="font:400 18px/1 'Instrument Sans',sans-serif;color:#FFFFFF">+</span>
+<span style="font:600 14px/1 'Instrument Sans',sans-serif;color:#FFFFFF">Додати</span>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:4px;border:1.6px solid #A0A0A9"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#A0A0A9">Стек</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:4px;background:#4A4E7C"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#4A4E7C">Календар</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:50%;border:1.6px solid #A0A0A9"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#A0A0A9">Радник</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:50% 50% 50% 4px;border:1.6px solid #A0A0A9"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#A0A0A9">Профіль</span></div>
+</div>
+<div style="height:24px;flex:none;display:flex;align-items:center;justify-content:center;background:#FBFBF9"><div style="width:134px;height:5px;border-radius:3px;background:rgba(23,23,27,.2)"></div></div>
+</div>
+</div>
+
+<div style="flex:none;display:flex;flex-direction:column;gap:10px">
+<div style="font:500 11px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.05em">04 · РІК <span style="color:#B9B9C0">— місяці клікаються</span></div>
+<div style="width:390px;height:844px;background:#F7F6F3;border-radius:42px;border:1px solid rgba(23,23,27,.14);box-shadow:0 20px 44px -20px rgba(23,23,27,.3);overflow:hidden;display:flex;flex-direction:column">
+<div style="height:50px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 5px;font:600 14px/1 'Instrument Sans',sans-serif">
+<span>16:20</span>
+<span style="display:flex;gap:5px;align-items:flex-end">
+<span style="display:flex;gap:2px;align-items:flex-end"><span style="width:3px;height:5px;background:#17171B;border-radius:1px"></span><span style="width:3px;height:8px;background:#17171B;border-radius:1px"></span><span style="width:3px;height:11px;background:#17171B;border-radius:1px"></span></span>
+<span style="width:22px;height:11px;border:1.5px solid #17171B;border-radius:3px;padding:1.5px;display:block"><span style="display:block;width:72%;height:100%;background:#17171B;border-radius:1px"></span></span>
+</span>
+</div>
+<div style="flex:none;padding:6px 20px 14px">
+<div style="font:600 25px/1.1 'Instrument Sans',sans-serif;letter-spacing:-.02em">Планувальник</div>
+<div style="font:400 13px/1.4 'Instrument Sans',sans-serif;color:#8E8E99;margin-top:4px">2026 · 12 місяців</div>
+<div style="display:flex;gap:1px;background:rgba(23,23,27,.09);border-radius:10px;padding:2px;margin-top:14px">
+<div style="flex:1;text-align:center;padding:9px;border-radius:8px;font:500 13px/1 'Instrument Sans',sans-serif;background:#FFFFFF;color:#17171B">Рік</div>
+<div style="flex:1;text-align:center;padding:9px;border-radius:8px;font:500 13px/1 'Instrument Sans',sans-serif;color:#5C5C66">Цикли</div>
+</div>
+</div>
+<div style="flex:1;overflow:auto;padding:0 20px 84px">
+<div style="display:flex;align-items:center;gap:9px;padding:12px 14px;border-radius:12px;background:{{ peakBg }};margin-bottom:16px">
+<span style="font:500 13.5px/1.35 'Instrument Sans',sans-serif;color:{{ peakFg }};flex:1">{{ peakLabel }}</span>
+<span style="font:400 11.5px/1 'Instrument Sans',sans-serif;color:{{ peakFg }};white-space:nowrap">{{ peakCount }}</span>
+</div>
+
+<div style="background:#FFFFFF;border:1px solid rgba(23,23,27,.09);border-radius:16px;padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+<sc-for list="{{ monthCards }}" as="m" hint-placeholder-count="12">
+<div onClick="{{ m.pick }}" style="background:{{ m.bg }};border:{{ m.width }} solid {{ m.border }};border-radius:11px;padding:9px 8px 10px;cursor:pointer;box-sizing:border-box">
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:4px">
+<span style="font:600 10.5px/1 'JetBrains Mono',monospace;letter-spacing:.04em">{{ m.label }}</span>
+<span style="font:500 10.5px/1 'JetBrains Mono',monospace;color:{{ m.countFg }}">{{ m.count }}</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:3px;margin-top:9px">
+<sc-for list="{{ m.rows }}" as="r" hint-placeholder-count="7">
+<div style="height:4px;border-radius:2px;background:#F0EFEA;overflow:hidden"><div style="height:4px;border-radius:2px;width:{{ r.width }};background:{{ r.bg }}"></div></div>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+
+<div style="display:flex;flex-wrap:wrap;gap:10px 14px;margin-top:14px;padding:0 2px">
+<sc-for list="{{ yearLegend }}" as="l" hint-placeholder-count="7">
+<span style="display:flex;align-items:center;gap:6px;font:400 11.5px/1 'Instrument Sans',sans-serif;color:#5C5C66">
+<span style="display:flex"><span style="width:9px;height:7px;border-radius:4px 0 0 4px;background:{{ l.color }}"></span><span style="width:9px;height:7px;border-radius:0 4px 4px 0;background:{{ l.light }}"></span></span>{{ l.short }}
+</span>
+</sc-for>
+<span style="font:400 11.5px/1 'Instrument Sans',sans-serif;color:#A0A0A9">світліше = заплановано</span>
+</div>
+
+<div style="background:#FFFFFF;border:1px solid rgba(23,23,27,.09);border-radius:16px;padding:16px;margin-top:14px">
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:13px">
+<span style="font:600 11px/1 'JetBrains Mono',monospace;letter-spacing:.07em">{{ monthTitle }}</span>
+<span style="font:400 11px/1 'JetBrains Mono',monospace;color:#A0A0A9">{{ monthMeta }}</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:13px">
+<sc-for list="{{ monthRows }}" as="r" hint-placeholder-count="6">
+<div style="display:flex;align-items:flex-start;gap:11px">
+<span style="width:9px;height:9px;border-radius:3px;background:{{ r.dot }};flex:none;margin-top:4px"></span>
+<span style="flex:1;min-width:0"><span style="display:block;font:500 14px/1.3 'Instrument Sans',sans-serif">{{ r.name }}</span><span style="display:block;font:400 11.5px/1.4 'Instrument Sans',sans-serif;color:#8E8E99;margin-top:3px">{{ r.hint }}</span></span>
+<span style="font:400 11.5px/1 'Instrument Sans',sans-serif;color:{{ r.stateFg }};white-space:nowrap;margin-top:2px">{{ r.state }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="font:400 11.5px/1.5 'Instrument Sans',sans-serif;color:#A0A0A9;margin-top:16px;padding:0 4px;text-wrap:pretty">Рік показує, як цикли накладаються один на одний. Червоне число в місяці означає перевищення нашої межі у 5 речовин одночасно.</div>
+</div>
+<div style="flex:none;position:relative;border-top:1px solid rgba(23,23,27,.08);background:#FBFBF9;padding:10px 22px 0;display:flex;justify-content:space-between">
+<div style="position:absolute;right:20px;top:-64px;display:flex;align-items:center;gap:9px;background:#4A4E7C;border-radius:26px;padding:14px 18px;box-shadow:0 10px 22px -8px rgba(74,78,124,.6);cursor:pointer" style-hover="background:#3D4169">
+<span style="font:400 18px/1 'Instrument Sans',sans-serif;color:#FFFFFF">+</span>
+<span style="font:600 14px/1 'Instrument Sans',sans-serif;color:#FFFFFF">Додати</span>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:4px;border:1.6px solid #A0A0A9"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#A0A0A9">Стек</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:4px;background:#4A4E7C"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#4A4E7C">Календар</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:50%;border:1.6px solid #A0A0A9"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#A0A0A9">Радник</span></div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;width:66px"><span style="width:16px;height:16px;border-radius:50% 50% 50% 4px;border:1.6px solid #A0A0A9"></span><span style="font:500 10px/1 'Instrument Sans',sans-serif;color:#A0A0A9">Профіль</span></div>
+</div>
+<div style="height:24px;flex:none;display:flex;align-items:center;justify-content:center;background:#FBFBF9"><div style="width:134px;height:5px;border-radius:3px;background:rgba(23,23,27,.2)"></div></div>
+</div>
+</div>
+
+<div style="flex:none;display:flex;flex-direction:column;gap:10px">
+<div style="font:500 11px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.05em">05 · РОЗКЛАД ПРИЙОМУ <span style="color:#B9B9C0">— слоти, цикл і пауза працюють</span></div>
+<div style="width:390px;height:844px;background:#F7F6F3;border-radius:42px;border:1px solid rgba(23,23,27,.14);box-shadow:0 20px 44px -20px rgba(23,23,27,.3);overflow:hidden;display:flex;flex-direction:column">
+<div style="height:50px;flex:none;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 5px;font:600 14px/1 'Instrument Sans',sans-serif">
+<span>16:20</span>
+<span style="display:flex;gap:5px;align-items:flex-end">
+<span style="display:flex;gap:2px;align-items:flex-end"><span style="width:3px;height:5px;background:#17171B;border-radius:1px"></span><span style="width:3px;height:8px;background:#17171B;border-radius:1px"></span><span style="width:3px;height:11px;background:#17171B;border-radius:1px"></span></span>
+<span style="width:22px;height:11px;border:1.5px solid #17171B;border-radius:3px;padding:1.5px;display:block"><span style="display:block;width:72%;height:100%;background:#17171B;border-radius:1px"></span></span>
+</span>
+</div>
+<div style="flex:none;padding:4px 20px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(23,23,27,.07)">
+<span style="display:flex;align-items:center;gap:12px"><span style="font:400 22px/1 'Instrument Sans',sans-serif;color:#5C5C66">‹</span><span style="font:600 15px/1 'Instrument Sans',sans-serif">Розклад прийому</span></span>
+<sc-if value="{{ schedPaused }}" hint-placeholder-val="{{ false }}">
+<span style="font:500 9.5px/1 'JetBrains Mono',monospace;color:#5C5C66;background:#F2F1EE;padding:6px 8px;border-radius:5px;letter-spacing:.04em">НА ПАУЗІ</span>
+</sc-if>
+</div>
+<div style="flex:1;overflow:auto;padding:18px 20px 24px">
+
+<div style="font:500 10.5px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.06em">ДОБАВКА З ВАШОГО СПИСКУ</div>
+<div style="position:relative;margin-top:11px">
+<select value="{{ schedPick }}" onChange="{{ onPick }}" style="width:100%;appearance:none;border:1px solid rgba(23,23,27,.13);background:#FFFFFF;border-radius:12px;padding:15px 42px 15px 14px;font:500 15px/1.2 'Instrument Sans',sans-serif;color:#17171B;outline:none;cursor:pointer">
+<sc-for list="{{ schedOptions }}" as="o" hint-placeholder-count="10">
+<option value="{{ o.name }}">{{ o.label }}</option>
+</sc-for>
+</select>
+<span style="position:absolute;right:15px;top:50%;margin-top:-3px;width:9px;height:9px;border-right:1.8px solid #5C5C66;border-bottom:1.8px solid #5C5C66;transform:rotate(45deg);pointer-events:none"></span>
+</div>
+<div style="font:400 12px/1.5 'Instrument Sans',sans-serif;color:#8E8E99;margin-top:9px;padding:0 2px">{{ schedPickDose }} — форма й дозування з картки добавки</div>
+
+<div style="font:500 10.5px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.06em;margin-top:22px">ПЕРІОДИЧНІСТЬ</div>
+<div style="display:flex;gap:1px;background:rgba(23,23,27,.09);border-radius:10px;padding:2px;margin-top:11px">
+<div onClick="{{ setCyclic }}" style="flex:1;text-align:center;padding:10px;border-radius:8px;font:500 13.5px/1 'Instrument Sans',sans-serif;cursor:pointer;background:{{ cyclicBg }};color:{{ cyclicFg }}">Циклічно</div>
+<div onClick="{{ setOnce }}" style="flex:1;text-align:center;padding:10px;border-radius:8px;font:500 13.5px/1 'Instrument Sans',sans-serif;cursor:pointer;background:{{ onceBg }};color:{{ onceFg }}">Разовий курс</div>
+</div>
+
+<div style="background:#FFFFFF;border:1px solid rgba(23,23,27,.09);border-radius:16px;padding:17px;margin-top:11px">
+<sc-if value="{{ isOnce }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;gap:9px">
+<div style="flex:1"><div style="font:400 11.5px/1 'Instrument Sans',sans-serif;color:#8E8E99">Старт</div><div style="margin-top:7px;border:1px solid rgba(23,23,27,.13);border-radius:11px;padding:12px 13px;font:500 14px/1 'JetBrains Mono',monospace">14.08.2026</div></div>
+<div style="flex:1"><div style="font:400 11.5px/1 'Instrument Sans',sans-serif;color:#8E8E99">Кінець</div><div style="margin-top:7px;border:1px solid rgba(23,23,27,.13);border-radius:11px;padding:12px 13px;font:500 14px/1 'JetBrains Mono',monospace">30.09.2026</div></div>
+</div>
+</sc-if>
+<sc-if value="{{ isCyclic }}" hint-placeholder-val="{{ true }}">
+<div>
+<div style="font:400 11.5px/1 'Instrument Sans',sans-serif;color:#8E8E99">Старт</div>
+<div style="margin-top:7px;border:1px solid rgba(23,23,27,.13);border-radius:11px;padding:12px 13px;font:500 14px/1 'JetBrains Mono',monospace">14.08.2026</div>
+<div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:16px">
+<span style="font:400 13px/1 'Instrument Sans',sans-serif">Довжина циклу</span>
+<span style="font:500 13px/1 'JetBrains Mono',monospace;color:#4A4E7C">{{ onLabel }}</span>
+</div>
+<input type="range" min="7" max="112" step="7" value="{{ schedOn }}" onChange="{{ setOn }}" style="width:100%;margin-top:9px;accent-color:#4A4E7C">
+<div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:14px">
+<span style="font:400 13px/1 'Instrument Sans',sans-serif">Перерва</span>
+<span style="font:500 13px/1 'JetBrains Mono',monospace;color:#4A4E7C">{{ offLabel }}</span>
+</div>
+<input type="range" min="0" max="84" step="7" value="{{ schedOff }}" onChange="{{ setOff }}" style="width:100%;margin-top:9px;accent-color:#4A4E7C">
+</div>
+</sc-if>
+<div style="display:flex;gap:2px;margin-top:16px">
+<sc-for list="{{ cycleBars }}" as="b" hint-placeholder-count="28">
+<div style="flex:1;height:8px;border-radius:2px;background:{{ b.bg }}"></div>
+</sc-for>
+</div>
+<div style="font:400 12px/1.5 'Instrument Sans',sans-serif;color:#8E8E99;margin-top:10px;text-wrap:pretty">{{ cycleSummary }}</div>
+</div>
+
+<div style="display:flex;align-items:baseline;justify-content:space-between;margin-top:22px">
+<span style="font:500 10.5px/1 'JetBrains Mono',monospace;color:#8E8E99;letter-spacing:.06em">ЧАС ПРИЙОМУ</span>
+<span style="font:400 11px/1 'JetBrains Mono',monospace;color:#A0A0A9">{{ slotSummary }}</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:7px;margin-top:11px">
+<sc-for list="{{ slots }}" as="s" hint-placeholder-count="3">
+<div style="background:#FFFFFF;border:1px solid rgba(23,23,27,.09);border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:11px">
+<input type="time" value="{{ s.time }}" onChange="{{ s.onTime }}" style="border:none;background:transparent;font:500 15px/1 'JetBrains Mono',monospace;color:#17171B;outline:none;width:82px;padding:0">
+<span style="flex:1;font:400 12.5px/1 'Instrument Sans',sans-serif;color:#8E8E99">{{ s.dose }}</span>
+<span onClick="{{ s.remove }}" style="width:28px;height:28px;border-radius:50%;background:#F2F1EE;display:flex;align-items:center;justify-content:center;font:400 16px/1 'Instrument Sans',sans-serif;color:{{ s.removeFg }};cursor:pointer">−</span>
+</div>
+</sc-for>
+</div>
+<div onClick="{{ addSlot }}" style="margin-top:8px;padding:12px;border:1px dashed rgba(74,78,124,.4);border-radius:12px;text-align:center;font:500 13.5px/1 'Instrument Sans',sans-serif;color:{{ addSlotFg }};cursor:pointer">+ Додати слот часу</div>
+<div style="font:400 12px/1.5 'Instrument Sans',sans-serif;color:#8E8E99;margin-top:11px;padding:0 2px;text-wrap:pretty">{{ spacingNote }}</div>
+</div>
+
+<div style="flex:none;padding:12px 20px;border-top:1px solid rgba(23,23,27,.07);background:#FBFBF9">
+<div style="padding:15px;border-radius:13px;background:#4A4E7C;text-align:center;font:600 15px/1 'Instrument Sans',sans-serif;color:#FFFFFF;cursor:pointer" style-hover="background:#3D4169">{{ saveLabel }}</div>
+<div style="display:flex;gap:8px;margin-top:8px">
+<div onClick="{{ togglePause }}" style="flex:1;padding:13px;border-radius:12px;border:1px solid rgba(23,23,27,.14);background:#FFFFFF;text-align:center;font:600 13.5px/1 'Instrument Sans',sans-serif;cursor:pointer" style-hover="background:#F2F1EE">{{ pauseLabel }}</div>
+<div style="flex:1;padding:13px;border-radius:12px;border:1px solid rgba(168,68,60,.3);background:#FFFFFF;text-align:center;font:600 13.5px/1 'Instrument Sans',sans-serif;color:#A8443C;cursor:pointer" style-hover="background:#F8EBE8">Видалити</div>
+</div>
+<div style="font:400 11px/1.45 'Instrument Sans',sans-serif;color:#A0A0A9;margin-top:10px;text-align:center;text-wrap:pretty">{{ saveHint }}</div>
+</div>
+<div style="height:24px;flex:none;display:flex;align-items:center;justify-content:center;background:#FBFBF9"><div style="width:134px;height:5px;border-radius:3px;background:rgba(23,23,27,.2)"></div></div>
+</div>
+</div>
+
+</div>
+</div>
+
+<div style="max-width:900px;font:400 13px/1.65 'Instrument Sans',sans-serif;color:#5C5C66;border-top:1px solid rgba(23,23,27,.12);padding-top:22px;text-wrap:pretty">
+<span style="display:block;font:600 13px/1 'Instrument Sans',sans-serif;color:#17171B;margin-bottom:10px">Далі можна</span>
+Зібрати з цих екранів клікабельний флоу (стек → розклад → календар → цикли); опрацювати стани календаря для 3×/день (пропущено, зсунуто, «прийняв пізніше»); додати екран добавки без оцінок; повернути взаємодії, радника й підписку в наступних версіях.
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;riskLabels&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Спокійно / Увага / Ризик&quot;,&quot;Низький / Середній / Високий&quot;],&quot;default&quot;:&quot;Спокійно / Увага / Ризик&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Копірайт&quot;},&quot;showFreeLimit&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;План&quot;}}">
+const T = {
+  calm: { fg: '#3F7A6A', bg: '#E8F1ED' },
+  warn: { fg: '#B07A22', bg: '#FAF1E0' },
+  risk: { fg: '#A8443C', bg: '#F8EBE8' }
+};
+const STATUS = {
+  active: { label: 'АКТИВНА', fg: '#3F7A6A', bg: '#E8F1ED' },
+  paused: { label: 'ПАУЗА', fg: '#5C5C66', bg: '#F2F1EE' },
+  planned: { label: 'ЗАПЛАНОВАНО', fg: '#4A4E7C', bg: '#EDEDF4' },
+  fresh: { label: 'ЩОЙНО ДОДАНО', fg: '#4A4E7C', bg: '#EDEDF4' }
+};
+const BASE_STACK = [
+  { name: 'Зверобій', dose: 'екстракт 300 мг · капсули', tone: 'risk', score: 41, status: 'active', schedule: '2×/день', flag: 'взаємодія з контрацептивами' },
+  { name: 'Магній бісглицинат', dose: '400 мг · капсули', tone: 'warn', score: 88, status: 'active', schedule: '1×/день · 22:00', flag: 'розвести з сертраліном' },
+  { name: 'Хондропротектор', dose: 'глюкозамін 500 + хондроїтин 400', tone: 'calm', score: 78, status: 'active', schedule: '3×/день', flag: '' },
+  { name: 'Вітамін D3', dose: '2000 МО · краплі', tone: 'calm', score: 92, status: 'active', schedule: '1×/день · ранок', flag: '' },
+  { name: 'Омега-3', dose: 'EPA 500 / DHA 250', tone: 'calm', score: 90, status: 'active', schedule: '1×/день · день', flag: '' },
+  { name: 'Цинк піколінат', dose: '15 мг · таблетки', tone: 'calm', score: 84, status: 'paused', schedule: 'цикл 8 тижнів', flag: 'наступний цикл через 12 днів' },
+  { name: 'Куркумін', dose: '500 мг + піперин', tone: 'calm', score: 80, status: 'planned', schedule: '2×/день', flag: 'старт 24 серпня' }
+];
+const CATALOG = [
+  { name: 'Ашваганда KSM-66', note: 'адаптоген · 1 взаємодія з вашим профілем', tone: 'warn', score: 63, schedule: '1×/день · вечір' },
+  { name: 'Креатин моногідрат', note: 'широка доказова база', tone: 'calm', score: 91, schedule: '1×/день' },
+  { name: 'Мелатонін 3 мг', note: 'сон · перевірте з сертраліном', tone: 'warn', score: 58, schedule: '1×/день · 22:30' },
+  { name: 'NMN 250 мг', note: 'даних мало, оцінка попередня', tone: 'calm', score: 52, schedule: '1×/день · ранок' },
+  { name: 'Вітамін B12 метилкобаламін', note: 'форма з кращим засвоєнням', tone: 'calm', score: 89, schedule: '1×/день · ранок' },
+  { name: 'Коензим Q10 убіквінол', note: 'жиророзчинний, приймати з їжею', tone: 'calm', score: 86, schedule: '1×/день · день' },
+  { name: 'Йод 150 мкг', note: 'обережно зі щитоподібною залозою', tone: 'warn', score: 61, schedule: '1×/день' },
+  { name: 'Залізо бісглицинат', note: 'не разом з кальцієм і цинком', tone: 'warn', score: 70, schedule: '1×/день · ранок' }
+];
+const DOSES = [
+  { block: 0, id: 'd3', name: 'Вітамін D3', dose: '2000 МО', note: 'з жиром' },
+  { block: 0, id: 'chond1', name: 'Хондропротектор', dose: '1 капс.', cycle: 'доза 1 з 3' },
+  { block: 0, id: 'hyp1', name: 'Зверобій', dose: '300 мг', cycle: 'доза 1 з 2', warn: 'взаємодія з КОК', warnTone: 'risk' },
+  { block: 1, id: 'chond2', name: 'Хондропротектор', dose: '1 капс.', cycle: 'доза 2 з 3' },
+  { block: 1, id: 'omega', name: 'Омега-3', dose: '750 мг', note: 'з їжею' },
+  { block: 2, id: 'chond3', name: 'Хондропротектор', dose: '1 капс.', cycle: 'доза 3 з 3' },
+  { block: 2, id: 'hyp2', name: 'Зверобій', dose: '300 мг', cycle: 'доза 2 з 2', warn: 'взаємодія з КОК', warnTone: 'risk' },
+  { block: 3, id: 'mag', name: 'Магній бісглицинат', dose: '400 мг', note: 'не разом із цинком', warn: '2 год після сертраліну', warnTone: 'warn' }
+];
+const BLOCK_META = [
+  { time: '08:00', label: 'Ранок', tag: 'зі сніданком' },
+  { time: '13:00', label: 'День', tag: 'з обідом' },
+  { time: '19:00', label: 'Вечір', tag: 'з вечерею' },
+  { time: '22:00', label: 'Ніч', tag: 'перед сном' }
+];
+
+const SPAN = 122;
+const MAX_SLOTS = 5;
+const MONTH_LEN = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const MONTH_START = MONTH_LEN.reduce((acc, n) => (acc.push(acc[acc.length - 1] + n), acc), [0]);
+const TODAY = 224;
+const WIN_A = 212;
+// Single source of truth: day-of-year segments for 2026. Both the gantt and the year matrix derive from this.
+const PLAN = [
+  { name: 'Вітамін D3', short: 'D3', color: '#B08A2A', hint: 'постійно, без циклів', segs: [[0, 364]] },
+  { name: 'Омега-3', short: 'Омега-3', color: '#2F3457', hint: 'постійно, без циклів', segs: [[0, 364]] },
+  { name: 'Хондропротектор', short: 'Хондро', color: '#3F7A6A', hint: '2 місяці через 1', segs: [[31, 89], [120, 180], [212, 272], [304, 364]] },
+  { name: 'Магній бісглицинат', short: 'Магній', color: '#6B6FA8', hint: '2 місяці через 1', segs: [[43, 102], [132, 193], [224, 286], [316, 364]] },
+  { name: 'Зверобій', short: 'Зверобій', color: '#C4685E', hint: 'є взаємодія рівня «ризик»', risk: true, segs: [[201, 242]] },
+  { name: 'Цинк піколінат', short: 'Цинк', color: '#2F7A85', hint: 'цикл 8 тижнів, старт 25 серп', segs: [[59, 114], [236, 291]] },
+  { name: 'Куркумін', short: 'Куркумін', color: '#C07A3A', hint: 'цикл 8 тижнів, старт 24 серп', segs: [[235, 290]] }
+];
+function segKind(r, s) { return s[0] > TODAY ? 'planned' : (r.risk ? 'risk' : 'active'); }
+function overlapDays(s, a, b) { return Math.max(0, Math.min(s[1], b) - Math.max(s[0], a) + 1); }
+const MONTHS = ['СІЧ', 'ЛЮТ', 'БЕР', 'КВІ', 'ТРА', 'ЧЕР', 'ЛИП', 'СЕР', 'ВЕР', 'ЖОВ', 'ЛИС', 'ГРУ'];
+const MONTHS_FULL = ['СІЧЕНЬ', 'ЛЮТИЙ', 'БЕРЕЗЕНЬ', 'КВІТЕНЬ', 'ТРАВЕНЬ', 'ЧЕРВЕНЬ', 'ЛИПЕНЬ', 'СЕРПЕНЬ', 'ВЕРЕСЕНЬ', 'ЖОВТЕНЬ', 'ЛИСТОПАД', 'ГРУДЕНЬ'];
+const MONTH_NOM = ['січень', 'лютий', 'березень', 'квітень', 'травень', 'червень', 'липень', 'серпень', 'вересень', 'жовтень', 'листопад', 'грудень'];
+const NOW_MONTH = 7;
+const SEG_STYLE = {
+  active: { bg: '#4A4E7C', border: '#4A4E7C' },
+  planned: { bg: 'repeating-linear-gradient(115deg,rgba(74,78,124,.18) 0 4px,rgba(74,78,124,.06) 4px 8px)', border: 'rgba(74,78,124,.45)' },
+  risk: { bg: '#A8443C', border: '#A8443C' }
+};
+const NEXT_SLOT = ['08:00', '13:00', '19:00', '22:00', '10:30', '16:00'];
+function plural(n, forms) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return forms[0];
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return forms[1];
+  return forms[2];
+}
+const WEEKS = ['тиждень', 'тижні', 'тижнів'];
+const CYCLES = ['цикл', 'цикли', 'циклів'];
+const SUBST = ['речовина', 'речовини', 'речовин'];
+function nw(days) { const n = Math.round(days / 7); return n + ' ' + plural(n, WEEKS); }
+function fmtDay(o) {
+  if (o < 31) return (o + 1) + ' серп';
+  if (o < 61) return (o - 30) + ' вер';
+  if (o < 92) return (o - 60) + ' жов';
+  return (o - 91) + ' лис';
+}
+
+class Component extends DCLogic {
+  state = {
+    taken: { d3: true, chond1: true, hyp1: true, chond2: true },
+    addOpen: false, addTab: 'search', query: '', added: [],
+    expanded: false, consent: true, billing: 'annual', week: 1,
+    schedPick: 'Хондропротектор', schedMode: 'cyclic', schedOn: 56, schedOff: 28,
+    schedSlots: [{ t: '08:00', d: '1 капс.' }, { t: '13:00', d: '1 капс.' }, { t: '19:00', d: '1 капс.' }],
+    schedPaused: false, yearMonth: NOW_MONTH
+  };
+
+  setSlot(i, t) {
+    this.setState(s => {
+      const next = s.schedSlots.slice();
+      next[i] = Object.assign({}, next[i], { t: t });
+      next.sort((a, b) => a.t.localeCompare(b.t));
+      return { schedSlots: next };
+    });
+  }
+
+  tog(id) { this.setState(s => ({ taken: Object.assign({}, s.taken, { [id]: !s.taken[id] }) })); }
+
+  renderVals() {
+    const hideExtra = this.props.showFreeLimit === true;
+    const labelSet = this.props.riskLabels === 'Низький / Середній / Високий'
+      ? { calm: 'НИЗЬКИЙ', warn: 'СЕРЕДНІЙ', risk: 'ВИСОКИЙ' }
+      : { calm: 'СПОКІЙНО', warn: 'УВАГА', risk: 'РИЗИК' };
+
+    const all = this.state.added.concat(BASE_STACK);
+    const stackItems = (hideExtra ? all.slice(0, 3) : all).map(i => {
+      const t = T[i.tone], st = STATUS[i.status];
+      return {
+        name: i.name, dose: i.dose, score: i.score, schedule: i.schedule, flag: i.flag,
+        fg: t.fg, bg: t.bg, riskLabel: labelSet[i.tone],
+        status: st.label, statusFg: st.fg, statusBg: st.bg
+      };
+    });
+    const activeCount = all.filter(i => i.status === 'active' || i.status === 'fresh').length;
+
+    const q = this.state.query.trim().toLowerCase();
+    const results = CATALOG.filter(c => !q || c.name.toLowerCase().includes(q)).slice(0, 5).map(c => ({
+      name: c.name, note: c.note, score: c.score, fg: T[c.tone].fg,
+      add: () => this.setState(s => ({
+        added: [{ name: c.name, dose: c.schedule, tone: c.tone, score: c.score, status: 'fresh', schedule: c.schedule, flag: '' }].concat(s.added),
+        addOpen: false, query: ''
+      }))
+    }));
+
+    const taken = this.state.taken;
+    const takenCount = DOSES.filter(d => taken[d.id]).length;
+    const pct = Math.round((takenCount / DOSES.length) * 100);
+    const nowBlock = 2;
+
+    const blocks = BLOCK_META.map((m, bi) => {
+      const items = DOSES.filter(d => d.block === bi).map(d => {
+        const on = !!taken[d.id];
+        const missed = !on && bi < nowBlock;
+        const wt = d.warnTone ? T[d.warnTone] : T.warn;
+        return {
+          name: d.name, dose: d.dose, cycle: d.cycle || '', note: d.note || '',
+          warn: missed ? 'не прийнято вчасно' : (d.warn || ''),
+          warnFg: missed ? T.warn.fg : wt.fg, warnBg: missed ? T.warn.bg : wt.bg,
+          check: on ? '✓' : '',
+          boxBorder: on ? '#3F7A6A' : 'rgba(23,23,27,.22)',
+          boxBg: on ? '#3F7A6A' : '#FFFFFF',
+          rowBg: on ? '#FBFBF9' : '#FFFFFF',
+          rowBorder: missed ? 'rgba(176,122,34,.4)' : 'rgba(23,23,27,.09)',
+          nameFg: on ? '#8E8E99' : '#17171B',
+          strike: on ? 'line-through' : 'none',
+          toggle: () => this.tog(d.id)
+        };
+      });
+      const done = items.filter(i => i.check === '✓').length;
+      const isNow = bi === nowBlock;
+      return {
+        time: m.time, label: m.label,
+        timeFg: isNow ? '#4A4E7C' : '#17171B',
+        tag: done === items.length ? 'усе прийнято' : (bi < nowBlock ? done + ' з ' + items.length : m.tag),
+        tagFg: done === items.length ? T.calm.fg : (bi < nowBlock ? T.warn.fg : '#8E8E99'),
+        tagBg: done === items.length ? T.calm.bg : (bi < nowBlock ? T.warn.bg : '#F2F1EE'),
+        items
+      };
+    });
+
+    const weekDays = [
+      { dow: 'ПН', num: '10' }, { dow: 'ВТ', num: '11' }, { dow: 'СР', num: '12' },
+      { dow: 'ЧТ', num: '13', today: true }, { dow: 'ПТ', num: '14' }, { dow: 'СБ', num: '15' }, { dow: 'НД', num: '16' }
+    ].map((d, i) => ({
+      dow: d.dow, num: d.num,
+      bg: d.today ? '#4A4E7C' : '#FFFFFF',
+      border: d.today ? '#4A4E7C' : 'rgba(23,23,27,.09)',
+      fg: d.today ? '#FFFFFF' : '#17171B',
+      fg2: d.today ? 'rgba(255,255,255,.7)' : '#A0A0A9',
+      dot: d.today ? 'rgba(255,255,255,.6)' : (i < 3 ? '#3F7A6A' : '#DEDDD7')
+    }));
+
+    const weeks = [];
+    for (let i = 0; i < 18; i++) {
+      const a = i * 7, b = Math.min(a + 6, SPAN - 1);
+      const names = PLAN.filter(r => r.segs.some(s => overlapDays(s, a + WIN_A, b + WIN_A) > 0)).map(r => r.name);
+      weeks.push({ i: i, a: a, b: b, load: names.length, names: names, range: fmtDay(a) + ' – ' + fmtDay(b) });
+    }
+    const sel = weeks[this.state.week], cur = weeks[1];
+    sel.pips = [];
+    for (let p = 0; p < Math.max(MAX_SLOTS, sel.load); p++) {
+      sel.pips.push({
+        bg: p >= MAX_SLOTS ? T.risk.fg : (p < sel.load ? '#4A4E7C' : '#FFFFFF'),
+        border: p >= MAX_SLOTS ? T.risk.fg : (p < sel.load ? '#4A4E7C' : 'rgba(23,23,27,.2)')
+      });
+    }
+    if (sel.load <= 3) {
+      sel.verdict = 'КОМФОРТНО'; sel.vFg = T.calm.fg; sel.vBg = T.calm.bg;
+      sel.note = 'До трьох речовин одночасно легко відстежувати: якщо щось піде не так, зрозуміло, що саме прибрати.';
+    } else if (sel.load <= MAX_SLOTS) {
+      sel.verdict = 'МЕЖА'; sel.vFg = T.warn.fg; sel.vBg = T.warn.bg;
+      sel.note = 'П\'ять — наша межа за замовчуванням. Вище стає важко відрізнити, що дає ефект, а що — побічні відчуття.';
+    } else {
+      sel.verdict = 'ПОНАД МЕЖУ'; sel.vFg = T.risk.fg; sel.vBg = T.risk.bg;
+      sel.note = 'Цього тижня перетинаються ' + sel.load + ' ' + plural(sel.load, CYCLES) + '. Варто зсунути старт частини з них або обговорити такий обсяг із лікарем — зокрема через сумарне навантаження жиророзчинними формами.';
+    }
+
+    const schedList = BASE_STACK.map(i => ({ name: i.name, dose: i.dose }))
+      .concat(CATALOG.slice(0, 3).map(c => ({ name: c.name, dose: c.schedule })));
+    const cyclic = this.state.schedMode === 'cyclic';
+    const period = this.state.schedOn + this.state.schedOff;
+    const bars = [];
+    if (cyclic) {
+      for (let d = 0; d < 112; d += 4) {
+        bars.push({ bg: (d % period) < this.state.schedOn ? '#4A4E7C' : '#E4E3DD' });
+      }
+    } else {
+      for (let d = 0; d < 112; d += 4) bars.push({ bg: d < 48 ? '#4A4E7C' : '#E4E3DD' });
+    }
+    const times = this.state.schedSlots.map(s => +s.t.slice(0, 2) * 60 + +s.t.slice(3));
+    let minGap = 24 * 60;
+    for (let i = 1; i < times.length; i++) minGap = Math.min(minGap, times[i] - times[i - 1]);
+    const spacing = times.length < 2
+      ? 'Один слот на день — розводити нічого не потрібно.'
+      : (minGap < 240
+        ? 'Найменший інтервал ' + Math.floor(minGap / 60) + ' год ' + (minGap % 60) + ' хв. Для глюкозаміну це нормально, але з мінералами радимо тримати 4 години.'
+        : 'Інтервали від ' + Math.floor(minGap / 60) + ' год — достатньо, щоб слоти не конкурували за засвоєння.');
+
+    const cell = (r, m) => {
+      const a = MONTH_START[m], b = a + MONTH_LEN[m] - 1;
+      let days = 0, plannedDays = 0;
+      r.segs.forEach(s => {
+        const d = overlapDays(s, a, b);
+        if (!d) return;
+        days += d;
+        if (segKind(r, s) === 'planned' || a > TODAY) plannedDays += d;
+      });
+      const frac = days / MONTH_LEN[m];
+      return { frac: frac, full: frac >= 0.85, planned: days > 0 && plannedDays === days };
+    };
+    const monthLoad = MONTHS.map((_, m) => PLAN.filter(r => cell(r, m).frac > 0).length);
+    const maxLoad = Math.max.apply(null, monthLoad);
+    let peak = monthLoad.indexOf(maxLoad);
+    monthLoad.forEach((n, m) => {
+      if (n === maxLoad && Math.abs(m - NOW_MONTH) < Math.abs(peak - NOW_MONTH)) peak = m;
+    });
+    const peakTies = monthLoad.filter(n => n === maxLoad).length;
+    const ym = this.state.yearMonth;
+    const monthCards = MONTHS.map((label, m) => {
+      const sel = m === ym;
+      return {
+        label: label, count: monthLoad[m],
+        bg: sel ? '#F2F2F7' : '#FBFBF9',
+        border: sel ? '#4A4E7C' : 'rgba(23,23,27,.09)',
+        width: sel ? '1.6px' : '1px',
+        countFg: monthLoad[m] > MAX_SLOTS ? T.risk.fg : '#A0A0A9',
+        rows: PLAN.map(r => {
+          const c = cell(r, m);
+          return {
+            width: c.frac === 0 ? '0%' : (c.full ? '100%' : Math.max(Math.round(c.frac * 100), 22) + '%'),
+            bg: c.planned ? r.color + '4D' : r.color
+          };
+        }),
+        pick: () => this.setState({ yearMonth: m })
+      };
+    });
+    const monthRows = PLAN.map(r => ({ r: r, c: cell(r, ym) })).filter(x => x.c.frac > 0).map(x => ({
+      name: x.r.name, hint: x.r.hint,
+      dot: x.c.planned ? x.r.color + '80' : x.r.color,
+      state: x.c.planned ? 'заплановано' : (x.c.full ? 'приймаю' : 'частина місяця'),
+      stateFg: x.c.planned ? '#A0A0A9' : '#5C5C66'
+    }));
+
+    const annual = this.state.billing === 'annual';
+    return {
+      stackSummary: all.length + ' ' + plural(all.length, ['добавка', 'добавки', 'добавок']) + ' · ' + activeCount + ' ' + plural(activeCount, ['активна', 'активні', 'активних']),
+      stackItems, freeLimited: hideExtra && all.length > 3, lockedCount: Math.max(all.length - 3, 0),
+      addOpen: this.state.addOpen,
+      addClosed: !this.state.addOpen,
+      openAdd: () => this.setState({ addOpen: true, addTab: 'search' }),
+      openCamera: () => this.setState({ addOpen: true, addTab: 'camera' }),
+      closeAdd: () => this.setState({ addOpen: false }),
+      tabSearch: () => this.setState({ addTab: 'search' }),
+      tabCamera: () => this.setState({ addTab: 'camera' }),
+      isSearchTab: this.state.addTab === 'search',
+      isCameraTab: this.state.addTab === 'camera',
+      tabSearchBg: this.state.addTab === 'search' ? '#FFFFFF' : 'transparent',
+      tabSearchFg: this.state.addTab === 'search' ? '#17171B' : '#5C5C66',
+      tabCameraBg: this.state.addTab === 'camera' ? '#FFFFFF' : 'transparent',
+      tabCameraFg: this.state.addTab === 'camera' ? '#17171B' : '#5C5C66',
+      query: this.state.query,
+      onQuery: e => this.setState({ query: e.target.value }),
+      results, noResults: results.length === 0,
+
+      expanded: this.state.expanded,
+      expandChar: this.state.expanded ? '−' : '+',
+      toggleExpanded: () => this.setState(s => ({ expanded: !s.expanded })),
+
+      blocks, weekDays, takenCount, totalDoses: DOSES.length,
+      ringStyle: 'conic-gradient(#3F7A6A ' + pct + '%, #E4E3DD 0)',
+
+      consentCheck: this.state.consent ? '✓' : '',
+      consentBorder: this.state.consent ? 'rgba(74,78,124,.35)' : 'rgba(23,23,27,.13)',
+      consentBoxBorder: this.state.consent ? '#4A4E7C' : 'rgba(23,23,27,.25)',
+      consentBoxBg: this.state.consent ? '#4A4E7C' : '#FFFFFF',
+      toggleConsent: () => this.setState(s => ({ consent: !s.consent })),
+      finishBg: this.state.consent ? '#4A4E7C' : '#DEDDD7',
+      finishFg: this.state.consent ? '#FFFFFF' : '#A0A0A9',
+      finishHint: this.state.consent ? 'Дані можна видалити в будь-який момент у профілі' : 'Щоб продовжити, потрібна згода на обробку даних',
+
+      planRows: PLAN.map(r => ({
+        name: r.name, hint: r.hint,
+        segs: r.segs.filter(s => overlapDays(s, WIN_A, WIN_A + SPAN - 1) > 0).map(s => {
+          const a = Math.max(s[0], WIN_A) - WIN_A, b = Math.min(s[1], WIN_A + SPAN - 1) - WIN_A;
+          const st = SEG_STYLE[segKind(r, s)];
+          return {
+            left: (a / SPAN * 100).toFixed(2) + '%',
+            width: ((b - a + 1) / SPAN * 100).toFixed(2) + '%',
+            bg: st.bg, border: st.border
+          };
+        })
+      })),
+      todayLeft: ((TODAY - WIN_A + 0.5) / SPAN * 100).toFixed(2) + '%',
+      loadWeeks: weeks.map(w => ({
+        h: Math.round(Math.min(w.load, MAX_SLOTS) / MAX_SLOTS * 38) + 'px',
+        over: w.load > MAX_SLOTS ? Math.round((w.load - MAX_SLOTS) / MAX_SLOTS * 38) + 'px' : '0px',
+        bg: w.load > MAX_SLOTS ? T.risk.fg : (w.load > 3 ? T.warn.fg : '#7C80AB'),
+        opacity: w.i === this.state.week ? '1' : '.5',
+        pick: () => this.setState({ week: w.i })
+      })),
+      weekRange: sel.range,
+      weekLoad: sel.load,
+      weekLoadLabel: sel.load + ' з ' + MAX_SLOTS + ' слотів',
+      weekVerdict: sel.verdict, weekVerdictFg: sel.vFg, weekVerdictBg: sel.vBg,
+      weekNote: sel.note,
+      slotPips: sel.pips,
+      weekNames: sel.names,
+      planSummaryFg: cur.load >= MAX_SLOTS ? T.warn.fg : T.calm.fg,
+      planSummaryBg: cur.load >= MAX_SLOTS ? T.warn.bg : T.calm.bg,
+      planSummary: 'Цього тижня одночасно ' + cur.load + ' ' + plural(cur.load, SUBST),
+      freeSlotHint: sel.load < MAX_SLOTS ? 'Вільно ' + (MAX_SLOTS - sel.load) + ' — можна планувати старт' : 'Вільних слотів немає',
+
+      schedOptions: schedList.map(i => ({ name: i.name, label: i.name + ' · ' + i.dose })),
+      onPick: e => this.setState({ schedPick: e.target.value }),
+      schedPick: this.state.schedPick,
+      schedPickDose: (schedList.find(i => i.name === this.state.schedPick) || schedList[0]).dose,
+      isCyclic: cyclic, isOnce: !cyclic,
+      cyclicBg: cyclic ? '#FFFFFF' : 'transparent', cyclicFg: cyclic ? '#17171B' : '#5C5C66',
+      onceBg: !cyclic ? '#FFFFFF' : 'transparent', onceFg: !cyclic ? '#17171B' : '#5C5C66',
+      setCyclic: () => this.setState({ schedMode: 'cyclic' }),
+      setOnce: () => this.setState({ schedMode: 'once' }),
+      schedOn: this.state.schedOn, schedOff: this.state.schedOff,
+      onLabel: nw(this.state.schedOn),
+      offLabel: this.state.schedOff === 0 ? 'без перерви' : nw(this.state.schedOff),
+      setOn: e => this.setState({ schedOn: +e.target.value }),
+      setOff: e => this.setState({ schedOff: +e.target.value }),
+      cycleSummary: cyclic
+        ? nw(this.state.schedOn) + ' прийому, потім ' + (this.state.schedOff === 0 ? 'без перерви' : nw(this.state.schedOff) + ' перерви') + ' — повторюється, поки не вимкнете'
+        : 'Один курс без повторення: 14 серпня — 30 вересня',
+      cycleBars: bars,
+      slots: this.state.schedSlots.map((s, i) => ({
+        time: s.t, dose: s.d,
+        onTime: e => this.setSlot(i, e.target.value),
+        remove: () => this.setState(st => ({ schedSlots: st.schedSlots.filter((_, j) => j !== i) })),
+        canRemove: this.state.schedSlots.length > 1,
+        removeFg: this.state.schedSlots.length > 1 ? '#8E8E99' : '#D8D7D1'
+      })),
+      slotCount: this.state.schedSlots.length,
+      slotSummary: this.state.schedSlots.length === 1 ? '1 раз на день' : this.state.schedSlots.length + ' рази на день',
+      canAddSlot: this.state.schedSlots.length < 6,
+      addSlotFg: this.state.schedSlots.length < 6 ? '#4A4E7C' : '#B9B9C0',
+      addSlot: () => this.setState(s => s.schedSlots.length >= 6 ? null : ({
+        schedSlots: s.schedSlots.concat([{ t: NEXT_SLOT[s.schedSlots.length] || '21:00', d: '1 капс.' }])
+          .sort((a, b) => a.t.localeCompare(b.t))
+      })),
+      spacingNote: spacing,
+      schedPaused: this.state.schedPaused,
+      pauseLabel: this.state.schedPaused ? 'Відновити цикл' : 'Пауза',
+      togglePause: () => this.setState(s => ({ schedPaused: !s.schedPaused })),
+      saveLabel: this.state.schedPaused ? 'Зберегти, цикл на паузі' : 'Додати й запустити цикл',
+      saveHint: this.state.schedPaused
+        ? 'Цикл збережеться в стеку зі статусом «пауза» — у календарі його не буде.'
+        : 'Слоти з\'являться в календарі з 14 серпня. Пауза прибирає їх, не видаляючи налаштувань.',
+
+      monthCards, monthRows,
+      yearLegend: PLAN.map(r => ({ short: r.short, color: r.color, light: r.color + '4D' })),
+      peakLabel: (peakTies > 1 ? 'Найщільніші місяці, зокрема ' : 'Найщільніший місяць — ') + MONTH_NOM[peak],
+      peakCount: monthLoad[peak] + ' ' + plural(monthLoad[peak], SUBST),
+      peakFg: monthLoad[peak] > MAX_SLOTS ? T.warn.fg : T.calm.fg,
+      peakBg: monthLoad[peak] > MAX_SLOTS ? T.warn.bg : T.calm.bg,
+      monthTitle: MONTHS_FULL[ym],
+      monthMeta: monthRows.length + ' ' + plural(monthRows.length, SUBST) + ' · межа ' + MAX_SLOTS,
+
+      pickAnnual: () => this.setState({ billing: 'annual' }),
+      pickMonthly: () => this.setState({ billing: 'monthly' }),
+      annualBorder: annual ? '#4A4E7C' : 'rgba(23,23,27,.1)',
+      annualDotBorder: annual ? '#4A4E7C' : 'rgba(23,23,27,.22)',
+      annualDotBg: annual ? '#4A4E7C' : '#FFFFFF',
+      annualDotInner: annual ? '#FFFFFF' : 'transparent',
+      monthlyBorder: !annual ? '#4A4E7C' : 'rgba(23,23,27,.1)',
+      monthlyDotBorder: !annual ? '#4A4E7C' : 'rgba(23,23,27,.22)',
+      monthlyDotBg: !annual ? '#4A4E7C' : '#FFFFFF',
+      monthlyDotInner: !annual ? '#FFFFFF' : 'transparent',
+      ctaLabel: annual ? 'Оформити за 1 490 ₴ / рік' : 'Оформити за 199 ₴ / міс',
+      ctaHint: annual ? '7 днів безкоштовно · далі 1 490 ₴ за рік · скасувати будь-коли' : '7 днів безкоштовно · далі 199 ₴ щомісяця · скасувати будь-коли'
+    };
+  }
+}
+</script>
+</body>
+</html>
