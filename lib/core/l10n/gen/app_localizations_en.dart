@@ -105,6 +105,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get close => 'Close';
 
   @override
+  String get searchTab => 'Search catalog';
+
+  @override
+  String get manualTab => 'Add manually';
+
+  @override
+  String get searchCatalogHint => 'Name or active substance';
+
+  @override
+  String get noResultsCatalog =>
+      'Nothing found in the catalog. Add this supplement manually.';
+
+  @override
   String get nameLabel => 'Name';
 
   @override

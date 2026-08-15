@@ -111,6 +111,19 @@ class AppLocalizationsUk extends AppLocalizations {
   String get close => 'Закрити';
 
   @override
+  String get searchTab => 'Пошук у базі';
+
+  @override
+  String get manualTab => 'Вручну';
+
+  @override
+  String get searchCatalogHint => 'Назва або діюча речовина';
+
+  @override
+  String get noResultsCatalog =>
+      'Нічого не знайшли в каталозі. Додайте цю добавку вручну.';
+
+  @override
   String get nameLabel => 'Назва';
 
   @override

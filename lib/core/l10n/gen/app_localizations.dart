@@ -224,6 +224,30 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get close;
 
+  /// Add-supplement sheet segmented tab: catalog search
+  ///
+  /// In en, this message translates to:
+  /// **'Search catalog'**
+  String get searchTab;
+
+  /// Add-supplement sheet segmented tab: manual entry (replaces the mockup camera tab — D1)
+  ///
+  /// In en, this message translates to:
+  /// **'Add manually'**
+  String get manualTab;
+
+  /// Hint text of the catalog search input
+  ///
+  /// In en, this message translates to:
+  /// **'Name or active substance'**
+  String get searchCatalogHint;
+
+  /// Catalog search empty-result copy — rewritten with no label-scanning promise (D3/PF-5)
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found in the catalog. Add this supplement manually.'**
+  String get noResultsCatalog;
+
   /// Label for the required supplement name field in the manual add form
   ///
   /// In en, this message translates to:

@@ -102,6 +102,22 @@
   "@close": {
     "description": "Dismiss action in the add-supplement sheet header"
   },
+  "searchTab": "Search catalog",
+  "@searchTab": {
+    "description": "Add-supplement sheet segmented tab: catalog search"
+  },
+  "manualTab": "Add manually",
+  "@manualTab": {
+    "description": "Add-supplement sheet segmented tab: manual entry (replaces the mockup camera tab — D1)"
+  },
+  "searchCatalogHint": "Name or active substance",
+  "@searchCatalogHint": {
+    "description": "Hint text of the catalog search input"
+  },
+  "noResultsCatalog": "Nothing found in the catalog. Add this supplement manually.",
+  "@noResultsCatalog": {
+    "description": "Catalog search empty-result copy — rewritten with no label-scanning promise (D3/PF-5)"
+  },
   "nameLabel": "Name",
   "@nameLabel": {
     "description": "Label for the required supplement name field in the manual add form"

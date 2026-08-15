@@ -122,8 +122,9 @@ void main() {
       );
 
   testWidgets(
-      'uk: manual add through the sheet persists and renders a card; '
-      'save stays disabled for empty/whitespace names (V-1)', (tester) async {
+      'uk: manual add through the sheet persists, lands on the regimen '
+      'editor, and renders a card after returning; save stays disabled for '
+      'empty/whitespace names (V-1)', (tester) async {
     usePhoneSurface(tester);
     final container = makeContainer();
     await tester.pumpWidget(app(container));
@@ -132,6 +133,10 @@ void main() {
     // Open the add sheet via the single CTA on the screen.
     await tester.tap(find.text('Додати добавку'));
     await tester.pumpAndSettle();
+
+    // Switch to the manual tab (the search tab is the default).
+    await tester.tap(find.text('Вручну'));
+    await tester.pump();
 
     final Finder sheetSave = find.descendant(
       of: find.byType(BottomSheet),
@@ -155,22 +160,129 @@ void main() {
         reason: 'whitespace-only name must not enable save (V-1)');
 
     // Real name enables save.
-    await tester.enterText(nameField, 'Креатин моногідрат');
+    await tester.enterText(nameField, 'Власна добавка');
     await tester.pump();
     expect(tester.widget<FilledButton>(sheetSave).onPressed, isNotNull);
 
     // Save: writes through the repository into the real in-memory DB, the
-    // sheet closes, and the Drift stream delivers the new card.
+    // sheet closes, and the regimen editor opens for the new supplement.
     await tester.tap(sheetSave);
     await tester.pumpAndSettle();
 
-    await pumpUntilFound(tester, find.text('Креатин моногідрат'));
-    expect(find.text('Креатин моногідрат'), findsWidgets,
-        reason: 'the added supplement renders as a stack card from the DB');
     expect(find.byType(BottomSheet), findsNothing,
         reason: 'the sheet closed after a successful save');
+    expect(find.byType(RegimenEditorScreen), findsOneWidget,
+        reason: 'manual save lands on the regimen editor (S2)');
+
+    // Back to the stack: the Drift stream delivers the new card.
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new));
+    await tester.pumpAndSettle();
+    await pumpUntilFound(tester, find.text('Власна добавка'));
     expect(tester.takeException(), isNull,
         reason: 'no overflow/exception in uk locale');
+
+    await tearDownTree(tester, container);
+  });
+
+  testWidgets(
+      'uk: sheet tabs switch content in place — search input vs manual form',
+      (tester) async {
+    usePhoneSurface(tester);
+    final container = makeContainer();
+    await tester.pumpWidget(app(container));
+    await tester.pump();
+
+    await tester.tap(find.text('Додати добавку'));
+    await tester.pumpAndSettle();
+
+    // Search tab is the default: hint visible, full catalog listed (#8).
+    expect(find.text('Назва або діюча речовина'), findsOneWidget);
+    expect(find.text('Креатин моногідрат'), findsOneWidget,
+        reason: 'empty query lists the full catalog');
+    expect(find.text('Ашваганда KSM-66'), findsOneWidget);
+
+    // Switch to manual: form appears in place, search input gone.
+    await tester.tap(find.text('Вручну'));
+    await tester.pump();
+    expect(find.text('Назва або діюча речовина'), findsNothing);
+    expect(find.text('Назва'), findsOneWidget);
+    expect(find.byType(BottomSheet), findsOneWidget,
+        reason: 'no page transition — content swaps in place');
+
+    // And back to search.
+    await tester.tap(find.text('Пошук у базі'));
+    await tester.pump();
+    expect(find.text('Назва або діюча речовина'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tearDownTree(tester, container);
+  });
+
+  testWidgets(
+      'uk: typing "креат" narrows results; tapping the row adds the '
+      'supplement and lands on the regimen editor; the card appears after '
+      'returning (STACK-01)', (tester) async {
+    usePhoneSurface(tester);
+    final container = makeContainer();
+    await tester.pumpWidget(app(container));
+    await tester.pump();
+
+    await tester.tap(find.text('Додати добавку'));
+    await tester.pumpAndSettle();
+
+    final Finder searchField = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(searchField, 'креат');
+    await tester.pump();
+
+    expect(find.text('Креатин моногідрат'), findsOneWidget,
+        reason: 'the query narrows the list to the matching entry');
+    expect(find.text('Ашваганда KSM-66'), findsNothing);
+
+    await tester.tap(find.text('Креатин моногідрат'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.byType(RegimenEditorScreen), findsOneWidget,
+        reason: 'a catalog pick lands on the regimen editor (S2)');
+
+    // Back to the stack: the copy-on-add card renders the catalog name.
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new));
+    await tester.pumpAndSettle();
+    await pumpUntilFound(tester, find.text('Креатин моногідрат'));
+    expect(find.text('5 г · порошок'), findsOneWidget,
+        reason: 'the active locale dose text was copied onto the row (P-1)');
+    expect(tester.takeException(), isNull);
+
+    await tearDownTree(tester, container);
+  });
+
+  testWidgets(
+      'uk: a garbage query shows the rewritten noResultsCatalog copy (#9/D3)',
+      (tester) async {
+    usePhoneSurface(tester);
+    final container = makeContainer();
+    await tester.pumpWidget(app(container));
+    await tester.pump();
+
+    await tester.tap(find.text('Додати добавку'));
+    await tester.pumpAndSettle();
+
+    final Finder searchField = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(searchField, 'йцукен123');
+    await tester.pump();
+
+    expect(
+      find.text('Нічого не знайшли в каталозі. Додайте цю добавку вручну.'),
+      findsOneWidget,
+    );
+    expect(find.text('Креатин моногідрат'), findsNothing);
+    expect(tester.takeException(), isNull);
 
     await tearDownTree(tester, container);
   });
