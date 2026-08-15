@@ -50,6 +50,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
+  # SDK-bundled on-device test harness (DATA-03): drives the real app on a
+  # real simulator/device. Lives in integration_test/, which `flutter test`
+  # excludes by default, so the unit/widget suite is unaffected.
+  integration_test:
+    sdk: flutter
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
