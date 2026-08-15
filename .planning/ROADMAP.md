@@ -14,7 +14,7 @@ Boostque ships as five phases moving from a themed, localized, database-backed a
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Themed, localized app shell over a sync-ready local database with DST-safe cycle math, fully offline (completed 2026-08-14)
-- [ ] **Phase 2: Stack Management** - User builds their supplement stack and configures cyclic/course dosing regimens
+- [x] **Phase 2: Stack Management** - User builds their supplement stack and configures cyclic/course dosing regimens (completed 2026-08-15)
 - [ ] **Phase 3: Daily Tracking** - User sees and checks off today's doses; the core loop runs end-to-end on iOS and Android
 - [ ] **Phase 4: Planner Views** - User sees cycle overlap and yearly coverage via the Cycles gantt and Year matrix
 - [ ] **Phase 5: Localization & Settings** - Every screen is verified bilingual; user can override the app language
@@ -60,7 +60,7 @@ Plans:
   4. User can pause and resume a regimen; a paused regimen produces no doses and shows a PAUSED status
   5. User can edit or delete a supplement; deleting soft-deletes it along with its regimen and any future doses
 
-**Plans:** 5 plans
+**Plans:** 5/5 plans complete
 
 Plans:
 
@@ -126,7 +126,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 7/7 | Complete    | 2026-08-14 |
-| 2. Stack Management | 5/5 | Executed (verification pending) | - |
+| 2. Stack Management | 5/5 | Complete    | 2026-08-15 |
 | 3. Daily Tracking | 0/? | Not started | - |
 | 4. Planner Views | 0/? | Not started | - |
 | 5. Localization & Settings | 0/? | Not started | - |

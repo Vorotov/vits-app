@@ -9,17 +9,17 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Stack Management
 
-- [ ] **STACK-01**: User can add a supplement from a bundled, locale-aware catalog by searching its name
-- [ ] **STACK-02**: User can add a supplement manually with a name and dose description
-- [ ] **STACK-03**: User can view their stack as cards showing name, dose, color tag, status (active/paused/planned) and schedule summary
-- [ ] **STACK-04**: User can edit and delete a supplement; deleting removes its regimen and future doses (soft delete in DB)
+- [x] **STACK-01**: User can add a supplement from a bundled, locale-aware catalog by searching its name
+- [x] **STACK-02**: User can add a supplement manually with a name and dose description
+- [x] **STACK-03**: User can view their stack as cards showing name, dose, color tag, status (active/paused/planned) and schedule summary
+- [x] **STACK-04**: User can edit and delete a supplement; deleting removes its regimen and future doses (soft delete in DB)
 
 ### Regimen Scheduling
 
-- [ ] **REGI-01**: User can configure a cyclic regimen: start date, on-days and off-days (7-day steps, per mockup sliders), repeating until turned off
-- [ ] **REGI-02**: User can configure a one-time course with start and end dates (end inclusive)
-- [ ] **REGI-03**: User can define 1–6 daily time slots, each with its own time and dose label
-- [ ] **REGI-04**: User can pause and resume a regimen; paused regimens produce no doses and show ПАУЗА status
+- [x] **REGI-01**: User can configure a cyclic regimen: start date, on-days and off-days (7-day steps, per mockup sliders), repeating until turned off
+- [x] **REGI-02**: User can configure a one-time course with start and end dates (end inclusive)
+- [x] **REGI-03**: User can define 1–6 daily time slots, each with its own time and dose label
+- [x] **REGI-04**: User can pause and resume a regimen; paused regimens produce no doses and show ПАУЗА status
 
 ### Daily Tracking
 
@@ -96,14 +96,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | DATA-01 | Phase 1 | Complete |
 | DATA-02 | Phase 1 | Complete |
-| STACK-01 | Phase 2 | Pending |
-| STACK-02 | Phase 2 | Pending |
-| STACK-03 | Phase 2 | Pending |
-| STACK-04 | Phase 2 | Pending |
-| REGI-01 | Phase 2 | Pending |
-| REGI-02 | Phase 2 | Pending |
-| REGI-03 | Phase 2 | Pending |
-| REGI-04 | Phase 2 | Pending |
+| STACK-01 | Phase 2 | Complete |
+| STACK-02 | Phase 2 | Complete |
+| STACK-03 | Phase 2 | Complete |
+| STACK-04 | Phase 2 | Complete |
+| REGI-01 | Phase 2 | Complete |
+| REGI-02 | Phase 2 | Complete |
+| REGI-03 | Phase 2 | Complete |
+| REGI-04 | Phase 2 | Complete |
 | TRACK-01 | Phase 3 | Pending |
 | TRACK-02 | Phase 3 | Pending |
 | TRACK-03 | Phase 3 | Pending |
