@@ -149,6 +149,11 @@ class GanttRow {
   /// The supplement and its regimen, straight from `stackEntriesProvider`.
   final StackEntry entry;
 
+  /// The row's true active runs in the window, in chronological order. Kept
+  /// alongside the painted fractions because the week buckets need DATES: a
+  /// fraction cannot answer "is this supplement active in that week".
+  final List<DateRun> runs;
+
   /// Painted bands, in chronological order. EMPTY is a valid, meaningful
   /// state: a paused regimen keeps its row and shows a bare track, which is
   /// the design's own way of saying "paused" (DECIDED-7).
@@ -156,12 +161,12 @@ class GanttRow {
 
   /// How many runs fall in the window — spoken by the row's semantics label,
   /// where the painted bands are invisible.
-  final int runCount;
+  int get runCount => runs.length;
 
   const GanttRow({
     required this.entry,
+    required this.runs,
     required this.segments,
-    required this.runCount,
   });
 }
 
@@ -186,6 +191,9 @@ class CyclesModel {
   /// One row per regimen-bearing stack entry, in `stackEntriesProvider` order.
   final List<GanttRow> rows;
 
+  /// The load-chart buckets, one per full Monday week touching the window.
+  final List<WeekLoad> weeks;
+
   const CyclesModel({
     required this.windowStart,
     required this.windowEndExclusive,
@@ -193,6 +201,7 @@ class CyclesModel {
     required this.todayIndex,
     required this.months,
     required this.rows,
+    required this.weeks,
   });
 }
 
@@ -227,10 +236,12 @@ CyclesModel buildCyclesModel(
     final runs = activeRuns(regimen, window.start, lastDay);
     rows.add(GanttRow(
       entry: entry,
+      runs: runs,
       segments: ganttSegments(runs, window.start, window.span, today),
-      runCount: runs.length,
     ));
   }
+
+  final buckets = weekBuckets(window.start, window.endExclusive);
 
   return CyclesModel(
     windowStart: window.start,
@@ -239,5 +250,302 @@ CyclesModel buildCyclesModel(
     todayIndex: dateOnly(today).difference(window.start).inDays,
     months: List.unmodifiable(months),
     rows: List.unmodifiable(rows),
+    weeks: weekLoads(rows, buckets),
+  );
+}
+
+/// One 7-day bucket of the load chart. Both bounds are date-only UTC and
+/// [endInclusive] is, as the name says, inclusive.
+class WeekBucket {
+  /// Monday of the week.
+  final DateTime start;
+
+  /// Sunday of the same week — always six days after [start].
+  final DateTime endInclusive;
+
+  const WeekBucket({required this.start, required this.endInclusive});
+}
+
+/// Full Monday weeks covering the window (DECIDED-3).
+///
+/// Runs from `mondayOfWeek(windowStart)` through the week containing the
+/// window's last day — 18 or 19 buckets, every one exactly 7 days.
+///
+/// This DELIBERATELY deviates from the mockup's window-aligned `i * 7`
+/// arithmetic, for two reasons. Monday-first weeks are locked in every locale
+/// (the week strip's rule), and the summary chip literally says "this week",
+/// which can only mean the calendar week containing today if the buckets ARE
+/// calendar weeks.
+///
+/// Clamping the first bucket short instead was rejected: a month starting on a
+/// Sunday would produce a one-day bucket whose bar is honestly low but reads,
+/// beside seventeen seven-day bars, as a lie. The accepted consequence is that
+/// the first bucket may begin up to six days before the window and the last may
+/// end up to six days after it, so the axis labels show the ACTUAL bucket dates.
+List<WeekBucket> weekBuckets(DateTime windowStart, DateTime windowEndExclusive) {
+  final last = dateOnly(windowEndExclusive).subtract(const Duration(days: 1));
+  final buckets = <WeekBucket>[];
+  for (var monday = mondayOfWeek(windowStart);
+      !monday.isAfter(last);
+      monday = monday.add(const Duration(days: 7))) {
+    buckets.add(WeekBucket(
+      start: monday,
+      endInclusive: monday.add(const Duration(days: 6)),
+    ));
+  }
+  return List.unmodifiable(buckets);
+}
+
+/// The supplements concurrently active in one bucket.
+class WeekLoad {
+  /// The week this load describes.
+  final WeekBucket bucket;
+
+  /// Entries active on at least one day of [bucket], in stack order.
+  final List<StackEntry> entries;
+
+  /// How many supplements overlap this week.
+  int get load => entries.length;
+
+  const WeekLoad({required this.bucket, required this.entries});
+}
+
+/// Concurrent load per bucket (P-6).
+///
+/// A supplement counts ONCE per bucket if it is active on ANY day of it —
+/// never once per active day. That is what makes the number "how many things
+/// am I taking at the same time" rather than "how many doses".
+List<WeekLoad> weekLoads(List<GanttRow> rows, List<WeekBucket> buckets) {
+  return List.unmodifiable([
+    for (final bucket in buckets)
+      WeekLoad(
+        bucket: bucket,
+        entries: List.unmodifiable([
+          for (final row in rows)
+            if (row.runs.any((r) => _overlaps(r, bucket.start,
+                bucket.endInclusive)))
+              row.entry,
+        ]),
+      ),
+  ]);
+}
+
+/// Whether run [r] shares at least one day with the inclusive range [a]..[b].
+bool _overlaps(DateRun r, DateTime a, DateTime b) =>
+    !r.start.isAfter(b) && !r.end.isBefore(a);
+
+/// The editorial tracking-comfort rule (PLAN-04) — **not a medical
+/// threshold**, and never to be described as one anywhere in the app.
+///
+/// Five is the count above which the user's own tracking gets hard: it is our
+/// editorial default for legibility, not a safety limit, not a norm and not a
+/// dose ceiling. Both numbers live here once, so moving a boundary is a
+/// one-line, test-caught edit.
+///
+/// The two chips read this rule ASYMMETRICALLY, on purpose (DECIDED-6): the
+/// week summary chip warns at a load greater than OR EQUAL to
+/// [editorialLimit], while the year peak chip warns only ABOVE it. A week
+/// sitting exactly at the limit is worth a nudge, because the user can still
+/// move a start date; a month that merely touches it for a few days is not.
+/// Transcribed deliberately — do not "fix" the asymmetry.
+const int editorialLimit = 5;
+
+/// The upper bound of the comfort band (PLAN-04) — see [editorialLimit].
+const int comfortLoad = 3;
+
+/// Structured week verdict — the renderer switches exhaustively (sealed,
+/// Dart 3) and maps each case to an ARB key and a colour pair itself, so no
+/// copy lives here.
+sealed class LoadVerdict {
+  const LoadVerdict();
+}
+
+/// At or below [comfortLoad]: easy to keep track of.
+class ComfortVerdict extends LoadVerdict {
+  const ComfortVerdict();
+}
+
+/// Above the comfort band but at or below [editorialLimit].
+class LimitVerdict extends LoadVerdict {
+  const LimitVerdict();
+}
+
+/// Above [editorialLimit]. Carries [load] because the copy names the number.
+class OverLimitVerdict extends LoadVerdict {
+  /// The week's concurrent load.
+  final int load;
+
+  const OverLimitVerdict(this.load);
+}
+
+/// Resolves the three editorial bands for [load].
+LoadVerdict verdictOf(int load) => load <= comfortLoad
+    ? const ComfortVerdict()
+    : load <= editorialLimit
+        ? const LimitVerdict()
+        : OverLimitVerdict(load);
+
+/// The coverage fraction at or above which a month reads as fully covered
+/// (mockup line 842). The ONE place this boundary lives.
+const double fullMonthFraction = 0.85;
+
+/// One supplement's coverage of one month in the Year matrix.
+class MonthCell {
+  /// Covered days over the month's real length, 0..1.
+  final double frac;
+
+  /// Whether every covered day of the month is still in the future.
+  final bool planned;
+
+  const MonthCell({required this.frac, required this.planned});
+
+  /// Whether the month reads as fully covered (mockup's `frac >= 0.85`).
+  bool get full => frac >= fullMonthFraction;
+}
+
+/// Coverage of the month starting at [monthStart] by [runs] (P-10).
+///
+/// A run's days count as planned when the run itself is planned — its first
+/// day is strictly after [today], the same DECIDED-4 rule the gantt uses — or
+/// when the whole month lies after today. The cell is `planned` only when ALL
+/// of its coverage is: one already-started day is enough to make the month
+/// read as "taking", which is the honest reading.
+MonthCell monthCellFor(
+  List<DateRun> runs,
+  DateTime monthStart,
+  int monthLen,
+  DateTime today,
+) {
+  final start = dateOnly(monthStart);
+  final end = start.add(Duration(days: monthLen - 1));
+  final t = dateOnly(today);
+  final monthIsFuture = start.isAfter(t);
+
+  var days = 0;
+  var plannedDays = 0;
+  for (final run in runs) {
+    if (!_overlaps(run, start, end)) continue;
+    final from = run.start.isBefore(start) ? start : run.start;
+    final to = run.end.isAfter(end) ? end : run.end;
+    final overlap = to.difference(from).inDays + 1;
+    days += overlap;
+    if (monthIsFuture || run.start.isAfter(t)) plannedDays += overlap;
+  }
+
+  return MonthCell(
+    frac: monthLen <= 0 ? 0 : days / monthLen,
+    planned: days > 0 && plannedDays == days,
+  );
+}
+
+/// One month column of the Year matrix.
+class YearMonth {
+  /// First day of the month, date-only UTC.
+  final DateTime month;
+
+  /// The month's real length — from `daysInMonth`, never a table (PF-3).
+  final int days;
+
+  /// One cell per entry of [YearModel.entries], in the same order.
+  final List<MonthCell> cells;
+
+  /// How many entries cover any part of this month at all.
+  final int load;
+
+  const YearMonth({
+    required this.month,
+    required this.days,
+    required this.cells,
+    required this.load,
+  });
+}
+
+/// Everything the Рік segment renders (DECIDED-9).
+class YearModel {
+  /// The rendered year — always today's, January through December, no paging.
+  final int year;
+
+  /// The twelve month columns, in calendar order.
+  final List<YearMonth> months;
+
+  /// The regimen-bearing entries, in `stackEntriesProvider` order.
+  final List<StackEntry> entries;
+
+  /// Index into [months] of the busiest month.
+  final int peakIndex;
+
+  /// Whether more than one month shares the peak load — the copy says
+  /// "densest months, including …" rather than naming one when it does.
+  final bool peakTied;
+
+  const YearModel({
+    required this.year,
+    required this.months,
+    required this.entries,
+    required this.peakIndex,
+    required this.peakTied,
+  });
+}
+
+/// Builds the Рік model for today's calendar year (DECIDED-9).
+///
+/// The Цикли window may cross into the next year while this stays on the
+/// current one — the two views intentionally show different spans, and the
+/// subtitle says which. Month lengths come from `daysInMonth`, never a table.
+YearModel buildYearModel(
+  List<StackEntry> entries, {
+  required DateTime today,
+}) {
+  final t = dateOnly(today);
+  final yearStart = DateTime.utc(t.year, 1, 1);
+  final yearEnd = DateTime.utc(t.year, 12, 31);
+
+  final kept = <StackEntry>[];
+  final runsPerEntry = <List<DateRun>>[];
+  for (final entry in entries) {
+    final regimen = entry.regimen;
+    if (regimen == null) continue;
+    kept.add(entry);
+    runsPerEntry.add(activeRuns(regimen, yearStart, yearEnd));
+  }
+
+  final months = <YearMonth>[];
+  for (var m = 0; m < 12; m++) {
+    final monthStart = DateTime.utc(t.year, m + 1, 1);
+    final length = daysInMonth(monthStart);
+    final cells = [
+      for (final runs in runsPerEntry)
+        monthCellFor(runs, monthStart, length, t),
+    ];
+    months.add(YearMonth(
+      month: monthStart,
+      days: length,
+      cells: List.unmodifiable(cells),
+      load: cells.where((c) => c.frac > 0).length,
+    ));
+  }
+
+  // Peak: the highest load, ties broken toward the month nearest the current
+  // one — the reader's attention belongs on the crowding they are closest to.
+  final peakLoad =
+      months.fold<int>(0, (best, m) => m.load > best ? m.load : best);
+  final tiedIndices = [
+    for (var m = 0; m < months.length; m++)
+      if (months[m].load == peakLoad) m,
+  ];
+  final currentMonth = t.month - 1;
+  var peakIndex = tiedIndices.first;
+  for (final i in tiedIndices) {
+    if ((i - currentMonth).abs() < (peakIndex - currentMonth).abs()) {
+      peakIndex = i;
+    }
+  }
+
+  return YearModel(
+    year: t.year,
+    months: List.unmodifiable(months),
+    entries: List.unmodifiable(kept),
+    peakIndex: peakIndex,
+    peakTied: tiedIndices.length > 1,
   );
 }
