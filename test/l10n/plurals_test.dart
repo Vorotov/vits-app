@@ -55,6 +55,19 @@ void main() {
       // Mixed forms: the placeholders decline independently.
       expect(l10n.stackSummary(5, 1), '5 добавок · 1 активна');
     });
+
+    test('ringSemantics declines `доза` after «з» at 1/2/5/11/21 (PF-8)', () {
+      expect(l10n.ringSemantics(0, 1), '0 з 1 дози прийнято'); // one
+      expect(l10n.ringSemantics(1, 2), '1 з 2 доз прийнято'); // few
+      expect(l10n.ringSemantics(3, 5), '3 з 5 доз прийнято'); // many
+      expect(l10n.ringSemantics(4, 11), '4 з 11 доз прийнято'); // many (11-14)
+      expect(l10n.ringSemantics(21, 21), '21 з 21 дози прийнято'); // one
+    });
+
+    test('blockProgress and doseCycleChip interpolate bare numerals', () {
+      expect(l10n.blockProgress(1, 3), '1 з 3');
+      expect(l10n.doseCycleChip(2, 3), 'доза 2 з 3');
+    });
   });
 
   group('en plurals', () {
@@ -83,6 +96,17 @@ void main() {
     test('stackSummary uses one/other on both placeholders', () {
       expect(l10n.stackSummary(1, 1), '1 supplement · 1 active');
       expect(l10n.stackSummary(2, 0), '2 supplements · 0 active');
+    });
+
+    test('ringSemantics uses one/other on total', () {
+      expect(l10n.ringSemantics(0, 1), '0 of 1 dose taken');
+      expect(l10n.ringSemantics(1, 2), '1 of 2 doses taken');
+      expect(l10n.ringSemantics(5, 21), '5 of 21 doses taken');
+    });
+
+    test('blockProgress and doseCycleChip interpolate bare numerals', () {
+      expect(l10n.blockProgress(1, 3), '1 of 3');
+      expect(l10n.doseCycleChip(2, 3), 'dose 2 of 3');
     });
   });
 }

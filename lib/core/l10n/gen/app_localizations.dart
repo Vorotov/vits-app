@@ -631,6 +631,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Today'**
   String get calendarTitleToday;
+
+  /// Time-block label, 00:00-11:59 (DECIDED-1; mockup line 617)
+  ///
+  /// In en, this message translates to:
+  /// **'Morning'**
+  String get blockMorning;
+
+  /// Time-block label, 12:00-17:59 (DECIDED-1; mockup line 618)
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get blockDay;
+
+  /// Time-block label, 18:00-21:59 (DECIDED-1; mockup line 619)
+  ///
+  /// In en, this message translates to:
+  /// **'Evening'**
+  String get blockEvening;
+
+  /// Time-block label, 22:00-23:59 (DECIDED-1; mockup line 620)
+  ///
+  /// In en, this message translates to:
+  /// **'Night'**
+  String get blockNight;
+
+  /// Neutral meal tag on the morning block header (mockup line 617)
+  ///
+  /// In en, this message translates to:
+  /// **'with breakfast'**
+  String get blockTagBreakfast;
+
+  /// Neutral meal tag on the day block header (mockup line 618)
+  ///
+  /// In en, this message translates to:
+  /// **'with lunch'**
+  String get blockTagLunch;
+
+  /// Neutral meal tag on the evening block header (mockup line 619)
+  ///
+  /// In en, this message translates to:
+  /// **'with dinner'**
+  String get blockTagDinner;
+
+  /// Neutral meal tag on the night block header (mockup line 620)
+  ///
+  /// In en, this message translates to:
+  /// **'before sleep'**
+  String get blockTagSleep;
+
+  /// Block-header tag when EVERY dose in the block is taken; calm palette (mockup line 744)
+  ///
+  /// In en, this message translates to:
+  /// **'all taken'**
+  String get blockAllTaken;
+
+  /// Block-header tag when every dose is marked and at least one is skipped; neutral palette — it must not claim skipped doses were taken (DECIDED-6, invented)
+  ///
+  /// In en, this message translates to:
+  /// **'all marked'**
+  String get blockAllMarked;
+
+  /// Block-header progress tag on a past block of TODAY that still holds a pending dose; bare numerals, no plural (mockup line 744)
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total}'**
+  String blockProgress(int done, int total);
+
+  /// Dose-row chip for a pending dose whose slot time has passed — TODAY only, warn palette (mockup line 727, DECIDED-5)
+  ///
+  /// In en, this message translates to:
+  /// **'not taken on time'**
+  String get overdueLabel;
+
+  /// Dose-row chip for a dose the user explicitly skipped; neutral palette
+  ///
+  /// In en, this message translates to:
+  /// **'skipped'**
+  String get skippedLabel;
+
+  /// Dose-row chip for an unmarked dose on a PAST day (DECIDED-3, invented). Deliberately not 'skipped': the row is still `pending`, so the app does not know what happened — this states only what is true and carries no blame (TRACK-03)
+  ///
+  /// In en, this message translates to:
+  /// **'not marked'**
+  String get notMarkedLabel;
+
+  /// Dose-row chip naming this dose's position among that regimen's doses on the day; rendered only when m > 1, bare numerals, no plural (mockup line 608)
+  ///
+  /// In en, this message translates to:
+  /// **'dose {n} of {m}'**
+  String doseCycleChip(int n, int m);
+
+  /// Accessibility label of the day-progress ring; `total` counts every dose of the day and skipped counts as not-taken (DECIDED-7). The uk value carries all four CLDR forms on `total` (PF-8); the ring is never rendered at total == 0
+  ///
+  /// In en, this message translates to:
+  /// **'{total, plural, one{{taken} of {total} dose taken} other{{taken} of {total} doses taken}}'**
+  String ringSemantics(int taken, int total);
+
+  /// Primary dose action — the row's Semantics action label and the first dose-sheet row (DECIDED-2)
+  ///
+  /// In en, this message translates to:
+  /// **'Mark taken'**
+  String get markTaken;
+
+  /// Secondary dose action — dose-sheet row and Semantics custom action (DECIDED-2)
+  ///
+  /// In en, this message translates to:
+  /// **'Mark skipped'**
+  String get markSkipped;
+
+  /// Inverse dose action returning a marked dose to pending — undo IS the feature (TRACK-02); no confirm dialog and no SnackBar undo exists
+  ///
+  /// In en, this message translates to:
+  /// **'Clear mark'**
+  String get undoMark;
+
+  /// Header text button clearing the day selection back to 'follow today'; visible only when the resolved day differs from today. Same word as the screen title by design — it names the destination (UI-SPEC S4)
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get backToToday;
+
+  /// Dose action-sheet subtitle under the supplement name: 24-hour slot time and the slot's dose label, rendered in mono
+  ///
+  /// In en, this message translates to:
+  /// **'{time} · {dose}'**
+  String doseSheetSubtitle(String time, String dose);
+
+  /// Empty-state heading for a day with zero doses (invented — the mockup has no empty state). A correct, expected state on an off-week, never an error
+  ///
+  /// In en, this message translates to:
+  /// **'No doses on this day'**
+  String get emptyDayTitle;
+
+  /// Empty-day body when the stack HAS entries — no next step is required
+  ///
+  /// In en, this message translates to:
+  /// **'No cycle is active on this day.'**
+  String get emptyDayBody;
+
+  /// Empty-day body when the stack is empty; names the Stack tab rather than linking to it — the nav bar is the affordance
+  ///
+  /// In en, this message translates to:
+  /// **'Add a supplement on the Stack tab to see doses here.'**
+  String get emptyDayBodyNoStack;
+
+  /// AsyncValue.error copy for the day dose stream, paired with the existing `retry` key; raw exception text is never user-visible
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this day. Try again.'**
+  String get dayLoadError;
+
+  /// SnackBar shown when a dose status write fails; the row keeps its previously rendered status because the stream is the source of truth. The only SnackBar on this screen
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save the mark.'**
+  String get markFailed;
+
+  /// Two-sentence disclaimer closing the calendar scroll body (mockup line 264, verbatim). Deliberately distinct from `disclaimerEducational`, which holds only the second sentence — neither key replaces the other
+  ///
+  /// In en, this message translates to:
+  /// **'This schedule is built from your own entries. Educational material, not medical advice.'**
+  String get calendarDisclaimer;
 }
 
 class _AppLocalizationsDelegate

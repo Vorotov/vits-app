@@ -340,4 +340,103 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get calendarTitleToday => 'Сьогодні';
+
+  @override
+  String get blockMorning => 'Ранок';
+
+  @override
+  String get blockDay => 'День';
+
+  @override
+  String get blockEvening => 'Вечір';
+
+  @override
+  String get blockNight => 'Ніч';
+
+  @override
+  String get blockTagBreakfast => 'зі сніданком';
+
+  @override
+  String get blockTagLunch => 'з обідом';
+
+  @override
+  String get blockTagDinner => 'з вечерею';
+
+  @override
+  String get blockTagSleep => 'перед сном';
+
+  @override
+  String get blockAllTaken => 'усе прийнято';
+
+  @override
+  String get blockAllMarked => 'усе відмічено';
+
+  @override
+  String blockProgress(int done, int total) {
+    return '$done з $total';
+  }
+
+  @override
+  String get overdueLabel => 'не прийнято вчасно';
+
+  @override
+  String get skippedLabel => 'пропущено';
+
+  @override
+  String get notMarkedLabel => 'не позначено';
+
+  @override
+  String doseCycleChip(int n, int m) {
+    return 'доза $n з $m';
+  }
+
+  @override
+  String ringSemantics(int taken, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$taken з $total доз прийнято',
+      many: '$taken з $total доз прийнято',
+      few: '$taken з $total доз прийнято',
+      one: '$taken з $total дози прийнято',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get markTaken => 'Позначити прийнято';
+
+  @override
+  String get markSkipped => 'Позначити пропущено';
+
+  @override
+  String get undoMark => 'Зняти позначку';
+
+  @override
+  String get backToToday => 'Сьогодні';
+
+  @override
+  String doseSheetSubtitle(String time, String dose) {
+    return '$time · $dose';
+  }
+
+  @override
+  String get emptyDayTitle => 'Доз на цей день немає';
+
+  @override
+  String get emptyDayBody => 'Жоден цикл не активний цього дня.';
+
+  @override
+  String get emptyDayBodyNoStack =>
+      'Додайте добавку у вкладці «Стек», щоб побачити тут дози.';
+
+  @override
+  String get dayLoadError => 'Не вдалося завантажити день. Спробуйте ще раз.';
+
+  @override
+  String get markFailed => 'Не вдалося зберегти позначку.';
+
+  @override
+  String get calendarDisclaimer =>
+      'Розклад складено з ваших власних записів. Освітній матеріал, не медична порада.';
 }

@@ -332,4 +332,101 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get calendarTitleToday => 'Today';
+
+  @override
+  String get blockMorning => 'Morning';
+
+  @override
+  String get blockDay => 'Day';
+
+  @override
+  String get blockEvening => 'Evening';
+
+  @override
+  String get blockNight => 'Night';
+
+  @override
+  String get blockTagBreakfast => 'with breakfast';
+
+  @override
+  String get blockTagLunch => 'with lunch';
+
+  @override
+  String get blockTagDinner => 'with dinner';
+
+  @override
+  String get blockTagSleep => 'before sleep';
+
+  @override
+  String get blockAllTaken => 'all taken';
+
+  @override
+  String get blockAllMarked => 'all marked';
+
+  @override
+  String blockProgress(int done, int total) {
+    return '$done of $total';
+  }
+
+  @override
+  String get overdueLabel => 'not taken on time';
+
+  @override
+  String get skippedLabel => 'skipped';
+
+  @override
+  String get notMarkedLabel => 'not marked';
+
+  @override
+  String doseCycleChip(int n, int m) {
+    return 'dose $n of $m';
+  }
+
+  @override
+  String ringSemantics(int taken, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$taken of $total doses taken',
+      one: '$taken of $total dose taken',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get markTaken => 'Mark taken';
+
+  @override
+  String get markSkipped => 'Mark skipped';
+
+  @override
+  String get undoMark => 'Clear mark';
+
+  @override
+  String get backToToday => 'Today';
+
+  @override
+  String doseSheetSubtitle(String time, String dose) {
+    return '$time · $dose';
+  }
+
+  @override
+  String get emptyDayTitle => 'No doses on this day';
+
+  @override
+  String get emptyDayBody => 'No cycle is active on this day.';
+
+  @override
+  String get emptyDayBodyNoStack =>
+      'Add a supplement on the Stack tab to see doses here.';
+
+  @override
+  String get dayLoadError => 'Couldn\'t load this day. Try again.';
+
+  @override
+  String get markFailed => 'Couldn\'t save the mark.';
+
+  @override
+  String get calendarDisclaimer =>
+      'This schedule is built from your own entries. Educational material, not medical advice.';
 }
