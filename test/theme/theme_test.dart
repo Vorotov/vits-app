@@ -60,6 +60,22 @@ void main() {
     });
   });
 
+  group('BqColors — Phase-3 token additions (03-UI-SPEC Token Additions)', () {
+    test('checkBorder — unchecked dose circle rgba(23,23,27,.22)', () {
+      expect(BqColors.checkBorder, const Color(0x3817171B));
+    });
+
+    test('warnBorder — overdue row border rgba(176,122,34,.4), today only',
+        () {
+      expect(BqColors.warnBorder, const Color(0x66B07A22));
+    });
+
+    test('onAccentMuted — dow label + dot on the accent today cell, white .70',
+        () {
+      expect(BqColors.onAccentMuted, const Color(0xB3FFFFFF));
+    });
+  });
+
   group('BqSeriesColors — supplement color-tag series (D-06)', () {
     test('exactly 8 colors, exact order', () {
       expect(BqSeriesColors.palette.length, 8);
@@ -90,6 +106,13 @@ void main() {
       expect(BqRadii.input, 11.0);
       expect(BqRadii.segInner, 8.0);
       expect(BqRadii.sheet, 26.0);
+    });
+
+    test('Phase-3 additions (03-UI-SPEC Token Additions)', () {
+      expect(BqRadii.doseRow, 13.0);
+      // Equal in value to `input` but a separate token by design — the
+      // calendar must never read as (or be restyled with) a form field.
+      expect(BqRadii.dayCell, 11.0);
     });
   });
 

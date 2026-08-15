@@ -103,6 +103,22 @@ abstract final class BqColors {
 
   /// Disabled slot "−" glyph at the 1-slot floor (mockup line 946).
   static const Color iconDisabled = Color(0xFFD8D7D1);
+
+  // --- Phase-3 additions (03-UI-SPEC "Token Additions", mockup-sourced) ---
+
+  /// 1.8px border of an unchecked dose circle (pending / overdue / missed) —
+  /// mockup's `rgba(23,23,27,.22)` (line 730).
+  static const Color checkBorder = Color(0x3817171B);
+
+  /// 1px border of an overdue dose row — mockup's `rgba(176,122,34,.4)`
+  /// (line 733). Renders on TODAY only (DECIDED-5 / TRACK-03 neutrality).
+  static const Color warnBorder = Color(0x66B07A22);
+
+  /// Dow label AND status dot inside the accent-filled today cell of the week
+  /// strip — white at .70 (mockup lines 759-760; the mockup's .70 text and .60
+  /// dot collapse into one token, a locked simplification — the delta is
+  /// invisible on a 4px dot).
+  static const Color onAccentMuted = Color(0xB3FFFFFF);
 }
 
 /// Supplement color-tag series palette (D-06) — exactly 8 colors, in mockup
@@ -139,6 +155,16 @@ abstract final class BqRadii {
 
   /// Bottom-sheet top corners, via `bottomSheetTheme` (mockup line 127).
   static const double sheet = 26.0;
+
+  // --- Phase-3 additions (03-UI-SPEC "Token Additions", mockup-sourced) ---
+
+  /// Dose-row corner radius (mockup line 236).
+  static const double doseRow = 13.0;
+
+  /// Week-strip day-cell corner radius (mockup line 217). Equal in value to
+  /// [input], and deliberately kept a separate token so the calendar never
+  /// reads as — or gets restyled along with — a form field.
+  static const double dayCell = 11.0;
 }
 
 /// Spacing scale — standard 8-point scale (UI-SPEC).
