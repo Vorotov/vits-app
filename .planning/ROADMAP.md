@@ -64,11 +64,11 @@ Plans:
 
 Plans:
 
-- [ ] 02-01-PLAN.md — Tracer: manual add → card via real DB, plus softDeleteCascade + watchDay pause/deletedAt filters (wave 1)
-- [ ] 02-02-PLAN.md — UI-SPEC token additions, bqTheme() form/picker/sheet sub-themes, BqSegmented (wave 1)
-- [ ] 02-03-PLAN.md — RegimenEditorController + RegimenDraft (PF-8 id reuse) and statusOf/scheduleSummaryOf pure helpers, unit-tested (wave 2)
-- [ ] 02-04-PLAN.md — Regimen editor screen: pickers, sliders, 28-bar preview, slots, pinned footer with save/pause/confirmed delete (wave 3)
-- [ ] 02-05-PLAN.md — Bundled catalog + cross-locale search, full stack cards/states, two-tab add sheet, editor navigation (wave 4)
+- [x] 02-01-PLAN.md — Tracer: manual add → card via real DB, plus softDeleteCascade + watchDay pause/deletedAt filters (wave 1)
+- [x] 02-02-PLAN.md — UI-SPEC token additions, bqTheme() form/picker/sheet sub-themes, BqSegmented (wave 1)
+- [x] 02-03-PLAN.md — RegimenEditorController + RegimenDraft (PF-8 id reuse) and statusOf/scheduleSummaryOf pure helpers, unit-tested (wave 2)
+- [x] 02-04-PLAN.md — Regimen editor screen: pickers, sliders, 28-bar preview, slots, pinned footer with save/pause/confirmed delete (wave 3)
+- [x] 02-05-PLAN.md — Bundled catalog + cross-locale search, full stack cards/states, two-tab add sheet, editor navigation (wave 4)
 
 **UI hint**: yes
 
@@ -126,7 +126,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 7/7 | Complete    | 2026-08-14 |
-| 2. Stack Management | 0/? | Not started | - |
+| 2. Stack Management | 5/5 | Executed (verification pending) | - |
 | 3. Daily Tracking | 0/? | Not started | - |
 | 4. Planner Views | 0/? | Not started | - |
 | 5. Localization & Settings | 0/? | Not started | - |
