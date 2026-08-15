@@ -772,8 +772,11 @@ void main() {
       expect(fractionOf(0), closeTo(31 / 122, 0.002));
       expect(fractionOf(1), closeTo(61 / 122, 0.002));
       expect(fractionOf(2), closeTo(92 / 122, 0.002));
-      expect(fractionOf(1), isNot(closeTo(0.5, 0.002)),
-          reason: 'an even-quarter layout would land the middle rule at 0.5');
+      // 31/122 is 0.2541, not 0.25 — the middle boundary happens to land on
+      // 0.5 for THIS window (31 + 30 = 61 of 122), which is exactly why the
+      // outer two are the ones that prove the columns are not quarters.
+      expect(fractionOf(0), isNot(closeTo(0.25, 0.002)));
+      expect(fractionOf(2), isNot(closeTo(0.75, 0.002)));
 
       // (todayIndex + 0.5) / span for the pinned 13 August clock.
       final marker = tester.getRect(find.byKey(const ValueKey(

@@ -8,9 +8,10 @@
 /// rejects `fl_chart` / `gantt_chart` / `table_calendar` by name). One painter
 /// per row also avoids N nested `Positioned` widgets per row.
 ///
-/// This file paints ONLY the rows. Month labels, month gridlines, the today
-/// marker and the legend are plan 04-02's, and land around these rows without
-/// changing them.
+/// Around the rows sit the card's chrome: a mono month-label row sized to the
+/// months' REAL day counts, 1px rules at the real month boundaries, the single
+/// today line, and a three-entry legend. Every one of those positions is
+/// arithmetic on the already-resolved model — this file computes no dates.
 ///
 /// `_RingPainter`'s discipline is carried over verbatim: `shouldRepaint`
 /// compares only what is actually painted.
@@ -19,6 +20,7 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/theme/theme.dart';
@@ -56,7 +58,32 @@ const double _cardPadBottom = 14;
 /// user really has must never render as an empty track (PF-6).
 const double _minSegmentWidth = 2;
 
-/// The gantt card: one [GanttRowBar] per regimen-bearing stack entry.
+/// Gap between the month-label row and the chart (mockup line 301
+/// `margin-bottom:9px`).
+const double _monthRowGap = 9;
+
+/// Width of a gridline and of the today marker (mockup lines 305-308
+/// `width:1px`).
+const double _ruleWidth = 1;
+
+/// Month-label type (mockup line 301 `400 10.5px mono`, `letter-spacing:.05em`
+/// — .05em of 10.5px is 0.525 logical pixels).
+const double _monthLabelSize = 10.5;
+const double _monthLabelTracking = 0.525;
+
+/// Legend geometry (mockup lines 325-329): 15px above a 1px rule, 13px below
+/// it, a `Wrap` with 12px gaps, and 14x8 radius-4 swatches 6px from a label.
+const double _legendTopMargin = 15;
+const double _legendRulePadding = 13;
+const double _legendGap = 12;
+const double _swatchWidth = 14;
+const double _swatchHeight = 8;
+const double _swatchRadius = 4;
+const double _swatchLabelGap = 6;
+const double _legendLabelSize = 11;
+
+/// The gantt card: the month scale, the painted rows under their gridlines and
+/// today marker, and the three-entry legend.
 class PlannerGantt extends StatelessWidget {
   const PlannerGantt({super.key, required this.model});
 
@@ -65,31 +92,288 @@ class PlannerGantt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsetsDirectional.only(
-        top: _cardPadTop,
-        start: _cardPadHorizontal,
-        end: _cardPadHorizontal,
-        bottom: _cardPadBottom,
+    // Isolates the painted rows from the load chart below: selecting a week
+    // changes opacities down there and must not cost a repaint up here
+    // (Interaction Contract 12).
+    return RepaintBoundary(
+      child: Container(
+        padding: const EdgeInsetsDirectional.only(
+          top: _cardPadTop,
+          start: _cardPadHorizontal,
+          end: _cardPadHorizontal,
+          bottom: _cardPadBottom,
+        ),
+        decoration: BoxDecoration(
+          color: BqColors.surface,
+          border: Border.all(color: BqColors.cardBorder),
+          borderRadius:
+              const BorderRadius.all(Radius.circular(BqRadii.panel)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _MonthScale(months: model.months),
+            const SizedBox(height: _monthRowGap),
+            _RowsWithRules(model: model),
+            const _GanttLegend(),
+          ],
+        ),
       ),
-      decoration: BoxDecoration(
-        color: BqColors.surface,
-        border: Border.all(color: BqColors.cardBorder),
-        borderRadius:
-            const BorderRadius.all(Radius.circular(BqRadii.panel)),
-      ),
+    );
+  }
+}
+
+/// The mono month header, each label as wide as its month's REAL day count.
+///
+/// `Expanded(flex: days)` is the whole of PF-3: a four-month window is 120 to
+/// 123 days long, so a fixed quarter per column would misplace every boundary
+/// under it by up to a day and a half. The flex weights ARE the day counts, so
+/// the header and the gridlines below can never disagree.
+class _MonthScale extends StatelessWidget {
+  const _MonthScale({required this.months});
+
+  final List<MonthColumn> months;
+
+  @override
+  Widget build(BuildContext context) {
+    // The locale ALWAYS comes from the widget tree, never a literal tag.
+    final locale = Localizations.localeOf(context).toString();
+    // STANDALONE pattern letters: a month abbreviation standing alone without
+    // a day number is nominative in Ukrainian ("серп."), which `MMM` would
+    // silently render as the genitive instead (PF-4).
+    final format = DateFormat('LLL', locale);
+
+    return Row(
+      children: [
+        for (var i = 0; i < months.length; i++)
+          Expanded(
+            flex: months[i].days,
+            child: Text(
+              // Locale-aware uppercasing of intl output — never a hardcoded
+              // uppercase string and never a month table (M6).
+              format.format(months[i].month).toUpperCase(),
+              key: ValueKey<String>('gantt-month-$i'),
+              // A two-to-five character abbreviation is single-line by nature;
+              // wrapping one at a large text scale would grow the header by a
+              // whole line for nothing (the week strip's rule).
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              style: BqText.mono(
+                size: _monthLabelSize,
+                weight: FontWeight.w400,
+                color: BqColors.textMuted,
+                letterSpacing: _monthLabelTracking,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// The row column under its month gridlines and the today marker.
+///
+/// A `LayoutBuilder` reads the available width ONCE and every fraction becomes
+/// pixels there. A fractionally-sized widget cannot express "left offset plus
+/// width" inside a stack cleanly, while a positioned child at a computed pixel
+/// offset is exact — and testable (P-8).
+class _RowsWithRules extends StatelessWidget {
+  const _RowsWithRules({required this.model});
+
+  final CyclesModel model;
+
+  @override
+  Widget build(BuildContext context) {
+    // Cumulative day fractions of the INTERIOR month boundaries: three of them
+    // for a four-month window, at real month lengths.
+    final boundaries = <double>[];
+    var accumulated = 0.0;
+    for (var i = 0; i < model.months.length - 1; i++) {
+      accumulated += model.months[i].fraction;
+      boundaries.add(accumulated);
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+
+        return Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < model.rows.length; i++) ...[
+                  if (i > 0) const SizedBox(height: _rowGap),
+                  GanttRowBar(row: model.rows[i]),
+                ],
+              ],
+            ),
+            for (var i = 0; i < boundaries.length; i++)
+              PositionedDirectional(
+                key: ValueKey<String>('gantt-gridline-$i'),
+                start: boundaries[i] * width,
+                top: 0,
+                bottom: 0,
+                width: _ruleWidth,
+                child: const ColoredBox(color: BqColors.hairline),
+              ),
+            // Today is inside the window BY CONSTRUCTION, so this line always
+            // has a place to render and needs no absent branch (P-4).
+            PositionedDirectional(
+              key: const ValueKey<String>('gantt-today-marker'),
+              start: (model.todayIndex + 0.5) / model.span * width,
+              top: 0,
+              bottom: 0,
+              width: _ruleWidth,
+              child: const ColoredBox(color: BqColors.todayMarker),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Three entries under a hairline rule — and only three.
+///
+/// The mockup's fourth entry ("є взаємодія") asserts an interaction claim this
+/// product does not make, so it does not ship (M1). Three IS the contract.
+class _GanttLegend extends StatelessWidget {
+  const _GanttLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(top: _legendTopMargin),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          for (var i = 0; i < model.rows.length; i++) ...[
-            if (i > 0) const SizedBox(height: _rowGap),
-            GanttRowBar(row: model.rows[i]),
-          ],
+          const SizedBox(
+            height: _ruleWidth,
+            child: ColoredBox(color: BqColors.hairline),
+          ),
+          const SizedBox(height: _legendRulePadding),
+          Wrap(
+            spacing: _legendGap,
+            runSpacing: _legendGap,
+            children: [
+              _LegendEntry(
+                slug: 'taking',
+                label: l10n.legendTaking,
+                swatch: const DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: BqColors.accent,
+                    borderRadius:
+                        BorderRadius.all(Radius.circular(_swatchRadius)),
+                  ),
+                ),
+              ),
+              _LegendEntry(
+                slug: 'planned',
+                label: l10n.legendPlanned,
+                swatch: CustomPaint(
+                  painter: const _HatchSwatchPainter(),
+                  child: const DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border.fromBorderSide(
+                        BorderSide(color: BqColors.plannedBorder),
+                      ),
+                      borderRadius:
+                          BorderRadius.all(Radius.circular(_swatchRadius)),
+                    ),
+                  ),
+                ),
+              ),
+              _LegendEntry(
+                slug: 'paused',
+                label: l10n.legendPaused,
+                // A paused row IS a bare track, which is why this swatch and
+                // the track share the one `chip` value (UI-SPEC token table).
+                swatch: const DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: BqColors.chip,
+                    borderRadius:
+                        BorderRadius.all(Radius.circular(_swatchRadius)),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
+}
+
+/// One legend swatch and its label.
+class _LegendEntry extends StatelessWidget {
+  const _LegendEntry({
+    required this.slug,
+    required this.label,
+    required this.swatch,
+  });
+
+  /// Stable identity for the widget test that pins the entry COUNT.
+  final String slug;
+  final String label;
+  final Widget swatch;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      key: ValueKey<String>('gantt-legend-$slug'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(width: _swatchWidth, height: _swatchHeight, child: swatch),
+        const SizedBox(width: _swatchLabelGap),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: _legendLabelSize,
+            fontWeight: FontWeight.w400,
+            color: BqColors.textMuted,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The planned swatch's 4px-on/4px-off diagonal hatch — the same ink the
+/// planned segments carry, at swatch scale.
+class _HatchSwatchPainter extends CustomPainter {
+  const _HatchSwatchPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      const Radius.circular(_swatchRadius),
+    );
+    canvas.save();
+    canvas.clipRRect(rrect);
+    canvas.drawRRect(rrect, Paint()..color = BqColors.plannedHatchWeak);
+    final hatch = Paint()
+      ..color = BqColors.plannedHatchStrong
+      ..strokeWidth = 4;
+    for (var x = -size.height; x < size.width + size.height; x += 8) {
+      canvas.drawLine(
+        Offset(x, size.height),
+        Offset(x + size.height, 0),
+        hatch,
+      );
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_HatchSwatchPainter oldDelegate) => false;
 }
 
 /// One supplement's row: its name above its painted track.
