@@ -27,6 +27,13 @@ findings:
   info: 10
   total: 20
 status: issues_found
+fix_pass:
+  fixed_at: 2026-08-15
+  scope: critical + warning
+  fixed: 9
+  resolved_out_of_band: 1
+  open: 10
+  gates: flutter analyze clean; flutter test 290/290 (273 baseline + 17 new)
 ---
 
 # Phase 3: Code Review Report
@@ -75,9 +82,34 @@ The remaining warnings cluster around three seams: state held across a day switc
 rendered with the *new* day's identity, `BuildContext` used after the action sheet's async
 gap, and a documented `autoDispose` rationale that `IndexedStack` makes false.
 
+## Fix pass (2026-08-15)
+
+Every Critical and Warning finding is fixed, each in its own commit, each with a
+regression test that was confirmed RED against the pre-fix source before the fix
+landed. WR-08 was already resolved out of band. The ten Info findings are left
+open by design — they are recorded below, unmodified, as the standing backlog.
+
+| Finding | Commit | Finding | Commit |
+|---|---|---|---|
+| CR-01 | `371a205` | WR-04 | `e84efae` |
+| CR-02 | `90c006a` | WR-05 | `09204be` |
+| WR-01 | `f8dedaa` | WR-06 | `a0b88aa` |
+| WR-02 | `1613fb9` | WR-07 | `a98845e` |
+| WR-03 | `223781a` | WR-08 | `1351e3f` (out of band) |
+
+Gates after the pass: `flutter analyze` — no issues; `flutter test` — 290/290 green
+(273 baseline + 17 new tests). The on-device `integration_test/` loop was not run
+(it needs a device and is not part of `flutter test`).
+
+IN-08 ("zero text-scaling coverage") is now partially addressed: the suite has a
+`text scaling` group covering the week strip at 1.0/1.3/1.6/2.0/3.0 and the block
+header at 1.0/1.6/2.0. A broader audit of the other screens remains open.
+
 ## Critical Issues
 
 ### CR-01: Week strip clips its content at accessibility text scales — a fixed 82px height with a doc comment promising the opposite
+
+**Status:** FIXED in `371a205` — The reserved strip extent now scales with the text scaler (`stripHeightFor`), and the dow label and day number are pinned to a single line. Regression coverage at textScaler 1.0/1.3/1.6/2.0/3.0.
 
 **File:** `lib/features/calendar/week_strip.dart:55-61,123-124` (comment at `56-60`)
 **Issue:** `_stripHeight` is a hard-coded `82` and the strip is wrapped in
@@ -127,6 +159,8 @@ And add a regression test that pumps `CalendarScreen` under
 
 ### CR-02: `watchDay` renders doses for soft-deleted slots — a dose time the user deleted keeps appearing in the calendar and stays markable
 
+**Status:** FIXED in `90c006a` — `watchDay` now applies the same rule to a soft-deleted slot that it applies to a paused regimen: its PENDING doses vanish, its recorded history stays. Two repo regression tests in `pause_filter_test.dart`.
+
 **File:** `lib/core/db/drift_repositories.dart:313-338` (the `where` clause at `331-338`)
 **Issue:** The day query inner-joins `regimenSlots` but filters `deletedAt` on
 `intakeLogs`, `regimens` and `supplements` **only** — never on `regimenSlots`. Slot removal
@@ -175,6 +209,8 @@ Add a repo test alongside `pause_filter_test.dart`: materialize two slots, remov
 
 ### WR-01: The held dose list is rendered with the *new* day's identity — a tap in that window writes to the wrong day, and a past-day row can flash warn styling
 
+**Status:** FIXED in `f8dedaa` — `_heldDay` holds the day the held rows belong to, and the held frame is wrapped in an `IgnorePointer` so no gesture can reach a stale row. Two regression tests (identity + inert taps).
+
 **File:** `lib/features/calendar/calendar_screen.dart:207,230-241,297-307`
 **Issue:** `_held` caches the last resolved list (PF-7 anti-flicker, good), but the
 loading branch renders it through `_blocks(_held!, viewingToday: viewingToday)` and
@@ -212,6 +248,8 @@ loading: () => _held == null
 a stale row.)
 
 ### WR-02: Week-strip cells announce as buttons but expose no tap action to screen readers
+
+**Status:** FIXED in `1613fb9` — The tap action moved onto the `Semantics` node itself, so it survives `excludeSemantics`. Asserted with a semantics finder + `performAction`, not a hit test.
 
 **File:** `lib/features/calendar/week_strip.dart:202-219` (the `excludeSemantics: true` at `207`)
 **Issue:** The cell wraps its `GestureDetector` in
@@ -254,6 +292,8 @@ Assert it: `expect(tester.getSemantics(cell(pastDay)).getSemanticsData().hasActi
 
 ### WR-03: `DoseRow._apply` touches `BuildContext` after an async gap on the long-press path
 
+**Status:** FIXED in `223781a` — `mounted` check after the sheet awaits, plus a `mounted` guard on the failure snack bar. Regression test removes the row underneath the open sheet, then chooses an action.
+
 **File:** `lib/features/calendar/dose_row.dart:86-101,116-121`
 **Issue:** `_apply` resolves `ScaffoldMessenger.of(context)` and `context.l10n` as its
 first two statements, which is correct for the tap path (no gap yet). The long-press path
@@ -281,6 +321,8 @@ Future<void> _onLongPress() async {
 
 ### WR-04: Block header overflows horizontally at large text scales — three non-flexible children
 
+**Status:** FIXED in `e84efae` — All three header text children get a one-third-of-row ceiling and ellipsize (the divider was never what made the row safe). Reproduced the reported 65px overflow at textScaler 2.0; regression coverage at 1.0/1.6/2.0.
+
 **File:** `lib/features/calendar/day_block_section.dart:86-120`
 **Issue:** The header `Row` puts the mono time, the block label and `_BlockTagChip` in as
 **non-flexible** children, with only the 1px divider wrapped in `Expanded`. `Expanded`
@@ -304,6 +346,8 @@ Flexible(child: _BlockTagChip(...)),
 ```
 
 ### WR-05: The `autoDispose` rationale documented for the minute ticker and the day family is false under `IndexedStack`
+
+**Status:** FIXED in `09204be` — The shell wraps each `IndexedStack` child in `TickerMode`; `_DayBody` only watches `nowMinutesProvider` while the tab is visible, so autoDispose actually cancels the periodic timer. The three misleading doc comments now describe the real lifecycle. Shell test asserts the provider does not exist while the tab is offstage.
 
 **File:** `lib/features/calendar/calendar_providers.dart:53-58`; `lib/core/providers.dart:75-77`; `lib/app_shell.dart:38-45`
 **Issue:** `nowMinutesProvider`'s doc claims the periodic subscription "exists only while
@@ -339,6 +383,8 @@ IndexedStack(index: _selectedIndex, children: [...])  // -> wrap children in
 
 ### WR-06: Swiping the week pager materializes up to ~371 days of `IntakeLog` rows to colour a 4px dot
 
+**Status:** FIXED in `a0b88aa` — The dot reads `dayDosesReadOnlyProvider` (same rows, no `ensureLogsForDay`); the "generated ahead" warm-up is now a bounded `_WeekWarmer` over the CURRENT week only, gated on tab visibility. Regression test pages three weeks back and asserts the row count is unchanged.
+
 **File:** `lib/features/calendar/week_strip.dart:53,125-134,268-292`
 **Issue:** Every `_HandledDot` watches `dayDosesProvider(day)` — which is the app's
 materialization choke point — purely to decide one of two dot colours. Each page the pager
@@ -361,6 +407,8 @@ rather than for every page the pager passes through.
 
 ### WR-07: `doseSheetSubtitle` renders a dangling separator when the slot has no dose label
 
+**Status:** FIXED in `a98845e` — New `doseSheetSubtitleTimeOnly` ARB key in both locales (+ `flutter gen-l10n`), branched on an empty dose label — mirroring the guard `DoseRow` already had.
+
 **File:** `lib/features/calendar/dose_action_sheet.dart:85-92`; `lib/core/l10n/arb/app_uk.arb` / `app_en.arb` (`"doseSheetSubtitle": "{time} · {dose}"`)
 **Issue:** `dose.slot.doseLabel` is optional and frequently empty (the Phase-2 editor
 allows it, and half of this phase's own test fixtures use `doseLabel: ''`). The sheet
@@ -380,6 +428,8 @@ Text(
 ```
 
 ### WR-08: The working tree carries an uncommitted dependency change and a throwaway probe with a hardcoded simulator UDID
+
+**Status:** RESOLVED OUT OF BAND in `1351e3f` — the `integration_test` dev dependency, `pubspec.lock` and `integration_test/data03_loop_test.dart` were committed deliberately as the DATA-03 harness; the throwaway `_probe_test.dart` no longer exists in the tree.
 
 **File:** `pubspec.yaml` (+6 lines, adds the `integration_test` dev dependency),
 `pubspec.lock` (+39), untracked `integration_test/_probe_test.dart`
