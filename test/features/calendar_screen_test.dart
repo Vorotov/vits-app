@@ -28,6 +28,8 @@ import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
+import 'package:boostque/core/today_controller.dart';
+import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/calendar_screen.dart';
 import 'package:boostque/features/calendar/day_progress_ring.dart';
 import 'package:drift/native.dart';
@@ -54,7 +56,11 @@ void main() {
 
   /// Provider container over an in-memory database; callers seed through the
   /// repositories before pumping.
-  ProviderContainer makeContainer() {
+  ///
+  /// [today] pins the app's single clock so every intl assertion below is
+  /// deterministic on any machine, on any day (the header's date strings are
+  /// clock-derived — UI-SPEC S4).
+  ProviderContainer makeContainer({DateTime? today}) {
     return ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
@@ -63,6 +69,7 @@ void main() {
           db = database;
           return database;
         }),
+        if (today != null) todayProvider.overrideWith(() => _FixedToday(today)),
       ],
     );
   }
@@ -357,4 +364,181 @@ void main() {
       expect(() => DayProgressRing(taken: 0, total: 0), throwsAssertionError);
     });
   });
+
+  // --- Fixed header (plan 03-03, Task 3; UI-SPEC S4 "Header", A7, E5) ---
+  //
+  // Every date string here is asserted against a PINNED clock (2026-08-13, a
+  // Thursday) so the uk exemplar rendering is reproducible. The assertions run
+  // inside the localized MaterialApp harness, which loads the real uk date
+  // symbols through the global delegates — a plain unit test would need
+  // `initializeDateFormatting('uk')` first or silently fall back to en.
+  group('header', () {
+    final pinnedToday = DateTime.utc(2026, 8, 13); // четвер
+    final twoDaysEarlier = DateTime.utc(2026, 8, 11); // вівторок
+
+    const disclaimer = 'Розклад складено з ваших власних записів. '
+        'Освітній матеріал, не медична порада.';
+
+    testWidgets('uk: following today renders the localized title and the '
+        'pinned exemplar subtitle "четвер, 13 серпня" (A7)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(alwaysActive());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('четвер, 13 серпня').evaluate().isNotEmpty,
+        'the intl-formatted header subtitle',
+      );
+
+      expect(find.text('Сьогодні'), findsOneWidget,
+          reason: 'the title is the localized today string while following');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a non-today selection titles the capitalized weekday and '
+        'drops it from the subtitle', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(alwaysActive());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('четвер, 13 серпня').evaluate().isNotEmpty,
+        'the header to settle on today',
+      );
+
+      container.read(selectedDayProvider.notifier).select(twoDaysEarlier);
+      await pumpUntil(
+        tester,
+        () => find.text('Вівторок').evaluate().isNotEmpty,
+        'the title to become the capitalized weekday',
+      );
+
+      expect(find.text('11 серпня'), findsOneWidget,
+          reason: 'the subtitle drops the weekday already shown in the title');
+      expect(find.text('четвер, 13 серпня'), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: backToToday appears only off today and clears the '
+        'selection when tapped (E5)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(alwaysActive());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('четвер, 13 серпня').evaluate().isNotEmpty,
+        'the header to settle on today',
+      );
+
+      final button = find.widgetWithText(TextButton, 'Сьогодні');
+      expect(button, findsNothing,
+          reason: 'no escape hatch is offered while already following today');
+
+      container.read(selectedDayProvider.notifier).select(twoDaysEarlier);
+      await pumpUntil(
+        tester,
+        () => button.evaluate().isNotEmpty,
+        'backToToday to appear on a non-today day',
+      );
+
+      await tester.tap(button);
+      await pumpUntil(
+        tester,
+        () => find.text('четвер, 13 серпня').evaluate().isNotEmpty,
+        'the tap to clear the selection back to today',
+      );
+
+      expect(find.text('Сьогодні'), findsOneWidget,
+          reason: 'the title is the localized today string again, and the '
+              'button (same word) is gone');
+      expect(button, findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: the header sits OUTSIDE the scroll view and survives a '
+        'scroll of the body', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(alwaysActive());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('четвер, 13 серпня').evaluate().isNotEmpty,
+        'the header subtitle',
+      );
+
+      expect(
+        find.descendant(
+          of: find.byType(Scrollable),
+          matching: find.text('четвер, 13 серпня'),
+        ),
+        findsNothing,
+        reason: 'the header must never scroll away (UI-SPEC S4)',
+      );
+
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('четвер, 13 серпня'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: the disclaimer closes the scroll body on a day that has '
+        'doses', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(alwaysActive());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Магній бісглицинат').evaluate().isNotEmpty,
+        'the dose row',
+      );
+
+      expect(find.text(disclaimer), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(Scrollable),
+          matching: find.text(disclaimer),
+        ),
+        findsOneWidget,
+        reason: 'the disclaimer is the last element INSIDE the scroll body',
+      );
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+  });
+}
+
+/// A clock frozen on one day: [TodayController] with no timer and no
+/// `DateTime.now()` read, so header date assertions are machine-independent.
+class _FixedToday extends TodayController {
+  _FixedToday(this.day);
+
+  final DateTime day;
+
+  @override
+  DateTime build() => day;
 }
