@@ -35,6 +35,15 @@ void main() {
       expect(l10n.weeksCount(11), '11 тижнів'); // many (11-14 exception)
       expect(l10n.weeksCount(21), '21 тиждень'); // one (i%10=1)
     });
+
+    test('slotsPerDay covers all four CLDR forms incl. 11-14 exception '
+        '(NOT the mockup 2-form bug, PF-7)', () {
+      expect(l10n.slotsPerDay(1), '1 раз на день'); // one
+      expect(l10n.slotsPerDay(2), '2 рази на день'); // few
+      expect(l10n.slotsPerDay(5), '5 разів на день'); // many
+      expect(l10n.slotsPerDay(11), '11 разів на день'); // many (11-14)
+      expect(l10n.slotsPerDay(21), '21 раз на день'); // one (i%10=1)
+    });
   });
 
   group('en plurals', () {
@@ -53,6 +62,11 @@ void main() {
     test('weeksCount uses one/other', () {
       expect(l10n.weeksCount(1), '1 week');
       expect(l10n.weeksCount(21), '21 weeks');
+    });
+
+    test('slotsPerDay uses one/other', () {
+      expect(l10n.slotsPerDay(1), '1 time per day');
+      expect(l10n.slotsPerDay(2), '2 times per day');
     });
   });
 }

@@ -67,4 +67,117 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get addManualSupplement => 'Додати добавку';
+
+  @override
+  String get scheduleTitle => 'Розклад прийому';
+
+  @override
+  String get pausedBadge => 'НА ПАУЗІ';
+
+  @override
+  String get periodicityLabel => 'ПЕРІОДИЧНІСТЬ';
+
+  @override
+  String get cyclicTab => 'Циклічно';
+
+  @override
+  String get courseTab => 'Разовий курс';
+
+  @override
+  String get startLabel => 'Старт';
+
+  @override
+  String get endLabel => 'Кінець';
+
+  @override
+  String get cycleLength => 'Довжина циклу';
+
+  @override
+  String get breakLabel => 'Перерва';
+
+  @override
+  String get noBreak => 'без перерви';
+
+  @override
+  String cycleSummaryCyclic(String on, String off) {
+    return '$on прийому, потім $off перерви — повторюється, поки не вимкнете';
+  }
+
+  @override
+  String cycleSummaryCyclicNoBreak(String on) {
+    return '$on прийому без перерви — повторюється, поки не вимкнете';
+  }
+
+  @override
+  String courseSummaryRange(String start, String end) {
+    return 'Один курс без повторення: $start — $end';
+  }
+
+  @override
+  String get timeSlotsLabel => 'ЧАС ПРИЙОМУ';
+
+  @override
+  String slotsPerDay(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count разу на день',
+      many: '$count разів на день',
+      few: '$count рази на день',
+      one: '$count раз на день',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get addTimeSlot => '+ Додати слот часу';
+
+  @override
+  String removeSlot(String time) {
+    return 'Видалити слот $time';
+  }
+
+  @override
+  String slotIntervalNote(int h, int m) {
+    return 'Найменший інтервал — $h год $m хв.';
+  }
+
+  @override
+  String get slotIntervalSingle => 'Один слот на день.';
+
+  @override
+  String get saveAndStart => 'Додати й запустити цикл';
+
+  @override
+  String get saveWhilePaused => 'Зберегти, цикл на паузі';
+
+  @override
+  String get pause => 'Пауза';
+
+  @override
+  String get resume => 'Відновити цикл';
+
+  @override
+  String get delete => 'Видалити';
+
+  @override
+  String get cancel => 'Скасувати';
+
+  @override
+  String saveHintActive(String start) {
+    return 'Слоти з\'являться в календарі з $start. Пауза прибирає їх, не видаляючи налаштувань.';
+  }
+
+  @override
+  String get saveHintPaused =>
+      'Цикл збережеться в стеку зі статусом «пауза» — у календарі його не буде.';
+
+  @override
+  String deleteConfirmTitle(String name) {
+    return 'Видалити «$name»?';
+  }
+
+  @override
+  String get deleteConfirmBody =>
+      'Розклад і майбутні дози буде видалено. Історію прийому збережемо.';
 }

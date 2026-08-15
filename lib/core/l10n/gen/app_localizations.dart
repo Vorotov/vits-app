@@ -175,6 +175,180 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add supplement'**
   String get addManualSupplement;
+
+  /// Regimen editor top bar title
+  ///
+  /// In en, this message translates to:
+  /// **'Dosing schedule'**
+  String get scheduleTitle;
+
+  /// Badge in the regimen editor top bar shown while the draft is paused
+  ///
+  /// In en, this message translates to:
+  /// **'PAUSED'**
+  String get pausedBadge;
+
+  /// Mono eyebrow label above the cyclic/course segmented toggle
+  ///
+  /// In en, this message translates to:
+  /// **'PERIODICITY'**
+  String get periodicityLabel;
+
+  /// Segmented toggle label for the cyclic regimen mode
+  ///
+  /// In en, this message translates to:
+  /// **'Cyclic'**
+  String get cyclicTab;
+
+  /// Segmented toggle label for the one-time course regimen mode
+  ///
+  /// In en, this message translates to:
+  /// **'One-time course'**
+  String get courseTab;
+
+  /// Label above the regimen start date field
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get startLabel;
+
+  /// Label above the course end date field
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get endLabel;
+
+  /// Label of the on-days slider row in the regimen editor
+  ///
+  /// In en, this message translates to:
+  /// **'Cycle length'**
+  String get cycleLength;
+
+  /// Label of the break-days slider row in the regimen editor
+  ///
+  /// In en, this message translates to:
+  /// **'Break'**
+  String get breakLabel;
+
+  /// Break slider value label when the break length is zero
+  ///
+  /// In en, this message translates to:
+  /// **'no break'**
+  String get noBreak;
+
+  /// Cycle preview summary for a cyclic regimen with a break; placeholders are pre-formatted weeksCount strings
+  ///
+  /// In en, this message translates to:
+  /// **'{on} on, then {off} off — repeats until you turn it off'**
+  String cycleSummaryCyclic(String on, String off);
+
+  /// Cycle preview summary for a cyclic regimen without a break; placeholder is a pre-formatted weeksCount string
+  ///
+  /// In en, this message translates to:
+  /// **'{on} on without a break — repeats until you turn it off'**
+  String cycleSummaryCyclicNoBreak(String on);
+
+  /// Cycle preview summary for a one-time course; placeholders are locale-formatted dates
+  ///
+  /// In en, this message translates to:
+  /// **'One course without repetition: {start} — {end}'**
+  String courseSummaryRange(String start, String end);
+
+  /// Mono eyebrow label above the daily time-slot list
+  ///
+  /// In en, this message translates to:
+  /// **'DOSE TIMES'**
+  String get timeSlotsLabel;
+
+  /// Daily slot count summary next to the DOSE TIMES eyebrow
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} time per day} other{{count} times per day}}'**
+  String slotsPerDay(int count);
+
+  /// Dashed button adding a daily time slot; disabled at the 6-slot cap
+  ///
+  /// In en, this message translates to:
+  /// **'+ Add time slot'**
+  String get addTimeSlot;
+
+  /// Semantics label of the minus control on a time-slot row
+  ///
+  /// In en, this message translates to:
+  /// **'Remove slot {time}'**
+  String removeSlot(String time);
+
+  /// Neutral helper under the slot list stating the smallest interval between slots
+  ///
+  /// In en, this message translates to:
+  /// **'Smallest interval — {h} h {m} min.'**
+  String slotIntervalNote(int h, int m);
+
+  /// Helper under the slot list when only one slot exists
+  ///
+  /// In en, this message translates to:
+  /// **'One slot per day.'**
+  String get slotIntervalSingle;
+
+  /// Editor footer primary CTA while the draft is not paused
+  ///
+  /// In en, this message translates to:
+  /// **'Add and start cycle'**
+  String get saveAndStart;
+
+  /// Editor footer primary CTA while the draft is paused
+  ///
+  /// In en, this message translates to:
+  /// **'Save, cycle paused'**
+  String get saveWhilePaused;
+
+  /// Editor footer secondary button pausing the regimen draft
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get pause;
+
+  /// Editor footer secondary button resuming a paused regimen draft
+  ///
+  /// In en, this message translates to:
+  /// **'Resume cycle'**
+  String get resume;
+
+  /// Editor footer destructive button; also the confirm action in the delete dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// Dismiss action in the delete confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// Centered helper under the footer buttons while the draft is not paused; placeholder is a locale-formatted start date
+  ///
+  /// In en, this message translates to:
+  /// **'Slots will appear in the calendar from {start}. Pause removes them without deleting your settings.'**
+  String saveHintActive(String start);
+
+  /// Centered helper under the footer buttons while the draft is paused
+  ///
+  /// In en, this message translates to:
+  /// **'The cycle is saved to your stack as paused — it won\'t appear in the calendar.'**
+  String get saveHintPaused;
+
+  /// Delete confirmation dialog title; placeholder is the supplement name
+  ///
+  /// In en, this message translates to:
+  /// **'Delete “{name}”?'**
+  String deleteConfirmTitle(String name);
+
+  /// Delete confirmation dialog body stating that intake history is kept
+  ///
+  /// In en, this message translates to:
+  /// **'Its schedule and future doses will be removed. Your intake history is kept.'**
+  String get deleteConfirmBody;
 }
 
 class _AppLocalizationsDelegate

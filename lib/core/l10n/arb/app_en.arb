@@ -61,5 +61,170 @@
   "addManualSupplement": "Add supplement",
   "@addManualSupplement": {
     "description": "Primary CTA of the manual entry form in the add-supplement sheet"
+  },
+  "scheduleTitle": "Dosing schedule",
+  "@scheduleTitle": {
+    "description": "Regimen editor top bar title"
+  },
+  "pausedBadge": "PAUSED",
+  "@pausedBadge": {
+    "description": "Badge in the regimen editor top bar shown while the draft is paused"
+  },
+  "periodicityLabel": "PERIODICITY",
+  "@periodicityLabel": {
+    "description": "Mono eyebrow label above the cyclic/course segmented toggle"
+  },
+  "cyclicTab": "Cyclic",
+  "@cyclicTab": {
+    "description": "Segmented toggle label for the cyclic regimen mode"
+  },
+  "courseTab": "One-time course",
+  "@courseTab": {
+    "description": "Segmented toggle label for the one-time course regimen mode"
+  },
+  "startLabel": "Start",
+  "@startLabel": {
+    "description": "Label above the regimen start date field"
+  },
+  "endLabel": "End",
+  "@endLabel": {
+    "description": "Label above the course end date field"
+  },
+  "cycleLength": "Cycle length",
+  "@cycleLength": {
+    "description": "Label of the on-days slider row in the regimen editor"
+  },
+  "breakLabel": "Break",
+  "@breakLabel": {
+    "description": "Label of the break-days slider row in the regimen editor"
+  },
+  "noBreak": "no break",
+  "@noBreak": {
+    "description": "Break slider value label when the break length is zero"
+  },
+  "cycleSummaryCyclic": "{on} on, then {off} off — repeats until you turn it off",
+  "@cycleSummaryCyclic": {
+    "description": "Cycle preview summary for a cyclic regimen with a break; placeholders are pre-formatted weeksCount strings",
+    "placeholders": {
+      "on": {
+        "type": "String"
+      },
+      "off": {
+        "type": "String"
+      }
+    }
+  },
+  "cycleSummaryCyclicNoBreak": "{on} on without a break — repeats until you turn it off",
+  "@cycleSummaryCyclicNoBreak": {
+    "description": "Cycle preview summary for a cyclic regimen without a break; placeholder is a pre-formatted weeksCount string",
+    "placeholders": {
+      "on": {
+        "type": "String"
+      }
+    }
+  },
+  "courseSummaryRange": "One course without repetition: {start} — {end}",
+  "@courseSummaryRange": {
+    "description": "Cycle preview summary for a one-time course; placeholders are locale-formatted dates",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSlotsLabel": "DOSE TIMES",
+  "@timeSlotsLabel": {
+    "description": "Mono eyebrow label above the daily time-slot list"
+  },
+  "slotsPerDay": "{count, plural, one{{count} time per day} other{{count} times per day}}",
+  "@slotsPerDay": {
+    "description": "Daily slot count summary next to the DOSE TIMES eyebrow",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "addTimeSlot": "+ Add time slot",
+  "@addTimeSlot": {
+    "description": "Dashed button adding a daily time slot; disabled at the 6-slot cap"
+  },
+  "removeSlot": "Remove slot {time}",
+  "@removeSlot": {
+    "description": "Semantics label of the minus control on a time-slot row",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "slotIntervalNote": "Smallest interval — {h} h {m} min.",
+  "@slotIntervalNote": {
+    "description": "Neutral helper under the slot list stating the smallest interval between slots",
+    "placeholders": {
+      "h": {
+        "type": "int"
+      },
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "slotIntervalSingle": "One slot per day.",
+  "@slotIntervalSingle": {
+    "description": "Helper under the slot list when only one slot exists"
+  },
+  "saveAndStart": "Add and start cycle",
+  "@saveAndStart": {
+    "description": "Editor footer primary CTA while the draft is not paused"
+  },
+  "saveWhilePaused": "Save, cycle paused",
+  "@saveWhilePaused": {
+    "description": "Editor footer primary CTA while the draft is paused"
+  },
+  "pause": "Pause",
+  "@pause": {
+    "description": "Editor footer secondary button pausing the regimen draft"
+  },
+  "resume": "Resume cycle",
+  "@resume": {
+    "description": "Editor footer secondary button resuming a paused regimen draft"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Editor footer destructive button; also the confirm action in the delete dialog"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Dismiss action in the delete confirmation dialog"
+  },
+  "saveHintActive": "Slots will appear in the calendar from {start}. Pause removes them without deleting your settings.",
+  "@saveHintActive": {
+    "description": "Centered helper under the footer buttons while the draft is not paused; placeholder is a locale-formatted start date",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      }
+    }
+  },
+  "saveHintPaused": "The cycle is saved to your stack as paused — it won't appear in the calendar.",
+  "@saveHintPaused": {
+    "description": "Centered helper under the footer buttons while the draft is paused"
+  },
+  "deleteConfirmTitle": "Delete “{name}”?",
+  "@deleteConfirmTitle": {
+    "description": "Delete confirmation dialog title; placeholder is the supplement name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteConfirmBody": "Its schedule and future doses will be removed. Your intake history is kept.",
+  "@deleteConfirmBody": {
+    "description": "Delete confirmation dialog body stating that intake history is kept"
   }
 }
