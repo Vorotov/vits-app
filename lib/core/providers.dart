@@ -96,6 +96,33 @@ final dayDosesProvider = StreamProvider.autoDispose
   yield* intake.watchDay(day);
 });
 
+/// The same day's doses, READ-ONLY: it never calls `ensureLogsForDay`.
+///
+/// The week strip needs one bit per day (is every dose handled?) to colour a
+/// 4px dot. Reading that through [dayDosesProvider] made a cosmetic dot the
+/// app's biggest writer: each week the pager passed through materialized
+/// 7 days × slots of IntakeLog rows, so the database grew with pager travel
+/// rather than with user intent — up to ~371 days for a strip the user may
+/// never have looked at (WR-06).
+///
+/// The dot reads exactly the same rows; it just does not create them. Days
+/// that were never materialized have no rows and are therefore "not fully
+/// handled" — which is what the neutral dot already meant for them.
+///
+/// Same `dateOnly()` UTC key rule as [dayDosesProvider] (PF-1).
+final dayDosesReadOnlyProvider = StreamProvider.autoDispose
+    .family<List<DayDose>, DateTime>((ref, day) {
+  assert(
+    day == dateOnly(day),
+    'dayDosesReadOnlyProvider key must be a dateOnly() UTC value (PF-1), '
+    'got: $day',
+  );
+  // Re-runs on any regimen add/edit/pause/resume/delete, exactly like the
+  // materializing provider — the dot must not go stale.
+  ref.watch(regimensStreamProvider);
+  return ref.watch(intakeRepoProvider).watchDay(day);
+});
+
 /// Supplements paired with their regimens — the Stack tab's row list.
 ///
 /// Provider composition (RESEARCH Pattern 5): watches both stream providers

@@ -2025,6 +2025,48 @@ void main() {
       await tearDownTree(tester, container);
     });
 
+    testWidgets('uk: travelling the pager materializes nothing — only the '
+        'current week is warmed (WR-06)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(everyDay());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => cell(monday).evaluate().isNotEmpty,
+        'the week strip',
+      );
+
+      var raw = <IntakeLog>[];
+      final sub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      await pumpUntil(tester, () => raw.length == 7,
+          "the current week's seven rows, warmed by the strip");
+
+      // Three weeks back through the pager.
+      for (var page = 0; page < 3; page++) {
+        await tester.drag(find.byType(PageView), const Offset(320, 0));
+        for (var i = 0; i < 40; i++) {
+          await tester.pump(const Duration(milliseconds: 20));
+        }
+      }
+      expect(cell(monday.subtract(const Duration(days: 21))), findsOneWidget,
+          reason: 'the pager really did travel three weeks back');
+
+      expect(raw, hasLength(7),
+          reason: 'the dot is a READ — the database must grow with what the '
+              'user actually does, not with how far the pager travelled');
+      expect(raw.every((r) => !r.date.isBefore(monday)), isTrue,
+          reason: 'nothing outside the current week was materialized');
+      expect(tester.takeException(), isNull);
+
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
     testWidgets('uk: a past day whose every dose is handled shows the calm '
         'dot; a pending past day, an empty day and a future day show the '
         'neutral dot', (tester) async {

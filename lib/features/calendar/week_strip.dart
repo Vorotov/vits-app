@@ -25,11 +25,14 @@
 /// ## The strip never blocks on data
 ///
 /// Cells render synchronously from `todayProvider` + `selectedDayProvider`.
-/// Each cell watches its own day's `dayDosesProvider` purely for the handled
-/// dot — which doubles as the "generated ahead for the near horizon"
-/// materialization of the visible week — and a day that is loading, errored,
-/// empty or in the future simply shows the neutral dot. Never a spinner,
-/// never an error cell (E3 loading/error).
+/// Each cell watches its own day's `dayDosesReadOnlyProvider` purely for the
+/// handled dot — a READ, never a write (WR-06) — and a day that is loading,
+/// errored, empty or in the future simply shows the neutral dot. Never a
+/// spinner, never an error cell (E3 loading/error).
+///
+/// The "generated ahead for the near horizon" materialization is a separate,
+/// bounded job: `_WeekWarmer` warms the CURRENT week only, and only while the
+/// Calendar tab is the visible one.
 ///
 /// The strip carries NO status semantics beyond that dot: it uses neither the
 /// warn nor the destructive palette, on any day (TRACK-03 neutrality).
@@ -136,16 +139,45 @@ class _WeekStripState extends ConsumerState<WeekStrip> {
 
     return SizedBox(
       height: stripHeightFor(MediaQuery.textScalerOf(context)),
-      child: PageView.builder(
-        controller: _controller,
-        itemCount: weekPageCount,
-        itemBuilder: (context, page) => _WeekPage(
-          weekStart: weekStartForPage(page, today),
-          today: today,
-          resolved: resolved,
-        ),
+      child: Stack(
+        children: [
+          PageView.builder(
+            controller: _controller,
+            itemCount: weekPageCount,
+            itemBuilder: (context, page) => _WeekPage(
+              weekStart: weekStartForPage(page, today),
+              today: today,
+              resolved: resolved,
+            ),
+          ),
+          // The "generated ahead for the near horizon" warm-up, bounded to
+          // ONE week and to the tab actually being visible (WR-05 / WR-06):
+          // paging back through the year no longer writes a row per day
+          // travelled, and the app writes nothing at all for a calendar the
+          // user has not opened.
+          if (TickerMode.valuesOf(context).enabled)
+            _WeekWarmer(weekStart: mondayOfWeek(today)),
+        ],
       ),
     );
+  }
+}
+
+/// Materializes the seven days of [weekStart] and draws nothing.
+///
+/// A widget of its own so the warm-up's rebuilds stay off the pager: it holds
+/// the only `dayDosesProvider` watches the strip makes.
+class _WeekWarmer extends ConsumerWidget {
+  const _WeekWarmer({required this.weekStart});
+
+  final DateTime weekStart;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    for (var i = 0; i < 7; i++) {
+      ref.watch(dayDosesProvider(weekStart.add(Duration(days: i))));
+    }
+    return const SizedBox.shrink();
   }
 }
 
@@ -310,9 +342,10 @@ class _HandledDot extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watching the day's doses is what pre-materializes the visible week —
-    // the design spec's "generated ahead for the near horizon".
-    final doses = ref.watch(dayDosesProvider(day));
+    // READ-ONLY (WR-06): the dot reports on the day's rows, it does not create
+    // them. Materialization stays with the day the user is actually looking at
+    // and with the current week's warm-up in [_WeekStripState].
+    final doses = ref.watch(dayDosesReadOnlyProvider(day));
     final list = switch (doses) {
       AsyncData(:final value) => value,
       _ => null,
