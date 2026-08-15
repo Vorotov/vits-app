@@ -289,6 +289,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'One slot per day.'**
   String get slotIntervalSingle;
+
+  /// Editor footer primary CTA while the draft is not paused
+  ///
+  /// In en, this message translates to:
+  /// **'Add and start cycle'**
+  String get saveAndStart;
+
+  /// Editor footer primary CTA while the draft is paused
+  ///
+  /// In en, this message translates to:
+  /// **'Save, cycle paused'**
+  String get saveWhilePaused;
+
+  /// Editor footer secondary button pausing the regimen draft
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get pause;
+
+  /// Editor footer secondary button resuming a paused regimen draft
+  ///
+  /// In en, this message translates to:
+  /// **'Resume cycle'**
+  String get resume;
+
+  /// Editor footer destructive button; also the confirm action in the delete dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// Dismiss action in the delete confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// Centered helper under the footer buttons while the draft is not paused; placeholder is a locale-formatted start date
+  ///
+  /// In en, this message translates to:
+  /// **'Slots will appear in the calendar from {start}. Pause removes them without deleting your settings.'**
+  String saveHintActive(String start);
+
+  /// Centered helper under the footer buttons while the draft is paused
+  ///
+  /// In en, this message translates to:
+  /// **'The cycle is saved to your stack as paused — it won\'t appear in the calendar.'**
+  String get saveHintPaused;
+
+  /// Delete confirmation dialog title; placeholder is the supplement name
+  ///
+  /// In en, this message translates to:
+  /// **'Delete “{name}”?'**
+  String deleteConfirmTitle(String name);
+
+  /// Delete confirmation dialog body stating that intake history is kept
+  ///
+  /// In en, this message translates to:
+  /// **'Its schedule and future doses will be removed. Your intake history is kept.'**
+  String get deleteConfirmBody;
 }
 
 class _AppLocalizationsDelegate

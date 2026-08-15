@@ -217,16 +217,21 @@ class _TopBar extends StatelessWidget {
               color: BqColors.textSecondary,
             ),
           ),
-          Text(
-            l10n.scheduleTitle,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              height: 1.0,
-              color: BqColors.ink,
+          Expanded(
+            // Flexible, not fixed-width: the trailing badge keeps its
+            // intrinsic size and the title yields — never a Row overflow.
+            child: Text(
+              l10n.scheduleTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                height: 1.0,
+                color: BqColors.ink,
+              ),
             ),
           ),
-          const Spacer(),
           if (paused)
             Container(
               padding: const EdgeInsetsDirectional.symmetric(
@@ -770,8 +775,14 @@ class _DashedBorderPainter extends CustomPainter {
       oldDelegate.color != color;
 }
 
-/// Pinned editor footer (Task 2 wires save/pause/delete; the slot exists
-/// from Task 1 so the scroll body's geometry is final).
+/// Pinned editor footer: save, pause/resume, confirmed delete, save hint
+/// (UI-SPEC S3 footer contract; Interaction Contracts 5 and 7).
+///
+/// Together with the top-bar badge, the save-button label, the pause-button
+/// label, and the save hint flip as ONE paused state (UI-SPEC #13). Видалити
+/// never deletes directly — its only direct effect is opening the
+/// confirmation dialog; the cascade call lives solely in the dialog's
+/// confirm handler (UI-SPEC #19, threat T-02-04).
 class _EditorFooter extends StatelessWidget {
   const _EditorFooter({
     required this.draft,
@@ -785,8 +796,7 @@ class _EditorFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Task 1 placeholder: the pinned footer bar exists (surfaceAlt, hairline
-    // top border) so the body never scrolls under it; buttons land in Task 2.
+    final l10n = context.l10n;
     return Container(
       decoration: const BoxDecoration(
         color: BqColors.surfaceAlt,
@@ -798,7 +808,149 @@ class _EditorFooter extends StatelessWidget {
         start: 20,
         end: 20,
       ),
-      child: const SizedBox(width: double.infinity, height: 0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Row 1: the primary save button — the one always-visible accent
+          // fill; radius 13 is the mockup-exact non-token override.
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: BqColors.accent,
+                foregroundColor: BqColors.surface,
+                overlayColor: BqColors.accentPressed,
+                padding: const EdgeInsetsDirectional.symmetric(vertical: 15),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              onPressed: () => _save(context),
+              child: Text(
+                draft.paused ? l10n.saveWhilePaused : l10n.saveAndStart,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Row 2: pause/resume secondary + delete destructive.
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: _outlinedStyle(
+                    foreground: BqColors.ink,
+                    border: BqColors.inputBorder,
+                    pressed: BqColors.chip,
+                  ),
+                  onPressed: controller.togglePause,
+                  child: Text(draft.paused ? l10n.resume : l10n.pause),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton(
+                  style: _outlinedStyle(
+                    foreground: BqColors.risk,
+                    border: BqColors.riskBorder,
+                    pressed: BqColors.riskBg,
+                  ),
+                  // Opening the dialog is this button's ONLY direct effect
+                  // (UI-SPEC #19).
+                  onPressed: () => _confirmDelete(context),
+                  child: Text(l10n.delete),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            draft.paused
+                ? l10n.saveHintPaused
+                : l10n.saveHintActive(_hintDate(context)),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 11,
+              height: 1.45,
+              color: BqColors.textFaint,
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  /// Shared outlined-button shape (surface fill, 1px border, 13.5/600,
+  /// pressed overlay per Interaction Contract 7).
+  static ButtonStyle _outlinedStyle({
+    required Color foreground,
+    required Color border,
+    required Color pressed,
+  }) {
+    return OutlinedButton.styleFrom(
+      backgroundColor: BqColors.surface,
+      foregroundColor: foreground,
+      overlayColor: pressed,
+      side: BorderSide(color: border),
+      padding: const EdgeInsetsDirectional.symmetric(vertical: 13),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(BqRadii.button),
+      ),
+      textStyle: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+    );
+  }
+
+  /// Locale-aware "14 серпня"-style date for the active save hint.
+  String _hintDate(BuildContext context) => DateFormat.MMMMd(
+        Localizations.localeOf(context).toString(),
+      ).format(draft.startDate);
+
+  /// Persists the draft through the tested controller, then leaves the
+  /// editor (the controller reuses the regimen id — PF-8).
+  Future<void> _save(BuildContext context) async {
+    await controller.save();
+    if (context.mounted) await Navigator.of(context).maybePop();
+  }
+
+  /// The REQUIRED confirmation gate in front of the soft-delete cascade
+  /// (threat T-02-04). Cancel/dismiss returns to the editor unchanged; only
+  /// the dialog's confirm handler calls [RegimenEditorController.deleteSupplement].
+  Future<void> _confirmDelete(BuildContext context) async {
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.deleteConfirmTitle(supplementName)),
+        content: Text(l10n.deleteConfirmBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: BqColors.risk,
+              overlayColor: BqColors.riskBg,
+            ),
+            onPressed: () async {
+              // The cascade call lives here and ONLY here (UI-SPEC #19).
+              await controller.deleteSupplement();
+              if (dialogContext.mounted) {
+                Navigator.of(dialogContext).pop(true);
+              }
+            },
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    // Only the confirmed path leaves the editor; cancel/dismiss changes
+    // nothing (UI-SPEC #19).
+    if (confirmed == true && context.mounted) {
+      await Navigator.of(context).maybePop();
+    }
   }
 }

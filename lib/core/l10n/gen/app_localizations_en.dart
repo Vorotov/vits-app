@@ -139,4 +139,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get slotIntervalSingle => 'One slot per day.';
+
+  @override
+  String get saveAndStart => 'Add and start cycle';
+
+  @override
+  String get saveWhilePaused => 'Save, cycle paused';
+
+  @override
+  String get pause => 'Pause';
+
+  @override
+  String get resume => 'Resume cycle';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String saveHintActive(String start) {
+    return 'Slots will appear in the calendar from $start. Pause removes them without deleting your settings.';
+  }
+
+  @override
+  String get saveHintPaused =>
+      'The cycle is saved to your stack as paused — it won\'t appear in the calendar.';
+
+  @override
+  String deleteConfirmTitle(String name) {
+    return 'Delete “$name”?';
+  }
+
+  @override
+  String get deleteConfirmBody =>
+      'Its schedule and future doses will be removed. Your intake history is kept.';
 }

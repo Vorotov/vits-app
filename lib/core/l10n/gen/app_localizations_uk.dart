@@ -144,4 +144,40 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get slotIntervalSingle => 'Один слот на день.';
+
+  @override
+  String get saveAndStart => 'Додати й запустити цикл';
+
+  @override
+  String get saveWhilePaused => 'Зберегти, цикл на паузі';
+
+  @override
+  String get pause => 'Пауза';
+
+  @override
+  String get resume => 'Відновити цикл';
+
+  @override
+  String get delete => 'Видалити';
+
+  @override
+  String get cancel => 'Скасувати';
+
+  @override
+  String saveHintActive(String start) {
+    return 'Слоти з\'являться в календарі з $start. Пауза прибирає їх, не видаляючи налаштувань.';
+  }
+
+  @override
+  String get saveHintPaused =>
+      'Цикл збережеться в стеку зі статусом «пауза» — у календарі його не буде.';
+
+  @override
+  String deleteConfirmTitle(String name) {
+    return 'Видалити «$name»?';
+  }
+
+  @override
+  String get deleteConfirmBody =>
+      'Розклад і майбутні дози буде видалено. Історію прийому збережемо.';
 }

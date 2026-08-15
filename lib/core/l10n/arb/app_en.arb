@@ -176,5 +176,55 @@
   "slotIntervalSingle": "One slot per day.",
   "@slotIntervalSingle": {
     "description": "Helper under the slot list when only one slot exists"
+  },
+  "saveAndStart": "Add and start cycle",
+  "@saveAndStart": {
+    "description": "Editor footer primary CTA while the draft is not paused"
+  },
+  "saveWhilePaused": "Save, cycle paused",
+  "@saveWhilePaused": {
+    "description": "Editor footer primary CTA while the draft is paused"
+  },
+  "pause": "Pause",
+  "@pause": {
+    "description": "Editor footer secondary button pausing the regimen draft"
+  },
+  "resume": "Resume cycle",
+  "@resume": {
+    "description": "Editor footer secondary button resuming a paused regimen draft"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Editor footer destructive button; also the confirm action in the delete dialog"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Dismiss action in the delete confirmation dialog"
+  },
+  "saveHintActive": "Slots will appear in the calendar from {start}. Pause removes them without deleting your settings.",
+  "@saveHintActive": {
+    "description": "Centered helper under the footer buttons while the draft is not paused; placeholder is a locale-formatted start date",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      }
+    }
+  },
+  "saveHintPaused": "The cycle is saved to your stack as paused — it won't appear in the calendar.",
+  "@saveHintPaused": {
+    "description": "Centered helper under the footer buttons while the draft is paused"
+  },
+  "deleteConfirmTitle": "Delete “{name}”?",
+  "@deleteConfirmTitle": {
+    "description": "Delete confirmation dialog title; placeholder is the supplement name",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteConfirmBody": "Its schedule and future doses will be removed. Your intake history is kept.",
+  "@deleteConfirmBody": {
+    "description": "Delete confirmation dialog body stating that intake history is kept"
   }
 }
