@@ -288,6 +288,32 @@ void main() {
       );
     });
 
+    test('concurrent saves are single-flight: two racing save() calls share '
+        'one future and persist exactly one regimen row (CR-01)', () async {
+      await container.read(supplementRepoProvider).upsert(supplement);
+      final editor = editorFor('s1');
+
+      // Two calls without an await in between — the double-tap race.
+      final first = editor.save();
+      final second = editor.save();
+      expect(identical(first, second), isTrue,
+          reason: 'save() must return the SAME in-flight future to '
+              'concurrent callers (single-flight)');
+      await Future.wait([first, second]);
+
+      final regimens = await regimensNow();
+      expect(regimens, hasLength(1),
+          reason: 'a double-tap race must not mint two regimen ids (PF-8)');
+      expect(draftOf('s1').regimenId, regimens.single.id);
+
+      // A save AFTER completion starts a fresh (non-identical) future and
+      // still reuses the resolved id.
+      final third = editor.save();
+      expect(identical(first, third), isFalse);
+      await third;
+      expect(await regimensNow(), hasLength(1));
+    });
+
     test('save with a stale draft re-checks findForSupplement and reuses the '
         'existing regimen id (PF-8 belt-and-suspenders)', () async {
       // Editor seeded while the DB has no regimen -> draft.regimenId == null.

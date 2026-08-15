@@ -295,14 +295,26 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
   /// "Зберегти, цикл на паузі" CTA carries the pause state to disk).
   void togglePause() => state = state.copyWith(paused: !state.paused);
 
+  /// In-flight save future — see [save]'s single-flight contract (CR-01).
+  Future<void>? _saveInFlight;
+
   /// Persists the draft as the supplement's ONE regimen (PF-8).
+  ///
+  /// Single-flight (CR-01): concurrent callers — e.g. a double-tapped save
+  /// button — share the SAME in-flight future, so the save-time
+  /// `findForSupplement` re-check can never race itself into minting two
+  /// regimen ids (ghost rows that double-dose materialization, threat
+  /// T-02-05).
   ///
   /// Id resolution order: `draft.regimenId` → save-time
   /// `findForSupplement` re-check (belt-and-suspenders against ghost
   /// regimen rows, threat T-02-05) → mint a new UUID. The resolved regimen
   /// id and all slot ids are stored back into the draft so subsequent saves
   /// reuse them.
-  Future<void> save() async {
+  Future<void> save() =>
+      _saveInFlight ??= _doSave().whenComplete(() => _saveInFlight = null);
+
+  Future<void> _doSave() async {
     final repo = ref.read(regimenRepoProvider);
     final draft = state;
 

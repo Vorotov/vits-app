@@ -783,7 +783,7 @@ class _DashedBorderPainter extends CustomPainter {
 /// never deletes directly — its only direct effect is opening the
 /// confirmation dialog; the cascade call lives solely in the dialog's
 /// confirm handler (UI-SPEC #19, threat T-02-04).
-class _EditorFooter extends StatelessWidget {
+class _EditorFooter extends StatefulWidget {
   const _EditorFooter({
     required this.draft,
     required this.controller,
@@ -795,8 +795,20 @@ class _EditorFooter extends StatelessWidget {
   final String supplementName;
 
   @override
+  State<_EditorFooter> createState() => _EditorFooterState();
+}
+
+class _EditorFooterState extends State<_EditorFooter> {
+  /// In-flight save guard (CR-01): while a save runs, the button is
+  /// disabled AND [_save] short-circuits re-entry, so a double tap can
+  /// neither race two `save()` calls (PF-8 ghost-regimen threat T-02-05)
+  /// nor run `Navigator.maybePop` twice under the exit transition.
+  bool _saving = false;
+
+  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final draft = widget.draft;
     return Container(
       decoration: const BoxDecoration(
         color: BqColors.surfaceAlt,
@@ -829,7 +841,7 @@ class _EditorFooter extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              onPressed: () => _save(context),
+              onPressed: _saving ? null : () => _save(context),
               child: Text(
                 draft.paused ? l10n.saveWhilePaused : l10n.saveAndStart,
               ),
@@ -846,7 +858,7 @@ class _EditorFooter extends StatelessWidget {
                     border: BqColors.inputBorder,
                     pressed: BqColors.chip,
                   ),
-                  onPressed: controller.togglePause,
+                  onPressed: widget.controller.togglePause,
                   child: Text(draft.paused ? l10n.resume : l10n.pause),
                 ),
               ),
@@ -906,12 +918,23 @@ class _EditorFooter extends StatelessWidget {
   /// Locale-aware "14 серпня"-style date for the active save hint.
   String _hintDate(BuildContext context) => DateFormat.MMMMd(
         Localizations.localeOf(context).toString(),
-      ).format(draft.startDate);
+      ).format(widget.draft.startDate);
 
   /// Persists the draft through the tested controller, then leaves the
-  /// editor (the controller reuses the regimen id — PF-8).
+  /// editor (the controller reuses the regimen id — PF-8). Guarded against
+  /// double activation (CR-01).
   Future<void> _save(BuildContext context) async {
-    await controller.save();
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await widget.controller.save();
+    } catch (_) {
+      // Re-enable the button so the user can retry.
+      if (mounted) setState(() => _saving = false);
+      rethrow;
+    }
+    // Success: _saving stays true through the pop so a late tap can never
+    // trigger a second maybePop underneath the exit transition.
     if (context.mounted) await Navigator.of(context).maybePop();
   }
 
@@ -923,7 +946,7 @@ class _EditorFooter extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.deleteConfirmTitle(supplementName)),
+        title: Text(l10n.deleteConfirmTitle(widget.supplementName)),
         content: Text(l10n.deleteConfirmBody),
         actions: [
           TextButton(
@@ -937,7 +960,7 @@ class _EditorFooter extends StatelessWidget {
             ),
             onPressed: () async {
               // The cascade call lives here and ONLY here (UI-SPEC #19).
-              await controller.deleteSupplement();
+              await widget.controller.deleteSupplement();
               if (dialogContext.mounted) {
                 Navigator.of(dialogContext).pop(true);
               }

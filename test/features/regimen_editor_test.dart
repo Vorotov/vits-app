@@ -327,6 +327,67 @@ void main() {
     });
 
     testWidgets(
+        'double-tapping save persists exactly ONE regimen and pops the '
+        'editor exactly once (CR-01)', (tester) async {
+      usePhoneSurface(tester);
+      final container = await makeContainer(tester);
+      final navKey = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            navigatorKey: navKey,
+            locale: const Locale('uk'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: bqTheme(),
+            home: const Scaffold(body: SizedBox(key: Key('base-route'))),
+          ),
+        ),
+      );
+      unawaited(
+        navKey.currentState!.push(
+          MaterialPageRoute<void>(
+            builder: (_) => const RegimenEditorScreen(supplementId: 's1'),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // Observe regimens pump-driven (awaiting .first un-pumped deadlocks).
+      List<Regimen>? regimens;
+      final watchSub = container
+          .read(regimenRepoProvider)
+          .watchAll()
+          .listen((v) => regimens = v);
+      await tester.pump(const Duration(milliseconds: 10));
+
+      // Two taps with NO pump in between — both hit the still-built button;
+      // the in-flight guard must swallow the second.
+      final save = find.text('Додати й запустити цикл');
+      await tester.tap(save);
+      await tester.tap(save);
+      // Flush the async save + the pop's exit transition.
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+
+      expect(regimens, isNotNull);
+      expect(regimens, hasLength(1),
+          reason: 'the double tap must not create a ghost regimen (PF-8)');
+      expect(find.byType(RegimenEditorScreen), findsNothing,
+          reason: 'save pops the editor once');
+      expect(find.byKey(const Key('base-route')), findsOneWidget,
+          reason: 'the second tap must not pop the base route underneath');
+
+      expect(tester.takeException(), isNull);
+      unawaited(watchSub.cancel());
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets(
         'paused renders all four pause signals together — badge, resume '
         'label, save label, save hint (UI-SPEC #13)', (tester) async {
       usePhoneSurface(tester);
