@@ -189,14 +189,18 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
       );
 
   /// Maps a persisted regimen to a draft, carrying regimen and slot ids
-  /// (PF-8).
+  /// (PF-8). `onDays`/`offDays` are clamped into the editor's slider ranges
+  /// at this seed boundary (WR-02): the Drift column default is 0 and
+  /// non-editor writers (tests, a future sync backend) are unconstrained —
+  /// an out-of-range `Slider.value` would assert and red-screen the editor,
+  /// making the supplement uneditable and undeletable through the UI.
   RegimenDraft _draftFrom(Regimen r) => RegimenDraft(
         regimenId: r.id,
         kind: r.kind,
         startDate: dateOnly(r.startDate),
         endDate: r.endDate == null ? null : dateOnly(r.endDate!),
-        onDays: r.onDays,
-        offDays: r.offDays,
+        onDays: _clampDays(r.onDays, min: 7, max: 112),
+        offDays: _clampDays(r.offDays, min: 0, max: 84),
         paused: r.paused,
         slots: _sorted([
           for (final s in r.slots)
@@ -207,6 +211,14 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
             ),
         ]),
       );
+
+  /// Snaps a persisted day count onto the editor's whole-week grid, then
+  /// clamps it into `[min, max]` (WR-02). Lossless for editor-written rows —
+  /// this UI only ever produces 7-step values inside the slider ranges.
+  static int _clampDays(int days, {required int min, required int max}) {
+    final snapped = (days / 7).round() * 7;
+    return snapped.clamp(min, max);
+  }
 
   /// The single sorting rule: slots always ordered by time ascending.
   static List<DraftSlot> _sorted(List<DraftSlot> slots) {

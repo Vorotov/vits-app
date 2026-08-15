@@ -145,6 +145,61 @@ void main() {
     });
   });
 
+  group('seed clamping (WR-02: out-of-range DB values never crash sliders)',
+      () {
+    test('onDays/offDays outside the slider ranges are clamped at the seed '
+        'boundary (0 -> 7, 200 -> 84)', () async {
+      await container.read(supplementRepoProvider).upsert(supplement);
+      // Rows written by non-editor writers are unconstrained; the Drift
+      // column default for onDays is even 0.
+      await container.read(regimenRepoProvider).upsert(Regimen(
+            id: 'r-bad',
+            supplementId: 's1',
+            kind: RegimenKind.cyclic,
+            startDate: DateTime.utc(2026, 8, 1),
+            endDate: null,
+            onDays: 0,
+            offDays: 200,
+            paused: false,
+            slots: const [
+              DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+            ],
+          ));
+      await waitForRegimenEntry('s1');
+
+      editorFor('s1');
+      final draft = draftOf('s1');
+      expect(draft.onDays, 7,
+          reason: 'onDays clamps up to the slider floor (min 7)');
+      expect(draft.offDays, 84,
+          reason: 'offDays clamps down to the slider cap (max 84)');
+    });
+
+    test('off-grid day counts snap to the 7-day grid the sliders edit in',
+        () async {
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(Regimen(
+            id: 'r-offgrid',
+            supplementId: 's1',
+            kind: RegimenKind.cyclic,
+            startDate: DateTime.utc(2026, 8, 1),
+            endDate: null,
+            onDays: 60,
+            offDays: 10,
+            paused: false,
+            slots: const [
+              DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+            ],
+          ));
+      await waitForRegimenEntry('s1');
+
+      editorFor('s1');
+      final draft = draftOf('s1');
+      expect(draft.onDays, 63, reason: '60 snaps to the nearest week (63)');
+      expect(draft.offDays, 7, reason: '10 snaps to the nearest week (7)');
+    });
+  });
+
   group('slot operations (REGI-03/V-1: clamped by construction)', () {
     test('addSlot walks nextSlotDefaults, skips used times, caps at 6', () {
       final editor = editorFor('s1');
