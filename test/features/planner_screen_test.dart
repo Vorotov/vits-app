@@ -17,6 +17,7 @@ import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/domain/repositories.dart' show StackEntry;
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
+import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/calendar_screen.dart';
@@ -195,6 +196,52 @@ void main() {
       DoseSlot(id: 'sl-z', minutesFromMidnight: 540, doseLabel: '1 крапля'),
     ],
   );
+
+  /// Seeds one course per start date so the load chart lands a week in every
+  /// band at a KNOWN bucket index.
+  ///
+  /// The window for the pinned 13 August clock runs 1 Aug – 30 Nov, and the
+  /// Monday buckets covering it start on 27 July (DECIDED-3). So:
+  /// bucket 0 = 27 Jul–2 Aug (nothing has started: load 0),
+  /// bucket 1 = 3–9 Aug (load 3), bucket 2 = 10–16 Aug (load 4, and it
+  /// contains today), bucket 3 = 17–23 Aug (load 7).
+  Future<void> seedBands(
+    ProviderContainer container, {
+    List<int> startsOnAugust = const [5, 5, 5, 10, 17, 17, 17],
+  }) async {
+    final supplements = container.read(supplementRepoProvider);
+    final regimens = container.read(regimenRepoProvider);
+    for (var i = 0; i < startsOnAugust.length; i++) {
+      await supplements.upsert(
+        Supplement(
+          id: 'b$i',
+          name: 'Добавка $i',
+          doseText: '1 капс.',
+          colorValue: 0xFF6B6FA8,
+          note: '',
+        ),
+      );
+      await regimens.upsert(
+        Regimen(
+          id: 'br$i',
+          supplementId: 'b$i',
+          kind: RegimenKind.course,
+          startDate: DateTime.utc(2026, 8, startsOnAugust[i]),
+          endDate: DateTime.utc(2026, 11, 30),
+          onDays: 0,
+          offDays: 0,
+          paused: false,
+          slots: const [
+            DoseSlot(
+              id: 'bs',
+              minutesFromMidnight: 480,
+              doseLabel: '1 капс.',
+            ),
+          ],
+        ),
+      );
+    }
+  }
 
   Future<void> seed(
     ProviderContainer container, {
@@ -870,6 +917,264 @@ void main() {
           reason: 'the gantt subtree did not even rebuild, so it cannot have '
               'repainted — selection lives in a provider the gantt never '
               'watches');
+
+      await tearDownTree(tester, container);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // The concurrent-load chart (plan 04-03 task 2, UI-SPEC S6a item 3,
+  // P-9, DECIDED-2/3/10, Interaction Contracts 3, 5, 11).
+  // ---------------------------------------------------------------------
+
+  group('load chart', () {
+    Future<void> openBands(
+      WidgetTester tester,
+      ProviderContainer container, {
+      List<int> startsOnAugust = const [5, 5, 5, 10, 17, 17, 17],
+    }) async {
+      await seedBands(container, startsOnAugust: startsOnAugust);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('load-week-').evaluate().isNotEmpty,
+        'the load chart columns',
+      );
+    }
+
+    Color? fillOf(WidgetTester tester, String key) {
+      final box = tester.widget<Container>(find.byKey(ValueKey<String>(key)));
+      return (box.decoration! as BoxDecoration).color;
+    }
+
+    testWidgets('one column per Monday week of the window — 18 or 19 of them '
+        '(DECIDED-3)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      final model = container.read(cyclesModelProvider).value!;
+      expect(byKeyPrefix('load-week-'), findsNWidgets(model.weeks.length));
+      expect(model.weeks.length, anyOf(18, 19),
+          reason: 'full Monday weeks covering a 120-123 day window');
+
+      // The axis carries the ACTUAL bucket bounds, never the mockup's
+      // hardcoded "1 серп" / "30 лис" (M6).
+      expect(find.text('ОДНОЧАСНЕ НАВАНТАЖЕННЯ'), findsOneWidget);
+      expect(find.text('по тижнях'), findsOneWidget);
+      expect(find.text('межа 5 · комфорт 3'), findsOneWidget);
+      final axis = DateFormat.MMMd('uk');
+      expect(find.text(axis.format(model.weeks.first.bucket.start)),
+          findsOneWidget);
+      expect(find.text(axis.format(model.weeks.last.bucket.endInclusive)),
+          findsOneWidget);
+      expect(find.text('1 серп.'), findsNothing);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('every band draws its own bar: comfort, at the limit, and a '
+        'capped main bar with a proportional over-bar (UI-SPEC banding)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      // Bucket 1 — load 3: the quiet comfort tone, round(3/5*38) = 23.
+      expect(fillOf(tester, 'load-main-1'), BqColors.loadBar);
+      expect(tester.getSize(find.byKey(const ValueKey('load-main-1'))).height,
+          23);
+      expect(find.byKey(const ValueKey('load-over-1')), findsNothing);
+
+      // Bucket 2 — load 4: at our editorial limit, round(4/5*38) = 30.
+      expect(fillOf(tester, 'load-main-2'), BqColors.warn);
+      expect(tester.getSize(find.byKey(const ValueKey('load-main-2'))).height,
+          30);
+
+      // Bucket 3 — load 7: the main bar caps at 38 and the excess becomes a
+      // proportional over-bar, round(2/5*38) = 15.
+      expect(fillOf(tester, 'load-main-3'), BqColors.risk);
+      expect(tester.getSize(find.byKey(const ValueKey('load-main-3'))).height,
+          38);
+      expect(fillOf(tester, 'load-over-3'), BqColors.risk);
+      expect(tester.getSize(find.byKey(const ValueKey('load-over-3'))).height,
+          15);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a zero-load week draws the 2px stub and stays selectable '
+        '(DECIDED-3, M8)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      expect(fillOf(tester, 'load-stub-0'), BqColors.field);
+      expect(tester.getSize(find.byKey(const ValueKey('load-stub-0'))).height,
+          2);
+      expect(find.byKey(const ValueKey('load-main-0')), findsNothing,
+          reason: 'the stub stands IN PLACE of a zero-height bar');
+
+      expect(container.read(resolvedWeekIndexProvider), 2,
+          reason: 'the default follows the bucket containing today');
+      await tester.tap(find.byKey(const ValueKey('load-week-0')));
+      await tester.pump();
+      expect(container.read(resolvedWeekIndexProvider), 0);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the WHOLE column is the tap target — a hit well above a '
+        'short bar still selects the week (DECIDED-10)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      final column = tester.getRect(find.byKey(const ValueKey('load-week-5')));
+      expect(column.height, greaterThanOrEqualTo(53),
+          reason: 'a ~15px wide column earns its target from its HEIGHT');
+
+      // Two pixels below the column's top edge is empty space above every bar
+      // in this chart — the bar itself is at most 38px of a 53px column.
+      await tester.tapAt(Offset(column.center.dx, column.top + 2));
+      await tester.pump();
+
+      expect(container.read(resolvedWeekIndexProvider), 5);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the selected column is opaque and every other is half '
+        '(Interaction Contract 3)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      double opacityOf(int i) => tester
+          .widget<Opacity>(
+            find.descendant(
+              of: find.byKey(ValueKey<String>('load-week-$i')),
+              matching: find.byType(Opacity),
+            ),
+          )
+          .opacity;
+
+      expect(opacityOf(2), 1.0, reason: 'today\'s week is the default');
+      expect(opacityOf(3), 0.5);
+
+      await tester.tap(find.byKey(const ValueKey('load-week-3')));
+      await tester.pump();
+
+      expect(opacityOf(3), 1.0);
+      expect(opacityOf(2), 0.5);
+      // Selection is the feedback; no ripple (Interaction Contract 11).
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('load-week-3')),
+          matching: find.byType(InkWell),
+        ),
+        findsNothing,
+      );
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('each column carries its own button, selected state and tap '
+        'action, labelled with the week and its load (WR-02)', (tester) async {
+      usePhoneSurface(tester);
+      final handle = tester.ensureSemantics();
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      final node = tester.getSemantics(
+        find.byKey(const ValueKey('load-week-2')),
+      );
+      expect(node.label, contains('4 з 5 слотів'),
+          reason: 'a pre-formatted weekLoadLabel inside weekBarSemantics');
+      expect(node.label, contains('серп.'), reason: 'the week range');
+      expect(
+        find.byKey(const ValueKey('load-week-2')),
+        containsSemantics(
+          isButton: true,
+          isSelected: true,
+          hasTapAction: true,
+        ),
+      );
+      expect(
+        find.byKey(const ValueKey('load-week-4')),
+        containsSemantics(
+          isButton: true,
+          isSelected: false,
+          hasTapAction: true,
+        ),
+      );
+
+      handle.dispose();
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('exactly one dashed reference line renders, at the comfort '
+        'height (DECIDED-2)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      expect(find.byKey(const ValueKey('load-threshold')), findsOneWidget,
+          reason: 'the 5 limit is drawn structurally, as the cap of the main '
+              'bar — a second line there would be redundant chrome');
+
+      // 22.8px above the chart baseline, which is the bottom of a column.
+      final line = tester.getRect(find.byKey(const ValueKey('load-threshold')));
+      final column = tester.getRect(find.byKey(const ValueKey('load-week-0')));
+      expect(column.bottom - line.top, closeTo(22.8, 0.6));
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('selecting a week writes nothing (Interaction Contract 5, '
+        'T-04-01)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      final before = (await db.select(db.intakeLogs).get()).length;
+      await tester.tap(find.byKey(const ValueKey('load-week-7')));
+      await tester.pump();
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+
+      expect(container.read(resolvedWeekIndexProvider), 7);
+      expect((await db.select(db.intakeLogs).get()).length, before,
+          reason: 'the one gesture this screen has materializes no row');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the summary chip names this week\'s load and bands at OR '
+        'above the limit (DECIDED-6)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      expect(find.text('Цього тижня одночасно 4 речовини'), findsOneWidget);
+      expect(find.text('межа 5'), findsOneWidget);
+      expect(fillOf(tester, 'cycles-summary-chip'), BqColors.calmBg,
+          reason: 'a load of 4 is still below the limit');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a this-week load AT the limit turns the summary chip amber '
+        '(DECIDED-6)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container, startsOnAugust: const [1, 1, 1, 1, 1]);
+
+      expect(find.text('Цього тижня одночасно 5 речовин'), findsOneWidget);
+      expect(fillOf(tester, 'cycles-summary-chip'), BqColors.warnBg,
+          reason: 'the WEEK chip nudges AT the limit — the year peak chip '
+              'deliberately does not (DECIDED-6)');
 
       await tearDownTree(tester, container);
     });
