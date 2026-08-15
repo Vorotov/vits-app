@@ -74,7 +74,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+- Instrument Sans has no Cyrillic glyphs — uk text falls back to Roboto/SF on device (matches browser-mockup behavior). Decide in Phase 5: keep fallback or swap to a Cyrillic-capable primary font (candidates: Inter, Manrope). Found 2026-08-15 during Phase 2 evidence harness (cmap-verified).
 
 ### Blockers/Concerns
 
