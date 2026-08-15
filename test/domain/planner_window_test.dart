@@ -10,6 +10,7 @@
 library;
 
 import 'package:boostque/core/domain/cycle_math.dart';
+import 'package:boostque/features/calendar/planner_view_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -90,5 +91,80 @@ void main() {
       // 1 August 2026 is a Saturday; its Monday is 27 July.
       expect(mondayOfWeek(DateTime.utc(2026, 8, 1)), DateTime.utc(2026, 7, 27));
     });
+  });
+
+  group('the twelve start months — every window, not just the mockup\'s', () {
+    // 2026 is a common year, 2028 a leap year: running both proves the span is
+    // read off the calendar rather than off a table.
+    for (final year in [2026, 2028]) {
+      for (var month = 1; month <= 12; month++) {
+        test('a window opened in $month/$year spans the true sum of its four '
+            'month lengths', () {
+          final w = plannerWindow(DateTime.utc(year, month, 15));
+
+          var expected = 0;
+          for (var i = 0; i < 4; i++) {
+            expected += daysInMonth(addMonths(w.start, i));
+          }
+
+          expect(w.span, expected);
+          expect(w.span, inInclusiveRange(120, 123),
+              reason: 'a four-month window is never outside 120..123 days');
+          expect(w.start, DateTime.utc(year, month, 1));
+        });
+      }
+    }
+
+    test('October, November and December windows cross into the next year',
+        () {
+      for (final month in [10, 11, 12]) {
+        final w = plannerWindow(DateTime.utc(2026, month, 5));
+        expect(w.endExclusive.year, 2027,
+            reason: 'month $month + 4 lands in the next year');
+
+        final model = buildCyclesModel(const [], today: DateTime.utc(2026, month, 5));
+        final crossing = model.months.where((m) => m.month.year == 2027);
+        expect(crossing, isNotEmpty);
+        // The columns are consecutive months, carried across the year change.
+        for (var i = 1; i < model.months.length; i++) {
+          expect(model.months[i].month,
+              addMonths(model.months[i - 1].month, 1));
+        }
+      }
+    });
+
+    test('a leap-year February column is 29 days wide', () {
+      // A window opened in December 2027 covers Dec, Jan, Feb 2028, Mar.
+      final model = buildCyclesModel(const [], today: DateTime.utc(2027, 12, 1));
+      final february =
+          model.months.firstWhere((m) => m.month == DateTime.utc(2028, 2, 1));
+      expect(february.days, 29);
+      expect(model.span, 31 + 31 + 29 + 31);
+    });
+  });
+
+  group('month-column fractions — what the labels and gridlines lay out from',
+      () {
+    for (final year in [2026, 2028]) {
+      for (var month = 1; month <= 12; month++) {
+        test('$month/$year: fractions are positive and sum to 1.0', () {
+          final model =
+              buildCyclesModel(const [], today: DateTime.utc(year, month, 9));
+
+          expect(model.months, hasLength(4));
+          for (final m in model.months) {
+            expect(m.fraction, greaterThan(0),
+                reason: 'a zero-width month column would collapse a label');
+            expect(m.days, greaterThan(0));
+          }
+          expect(
+            model.months.fold<double>(0, (sum, m) => sum + m.fraction),
+            closeTo(1.0, 1e-9),
+            reason: 'the four columns tile the window exactly — a shortfall '
+                'would misplace every gridline after it',
+          );
+        });
+      }
+    }
   });
 }

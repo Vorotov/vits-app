@@ -590,6 +590,28 @@ void main() {
       expect(model.peakTied, isFalse);
     });
 
+    test('a regimen starting AFTER the window still contributes month cells '
+        'inside the calendar year (E-8)', () {
+      // The window is Aug..Nov 2026; this course starts in December.
+      final entry = StackEntry(
+        supplement: magnesium,
+        regimen: course(
+          start: DateTime.utc(2026, 12, 5),
+          end: DateTime.utc(2026, 12, 20),
+        ),
+      );
+
+      final cycles = buildCyclesModel([entry], today: today);
+      expect(cycles.rows.single.segments, isEmpty,
+          reason: 'nothing of it falls inside the four-month window');
+
+      final year = buildYearModel([entry], today: today);
+      expect(year.months[11].cells.single.frac, greaterThan(0),
+          reason: 'December is still inside the rendered calendar year');
+      expect(year.months[11].cells.single.planned, isTrue);
+      expect(year.months[11].load, 1);
+    });
+
     test('a tied peak breaks toward the month nearest today AND reports the '
         'tie', () {
       final model = buildYearModel(
@@ -617,6 +639,97 @@ void main() {
       );
       expect(model.peakTied, isTrue);
       expect(model.peakIndex, 8, reason: 'September is nearer to August');
+    });
+  });
+
+  group('regimen-shape edges — the planner\'s observable consequence', () {
+    final magnesium = supp('s1', 'Магній');
+
+    test('offDays zero produces ONE continuous run to the window edge', () {
+      final model = buildCyclesModel(
+        [StackEntry(supplement: magnesium, regimen: cyclic(on: 30, off: 0))],
+        today: today,
+      );
+
+      final row = model.rows.single;
+      expect(row.runs, hasLength(1),
+          reason: 'an always-on cycle never breaks');
+      expect(row.runs.single.start, windowStart);
+      expect(row.runs.single.end, windowLast);
+      expect(row.segments.single.startFraction, 0.0);
+      expect(row.segments.single.endFraction, closeTo(1.0, 1e-9),
+          reason: 'one full-width segment (UI-SPEC E2 zero-one-many)');
+    });
+
+    test('onDays zero produces NO run at all', () {
+      final model = buildCyclesModel(
+        [StackEntry(supplement: magnesium, regimen: cyclic(on: 0, off: 14))],
+        today: today,
+      );
+
+      expect(model.rows.single.runs, isEmpty);
+      expect(model.rows.single.segments, isEmpty,
+          reason: 'a bare track, and the row is still there');
+      expect(model.weeks.every((w) => w.load == 0), isTrue);
+    });
+
+    test('a one-day run paints a real, non-empty segment (PF-6, E2)', () {
+      final model = buildCyclesModel(
+        [
+          StackEntry(
+            supplement: magnesium,
+            regimen: course(
+              start: DateTime.utc(2026, 9, 5),
+              end: DateTime.utc(2026, 9, 5),
+            ),
+          ),
+        ],
+        today: today,
+      );
+
+      final seg = model.rows.single.segments.single;
+      expect(seg.endFraction - seg.startFraction, closeTo(1 / span, 1e-9));
+      expect(seg.endFraction, greaterThan(seg.startFraction),
+          reason: 'the painter\'s 2px floor is the second guard; the model '
+              'must not hand it a zero-width band in the first place');
+      expect(model.rows.single.runCount, 1);
+    });
+
+    test('a course with a null end contributes nothing ANYWHERE (PF-11)', () {
+      final entry =
+          StackEntry(supplement: magnesium, regimen: course(end: null));
+
+      final cycles = buildCyclesModel([entry], today: today);
+      expect(cycles.rows, hasLength(1), reason: 'the row is never hidden');
+      expect(cycles.rows.single.segments, isEmpty);
+      expect(cycles.weeks.every((w) => w.load == 0), isTrue);
+
+      final year = buildYearModel([entry], today: today);
+      expect(year.entries, hasLength(1));
+      expect(year.months.every((m) => m.load == 0), isTrue);
+    });
+
+    test('a paused regimen contributes zero to loads AND cells, while keeping '
+        'both its row and its column (DECIDED-7)', () {
+      final entry =
+          StackEntry(supplement: magnesium, regimen: cyclic(paused: true));
+
+      final cycles = buildCyclesModel([entry], today: today);
+      expect(cycles.rows, hasLength(1));
+      expect(cycles.weeks.every((w) => w.load == 0), isTrue);
+
+      final year = buildYearModel([entry], today: today);
+      expect(year.entries, hasLength(1));
+      expect(year.months.every((m) => m.cells.single.frac == 0), isTrue);
+    });
+
+    test('an entry with no regimen appears in NEITHER model', () {
+      final entries = [StackEntry(supplement: magnesium)];
+
+      expect(buildCyclesModel(entries, today: today).rows, isEmpty);
+      final year = buildYearModel(entries, today: today);
+      expect(year.entries, isEmpty);
+      expect(year.months.every((m) => m.cells.isEmpty), isTrue);
     });
   });
 }

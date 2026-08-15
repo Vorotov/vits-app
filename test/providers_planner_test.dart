@@ -21,6 +21,7 @@ import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/calendar/planner_providers.dart';
+import 'package:boostque/features/calendar/planner_view_model.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -175,6 +176,74 @@ void main() {
 
     final model = await resolve(cyclesModelProvider);
     expect(model.rows, isEmpty);
+  });
+
+  test('resolving the YEAR model creates no IntakeLog rows either — the case '
+      'a materializing implementation would pay for most (PF-2)', () async {
+    await seed();
+    await materializeOneDay(today);
+
+    final before = await rawLogs();
+    expect(before, isNotEmpty,
+        reason: 'the gate must compare a real count, not two zeros');
+
+    final cycles = await resolve(cyclesModelProvider);
+    final year = await resolve(yearModelProvider);
+    expect(cycles.rows, isNotEmpty);
+    expect(year.months, hasLength(12),
+        reason: 'a full year was scanned, not a single day');
+
+    final after = await rawLogs();
+    expect(after.length, before.length,
+        reason: 'scanning a whole year is arithmetic, not materialization — '
+            'the planner must never write a row (PF-2 / WR-06)');
+  });
+
+  test('a soft-deleted supplement disappears from BOTH models on the next '
+      'emission (PF-9)', () async {
+    await seed();
+
+    final sub = container.listen(cyclesModelProvider, (_, _) {});
+    addTearDown(sub.close);
+    final yearSub = container.listen(yearModelProvider, (_, _) {});
+    addTearDown(yearSub.close);
+
+    expect((await resolve(cyclesModelProvider)).rows, hasLength(2));
+    expect((await resolve(yearModelProvider)).entries, hasLength(2));
+
+    // The cascade is the real production path: it soft-deletes the supplement,
+    // its regimens and their slots in one transaction.
+    await container
+        .read(supplementRepoProvider)
+        .softDeleteCascade('s1', fromDay: today);
+
+    Future<bool> gone() async {
+      for (var i = 0; i < 200; i++) {
+        final cycles = container.read(cyclesModelProvider);
+        final year = container.read(yearModelProvider);
+        if (cycles case AsyncData(value: final c)) {
+          if (year case AsyncData(value: final y)) {
+            if (c.rows.length == 1 && y.entries.length == 1) return true;
+          }
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+      return false;
+    }
+
+    expect(await gone(), isTrue,
+        reason: 'both streams filter deletedAt, so nothing in the planner '
+            'has to know about soft deletes');
+    expect(
+      (container.read(cyclesModelProvider) as AsyncData<CyclesModel>)
+          .value
+          .rows
+          .single
+          .entry
+          .supplement
+          .id,
+      's2',
+    );
   });
 }
 
