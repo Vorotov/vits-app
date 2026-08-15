@@ -44,6 +44,7 @@ import 'package:boostque/features/calendar/dose_row.dart';
 import 'package:boostque/features/calendar/week_strip.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
@@ -2082,6 +2083,30 @@ void main() {
       expect(wrapper(pastDay).properties.selected, isFalse);
       expect(wrapper(pastDay).properties.button, isTrue,
           reason: 'a cell is a control, not decoration');
+
+      // The cell must be ACTIVATABLE by assistive technology, not merely
+      // announced as a button: `excludeSemantics` drops the GestureDetector's
+      // own tap action, so the node has to carry one itself (WR-02).
+      expect(
+        tester
+            .getSemantics(cell(pastDay))
+            .getSemanticsData()
+            .hasAction(SemanticsAction.tap),
+        isTrue,
+        reason: 'a screen reader must be able to browse days — a physical hit '
+            'test is not the same thing as a semantics action',
+      );
+      tester.semantics.performAction(
+        find.semantics.byLabel(DateFormat.yMMMMEEEEd('uk').format(pastDay)),
+        SemanticsAction.tap,
+      );
+      await pumpUntil(
+        tester,
+        () => container.read(selectedDayProvider) == pastDay,
+        'the semantics tap action to browse the day',
+      );
+      container.read(selectedDayProvider.notifier).followToday();
+      await tester.pump();
 
       // The tap target is the padded cell, not the 4px dot: a tap 2px inside
       // the cell's top-start corner still selects the day.

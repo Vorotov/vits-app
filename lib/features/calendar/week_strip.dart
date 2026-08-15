@@ -213,24 +213,32 @@ class _WeekCell extends ConsumerWidget {
     final Color labelColor =
         isToday ? BqColors.onAccentMuted : BqColors.textFaint;
 
+    void select() {
+      final selection = ref.read(selectedDayProvider.notifier);
+      if (isToday) {
+        selection.followToday();
+      } else {
+        selection.select(day);
+      }
+    }
+
     return MergeSemantics(
       child: Semantics(
         button: true,
         selected: isSelected,
         label: DateFormat.yMMMMEEEEd(locale).format(day),
         excludeSemantics: true,
+        // The action lives on THIS node, not on the GestureDetector below it:
+        // `excludeSemantics` drops every descendant action, so without this a
+        // cell announced itself as a button that VoiceOver / TalkBack could
+        // not activate — and day browsing is the screen's primary affordance
+        // (WR-02).
+        onTap: select,
         child: GestureDetector(
           // The whole padded cell is the tap target — a 4px dot must never
           // define it (Interaction Contract 8).
           behavior: HitTestBehavior.opaque,
-          onTap: () {
-            final selection = ref.read(selectedDayProvider.notifier);
-            if (isToday) {
-              selection.followToday();
-            } else {
-              selection.select(day);
-            }
-          },
+          onTap: select,
           child: Container(
             key: ValueKey<DateTime>(day),
             padding: const EdgeInsetsDirectional.only(top: 9, bottom: 10),
