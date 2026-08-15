@@ -23,10 +23,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Daily Tracking
 
-- [ ] **TRACK-01**: User sees today's doses grouped by time blocks (morning/day/evening/night) with a day-progress ring
-- [ ] **TRACK-02**: User can mark a dose taken or skipped with one tap and can undo the mark
-- [ ] **TRACK-03**: User can browse past and current week days; unmarked past doses render as "missed" — computed in the view (DB row stays pending), presented neutrally, never guilt-framed
-- [ ] **TRACK-04**: Doses appear only on days a regimen's cycle is active — correct across DST transitions and year boundaries (UTC date-only math, unit-tested)
+- [x] **TRACK-01**: User sees today's doses grouped by time blocks (morning/day/evening/night) with a day-progress ring
+- [x] **TRACK-02**: User can mark a dose taken or skipped with one tap and can undo the mark
+- [x] **TRACK-03**: User can browse past and current week days; unmarked past doses render as "missed" — computed in the view (DB row stays pending), presented neutrally, never guilt-framed
+- [x] **TRACK-04**: Doses appear only on days a regimen's cycle is active — correct across DST transitions and year boundaries (UTC date-only math, unit-tested)
 
 ### Planner Views
 
@@ -46,7 +46,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **DATA-01**: All data is stored locally on device; the app is fully functional offline with no accounts
 - [x] **DATA-02**: Schema is sync-ready (UUID PKs, createdAt/updatedAt, soft deletes) and the database is included in OS-level backups by default
-- [ ] **DATA-03**: App builds and runs the full loop on both iOS (simulator/device) and Android (targetSdk 36)
+- [x] **DATA-03**: App builds and runs the full loop on both iOS (simulator/device) and Android (targetSdk 36)
 
 ## v2 Requirements
 
@@ -104,11 +104,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REGI-02 | Phase 2 | Complete |
 | REGI-03 | Phase 2 | Complete |
 | REGI-04 | Phase 2 | Complete |
-| TRACK-01 | Phase 3 | Pending |
-| TRACK-02 | Phase 3 | Pending |
-| TRACK-03 | Phase 3 | Pending |
-| TRACK-04 | Phase 3 | Pending |
-| DATA-03 | Phase 3 | Pending |
+| TRACK-01 | Phase 3 | Complete |
+| TRACK-02 | Phase 3 | Complete |
+| TRACK-03 | Phase 3 | Complete |
+| TRACK-04 | Phase 3 | Complete |
+| DATA-03 | Phase 3 | Complete |
 | PLAN-01 | Phase 4 | Pending |
 | PLAN-02 | Phase 4 | Pending |
 | PLAN-03 | Phase 4 | Pending |
