@@ -440,6 +440,12 @@ abstract class AppLocalizations {
   /// **'Its schedule and future doses will be removed. Your intake history is kept.'**
   String get deleteConfirmBody;
 
+  /// SnackBar shown when a save/add/delete write to the database fails; the screen stays open so no draft data is lost (WR-04)
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t save. Try again.'**
+  String get saveFailed;
+
   /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
   ///
   /// In en, this message translates to:

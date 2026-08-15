@@ -115,7 +115,12 @@ class _AddSupplementSheetState extends ConsumerState<_AddSupplementSheet> {
       colorValue: entry.color.toARGB32(),
       note: '',
     );
-    await ref.read(supplementRepoProvider).upsert(supplement);
+    try {
+      await ref.read(supplementRepoProvider).upsert(supplement);
+    } catch (_) {
+      _showSaveFailed();
+      return;
+    }
     if (!mounted) return;
     _popThenPushEditor(navigator, supplement.id);
   }
@@ -140,9 +145,24 @@ class _AddSupplementSheetState extends ConsumerState<_AddSupplementSheet> {
           .toARGB32(),
       note: '',
     );
-    await ref.read(supplementRepoProvider).upsert(supplement);
+    try {
+      await ref.read(supplementRepoProvider).upsert(supplement);
+    } catch (_) {
+      _showSaveFailed();
+      return;
+    }
     if (!mounted) return;
     _popThenPushEditor(navigator, supplement.id);
+  }
+
+  /// WR-04: a failed write keeps the sheet open (nothing was persisted),
+  /// re-enables both add paths, and surfaces a SnackBar.
+  void _showSaveFailed() {
+    if (!mounted) return;
+    setState(() => _busy = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(context.l10n.saveFailed)),
+    );
   }
 
   @override

@@ -246,6 +246,9 @@ class AppLocalizationsUk extends AppLocalizations {
       'Розклад і майбутні дози буде видалено. Історію прийому збережемо.';
 
   @override
+  String get saveFailed => 'Не вдалося зберегти. Спробуйте ще раз.';
+
+  @override
   String get catalogAshwagandhaName => 'Ашваганда KSM-66';
 
   @override

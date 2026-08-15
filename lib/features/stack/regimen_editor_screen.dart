@@ -922,16 +922,23 @@ class _EditorFooterState extends State<_EditorFooter> {
 
   /// Persists the draft through the tested controller, then leaves the
   /// editor (the controller reuses the regimen id — PF-8). Guarded against
-  /// double activation (CR-01).
+  /// double activation (CR-01); a failed write surfaces a SnackBar and
+  /// stays on screen so the draft is never silently lost (WR-04).
   Future<void> _save(BuildContext context) async {
     if (_saving) return;
     setState(() => _saving = true);
     try {
       await widget.controller.save();
     } catch (_) {
-      // Re-enable the button so the user can retry.
+      // WR-04: re-enable the button for a retry and surface the failure;
+      // do NOT pop — the draft is still on screen.
       if (mounted) setState(() => _saving = false);
-      rethrow;
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.saveFailed)),
+        );
+      }
+      return;
     }
     // Success: _saving stays true through the pop so a late tap can never
     // trigger a second maybePop underneath the exit transition.
@@ -959,8 +966,23 @@ class _EditorFooterState extends State<_EditorFooter> {
               overlayColor: BqColors.riskBg,
             ),
             onPressed: () async {
-              // The cascade call lives here and ONLY here (UI-SPEC #19).
-              await widget.controller.deleteSupplement();
+              try {
+                // The cascade call lives here and ONLY here (UI-SPEC #19).
+                await widget.controller.deleteSupplement();
+              } catch (_) {
+                // WR-04: the cascade is one transaction, so nothing was
+                // deleted — close the dialog UNCONFIRMED (the editor stays
+                // open) and surface the failure.
+                if (dialogContext.mounted) {
+                  Navigator.of(dialogContext).pop(false);
+                }
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.saveFailed)),
+                  );
+                }
+                return;
+              }
               if (dialogContext.mounted) {
                 Navigator.of(dialogContext).pop(true);
               }

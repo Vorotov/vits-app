@@ -238,6 +238,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Its schedule and future doses will be removed. Your intake history is kept.';
 
   @override
+  String get saveFailed => 'Couldn\'t save. Try again.';
+
+  @override
   String get catalogAshwagandhaName => 'Ashwagandha KSM-66';
 
   @override

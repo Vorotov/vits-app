@@ -57,6 +57,7 @@
   "saveHintPaused": "Цикл збережеться в стеку зі статусом «пауза» — у календарі його не буде.",
   "deleteConfirmTitle": "Видалити «{name}»?",
   "deleteConfirmBody": "Розклад і майбутні дози буде видалено. Історію прийому збережемо.",
+  "saveFailed": "Не вдалося зберегти. Спробуйте ще раз.",
   "catalogAshwagandhaName": "Ашваганда KSM-66",
   "catalogAshwagandhaDose": "300 мг · капсули",
   "catalogCreatineName": "Креатин моногідрат",

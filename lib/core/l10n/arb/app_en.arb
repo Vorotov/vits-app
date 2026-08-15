@@ -295,6 +295,10 @@
   "@deleteConfirmBody": {
     "description": "Delete confirmation dialog body stating that intake history is kept"
   },
+  "saveFailed": "Couldn't save. Try again.",
+  "@saveFailed": {
+    "description": "SnackBar shown when a save/add/delete write to the database fails; the screen stays open so no draft data is lost (WR-04)"
+  },
   "catalogAshwagandhaName": "Ashwagandha KSM-66",
   "@catalogAshwagandhaName": {
     "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"

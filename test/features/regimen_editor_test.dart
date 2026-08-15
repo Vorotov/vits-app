@@ -25,6 +25,7 @@ import 'dart:async' show unawaited;
 
 import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/domain/models.dart';
+import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
@@ -36,6 +37,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// A regimen repository whose writes always fail — drives the WR-04 error
+/// surface without touching Drift.
+class _FailingRegimenRepo implements RegimenRepository {
+  @override
+  Stream<List<Regimen>> watchAll() => Stream.value(const <Regimen>[]);
+
+  @override
+  Future<Regimen?> findForSupplement(String supplementId) async => null;
+
+  @override
+  Future<void> upsert(Regimen r) async => throw Exception('disk full');
+
+  @override
+  Future<void> setPaused(String regimenId, bool paused) async {}
+
+  @override
+  Future<void> softDelete(String regimenId) async {}
+}
 
 void main() {
   const supplement = Supplement(
@@ -427,6 +447,46 @@ void main() {
       expect(find.text('Додати й запустити цикл'), findsOneWidget);
 
       expect(tester.takeException(), isNull);
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets(
+        'a failed save shows the saveFailed SnackBar, stays on screen, and '
+        're-enables the button for a retry (WR-04)', (tester) async {
+      usePhoneSurface(tester);
+      final container = ProviderContainer(
+        overrides: [
+          dbProvider.overrideWith((ref) {
+            final db = BoostqueDb.forTesting(NativeDatabase.memory());
+            ref.onDispose(db.close);
+            return db;
+          }),
+          regimenRepoProvider.overrideWithValue(_FailingRegimenRepo()),
+        ],
+      );
+      final sub = container.listen(stackEntriesProvider, (_, _) {});
+      addTearDown(sub.close);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await tester.pumpWidget(app(container));
+      await tester.pump();
+
+      await tester.tap(find.text('Додати й запустити цикл'));
+      await tester.pump(const Duration(milliseconds: 10));
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('Не вдалося зберегти. Спробуйте ще раз.'),
+          findsOneWidget,
+          reason: 'the write failure must surface a SnackBar (WR-04)');
+      expect(find.byType(RegimenEditorScreen), findsOneWidget,
+          reason: 'the editor must NOT pop as if saved');
+      final saveButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Додати й запустити цикл'),
+      );
+      expect(saveButton.onPressed, isNotNull,
+          reason: 'the save button re-enables for a retry');
+      expect(tester.takeException(), isNull,
+          reason: 'the failure is handled — no unhandled zone exception');
+
       await tearDownTree(tester, container);
     });
 
