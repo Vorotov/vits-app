@@ -54,6 +54,57 @@ class AppLocalizationsUk extends AppLocalizations {
   String get stackTitle => 'Мій стек';
 
   @override
+  String stackSummary(int total, int active) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total добавки',
+      many: '$total добавок',
+      few: '$total добавки',
+      one: '$total добавка',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      active,
+      locale: localeName,
+      other: '$active активні',
+      many: '$active активних',
+      few: '$active активні',
+      one: '$active активна',
+    );
+    return '$_temp0 · $_temp1';
+  }
+
+  @override
+  String get supplementsLabel => 'ДОБАВКИ';
+
+  @override
+  String get statusActive => 'АКТИВНА';
+
+  @override
+  String get statusPaused => 'ПАУЗА';
+
+  @override
+  String get statusPlanned => 'ЗАПЛАНОВАНО';
+
+  @override
+  String get statusFresh => 'ЩОЙНО ДОДАНО';
+
+  @override
+  String get statusFinished => 'ЗАВЕРШЕНО';
+
+  @override
+  String get emptyStackTitle => 'Стек порожній';
+
+  @override
+  String get emptyStackBody => 'Додайте першу добавку — з каталогу або вручну.';
+
+  @override
+  String get stackLoadError => 'Не вдалося завантажити стек. Спробуйте ще раз.';
+
+  @override
+  String get retry => 'Повторити';
+
+  @override
   String get addSupplement => 'Додати добавку';
 
   @override

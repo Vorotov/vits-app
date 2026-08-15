@@ -42,6 +42,58 @@
   "@stackTitle": {
     "description": "Stack screen heading"
   },
+  "stackSummary": "{total, plural, one{{total} supplement} other{{total} supplements}} · {active, plural, one{{active} active} other{{active} active}}",
+  "@stackSummary": {
+    "description": "Stack header summary under the heading — two ICU plural placeholders (total supplements · active count)",
+    "placeholders": {
+      "total": {
+        "type": "int"
+      },
+      "active": {
+        "type": "int"
+      }
+    }
+  },
+  "supplementsLabel": "SUPPLEMENTS",
+  "@supplementsLabel": {
+    "description": "Mono eyebrow label above the stack card list; omitted when the list is empty"
+  },
+  "statusActive": "ACTIVE",
+  "@statusActive": {
+    "description": "Status chip label for an active regimen"
+  },
+  "statusPaused": "PAUSED",
+  "@statusPaused": {
+    "description": "Status chip label for a paused regimen"
+  },
+  "statusPlanned": "PLANNED",
+  "@statusPlanned": {
+    "description": "Status chip label for a regimen starting in the future"
+  },
+  "statusFresh": "JUST ADDED",
+  "@statusFresh": {
+    "description": "Status chip label for a supplement with no regimen yet (E-7)"
+  },
+  "statusFinished": "FINISHED",
+  "@statusFinished": {
+    "description": "Status chip label for a course whose end date is past (D10 — invented, confirm at UAT)"
+  },
+  "emptyStackTitle": "Your stack is empty",
+  "@emptyStackTitle": {
+    "description": "Empty-state heading on the Stack screen, below the still-visible CTA"
+  },
+  "emptyStackBody": "Add your first supplement — from the catalog or manually.",
+  "@emptyStackBody": {
+    "description": "Empty-state body on the Stack screen"
+  },
+  "stackLoadError": "Couldn't load your stack. Try again.",
+  "@stackLoadError": {
+    "description": "Stack list AsyncValue.error copy — raw exception text is never user-visible"
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry action on the stack load-error state"
+  },
   "addSupplement": "Add supplement",
   "@addSupplement": {
     "description": "Primary CTA on the Stack screen; also the add-supplement sheet title"

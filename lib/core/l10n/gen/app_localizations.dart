@@ -146,6 +146,72 @@ abstract class AppLocalizations {
   /// **'My stack'**
   String get stackTitle;
 
+  /// Stack header summary under the heading — two ICU plural placeholders (total supplements · active count)
+  ///
+  /// In en, this message translates to:
+  /// **'{total, plural, one{{total} supplement} other{{total} supplements}} · {active, plural, one{{active} active} other{{active} active}}'**
+  String stackSummary(int total, int active);
+
+  /// Mono eyebrow label above the stack card list; omitted when the list is empty
+  ///
+  /// In en, this message translates to:
+  /// **'SUPPLEMENTS'**
+  String get supplementsLabel;
+
+  /// Status chip label for an active regimen
+  ///
+  /// In en, this message translates to:
+  /// **'ACTIVE'**
+  String get statusActive;
+
+  /// Status chip label for a paused regimen
+  ///
+  /// In en, this message translates to:
+  /// **'PAUSED'**
+  String get statusPaused;
+
+  /// Status chip label for a regimen starting in the future
+  ///
+  /// In en, this message translates to:
+  /// **'PLANNED'**
+  String get statusPlanned;
+
+  /// Status chip label for a supplement with no regimen yet (E-7)
+  ///
+  /// In en, this message translates to:
+  /// **'JUST ADDED'**
+  String get statusFresh;
+
+  /// Status chip label for a course whose end date is past (D10 — invented, confirm at UAT)
+  ///
+  /// In en, this message translates to:
+  /// **'FINISHED'**
+  String get statusFinished;
+
+  /// Empty-state heading on the Stack screen, below the still-visible CTA
+  ///
+  /// In en, this message translates to:
+  /// **'Your stack is empty'**
+  String get emptyStackTitle;
+
+  /// Empty-state body on the Stack screen
+  ///
+  /// In en, this message translates to:
+  /// **'Add your first supplement — from the catalog or manually.'**
+  String get emptyStackBody;
+
+  /// Stack list AsyncValue.error copy — raw exception text is never user-visible
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your stack. Try again.'**
+  String get stackLoadError;
+
+  /// Retry action on the stack load-error state
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
   /// Primary CTA on the Stack screen; also the add-supplement sheet title
   ///
   /// In en, this message translates to:

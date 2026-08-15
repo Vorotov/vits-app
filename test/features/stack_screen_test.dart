@@ -1,13 +1,27 @@
-/// Tracer widget test (plan 02-01): the single happy path — open the add
-/// sheet, type a name, save — flows through supplementRepoProvider into a
-/// real in-memory Drift database and back out through stackEntriesProvider
-/// onto the Stack screen as a card (STACK-02).
+/// Widget tests for the Stack screen (plans 02-01 tracer + 02-05 full S1).
+///
+/// Harness: real in-memory Drift database behind the repository providers
+/// (Phase-1 pattern, same as regimen_editor_test.dart), locale uk, 390x844
+/// logical surface. Entries are seeded through the repositories BEFORE the
+/// screen pumps.
+///
+/// Coverage:
+/// - tracer: manual add via the sheet persists and renders a card; save
+///   disabled for empty/whitespace names (V-1)
+/// - empty state shows emptyStackTitle and NO ДОБАВКИ eyebrow (UI-SPEC #1)
+/// - fresh entry: ЩОЙНО ДОДАНО chip, zero schedule chips (UI-SPEC #6)
+/// - paused entry: ПАУЗА chip, summary chip retained (S1)
+/// - active cyclic entry: АКТИВНА chip + schedule chip with slotsPerDay text
+/// - card tap navigates into RegimenEditorScreen (STACK-04 edit path)
+/// - takeException null in uk locale throughout
 library;
 
 import 'package:boostque/core/db/database.dart' show BoostqueDb;
+import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
+import 'package:boostque/features/stack/regimen_editor_screen.dart';
 import 'package:boostque/features/stack/stack_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -16,13 +30,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  const supplement = Supplement(
+    id: 's1',
+    name: 'Магній бісглицинат',
+    doseText: '400 мг · капсули',
+    colorValue: 0xFF6B6FA8,
+    note: '',
+  );
+
   setUp(() {
     // LocaleController loads its persisted override from SharedPreferences.
     SharedPreferences.setMockInitialValues({});
   });
 
-  Widget app() {
-    return ProviderScope(
+  /// Provider container over an in-memory database; callers seed through
+  /// the repositories before pumping.
+  ProviderContainer makeContainer() {
+    final container = ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
           final db = BoostqueDb.forTesting(NativeDatabase.memory());
@@ -30,6 +54,16 @@ void main() {
           return db;
         }),
       ],
+    );
+    // Keep the stack graph warm (Riverpod 3 pauses unlistened providers).
+    final sub = container.listen(stackEntriesProvider, (_, _) {});
+    addTearDown(sub.close);
+    return container;
+  }
+
+  Widget app(ProviderContainer container) {
+    return UncontrolledProviderScope(
+      container: container,
       child: MaterialApp(
         locale: const Locale('uk'),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -38,6 +72,27 @@ void main() {
         home: const StackScreen(),
       ),
     );
+  }
+
+  /// Sets a phone-sized logical surface (390x844); restored automatically.
+  void usePhoneSurface(WidgetTester tester) {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+  }
+
+  /// Tears the tree down inside the test body so Drift's stream-close
+  /// zero-duration timers fire before flutter_test's pending-timer check.
+  Future<void> tearDownTree(
+    WidgetTester tester,
+    ProviderContainer container,
+  ) async {
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 10));
+    container.dispose();
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pump(const Duration(milliseconds: 10));
   }
 
   /// Pumps frames until [finder] matches (Drift stream emissions arrive
@@ -50,10 +105,28 @@ void main() {
     fail('Timed out waiting for $finder');
   }
 
+  /// A cyclic regimen for [supplement]; start defaults to a recent past day.
+  Regimen cyclicRegimen({bool paused = false, DateTime? start}) => Regimen(
+        id: 'r1',
+        supplementId: 's1',
+        kind: RegimenKind.cyclic,
+        startDate: start ?? DateTime.utc(2026, 8, 1),
+        endDate: null,
+        onDays: 56,
+        offDays: 28,
+        paused: paused,
+        slots: const [
+          DoseSlot(id: 'slot1', minutesFromMidnight: 480, doseLabel: ''),
+          DoseSlot(id: 'slot2', minutesFromMidnight: 1140, doseLabel: ''),
+        ],
+      );
+
   testWidgets(
       'uk: manual add through the sheet persists and renders a card; '
       'save stays disabled for empty/whitespace names (V-1)', (tester) async {
-    await tester.pumpWidget(app());
+    usePhoneSurface(tester);
+    final container = makeContainer();
+    await tester.pumpWidget(app(container));
     await tester.pump();
 
     // Open the add sheet via the single CTA on the screen.
@@ -92,17 +165,111 @@ void main() {
     await tester.pumpAndSettle();
 
     await pumpUntilFound(tester, find.text('Креатин моногідрат'));
-    expect(find.text('Креатин моногідрат'), findsOneWidget,
+    expect(find.text('Креатин моногідрат'), findsWidgets,
         reason: 'the added supplement renders as a stack card from the DB');
     expect(find.byType(BottomSheet), findsNothing,
         reason: 'the sheet closed after a successful save');
     expect(tester.takeException(), isNull,
         reason: 'no overflow/exception in uk locale');
 
-    // Tear the tree down inside the test body so Drift's stream-close
-    // zero-duration timers fire before flutter_test's pending-timer check.
-    await tester.pumpWidget(const SizedBox());
-    await tester.pump(const Duration(milliseconds: 10));
-    await tester.pump(const Duration(milliseconds: 10));
+    await tearDownTree(tester, container);
+  });
+
+  testWidgets(
+      'uk: empty stack renders emptyStackTitle below the still-visible CTA '
+      'and omits the ДОБАВКИ eyebrow (UI-SPEC #1)', (tester) async {
+    usePhoneSurface(tester);
+    final container = makeContainer();
+    await tester.pumpWidget(app(container));
+    await pumpUntilFound(tester, find.text('Стек порожній'));
+
+    expect(find.text('Стек порожній'), findsOneWidget);
+    expect(find.text('Додайте першу добавку — з каталогу або вручну.'),
+        findsOneWidget);
+    expect(find.text('Додати добавку'), findsOneWidget,
+        reason: 'the CTA stays visible above the empty state');
+    expect(find.text('ДОБАВКИ'), findsNothing,
+        reason: 'the eyebrow is omitted when the list is empty (#1)');
+    expect(tester.takeException(), isNull);
+
+    await tearDownTree(tester, container);
+  });
+
+  testWidgets(
+      'uk: a fresh entry (no regimen, E-7) shows ЩОЙНО ДОДАНО and exactly '
+      'zero schedule chips (UI-SPEC #6)', (tester) async {
+    usePhoneSurface(tester);
+    final container = makeContainer();
+    await container.read(supplementRepoProvider).upsert(supplement);
+    await tester.pumpWidget(app(container));
+    await pumpUntilFound(tester, find.text('ЩОЙНО ДОДАНО'));
+
+    expect(find.text('ЩОЙНО ДОДАНО'), findsOneWidget);
+    expect(find.text('ДОБАВКИ'), findsOneWidget,
+        reason: 'the eyebrow renders above a non-empty list');
+    expect(find.textContaining('на день'), findsNothing,
+        reason: 'a fresh entry gets NO schedule chip — never a placeholder');
+    expect(tester.takeException(), isNull);
+
+    await tearDownTree(tester, container);
+  });
+
+  testWidgets(
+      'uk: a paused entry shows ПАУЗА and keeps its schedule-summary chip',
+      (tester) async {
+    usePhoneSurface(tester);
+    final container = makeContainer();
+    await container.read(supplementRepoProvider).upsert(supplement);
+    await container.read(regimenRepoProvider).upsert(cyclicRegimen());
+    await container.read(regimenRepoProvider).setPaused('r1', true);
+    await tester.pumpWidget(app(container));
+    await pumpUntilFound(tester, find.text('ПАУЗА'));
+
+    expect(find.text('ПАУЗА'), findsOneWidget);
+    expect(find.textContaining('на день'), findsOneWidget,
+        reason: 'paused regimens keep their summary chip (S1)');
+    expect(tester.takeException(), isNull);
+
+    await tearDownTree(tester, container);
+  });
+
+  testWidgets(
+      'uk: an active cyclic entry shows АКТИВНА and a schedule chip with the '
+      'slotsPerDay text', (tester) async {
+    usePhoneSurface(tester);
+    final container = makeContainer();
+    await container.read(supplementRepoProvider).upsert(supplement);
+    await container.read(regimenRepoProvider).upsert(cyclicRegimen());
+    await tester.pumpWidget(app(container));
+    await pumpUntilFound(tester, find.text('АКТИВНА'));
+
+    expect(find.text('АКТИВНА'), findsOneWidget);
+    expect(find.textContaining('2 рази на день'), findsOneWidget,
+        reason: 'the schedule chip composes slot count via ICU plural');
+    expect(find.textContaining('8 тижнів'), findsOneWidget,
+        reason: 'the cyclic summary composes on-weeks via weeksCount');
+    // Header summary counts this entry as active: "1 добавка · 1 активна".
+    expect(find.text('1 добавка · 1 активна'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tearDownTree(tester, container);
+  });
+
+  testWidgets('uk: tapping a card opens the regimen editor for it (STACK-04)',
+      (tester) async {
+    usePhoneSurface(tester);
+    final container = makeContainer();
+    await container.read(supplementRepoProvider).upsert(supplement);
+    await tester.pumpWidget(app(container));
+    await pumpUntilFound(tester, find.text('Магній бісглицинат'));
+
+    await tester.tap(find.text('Магній бісглицинат'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RegimenEditorScreen), findsOneWidget,
+        reason: 'the whole card is the tap target into the editor');
+    expect(tester.takeException(), isNull);
+
+    await tearDownTree(tester, container);
   });
 }

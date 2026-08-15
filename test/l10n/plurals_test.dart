@@ -44,6 +44,17 @@ void main() {
       expect(l10n.slotsPerDay(11), '11 разів на день'); // many (11-14)
       expect(l10n.slotsPerDay(21), '21 раз на день'); // one (i%10=1)
     });
+
+    test('stackSummary declines BOTH plural placeholders correctly at '
+        '1/2/5/11/21 (UI-SPEC #5)', () {
+      expect(l10n.stackSummary(1, 1), '1 добавка · 1 активна'); // one/one
+      expect(l10n.stackSummary(2, 2), '2 добавки · 2 активні'); // few/few
+      expect(l10n.stackSummary(5, 5), '5 добавок · 5 активних'); // many/many
+      expect(l10n.stackSummary(11, 11), '11 добавок · 11 активних'); // 11-14
+      expect(l10n.stackSummary(21, 21), '21 добавка · 21 активна'); // one
+      // Mixed forms: the placeholders decline independently.
+      expect(l10n.stackSummary(5, 1), '5 добавок · 1 активна');
+    });
   });
 
   group('en plurals', () {
@@ -67,6 +78,11 @@ void main() {
     test('slotsPerDay uses one/other', () {
       expect(l10n.slotsPerDay(1), '1 time per day');
       expect(l10n.slotsPerDay(2), '2 times per day');
+    });
+
+    test('stackSummary uses one/other on both placeholders', () {
+      expect(l10n.stackSummary(1, 1), '1 supplement · 1 active');
+      expect(l10n.stackSummary(2, 0), '2 supplements · 0 active');
     });
   });
 }

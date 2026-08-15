@@ -51,6 +51,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stackTitle => 'My stack';
 
   @override
+  String stackSummary(int total, int active) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total supplements',
+      one: '$total supplement',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      active,
+      locale: localeName,
+      other: '$active active',
+      one: '$active active',
+    );
+    return '$_temp0 · $_temp1';
+  }
+
+  @override
+  String get supplementsLabel => 'SUPPLEMENTS';
+
+  @override
+  String get statusActive => 'ACTIVE';
+
+  @override
+  String get statusPaused => 'PAUSED';
+
+  @override
+  String get statusPlanned => 'PLANNED';
+
+  @override
+  String get statusFresh => 'JUST ADDED';
+
+  @override
+  String get statusFinished => 'FINISHED';
+
+  @override
+  String get emptyStackTitle => 'Your stack is empty';
+
+  @override
+  String get emptyStackBody =>
+      'Add your first supplement — from the catalog or manually.';
+
+  @override
+  String get stackLoadError => 'Couldn\'t load your stack. Try again.';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
   String get addSupplement => 'Add supplement';
 
   @override
