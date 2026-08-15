@@ -371,6 +371,13 @@ void main() {
 
     test('save with a stale draft re-checks findForSupplement and reuses the '
         'existing regimen id (PF-8 belt-and-suspenders)', () async {
+      // Warm the stack graph FIRST: this is the warm-seeded stale-draft
+      // case (regimen appears behind the editor's back after a legitimate
+      // open); the blind-seeded case is covered by the WR-03 group below.
+      await waitUntil(
+        () => container.read(stackEntriesProvider) is AsyncData,
+        'stackEntriesProvider warm (AsyncData)',
+      );
       // Editor seeded while the DB has no regimen -> draft.regimenId == null.
       final editor = editorFor('s1');
       expect(draftOf('s1').regimenId, isNull);
@@ -419,6 +426,112 @@ void main() {
       expect(regimens, hasLength(1));
       expect(regimens.single.kind, RegimenKind.cyclic);
       expect(regimens.single.endDate, isNull);
+    });
+  });
+
+  group('blind seed (WR-03: never clobber a regimen the draft never saw)',
+      () {
+    test('save() with a blind-seeded draft refuses to overwrite an existing '
+        'regimen, re-seeds the draft from the store, and a retry succeeds',
+        () async {
+      // A container whose stack graph is deliberately NEVER warm — the
+      // editor opens over AsyncLoading (future callers: deep links, state
+      // restoration).
+      final cold = ProviderContainer(
+        overrides: [
+          dbProvider.overrideWith((ref) {
+            final db = BoostqueDb.forTesting(NativeDatabase.memory());
+            ref.onDispose(db.close);
+            return db;
+          }),
+          stackEntriesProvider.overrideWithValue(const AsyncLoading()),
+        ],
+      );
+      addTearDown(cold.dispose);
+
+      await cold.read(supplementRepoProvider).upsert(supplement);
+      await cold.read(regimenRepoProvider).upsert(Regimen(
+            id: 'r-real',
+            supplementId: 's1',
+            kind: RegimenKind.cyclic,
+            startDate: DateTime.utc(2026, 8, 1),
+            endDate: null,
+            onDays: 28,
+            offDays: 14,
+            paused: false,
+            slots: const [
+              DoseSlot(
+                  id: 'sl-real',
+                  minutesFromMidnight: 1140,
+                  doseLabel: '2 капсули'),
+            ],
+          ));
+
+      final sub = cold.listen(regimenEditorProvider('s1'), (_, _) {});
+      addTearDown(sub.close);
+      final editor = cold.read(regimenEditorProvider('s1').notifier);
+
+      // Blind seed: the defaults, not the stored 28/14 regimen.
+      expect(cold.read(regimenEditorProvider('s1')).regimenId, isNull);
+      expect(cold.read(regimenEditorProvider('s1')).onDays, 56);
+
+      // The destructive overwrite is refused...
+      await expectLater(editor.save(), throwsStateError);
+
+      // ...the stored regimen is untouched...
+      final regimens =
+          await cold.read(regimenRepoProvider).watchAll().first;
+      expect(regimens, hasLength(1));
+      expect(regimens.single.id, 'r-real');
+      expect(regimens.single.onDays, 28);
+      expect(regimens.single.offDays, 14);
+      expect(regimens.single.slots.single.id, 'sl-real',
+          reason: 'slot reconciliation must NOT have soft-deleted the '
+              'real slots');
+
+      // ...and the draft was re-seeded from the store, so the form now
+      // shows the real settings and a retry save is safe.
+      final reseeded = cold.read(regimenEditorProvider('s1'));
+      expect(reseeded.regimenId, 'r-real');
+      expect(reseeded.onDays, 28);
+      expect(reseeded.offDays, 14);
+      expect(reseeded.slots.single.id, 'sl-real');
+
+      await editor.save();
+      final afterRetry =
+          await cold.read(regimenRepoProvider).watchAll().first;
+      expect(afterRetry, hasLength(1));
+      expect(afterRetry.single.id, 'r-real');
+      expect(afterRetry.single.onDays, 28);
+    });
+
+    test('save() with a blind-seeded draft still mints a regimen when NONE '
+        'exists (fresh add flow stays intact)', () async {
+      final cold = ProviderContainer(
+        overrides: [
+          dbProvider.overrideWith((ref) {
+            final db = BoostqueDb.forTesting(NativeDatabase.memory());
+            ref.onDispose(db.close);
+            return db;
+          }),
+          stackEntriesProvider.overrideWithValue(const AsyncLoading()),
+        ],
+      );
+      addTearDown(cold.dispose);
+      await cold.read(supplementRepoProvider).upsert(supplement);
+
+      final sub = cold.listen(regimenEditorProvider('s1'), (_, _) {});
+      addTearDown(sub.close);
+      final editor = cold.read(regimenEditorProvider('s1').notifier);
+
+      await editor.save();
+      final regimens =
+          await cold.read(regimenRepoProvider).watchAll().first;
+      expect(regimens, hasLength(1),
+          reason: 'no regimen existed — the blind guard must not block '
+              'a genuinely fresh save');
+      expect(cold.read(regimenEditorProvider('s1')).regimenId,
+          regimens.single.id);
     });
   });
 

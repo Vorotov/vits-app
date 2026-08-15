@@ -156,19 +156,32 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
   /// startDate + 27 days = a 28-day inclusive course.
   static const int _defaultCourseLengthDays = 27;
 
+  /// True when [build] had to seed defaults WITHOUT a warm `AsyncData`
+  /// snapshot (WR-03). Both v1 entry points open the editor over a warm
+  /// stack graph, but nothing enforces that for future callers (deep links,
+  /// state restoration, Phase 3+ navigation) — a blind-seeded draft must
+  /// never silently overwrite a regimen it never saw.
+  bool _seedWasBlind = false;
+
   @override
   RegimenDraft build() {
     // Synchronous seeding (UI-SPEC #17): the stack graph is warm by the time
     // the editor opens — pattern-match the current AsyncValue snapshot.
     final entries = ref.read(stackEntriesProvider);
     if (entries case AsyncData(value: final list)) {
+      _seedWasBlind = false;
       for (final entry in list) {
         final regimen = entry.regimen;
         if (entry.supplement.id == supplementId && regimen != null) {
           return _draftFrom(regimen);
         }
       }
+      return _defaults();
     }
+    // Loading/error: the one-shot read cannot see a regimen that may exist.
+    // Seed defaults so the form is never empty, but mark the seed blind —
+    // [save] refuses to clobber an existing regimen with this draft (WR-03).
+    _seedWasBlind = true;
     return _defaults();
   }
 
@@ -331,7 +344,24 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
     final draft = state;
 
     var regimenId = draft.regimenId;
-    regimenId ??= (await repo.findForSupplement(supplementId))?.id;
+    if (regimenId == null) {
+      final found = await repo.findForSupplement(supplementId);
+      if (found != null && _seedWasBlind) {
+        // WR-03: the draft was seeded with defaults before the stack graph
+        // was warm — persisting it would silently overwrite the regimen's
+        // real settings and soft-delete all of its slots. Re-seed the draft
+        // from the store (the form now shows the real settings) and refuse
+        // this save; the UI surfaces the failure and stays on screen.
+        _seedWasBlind = false;
+        state = _draftFrom(found);
+        throw StateError(
+          'RegimenEditor draft for $supplementId was seeded before the '
+          'stack graph was warm (UI-SPEC #17); refusing to overwrite '
+          'regimen ${found.id} with defaults',
+        );
+      }
+      regimenId = found?.id;
+    }
     regimenId ??= const Uuid().v4();
 
     final slots = [
@@ -366,6 +396,8 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
     ));
 
     state = draft.copyWith(regimenId: regimenId, slots: slots);
+    // The draft now owns a persisted id — any earlier blind seed is moot.
+    _seedWasBlind = false;
   }
 
   /// Cascade-soft-deletes the supplement, its regimen(s), slots, and future
