@@ -14,16 +14,21 @@ library;
 import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/l10n/l10n.dart';
+import 'package:boostque/core/domain/repositories.dart' show StackEntry;
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/calendar_screen.dart';
+import 'package:boostque/core/widgets/bq_segmented.dart';
 import 'package:boostque/features/calendar/planner_gantt.dart';
+import 'package:boostque/features/calendar/planner_providers.dart';
+import 'package:boostque/features/calendar/planner_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -57,7 +62,17 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  ProviderContainer makeContainer() {
+  /// [stackState] pins `stackEntriesProvider` to a fixed AsyncValue so the
+  /// loading and error surfaces can be exercised.
+  ///
+  /// It is an AsyncValue rather than a list of overrides because Riverpod 3
+  /// does not export `Override` as public API — the same shape of gap as
+  /// `ProviderListenable`, and the same workaround: type against the concrete
+  /// thing instead.
+  ProviderContainer makeContainer({
+    DateTime? clock,
+    AsyncValue<List<StackEntry>>? stackState,
+  }) {
     return ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
@@ -66,10 +81,12 @@ void main() {
           db = database;
           return database;
         }),
-        todayProvider.overrideWith(() => _FixedToday(today)),
+        todayProvider.overrideWith(() => _FixedToday(clock ?? today)),
         // Pins the OTHER sanctioned clock read so the Today page under the
         // planner never depends on what time the suite runs at.
         nowMinutesProvider.overrideWith((ref) => Stream.value(600)),
+        if (stackState != null)
+          stackEntriesProvider.overrideWith((ref) => stackState),
       ],
     );
   }
@@ -83,6 +100,25 @@ void main() {
         supportedLocales: AppLocalizations.supportedLocales,
         theme: bqTheme(),
         home: const CalendarScreen(),
+      ),
+    );
+  }
+
+  /// The planner pumped on its own.
+  ///
+  /// Legitimate because the screen is navigation-agnostic by design: the tap
+  /// path from the Calendar header is proven once, by the tests above, and
+  /// every shell assertion below is about the planner itself. It also keeps
+  /// the Today page — and its bounded materialization — out of these tests.
+  Widget plannerApp(ProviderContainer container) {
+    return UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(
+        locale: const Locale('uk'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: bqTheme(),
+        home: const PlannerScreen(),
       ),
     );
   }
@@ -135,13 +171,32 @@ void main() {
   /// Two regimen-bearing supplements (one of them paused) plus one fresh
   /// supplement with no regimen at all — so "one row per regimen-bearing
   /// entry" is a real filter, not a tautology.
-  Future<void> seed(ProviderContainer container) async {
+  /// A one-time course, so the gantt hint's course branch has a real subject.
+  final course = Regimen(
+    id: 'r3',
+    supplementId: 's3',
+    kind: RegimenKind.course,
+    startDate: DateTime.utc(2026, 8, 5),
+    endDate: DateTime.utc(2026, 9, 30),
+    onDays: 0,
+    offDays: 0,
+    paused: false,
+    slots: const [
+      DoseSlot(id: 'sl-z', minutesFromMidnight: 540, doseLabel: '1 крапля'),
+    ],
+  );
+
+  Future<void> seed(
+    ProviderContainer container, {
+    bool courseForVitaminD = false,
+  }) async {
     final supplements = container.read(supplementRepoProvider);
     await supplements.upsert(magnesium);
     await supplements.upsert(creatine);
     await supplements.upsert(vitaminD);
     final regimens = container.read(regimenRepoProvider);
     await regimens.upsert(cyclic('r1', 's1'));
+    if (courseForVitaminD) await regimens.upsert(course);
     await regimens.upsert(
       Regimen(
         id: 'r2',
@@ -274,6 +329,338 @@ void main() {
 
     beforeSub.cancel();
     await tearDownTree(tester, container);
+  });
+
+  // ---------------------------------------------------------------------
+  // The shell (plan 04-02, UI-SPEC S6 / S6c, DECIDED-8, Interaction
+  // Contracts 1, 2 and 5).
+  // ---------------------------------------------------------------------
+
+  /// ONE finder, asserted once per segment — which is what makes DECIDED-8
+  /// ("both segments close with the SAME key") the thing actually proven,
+  /// rather than two segments each carrying some disclaimer or other.
+  final disclaimer = find.text(
+    'Межа в 5 речовин — наше редакційне правило для зручності відстеження, '
+    'а не медичний норматив. Освітній матеріал, не медична порада.',
+  );
+  final emptyTitle = find.text('Планувати ще нічого');
+  final loadError =
+      find.text('Не вдалося завантажити планувальник. Спробуйте ще раз.');
+
+  Future<void> openPlanner(
+    WidgetTester tester,
+    ProviderContainer container,
+  ) async {
+    await tester.pumpWidget(plannerApp(container));
+    await pumpUntil(
+      tester,
+      () => find.byType(BqSegmented).evaluate().isNotEmpty,
+      'the planner header',
+    );
+  }
+
+  group('planner shell', () {
+    testWidgets('Цикли is the default segment; the subtitle and the body '
+        'switch with it, instantly and both ways (S6, Interaction Contract 2)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      // Both segment labels always render (UI-SPEC truth #18).
+      expect(find.text('Цикли'), findsOneWidget);
+      expect(find.text('Рік'), findsOneWidget);
+      // The window subtitle, pinned exactly: uk standalone (nominative) month
+      // names for the Aug-Nov window around the pinned clock (PF-4).
+      expect(find.text('серпень — листопад 2026'), findsOneWidget);
+      expect(find.byType(GanttRowBar), findsWidgets,
+          reason: 'Цикли is the default segment (index 1)');
+
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+
+      expect(find.text('2026 · 12 місяців'), findsOneWidget,
+          reason: 'the Рік subtitle names the year and a pre-formatted month '
+              'count');
+      expect(find.text('серпень — листопад 2026'), findsNothing);
+      expect(find.byType(GanttRowBar), findsNothing,
+          reason: 'the Цикли body is gone, not merely covered');
+
+      await tester.tap(find.text('Цикли'));
+      await tester.pump();
+
+      expect(find.text('серпень — листопад 2026'), findsOneWidget);
+      expect(find.byType(GanttRowBar), findsWidgets);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a window crossing 31 December renders the cross-year '
+        'subtitle with BOTH years (E-8)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(clock: DateTime.utc(2026, 10, 15));
+      await seed(container);
+      await openPlanner(tester, container);
+
+      expect(find.text('жовтень 2026 — січень 2027'), findsOneWidget);
+      // The Рік matrix stays on today's year while the window has already
+      // crossed into the next one (DECIDED-9).
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+      expect(find.text('2026 · 12 місяців'), findsOneWidget);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the disclaimer closes BOTH segments — the same key, one '
+        'finder (DECIDED-8, PLAN-04)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      expect(disclaimer, findsOneWidget, reason: 'Цикли closes with it');
+
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+
+      expect(disclaimer, findsOneWidget, reason: 'Рік closes with it too');
+      expect(
+        find.text('Рік показує, як цикли накладаються один на одний. '
+            'Червоне число в місяці означає перевищення нашої межі у '
+            '5 речовин одночасно.'),
+        findsOneWidget,
+        reason: 'the year footnote renders ABOVE the disclaimer, never '
+            'instead of it (M9)',
+      );
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('an empty stack renders the empty block with the '
+        'no-supplements body on both segments, and still the disclaimer '
+        '(S6c, PLAN-04 is unconditional)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => emptyTitle.evaluate().isNotEmpty,
+        'the empty planner block',
+      );
+
+      expect(
+        find.text('Додайте добавку у вкладці «Стек» — її цикли '
+            'з\'являться тут.'),
+        findsOneWidget,
+      );
+      expect(find.byType(GanttRowBar), findsNothing);
+      expect(disclaimer, findsOneWidget);
+
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+
+      expect(emptyTitle, findsOneWidget);
+      expect(disclaimer, findsOneWidget);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('supplements that all lack a regimen render the OTHER empty '
+        'body — a user who owns supplements is never told to add one '
+        '(DECIDED-7)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      final supplements = container.read(supplementRepoProvider);
+      await supplements.upsert(magnesium);
+      await supplements.upsert(creatine);
+
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => emptyTitle.evaluate().isNotEmpty,
+        'the empty planner block',
+      );
+
+      expect(
+        find.text('У ваших добавок ще немає розкладу. Відкрийте добавку у '
+            'вкладці «Стек», щоб задати цикл.'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Додайте добавку у вкладці «Стек» — її цикли '
+            'з\'являться тут.'),
+        findsNothing,
+      );
+      expect(disclaimer, findsOneWidget);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a failing stack stream renders the designed error copy plus '
+        'retry, and never the exception (S6c, T-04-09)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(
+        stackState: AsyncError(
+          Exception('boom-from-drift'),
+          StackTrace.empty,
+        ),
+      );
+      await openPlanner(tester, container);
+
+      expect(loadError, findsOneWidget);
+      expect(find.text('Повторити'), findsOneWidget);
+      expect(find.textContaining('boom-from-drift'), findsNothing,
+          reason: 'raw exception text never enters the widget tree');
+      expect(find.textContaining('Exception'), findsNothing);
+      expect(disclaimer, findsOneWidget,
+          reason: 'PLAN-04 is unconditional — it closes the error surface too');
+
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+
+      expect(loadError, findsOneWidget);
+      expect(disclaimer, findsOneWidget);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('while the stack is loading the header and segmented control '
+        'render over an empty body with NO spinner (S6c)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(
+        stackState: const AsyncLoading(),
+      );
+      await openPlanner(tester, container);
+
+      expect(find.text('Планувальник'), findsOneWidget);
+      expect(find.byType(BqSegmented), findsOneWidget);
+      expect(find.text('серпень — листопад 2026'), findsOneWidget,
+          reason: 'the subtitle is clock-derived and never waits on the stack');
+      expect(find.byType(CircularProgressIndicator), findsNothing,
+          reason: 'a local-DB stream resolves within a frame; a spinner would '
+              'only flash');
+      expect(find.byType(GanttRowBar), findsNothing);
+      expect(emptyTitle, findsNothing,
+          reason: 'until the stack resolves the planner assumes it has '
+              'entries — the empty block must never flash on the way to data');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a week selected on Цикли survives a switch to Рік and back '
+        '(Interaction Contract 2)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      // Riverpod 3 pauses providers nobody listens to; this subscription is
+      // what keeps the screen-scoped selection alive for the assertion, and
+      // stands in for the week column plan 04-03 will add.
+      final sub = container.listen(resolvedWeekIndexProvider, (_, _) {});
+      addTearDown(sub.close);
+
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      container.read(selectedWeekProvider.notifier).select(3);
+      await tester.pump();
+      expect(container.read(resolvedWeekIndexProvider), 3);
+
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+      await tester.tap(find.text('Цикли'));
+      await tester.pump();
+
+      expect(container.read(resolvedWeekIndexProvider), 3,
+          reason: 'the segment index chooses which body builds and nothing '
+              'else — selection state lives in its own provider');
+
+      await tearDownTree(tester, container);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // The gantt row hint (plan 04-02 task 3, M13).
+  // ---------------------------------------------------------------------
+
+  group('gantt row hint', () {
+    testWidgets('reads the Stack card\'s own schedule description, minus the '
+        'daily-slot tail (M13)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container, courseForVitaminD: true);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      // Cyclic with a break: the same "on / off" composition the Stack chip
+      // renders, in the same words.
+      expect(find.text('2 тижні / 2 тижні'), findsOneWidget);
+      // Cyclic with no break: the no-break wording, never "0 тижнів".
+      expect(find.text('4 тижні / без перерви'), findsOneWidget);
+      expect(find.textContaining('0 тижнів'), findsNothing);
+      // Course: the locale-formatted inclusive range.
+      final range = DateFormat.yMd('uk');
+      expect(
+        find.text('${range.format(DateTime.utc(2026, 8, 5))} – '
+            '${range.format(DateTime.utc(2026, 9, 30))}'),
+        findsOneWidget,
+      );
+      // The planner is about time, not daily doses: the slot tail the Stack
+      // card appends is absent from every hint.
+      expect(find.textContaining('раз на день'), findsNothing);
+      expect(find.textContaining('рази на день'), findsNothing);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('each row speaks its name, its schedule and its run count — '
+        'the painted bands are invisible to assistive tech', (tester) async {
+      usePhoneSurface(tester);
+      final handle = tester.ensureSemantics();
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      final label = tester.getSemantics(find.byType(GanttRowBar).first).label;
+      expect(label, startsWith('Магній бісглицинат, 2 тижні / 2 тижні, '),
+          reason: 'name, then the shared schedule description');
+      expect(label, endsWith('періодів'),
+          reason: 'closing with a pre-formatted periodsCount — the count of '
+              'painted runs is the information the canvas carries');
+
+      // A paused regimen paints nothing, and says so honestly rather than
+      // claiming a period it does not have.
+      final paused = tester.getSemantics(find.byType(GanttRowBar).at(1)).label;
+      expect(paused, startsWith('Креатин моногідрат, 4 тижні / без перерви, '));
+      expect(paused, endsWith('0 періодів'));
+
+      handle.dispose();
+      await tearDownTree(tester, container);
+    });
   });
 }
 

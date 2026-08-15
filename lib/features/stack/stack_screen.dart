@@ -22,7 +22,6 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/core/l10n/l10n.dart';
@@ -32,6 +31,7 @@ import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/stack/add_supplement_sheet.dart';
 import 'package:boostque/features/stack/regimen_editor_screen.dart';
+import 'package:boostque/features/stack/schedule_summary_text.dart';
 import 'package:boostque/features/stack/stack_status.dart';
 
 /// The Stack screen ("Мій стек", mockup screen 01, UI-SPEC S1).
@@ -348,16 +348,15 @@ class _ScheduleChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final text = switch (summary) {
-      CyclicSummary(:final onDays, :final offDays, :final slotCount) =>
-        '${l10n.weeksCount(onDays ~/ 7)} / '
-            '${offDays == 0 ? l10n.noBreak : l10n.weeksCount(offDays ~/ 7)}'
-            ' · ${l10n.slotsPerDay(slotCount)}',
-      CourseSummary(:final start, :final end, :final slotCount) =>
-        '${_courseRange(context, start, end)} · ${l10n.slotsPerDay(slotCount)}',
-      NoSummary() => '',
-    };
+    // One composition, shared with the planner's gantt row hint, so the two
+    // tabs can never describe the same regimen differently (M13). The card
+    // keeps the daily-slot tail; the planner drops it.
+    final text = scheduleSummaryText(
+      summary,
+      l10n: context.l10n,
+      locale: Localizations.localeOf(context).toString(),
+      withSlots: true,
+    );
     if (text.isEmpty) return const SizedBox.shrink();
     return Container(
       padding: const EdgeInsetsDirectional.symmetric(
@@ -377,16 +376,5 @@ class _ScheduleChip extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  /// Locale-formatted inclusive date range (uk "14.08.2026 – 30.09.2026").
-  static String _courseRange(
-    BuildContext context,
-    DateTime start,
-    DateTime? end,
-  ) {
-    final fmt = DateFormat.yMd(Localizations.localeOf(context).toString());
-    final startText = fmt.format(start);
-    return end == null ? startText : '$startText – ${fmt.format(end)}';
   }
 }

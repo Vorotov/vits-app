@@ -4,8 +4,14 @@
 /// Top-level pure functions in the `combineStackEntries` style: `today` is
 /// passed explicitly and every date comparison goes through [dateOnly] —
 /// this file NEVER reads the clock. No Flutter imports, no user-visible
-/// strings: the wave-4 card renderer switches exhaustively over the sealed
+/// strings: the renderer switches exhaustively over the sealed
 /// [ScheduleSummary] hierarchy and maps to ARB keys itself.
+///
+/// That renderer is `schedule_summary_text.dart`, a sibling rather than a
+/// function here, precisely to keep the "no l10n, no intl, no Flutter" rule
+/// above true (plan 04-02, M13). This file decides WHAT a schedule is; the
+/// sibling decides how it reads, once, for both the Stack card and the
+/// planner's gantt row.
 ///
 /// Status semantics (P-4), in precedence order:
 /// - no regimen -> [StackStatus.fresh] (E-7: just added, no schedule yet)

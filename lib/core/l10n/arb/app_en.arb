@@ -575,5 +575,307 @@
   "plannerTitle": "Planner",
   "@plannerTitle": {
     "description": "ONE key, TWO placements (04-UI-SPEC Copywriting Contract): the planner screen's own title (mockup line 287) and the Calendar header's entry button. Sharing the key is deliberate — the button always names its destination exactly, the same convention `backToToday` follows. Verb-free by design; never 'Open planner'"
+  },
+  "plannerSegYear": "Year",
+  "@plannerSegYear": {
+    "description": "First segment label of the planner's BqSegmented control (mockup line 290); the zoom-out view"
+  },
+  "plannerSegCycles": "Cycles",
+  "@plannerSegCycles": {
+    "description": "Second segment label of the planner's BqSegmented control (mockup line 291) and the DEFAULT segment — its ~4-month window contains today and answers PLAN-01"
+  },
+  "plannerRangeSubtitle": "{start} — {end} {year}",
+  "@plannerRangeSubtitle": {
+    "description": "Цикли header subtitle naming the window (mockup line 288). `start`/`end` are intl LLLL standalone month names for the ACTIVE locale — never ARB, never MMMM (which yields the uk genitive case, PF-4)",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "plannerRangeSubtitleCrossYear": "{start} {startYear} — {end} {endYear}",
+  "@plannerRangeSubtitleCrossYear": {
+    "description": "Цикли header subtitle when the window crosses 31 December (E-8): each month carries its own year. Same LLLL standalone month rule as plannerRangeSubtitle",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "startYear": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "endYear": {
+        "type": "String"
+      }
+    }
+  },
+  "plannerYearSubtitle": "{year} · {months}",
+  "@plannerYearSubtitle": {
+    "description": "Рік header subtitle (mockup line 402); `months` is a pre-formatted monthsCount string, never a raw number",
+    "placeholders": {
+      "year": {
+        "type": "String"
+      },
+      "months": {
+        "type": "String"
+      }
+    }
+  },
+  "monthsCount": "{count, plural, one{{count} month} other{{count} months}}",
+  "@monthsCount": {
+    "description": "Count of months, pre-formatted into plannerYearSubtitle. uk carries all four CLDR forms",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cyclesCount": "{count, plural, one{{count} cycle} other{{count} cycles}}",
+  "@cyclesCount": {
+    "description": "Count of cycles overlapping a week (mockup line 658), pre-formatted into weekNoteOverLimit. uk carries all four CLDR forms",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "periodsCount": "{count, plural, one{{count} period} other{{count} periods}}",
+  "@periodsCount": {
+    "description": "Count of painted runs on a gantt row — accessibility only, pre-formatted into ganttRowSemantics because the painted bands are invisible to assistive tech. uk carries all four CLDR forms",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "plannerThisWeek": "{count} at the same time this week",
+  "@plannerThisWeek": {
+    "description": "Цикли summary chip label (mockup line 920); `count` is a pre-formatted substancesCount string — the existing key, reused, never duplicated",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "limitBadge": "limit {max}",
+  "@limitBadge": {
+    "description": "Mono badge inside the Цикли summary chip (mockup line 297) naming the editorial 5-substance rule — a limit of ours, never a safety threshold",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "legendTaking": "taking",
+  "@legendTaking": {
+    "description": "Gantt legend entry for a solid accent segment (mockup line 326)"
+  },
+  "legendPlanned": "planned",
+  "@legendPlanned": {
+    "description": "Gantt legend entry for a hatched segment (mockup line 327). The legend has EXACTLY THREE entries: the mockup's fourth, `є взаємодія`, does not ship (M1) — it is an interaction claim on the never-ship exclusion list. Do not add a fourth key here"
+  },
+  "legendPaused": "paused",
+  "@legendPaused": {
+    "description": "Gantt legend entry for a bare track (mockup line 329) — the swatch is the same chip colour as the track, which is how the design says a paused row is an empty track"
+  },
+  "loadChartTitle": "CONCURRENT LOAD",
+  "@loadChartTitle": {
+    "description": "Mono eyebrow above the weekly load chart (mockup line 335)"
+  },
+  "loadChartMeta": "by week",
+  "@loadChartMeta": {
+    "description": "Mono meta beside loadChartTitle (mockup line 336)"
+  },
+  "loadAxisLegend": "limit {max} · comfort {comfort}",
+  "@loadAxisLegend": {
+    "description": "Centre label of the load chart's axis row (mockup line 348); both numbers are editorial rules of this product",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      },
+      "comfort": {
+        "type": "int"
+      }
+    }
+  },
+  "weekLoadLabel": "{load} of {max} slots",
+  "@weekLoadLabel": {
+    "description": "Week-detail meta (mockup line 913), also pre-formatted into weekBarSemantics",
+    "placeholders": {
+      "load": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "weekFreeSlots": "{n} free — you can plan a start",
+  "@weekFreeSlots": {
+    "description": "Week-detail hint when the week is below the editorial limit (mockup line 921)",
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "weekNoFreeSlots": "No free slots",
+  "@weekNoFreeSlots": {
+    "description": "Week-detail hint when the week is at or above the editorial limit (mockup line 921)"
+  },
+  "verdictComfort": "COMFORTABLE",
+  "@verdictComfort": {
+    "description": "Week verdict chip at load <= 3 (mockup line 778)"
+  },
+  "verdictLimit": "AT THE LIMIT",
+  "@verdictLimit": {
+    "description": "Week verdict chip at load <= 5 (mockup line 781) — at OUR limit, not a warning"
+  },
+  "verdictOverLimit": "OVER THE LIMIT",
+  "@verdictOverLimit": {
+    "description": "Week verdict chip at load > 5 (mockup line 784) — above OUR editorial limit, never 'unsafe'"
+  },
+  "weekNoteComfort": "Up to three substances at once is easy to track: if something goes wrong, it is clear what to remove.",
+  "@weekNoteComfort": {
+    "description": "Verdict note under the comfort band (mockup line 779, uk verbatim)"
+  },
+  "weekNoteLimit": "Five is our default limit. Above it, it becomes hard to tell what is producing an effect and what is a side sensation.",
+  "@weekNoteLimit": {
+    "description": "Verdict note at the limit (mockup line 782, uk verbatim) — 'our default limit', explicitly this product's rule"
+  },
+  "weekNoteOverLimit": "{cycles} overlap this week. Consider moving the start of some of them, or discussing this volume with your doctor.",
+  "@weekNoteOverLimit": {
+    "description": "Verdict note above the limit (mockup line 785), shipped TRUNCATED. The mockup's trailing clause about the cumulative load of fat-soluble forms is deliberately absent: it is a pharmacological claim inside the never-ship interaction-advice exclusion (PF-5, DECIDED-8). If the truncation ever reads oddly, rewrite the final sentence — the clause is NEVER restored. `cycles` is a pre-formatted cyclesCount string",
+    "placeholders": {
+      "cycles": {
+        "type": "String"
+      }
+    }
+  },
+  "peakMonth": "Densest month — {month}",
+  "@peakMonth": {
+    "description": "Рік peak chip when one month leads (mockup line 967); `month` is an intl LLLL standalone (nominative) form",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "peakMonthsTie": "Densest months, including {month}",
+  "@peakMonthsTie": {
+    "description": "Рік peak chip when several months tie (mockup line 967); `month` is an intl LLLL standalone (nominative) form",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "yearLegendHint": "lighter = planned",
+  "@yearLegendHint": {
+    "description": "Closing entry of the Рік legend explaining the two-tone swatch (mockup line 436)"
+  },
+  "monthMeta": "{count} · limit {max}",
+  "@monthMeta": {
+    "description": "Month-detail header meta (mockup line 972); `count` is a pre-formatted substancesCount string",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "monthStateTaking": "taking",
+  "@monthStateTaking": {
+    "description": "Month-detail row state when the whole month is covered and already running (mockup line 850)"
+  },
+  "monthStatePlanned": "planned",
+  "@monthStatePlanned": {
+    "description": "Month-detail row state when the month's coverage is entirely in the future (mockup line 850)"
+  },
+  "monthStatePartial": "part of the month",
+  "@monthStatePartial": {
+    "description": "Month-detail row state when coverage is partial (mockup line 850)"
+  },
+  "monthEmpty": "No cycle is active this month.",
+  "@monthEmpty": {
+    "description": "Month-detail body when no supplement covers the month (invented — the mockup never renders a zero-coverage month). A correct, expected state, never an error"
+  },
+  "emptyPlannerTitle": "Nothing to plan yet",
+  "@emptyPlannerTitle": {
+    "description": "Planner empty-state heading, rendered on BOTH segments (invented — the mockup has no empty state)"
+  },
+  "emptyPlannerBody": "Add a supplement on the Stack tab — its cycles will appear here.",
+  "@emptyPlannerBody": {
+    "description": "Planner empty-state body when the stack is empty; names the Stack tab rather than linking to it — the nav bar is the affordance"
+  },
+  "emptyPlannerBodyNoRegimen": "Your supplements don't have a schedule yet. Open one on the Stack tab to set a cycle.",
+  "@emptyPlannerBodyNoRegimen": {
+    "description": "Planner empty-state body when supplements exist but none has a regimen (DECIDED-7) — a user who owns supplements is never told to go add one"
+  },
+  "plannerLoadError": "Couldn't load the planner. Try again.",
+  "@plannerLoadError": {
+    "description": "AsyncValue.error copy for the planner's stack stream, paired with the existing `retry` key; raw exception text and stack traces never enter the widget tree"
+  },
+  "plannerDisclaimer": "The 5-substance limit is our editorial rule for easier tracking, not a medical standard. Educational material, not medical advice.",
+  "@plannerDisclaimer": {
+    "description": "PLAN-04 closure (mockup line 374, uk verbatim). Rendered as the LAST element of BOTH planner segments — Цикли and Рік — and on the empty and error surfaces too, because PLAN-04 is unconditional. It frames the 5-substance limit as THIS PRODUCT'S editorial rule and explicitly not a medical standard; that framing is the half of PLAN-04 that does the work, which is why the bare `disclaimerEducational` cannot stand in for it (DECIDED-8). On the Рік segment `yearFootnote` renders ABOVE this key, never instead of it (M9)"
+  },
+  "yearFootnote": "The year view shows how cycles overlap. A red number on a month means it exceeds our limit of {max} substances at once.",
+  "@yearFootnote": {
+    "description": "Рік closing note (mockup line 454, uk verbatim), rendered directly above plannerDisclaimer with an 8px gap",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "ganttRowSemantics": "{name}, {schedule}, {periods}",
+  "@ganttRowSemantics": {
+    "description": "Accessibility label of a gantt row: the painted bands are invisible to assistive tech, so the run count is spoken. `schedule` is the shared schedule-summary composition (minus the daily-slot tail) and `periods` is a pre-formatted periodsCount string",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "schedule": {
+        "type": "String"
+      },
+      "periods": {
+        "type": "String"
+      }
+    }
+  },
+  "weekBarSemantics": "{range}, {load}",
+  "@weekBarSemantics": {
+    "description": "Accessibility label of a load-chart week column; `range` is an intl-formatted bucket range and `load` a pre-formatted weekLoadLabel string",
+    "placeholders": {
+      "range": {
+        "type": "String"
+      },
+      "load": {
+        "type": "String"
+      }
+    }
+  },
+  "monthCardSemantics": "{month}, {count}",
+  "@monthCardSemantics": {
+    "description": "Accessibility label of a year-grid month card; `month` is an intl LLLL standalone form and `count` a pre-formatted substancesCount string",
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
   }
 }
