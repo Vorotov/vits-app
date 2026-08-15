@@ -41,10 +41,12 @@ import 'package:boostque/features/calendar/calendar_screen.dart';
 import 'package:boostque/features/calendar/day_block_section.dart';
 import 'package:boostque/features/calendar/day_progress_ring.dart';
 import 'package:boostque/features/calendar/dose_row.dart';
+import 'package:boostque/features/calendar/week_strip.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -88,11 +90,11 @@ void main() {
     );
   }
 
-  Widget app(ProviderContainer container) {
+  Widget app(ProviderContainer container, {Locale locale = const Locale('uk')}) {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
-        locale: const Locale('uk'),
+        locale: locale,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: bqTheme(),
@@ -137,6 +139,16 @@ void main() {
     }
     fail('Timed out waiting for $what');
   }
+
+  /// A raw intake-log watch scoped to ONE calendar day.
+  ///
+  /// Day-scoped on purpose (plan 03-05): mounting the screen now also mounts
+  /// [WeekStrip], and each of its seven visible cells watches
+  /// `dayDosesProvider` for its own day — which pre-materializes the whole
+  /// visible week. An unfiltered `db.select(db.intakeLogs)` therefore returns
+  /// a week of rows, while every assertion in this file is about one day's.
+  Stream<List<IntakeLog>> rawLogsFor(DateTime day) =>
+      (db.select(db.intakeLogs)..where((t) => t.date.equals(day))).watch();
 
   /// An always-active cyclic regimen (offDays 0) with one 08:00 slot.
   Regimen alwaysActive() => Regimen(
@@ -192,7 +204,8 @@ void main() {
     // Raw table watch, pump-driven: awaiting a Drift future un-pumped
     // deadlocks in the test zone.
     var raw = <IntakeLog>[];
-    final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+    final rawSub =
+        rawLogsFor(container.read(todayProvider)).listen((v) => raw = v);
     await pumpUntil(tester, () => raw.length == 1, 'the materialized log row');
     expect(raw.single.status, DoseStatus.pending,
         reason: 'materialization creates the row as pending');
@@ -231,7 +244,8 @@ void main() {
     await pumpUntil(tester, () => row.evaluate().isNotEmpty, 'the dose row');
 
     var raw = <IntakeLog>[];
-    final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+    final rawSub =
+        rawLogsFor(container.read(todayProvider)).listen((v) => raw = v);
     await pumpUntil(tester, () => raw.length == 1, 'the materialized log row');
 
     // Two taps with NO pump in between — both hit the still-built row; the
@@ -775,7 +789,7 @@ void main() {
       );
 
       var raw = <IntakeLog>[];
-      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      final rawSub = rawLogsFor(pinnedToday).listen((v) => raw = v);
       await pumpUntil(tester, () => raw.length == 2, 'both materialized logs');
 
       final intake = container.read(intakeRepoProvider);
@@ -857,7 +871,7 @@ void main() {
       );
 
       var raw = <IntakeLog>[];
-      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      final rawSub = rawLogsFor(pinnedToday).listen((v) => raw = v);
       await pumpUntil(tester, () => raw.length == 2, 'both materialized logs');
 
       unawaited(container.read(intakeRepoProvider).setStatus(
@@ -1087,7 +1101,7 @@ void main() {
       );
 
       var raw = <IntakeLog>[];
-      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      final rawSub = rawLogsFor(pinnedToday).listen((v) => raw = v);
       await pumpUntil(tester, () => raw.length == 1, 'the materialized log');
 
       unawaited(container
@@ -1145,7 +1159,7 @@ void main() {
           reason: 'missed and overdue can never render together');
 
       var raw = <IntakeLog>[];
-      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      final rawSub = rawLogsFor(pastDay).listen((v) => raw = v);
       await pumpUntil(tester, () => raw.isNotEmpty, 'the past day log');
       await tester.tap(find.text('Магній'));
       await pumpUntil(
@@ -1307,7 +1321,7 @@ void main() {
       );
 
       var raw = <IntakeLog>[];
-      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      final rawSub = rawLogsFor(pinnedToday).listen((v) => raw = v);
       await pumpUntil(tester, () => raw.length == 1, 'the materialized log');
 
       unawaited(container
@@ -1360,7 +1374,7 @@ void main() {
       await pumpUntil(tester, () => row.evaluate().isNotEmpty, 'the dose row');
 
       var raw = <IntakeLog>[];
-      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      final rawSub = rawLogsFor(pinnedToday).listen((v) => raw = v);
       await pumpUntil(tester, () => raw.length == 1, 'the materialized log');
 
       await tester.tap(row);
@@ -1428,7 +1442,7 @@ void main() {
       final row = find.text('Магній');
       await pumpUntil(tester, () => row.evaluate().isNotEmpty, 'the dose row');
       var raw = <IntakeLog>[];
-      final sub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      final sub = rawLogsFor(pinnedToday).listen((v) => raw = v);
       await pumpUntil(tester, () => raw.length == 1, 'the materialized log');
       return (row, () => raw, sub);
     }
@@ -1654,6 +1668,422 @@ void main() {
       // ignore: unawaited_futures
       sub.cancel();
       await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+  });
+
+  // --- Week strip (plan 03-05, Task 1; UI-SPEC S4 "Week strip", DECIDED-4,
+  // Interaction Contracts 4/5/8, E3) ---
+  //
+  // The clock is pinned to Thursday 2026-08-13, so the resolved week is
+  // Monday 2026-08-10 .. Sunday 2026-08-16 on every machine. Cells are found
+  // by their date-only `ValueKey`, so an assertion can never be satisfied by
+  // the wrong cell.
+  group('week strip', () {
+    final pinnedToday = DateTime.utc(2026, 8, 13); // четвер
+    final monday = DateTime.utc(2026, 8, 10);
+    final pastDay = DateTime.utc(2026, 8, 11);
+    final futureDay = DateTime.utc(2026, 8, 14);
+
+    Supplement supp(String name) => Supplement(
+          id: 's1',
+          name: name,
+          doseText: '',
+          colorValue: 0xFF6B6FA8,
+          note: '',
+        );
+
+    Regimen everyDay({int offDays = 0}) => Regimen(
+          id: 'r1',
+          supplementId: 's1',
+          kind: RegimenKind.cyclic,
+          startDate: DateTime.utc(2020, 1, 1),
+          endDate: null,
+          onDays: 1,
+          offDays: offDays,
+          paused: false,
+          slots: const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+          ],
+        );
+
+    Finder cell(DateTime day) => find.byKey(ValueKey<DateTime>(day));
+
+    /// The cell's own decorated box.
+    BoxDecoration cellDecoration(WidgetTester tester, DateTime day) =>
+        tester.widget<Container>(cell(day)).decoration! as BoxDecoration;
+
+    /// The cell's 4x4 status dot color.
+    Color dotColor(WidgetTester tester, DateTime day) => (tester
+            .widget<Container>(find.descendant(
+              of: cell(day),
+              matching: find.byKey(const ValueKey('week-dot')),
+            ))
+            .decoration! as BoxDecoration)
+        .color!;
+
+    /// Text rendered inside one cell (the uppercased dow, the day number).
+    List<String> cellTexts(WidgetTester tester, DateTime day) => tester
+        .widgetList<Text>(find.descendant(of: cell(day), matching: find.byType(Text)))
+        .map((t) => t.data ?? '')
+        .toList();
+
+    testWidgets('uk: the resolved week renders exactly 7 Monday-first cells '
+        'with intl dow labels and day numbers', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(everyDay());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => cell(monday).evaluate().isNotEmpty,
+        'the week strip',
+      );
+
+      for (var i = 0; i < 7; i++) {
+        expect(cell(monday.add(Duration(days: i))), findsOneWidget,
+            reason: 'the strip renders every day of the resolved week');
+      }
+      expect(cell(DateTime.utc(2026, 8, 9)), findsNothing,
+          reason: 'the Sunday BEFORE the Monday belongs to the previous week');
+      expect(cell(DateTime.utc(2026, 8, 17)), findsNothing);
+
+      // Monday is the FIRST column: a hard, locale-independent rule
+      // (DECIDED-4), not MaterialLocalizations.firstDayOfWeekIndex.
+      var previous = tester.getTopLeft(cell(monday)).dx;
+      for (var i = 1; i < 7; i++) {
+        final dx = tester.getTopLeft(cell(monday.add(Duration(days: i)))).dx;
+        expect(dx > previous, isTrue,
+            reason: 'cells run Monday -> Sunday in start-to-end order');
+        previous = dx;
+      }
+
+      expect(cellTexts(tester, monday), contains('10'),
+          reason: "the day number is intl's, for the active locale");
+      expect(cellTexts(tester, pinnedToday), contains('13'));
+      expect(cellTexts(tester, monday).first,
+          DateFormat.E('uk').format(monday).toUpperCase(),
+          reason: 'the dow label is the uppercased intl short weekday — never '
+              'an ARB string and never a hand-built table');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('en: the first cell is STILL Monday (DECIDED-4 divergence '
+        'from firstDayOfWeekIndex)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Magnesium'));
+      await container.read(regimenRepoProvider).upsert(everyDay());
+
+      await tester.pumpWidget(app(container, locale: const Locale('en')));
+      await pumpUntil(
+        tester,
+        () => cell(monday).evaluate().isNotEmpty,
+        'the week strip',
+      );
+
+      // en-US would put Sunday first if the platform value were consulted.
+      expect(cell(DateTime.utc(2026, 8, 9)), findsNothing,
+          reason: 'Sunday 9 August belongs to the PREVIOUS week, in every '
+              'locale');
+      for (var i = 0; i < 7; i++) {
+        expect(cell(monday.add(Duration(days: i))), findsOneWidget);
+      }
+      expect(
+        tester.getTopLeft(cell(monday)).dx <
+            tester.getTopLeft(cell(DateTime.utc(2026, 8, 16))).dx,
+        isTrue,
+        reason: 'Monday is the leading column and Sunday closes the week',
+      );
+      expect(cellTexts(tester, monday).first,
+          DateFormat.E('en').format(monday).toUpperCase(),
+          reason: 'the dow label follows the ACTIVE locale');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets("uk: today's cell is accent-filled; a selected non-today cell "
+        'takes the accent border; every other cell keeps the card border',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(everyDay());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => cell(monday).evaluate().isNotEmpty,
+        'the week strip',
+      );
+
+      expect(cellDecoration(tester, pinnedToday).color, BqColors.accent,
+          reason: "today's cell is the single accent block in the row");
+      expect((cellDecoration(tester, pinnedToday).border! as Border).top.color,
+          BqColors.accent);
+      expect(
+        cellTexts(tester, pinnedToday),
+        contains('13'),
+      );
+      expect(
+        tester
+            .widget<Text>(find.descendant(
+              of: cell(pinnedToday),
+              matching: find.text('13'),
+            ))
+            .style
+            ?.color,
+        BqColors.surface,
+        reason: "the day number inverts on today's accent fill",
+      );
+      expect(cellDecoration(tester, pastDay).color, BqColors.surface);
+      expect((cellDecoration(tester, pastDay).border! as Border).top.color,
+          BqColors.cardBorder,
+          reason: 'an unselected non-today cell keeps the neutral card border');
+
+      container.read(selectedDayProvider.notifier).select(pastDay);
+      await pumpUntil(
+        tester,
+        () => (cellDecoration(tester, pastDay).border! as Border).top.color ==
+            BqColors.accent,
+        'the selected cell to take the accent border',
+      );
+
+      final border = cellDecoration(tester, pastDay).border! as Border;
+      expect(border.top.width, 1.5,
+          reason: 'the browsed day is marked by a 1.5px accent border on a '
+              'surface fill, never by a fill of its own');
+      expect(cellDecoration(tester, pastDay).color, BqColors.surface);
+      expect(cellDecoration(tester, pinnedToday).color, BqColors.accent,
+          reason: "today's cell keeps its fill while another day is browsed");
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: tapping a past cell browses that day; tapping today\'s '
+        'cell clears the selection back to following today (Interaction '
+        'Contract 4)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(everyDay());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => cell(pastDay).evaluate().isNotEmpty,
+        'the week strip',
+      );
+
+      await tester.tap(cell(pastDay));
+      await pumpUntil(
+        tester,
+        () => find.text('11 серпня').evaluate().isNotEmpty,
+        'the day body to re-resolve to the tapped day',
+      );
+      expect(container.read(selectedDayProvider), pastDay,
+          reason: 'the tap writes a dateOnly() normalized selection (PF-1)');
+
+      await tester.tap(cell(pinnedToday));
+      await pumpUntil(
+        tester,
+        () => find.text('четвер, 13 серпня').evaluate().isNotEmpty,
+        'the strip to drop back to following today',
+      );
+      expect(container.read(selectedDayProvider), isNull,
+          reason: 'following today is null, not a concrete date — so the view '
+              'auto-advances across midnight (P-3)');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: the pager is BOUNDED — 53 pages, the last of which is '
+        "today's week; a forward swipe cannot leave it (DECIDED-4)",
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(everyDay());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => cell(monday).evaluate().isNotEmpty,
+        'the week strip',
+      );
+
+      // The bound is asserted from the widget's own page count and mapping,
+      // not by swiping 52 times.
+      expect(weekPageCount, 53,
+          reason: '52 weeks back plus the week containing today — a FINITE '
+              'itemCount, so the builder can never run away (T-03-17)');
+      final pageView = tester.widget<PageView>(find.byType(PageView));
+      expect(
+        (pageView.childrenDelegate as SliverChildBuilderDelegate).childCount,
+        weekPageCount,
+        reason: 'the pager exposes exactly that many pages',
+      );
+      expect(weekStartForPage(weekPageCount - 1, pinnedToday), monday,
+          reason: "the LAST page is the week containing today");
+      expect(weekStartForPage(0, pinnedToday),
+          monday.subtract(const Duration(days: 7 * 52)),
+          reason: 'the first page is 52 weeks back');
+
+      // A forward swipe from the last page changes nothing.
+      await tester.drag(find.byType(PageView), const Offset(-320, 0));
+      for (var i = 0; i < 40; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      expect(cell(pinnedToday), findsOneWidget,
+          reason: 'forward paging is capped at the week containing today');
+      expect(cell(DateTime.utc(2026, 8, 17)), findsNothing,
+          reason: 'next week is unreachable — forward planning is Phase 4');
+      expect(cell(futureDay), findsOneWidget,
+          reason: 'a future day INSIDE the current week stays selectable '
+              '(E-10)');
+
+      // A backward swipe reaches the previous week.
+      await tester.drag(find.byType(PageView), const Offset(320, 0));
+      await pumpUntil(
+        tester,
+        () => cell(DateTime.utc(2026, 8, 3)).evaluate().isNotEmpty,
+        'the previous week page',
+      );
+      expect(cell(DateTime.utc(2026, 8, 9)), findsOneWidget,
+          reason: 'the previous page is the full Monday-to-Sunday week before');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a past day whose every dose is handled shows the calm '
+        'dot; a pending past day, an empty day and a future day show the '
+        'neutral dot', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(everyDay());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => cell(pastDay).evaluate().isNotEmpty,
+        'the week strip',
+      );
+
+      // The strip's own per-cell watch materializes the visible week — no
+      // test-side ensureLogsForDay call anywhere (PF-3).
+      var pastRaw = <IntakeLog>[];
+      final pastSub = rawLogsFor(pastDay).listen((v) => pastRaw = v);
+      await pumpUntil(tester, () => pastRaw.length == 1,
+          "the past day's row, materialized by the strip");
+
+      expect(dotColor(tester, pastDay), BqColors.field,
+          reason: 'a past day still holding a pending dose is NOT handled');
+      expect(dotColor(tester, futureDay), BqColors.field,
+          reason: 'a future day is never "handled" — it has not happened');
+
+      unawaited(container
+          .read(intakeRepoProvider)
+          .setStatus(pastRaw.single.id, DoseStatus.taken));
+      await pumpUntil(
+        tester,
+        () => dotColor(tester, pastDay) == BqColors.calm,
+        'the calm dot once every dose of the past day is handled',
+      );
+
+      expect(dotColor(tester, futureDay), BqColors.field,
+          reason: 'handling one day changes no other cell');
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      pastSub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a day with NO doses shows the neutral dot and the strip '
+        'still renders — never a spinner, never an error cell (E3)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      // Active for one day in 2020, then off for ~274 years: every day of the
+      // rendered week is an off day.
+      await container
+          .read(regimenRepoProvider)
+          .upsert(everyDay(offDays: 100000));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => cell(pastDay).evaluate().isNotEmpty,
+        'the week strip',
+      );
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      expect(dotColor(tester, pastDay), BqColors.field,
+          reason: 'a day with zero doses is not "fully handled"');
+      expect(find.byType(CircularProgressIndicator), findsNothing,
+          reason: 'the strip renders synchronously and never blocks on data');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: every cell carries the localized full date as its '
+        'Semantics label plus a selected flag, and the whole padded cell is '
+        'the tap target (Interaction Contract 8)', (tester) async {
+      usePhoneSurface(tester);
+      final semantics = tester.ensureSemantics();
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(everyDay());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => cell(pastDay).evaluate().isNotEmpty,
+        'the week strip',
+      );
+
+      expect(tester.getSemantics(cell(pastDay)).label,
+          DateFormat.yMMMMEEEEd('uk').format(pastDay),
+          reason: 'a bare number is meaningless to a screen reader — the cell '
+              'announces the full localized date');
+      /// The cell's own `Semantics` wrapper — the nearest ancestor, since the
+      /// cell excludes the semantics of its own text children.
+      Semantics wrapper(DateTime day) => tester.widget<Semantics>(
+          find.ancestor(of: cell(day), matching: find.byType(Semantics)).first);
+
+      expect(wrapper(pinnedToday).properties.selected, isTrue,
+          reason: 'the resolved day is announced as selected');
+      expect(wrapper(pastDay).properties.selected, isFalse);
+      expect(wrapper(pastDay).properties.button, isTrue,
+          reason: 'a cell is a control, not decoration');
+
+      // The tap target is the padded cell, not the 4px dot: a tap 2px inside
+      // the cell's top-start corner still selects the day.
+      final rect = tester.getRect(cell(pastDay));
+      await tester.tapAt(rect.topLeft + const Offset(2, 2));
+      await pumpUntil(
+        tester,
+        () => container.read(selectedDayProvider) == pastDay,
+        'a corner tap to select the day',
+      );
+      expect(tester.getRect(cell(pastDay)).height >= 44, isTrue,
+          reason: 'cells are at least 44px tall (Interaction Contract 8)');
+      expect(tester.takeException(), isNull);
+
+      semantics.dispose();
       await tearDownTree(tester, container);
     });
   });

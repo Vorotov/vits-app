@@ -4,7 +4,8 @@
 /// - fixed header (plan 03-03): title, locale-formatted subtitle, the
 ///   `backToToday` escape hatch, and [DayProgressRing] on the end side. It
 ///   lives OUTSIDE the scroll view, so it never scrolls away.
-/// - week strip (plan 03-05): inserted at the gap marked below.
+/// - week strip (plan 03-05): [WeekStrip], 16px below the header and also
+///   outside the scroll view — a bounded Monday-first week pager.
 /// - scroll body: the day's doses as chronological time blocks
 ///   ([DayBlockSection], plan 03-04), closed by the two-sentence disclaimer
 ///   line (plan 03-03, mockup line 264).
@@ -36,6 +37,7 @@ import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/day_block_section.dart';
 import 'package:boostque/features/calendar/day_progress_ring.dart';
 import 'package:boostque/features/calendar/day_view_model.dart';
+import 'package:boostque/features/calendar/week_strip.dart';
 
 /// Screen horizontal padding — the mockup-exact override used by both the
 /// header and the scroll body, so one edge runs down the whole screen
@@ -58,9 +60,9 @@ class CalendarScreen extends ConsumerWidget {
           children: [
             _Header(day: day, doses: doses),
             // Header -> week strip gap (mockup line 215, on the BqSpace
-            // scale). Plan 03-05 inserts `WeekStrip` directly below this gap;
-            // deliberately no placeholder widget stands in for it.
+            // scale). The strip sits OUTSIDE the scroll view, like the header.
             const SizedBox(height: BqSpace.md),
+            const WeekStrip(),
             Expanded(child: _DayBody(doses: doses, day: day)),
           ],
         ),
