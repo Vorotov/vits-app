@@ -1,0 +1,363 @@
+/// Regimen editor draft state + controller (plan 02-03, P-5/PF-8/D-23).
+///
+/// Screen-scoped state for the Dosing Schedule editor, built as a Riverpod 3
+/// constructor-arg family Notifier (P-5: `FamilyNotifier` is gone in
+/// Riverpod 3 — the argument arrives through the constructor and the
+/// provider is `NotifierProvider.autoDispose.family`; autoDispose is correct
+/// for screen-scoped state per the D-23 policy recorded in
+/// `core/providers.dart`).
+///
+/// Invariants owned here:
+/// - Synchronous seeding (UI-SPEC #17): `build()` reads the warm
+///   [stackEntriesProvider] snapshot and seeds either the supplement's
+///   existing regimen or the documented defaults — never an async gap,
+///   never an empty form.
+/// - PF-8 one-regimen-per-supplement: `save()` reuses `draft.regimenId`,
+///   else re-checks `findForSupplement` at save time, and only mints a new
+///   UUID when no regimen exists. Surviving slot ids are reused; new slots
+///   mint UUIDs at the save boundary only (never in `build()`).
+/// - Slot clamping by construction (REGI-03/V-1): cap 6 / floor 1 via
+///   [RegimenEditorController.canAddSlot]/[RegimenEditorController.canRemoveSlot];
+///   slots re-sort by time after every add/edit.
+/// - Date discipline (PF-2): every stored date goes through [dateOnly];
+///   course `endDate` is clamped to `>= startDate` (V-1/E-6). Reading the
+///   clock for the default start date is fine here (feature layer, not
+///   domain).
+/// - `togglePause()` flips the draft only — persistence happens on `save()`,
+///   matching the mockup's "Зберегти, цикл на паузі" CTA (the footer save
+///   button carries the pause state to disk).
+///
+/// No Flutter widget imports, no Drift imports — repositories are reached
+/// through the provider graph interfaces only (D-22).
+library;
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
+
+import 'package:boostque/core/domain/cycle_math.dart';
+import 'package:boostque/core/domain/models.dart';
+import 'package:boostque/core/providers.dart';
+
+/// Sentinel for [RegimenDraft.copyWith] nullable parameters.
+const Object _unset = Object();
+
+/// One editable time slot in the draft. [id] is null until the slot has been
+/// persisted once; surviving ids are carried across saves (PF-8).
+class DraftSlot {
+  /// Persisted slot UUID, or null for a slot not yet saved.
+  final String? id;
+
+  /// Wall-clock time of day, minutes since midnight (0..1439).
+  final int minutesFromMidnight;
+
+  /// User-facing dose label (e.g. "5 g"); may be empty.
+  final String doseLabel;
+
+  const DraftSlot({
+    required this.id,
+    required this.minutesFromMidnight,
+    required this.doseLabel,
+  });
+
+  DraftSlot copyWith({
+    Object? id = _unset,
+    int? minutesFromMidnight,
+    String? doseLabel,
+  }) =>
+      DraftSlot(
+        id: id == _unset ? this.id : id as String?,
+        minutesFromMidnight: minutesFromMidnight ?? this.minutesFromMidnight,
+        doseLabel: doseLabel ?? this.doseLabel,
+      );
+}
+
+/// Immutable editor draft: the whole form state for one supplement's regimen.
+class RegimenDraft {
+  /// Persisted regimen UUID, or null while no save has resolved one (PF-8).
+  final String? regimenId;
+
+  /// Cyclic (on/off pattern) or one-time course.
+  final RegimenKind kind;
+
+  /// First active day — always a UTC date-only value (PF-2).
+  final DateTime startDate;
+
+  /// Inclusive course end — UTC date-only, null for cyclic drafts.
+  final DateTime? endDate;
+
+  /// Consecutive active days per cycle (7..112 in steps of 7 via the UI).
+  final int onDays;
+
+  /// Consecutive break days per cycle (0..84 in steps of 7 via the UI).
+  final int offDays;
+
+  /// Draft pause flag — persisted only on [RegimenEditorController.save].
+  final bool paused;
+
+  /// Time slots, kept sorted by [DraftSlot.minutesFromMidnight]; 1..6.
+  final List<DraftSlot> slots;
+
+  const RegimenDraft({
+    required this.regimenId,
+    required this.kind,
+    required this.startDate,
+    required this.endDate,
+    required this.onDays,
+    required this.offDays,
+    required this.paused,
+    required this.slots,
+  });
+
+  RegimenDraft copyWith({
+    Object? regimenId = _unset,
+    RegimenKind? kind,
+    DateTime? startDate,
+    Object? endDate = _unset,
+    int? onDays,
+    int? offDays,
+    bool? paused,
+    List<DraftSlot>? slots,
+  }) =>
+      RegimenDraft(
+        regimenId: regimenId == _unset ? this.regimenId : regimenId as String?,
+        kind: kind ?? this.kind,
+        startDate: startDate ?? this.startDate,
+        endDate: endDate == _unset ? this.endDate : endDate as DateTime?,
+        onDays: onDays ?? this.onDays,
+        offDays: offDays ?? this.offDays,
+        paused: paused ?? this.paused,
+        slots: slots ?? this.slots,
+      );
+}
+
+/// Draft state machine for the regimen editor screen.
+class RegimenEditorController extends Notifier<RegimenDraft> {
+  RegimenEditorController(this.supplementId);
+
+  /// The supplement whose regimen is being edited (constructor-arg family,
+  /// P-5).
+  final String supplementId;
+
+  /// Maximum daily time slots (mockup cap; REGI-03).
+  static const int maxSlots = 6;
+
+  /// Minimum daily time slots (mockup floor; REGI-03).
+  static const int minSlots = 1;
+
+  /// Default times (minutes from midnight) walked in order when adding a
+  /// slot, skipping already-used times — mockup NEXT_SLOT
+  /// `['08:00','13:00','19:00','22:00','10:30','16:00']`.
+  static const List<int> nextSlotDefaults = [480, 780, 1140, 1320, 630, 960];
+
+  /// Fallback time (21:00) when every default is taken (mockup parity).
+  static const int fallbackSlotMinutes = 1260;
+
+  /// Course length seeded when switching to course mode without an end date:
+  /// startDate + 27 days = a 28-day inclusive course.
+  static const int _defaultCourseLengthDays = 27;
+
+  @override
+  RegimenDraft build() {
+    // Synchronous seeding (UI-SPEC #17): the stack graph is warm by the time
+    // the editor opens — pattern-match the current AsyncValue snapshot.
+    final entries = ref.read(stackEntriesProvider);
+    if (entries case AsyncData(value: final list)) {
+      for (final entry in list) {
+        final regimen = entry.regimen;
+        if (entry.supplement.id == supplementId && regimen != null) {
+          return _draftFrom(regimen);
+        }
+      }
+    }
+    return _defaults();
+  }
+
+  /// Documented defaults for a fresh supplement (A6: 1 slot at 08:00;
+  /// mockup seed 56/28 cyclic). Reading the clock here is fine — feature
+  /// layer, not domain — and the value is normalized through [dateOnly].
+  RegimenDraft _defaults() => RegimenDraft(
+        regimenId: null,
+        kind: RegimenKind.cyclic,
+        startDate: dateOnly(DateTime.now()),
+        endDate: null,
+        onDays: 56,
+        offDays: 28,
+        paused: false,
+        slots: const [
+          DraftSlot(id: null, minutesFromMidnight: 480, doseLabel: ''),
+        ],
+      );
+
+  /// Maps a persisted regimen to a draft, carrying regimen and slot ids
+  /// (PF-8).
+  RegimenDraft _draftFrom(Regimen r) => RegimenDraft(
+        regimenId: r.id,
+        kind: r.kind,
+        startDate: dateOnly(r.startDate),
+        endDate: r.endDate == null ? null : dateOnly(r.endDate!),
+        onDays: r.onDays,
+        offDays: r.offDays,
+        paused: r.paused,
+        slots: _sorted([
+          for (final s in r.slots)
+            DraftSlot(
+              id: s.id,
+              minutesFromMidnight: s.minutesFromMidnight,
+              doseLabel: s.doseLabel,
+            ),
+        ]),
+      );
+
+  /// The single sorting rule: slots always ordered by time ascending.
+  static List<DraftSlot> _sorted(List<DraftSlot> slots) {
+    final copy = [...slots]
+      ..sort((a, b) => a.minutesFromMidnight.compareTo(b.minutesFromMidnight));
+    return copy;
+  }
+
+  /// Whether another slot may be added (cap [maxSlots]).
+  bool get canAddSlot => state.slots.length < maxSlots;
+
+  /// Whether a slot may be removed (floor [minSlots]).
+  bool get canRemoveSlot => state.slots.length > minSlots;
+
+  /// Switches cyclic/course. Entering course mode with no end date seeds a
+  /// 28-day inclusive course (endDate = startDate + 27 days).
+  void setKind(RegimenKind kind) {
+    var endDate = state.endDate;
+    if (kind == RegimenKind.course && endDate == null) {
+      endDate =
+          state.startDate.add(const Duration(days: _defaultCourseLengthDays));
+    }
+    state = state.copyWith(kind: kind, endDate: endDate);
+  }
+
+  /// Sets the start date (normalized via [dateOnly]); an end date left
+  /// behind the new start is clamped up to it (V-1/E-6).
+  void setStartDate(DateTime date) {
+    final start = dateOnly(date);
+    var end = state.endDate;
+    if (end != null && end.isBefore(start)) end = start;
+    state = state.copyWith(startDate: start, endDate: end);
+  }
+
+  /// Sets the inclusive course end date (normalized via [dateOnly]).
+  void setEndDate(DateTime date) {
+    state = state.copyWith(endDate: dateOnly(date));
+  }
+
+  /// Sets consecutive active days per cycle.
+  void setOnDays(int days) => state = state.copyWith(onDays: days);
+
+  /// Sets consecutive break days per cycle.
+  void setOffDays(int days) => state = state.copyWith(offDays: days);
+
+  /// Adds a slot at the first unused [nextSlotDefaults] time (fallback
+  /// 21:00), keeping slots sorted. Refuses at the cap of [maxSlots].
+  void addSlot() {
+    if (!canAddSlot) return;
+    final used = {for (final s in state.slots) s.minutesFromMidnight};
+    final minutes = nextSlotDefaults.firstWhere(
+      (t) => !used.contains(t),
+      orElse: () => fallbackSlotMinutes,
+    );
+    state = state.copyWith(
+      slots: _sorted([
+        ...state.slots,
+        DraftSlot(id: null, minutesFromMidnight: minutes, doseLabel: ''),
+      ]),
+    );
+  }
+
+  /// Removes the slot at [index]. Refuses at the floor of [minSlots].
+  void removeSlot(int index) {
+    if (!canRemoveSlot) return;
+    final slots = [...state.slots]..removeAt(index);
+    state = state.copyWith(slots: slots);
+  }
+
+  /// Changes the time of the slot at [index], then re-sorts.
+  void setSlotTime(int index, int minutesFromMidnight) {
+    final slots = [...state.slots];
+    slots[index] =
+        slots[index].copyWith(minutesFromMidnight: minutesFromMidnight);
+    state = state.copyWith(slots: _sorted(slots));
+  }
+
+  /// Changes the dose label of the slot at [index].
+  void setSlotDoseLabel(int index, String doseLabel) {
+    final slots = [...state.slots];
+    slots[index] = slots[index].copyWith(doseLabel: doseLabel);
+    state = state.copyWith(slots: slots);
+  }
+
+  /// Flips the draft's pause flag only — persisted on [save] (mockup's
+  /// "Зберегти, цикл на паузі" CTA carries the pause state to disk).
+  void togglePause() => state = state.copyWith(paused: !state.paused);
+
+  /// Persists the draft as the supplement's ONE regimen (PF-8).
+  ///
+  /// Id resolution order: `draft.regimenId` → save-time
+  /// `findForSupplement` re-check (belt-and-suspenders against ghost
+  /// regimen rows, threat T-02-05) → mint a new UUID. The resolved regimen
+  /// id and all slot ids are stored back into the draft so subsequent saves
+  /// reuse them.
+  Future<void> save() async {
+    final repo = ref.read(regimenRepoProvider);
+    final draft = state;
+
+    var regimenId = draft.regimenId;
+    regimenId ??= (await repo.findForSupplement(supplementId))?.id;
+    regimenId ??= const Uuid().v4();
+
+    final slots = [
+      for (final s in draft.slots)
+        DraftSlot(
+          id: s.id ?? const Uuid().v4(),
+          minutesFromMidnight: s.minutesFromMidnight,
+          doseLabel: s.doseLabel,
+        ),
+    ];
+
+    final isCourse = draft.kind == RegimenKind.course;
+    await repo.upsert(Regimen(
+      id: regimenId,
+      supplementId: supplementId,
+      kind: draft.kind,
+      startDate: dateOnly(draft.startDate),
+      endDate: isCourse && draft.endDate != null
+          ? dateOnly(draft.endDate!)
+          : null,
+      onDays: draft.onDays,
+      offDays: draft.offDays,
+      paused: draft.paused,
+      slots: [
+        for (final s in slots)
+          DoseSlot(
+            id: s.id!,
+            minutesFromMidnight: s.minutesFromMidnight,
+            doseLabel: s.doseLabel,
+          ),
+      ],
+    ));
+
+    state = draft.copyWith(regimenId: regimenId, slots: slots);
+  }
+
+  /// Cascade-soft-deletes the supplement, its regimen(s), slots, and future
+  /// pending doses (delegates to `softDeleteCascade`, owned/tested in plan
+  /// 02-01). The confirmation UI guarding this lives in plan 02-04.
+  Future<void> deleteSupplement() =>
+      ref.read(supplementRepoProvider).softDeleteCascade(
+            supplementId,
+            fromDay: dateOnly(DateTime.now()),
+          );
+}
+
+/// Per-supplement editor state. autoDispose: screen-scoped per the D-23
+/// policy recorded in `core/providers.dart`; family arg = supplementId
+/// (Riverpod 3 constructor-arg pattern, P-5).
+final regimenEditorProvider = NotifierProvider.autoDispose
+    .family<RegimenEditorController, RegimenDraft, String>(
+  RegimenEditorController.new,
+);
