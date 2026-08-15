@@ -260,6 +260,56 @@ void main() {
   });
 
   testWidgets(
+      'uk: double-tapping a catalog row adds exactly ONE supplement and '
+      'pushes exactly one editor (WR-01)', (tester) async {
+    usePhoneSurface(tester);
+    final container = makeContainer();
+    await tester.pumpWidget(app(container));
+    await tester.pump();
+
+    await tester.tap(find.text('Додати добавку'));
+    await tester.pumpAndSettle();
+
+    // Observe supplements pump-driven (awaiting .first un-pumped deadlocks
+    // against Drift's zero-duration timers in the test zone).
+    List<Supplement>? supplements;
+    final watchSub = container
+        .read(supplementRepoProvider)
+        .watchAll()
+        .listen((v) => supplements = v);
+    await tester.pump(const Duration(milliseconds: 10));
+
+    final Finder searchField = find.descendant(
+      of: find.byType(BottomSheet),
+      matching: find.byType(TextField),
+    );
+    await tester.enterText(searchField, 'креат');
+    await tester.pump();
+
+    // Two taps with NO pump in between — the _busy guard must swallow the
+    // second before it can upsert a second UUID or pop the editor.
+    final row = find.text('Креатин моногідрат');
+    await tester.tap(row);
+    await tester.tap(row, warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    expect(supplements, isNotNull);
+    expect(supplements, hasLength(1),
+        reason: 'a double tap must not mint two supplement rows');
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.byType(RegimenEditorScreen), findsOneWidget,
+        reason: 'exactly one editor route was pushed');
+
+    expect(tester.takeException(), isNull);
+    // Cancel pump-driven (Drift resolves the cancel future via a
+    // zero-duration timer — awaiting it un-pumped would deadlock).
+    // ignore: unawaited_futures
+    watchSub.cancel();
+    await tester.pump(const Duration(milliseconds: 10));
+    await tearDownTree(tester, container);
+  });
+
+  testWidgets(
       'uk: a garbage query shows the rewritten noResultsCatalog copy (#9/D3)',
       (tester) async {
     usePhoneSurface(tester);

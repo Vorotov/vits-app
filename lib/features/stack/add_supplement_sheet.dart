@@ -62,6 +62,13 @@ class _AddSupplementSheetState extends ConsumerState<_AddSupplementSheet> {
   /// 0 = catalog search, 1 = manual entry.
   int _tabIndex = 0;
 
+  /// In-flight guard (WR-01): both add paths short-circuit re-entry so a
+  /// double tap (same catalog row, two rows, or the manual save button) can
+  /// never mint two supplement UUIDs or run [_popThenPushEditor] twice —
+  /// the second run would pop the freshly pushed EDITOR, not the sheet.
+  /// Never reset on the success path: the sheet is popped and disposed.
+  bool _busy = false;
+
   @override
   void initState() {
     super.initState();
@@ -97,6 +104,8 @@ class _AddSupplementSheetState extends ConsumerState<_AddSupplementSheet> {
   /// doseText are snapshotted into the row as user data (P-1; Phase 5 must
   /// not read later locale switches not renaming this as a bug).
   Future<void> _addFromCatalog(CatalogEntry entry) async {
+    if (_busy) return;
+    setState(() => _busy = true);
     final l10n = context.l10n;
     final navigator = Navigator.of(context);
     final supplement = Supplement(
@@ -114,6 +123,8 @@ class _AddSupplementSheetState extends ConsumerState<_AddSupplementSheet> {
   /// Manual save (STACK-02): round-robin series color from the current stack
   /// size (UI-SPEC: palette[stackCount % 8]); loading/error fall back to 0.
   Future<void> _saveManual() async {
+    if (_busy) return;
+    setState(() => _busy = true);
     final navigator = Navigator.of(context);
     final entries = ref.read(stackEntriesProvider);
     var count = 0;
@@ -209,7 +220,8 @@ class _AddSupplementSheetState extends ConsumerState<_AddSupplementSheet> {
                 _ManualTab(
                   nameController: _nameController,
                   doseController: _doseController,
-                  canSave: _canSaveManual,
+                  // Disabled while an add is in flight (WR-01).
+                  canSave: _canSaveManual && !_busy,
                   onSave: _saveManual,
                 ),
             ],
