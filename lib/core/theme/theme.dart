@@ -68,6 +68,59 @@ ThemeData bqTheme() {
         ),
       ),
     ),
+    // Phase-2 sub-themes (02-UI-SPEC "bqTheme() extensions this phase").
+    // Every value below references tokens only (D-07).
+    //
+    // Text inputs / date fields: white fill, radius `BqRadii.input`, 1px
+    // `inputBorder` side (accent when focused — discretion per plan), hint in
+    // `textMuted`, mockup-exact 13/14 content padding (UI-SPEC spacing
+    // override — direction-neutral).
+    inputDecorationTheme: const InputDecorationThemeData(
+      filled: true,
+      fillColor: BqColors.surface,
+      hintStyle: TextStyle(color: BqColors.textMuted),
+      contentPadding: EdgeInsetsDirectional.symmetric(
+        vertical: 13,
+        horizontal: 14,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(BqRadii.input)),
+        borderSide: BorderSide(color: BqColors.inputBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(BqRadii.input)),
+        borderSide: BorderSide(color: BqColors.accent),
+      ),
+    ),
+    // Cycle sliders: accent active track + thumb, `field` inactive track
+    // (mockup `accent-color:#4A4E7C`).
+    sliderTheme: const SliderThemeData(
+      activeTrackColor: BqColors.accent,
+      thumbColor: BqColors.accent,
+      inactiveTrackColor: BqColors.field,
+    ),
+    // SDK date/time pickers (the one place genuine pickers are used —
+    // CLAUDE.md): white surface, accent selection via colorScheme.primary.
+    datePickerTheme: const DatePickerThemeData(
+      backgroundColor: BqColors.surface,
+      headerBackgroundColor: BqColors.accent,
+      headerForegroundColor: BqColors.surface,
+    ),
+    timePickerTheme: const TimePickerThemeData(
+      backgroundColor: BqColors.surface,
+      dialHandColor: BqColors.accent,
+    ),
+    // Modal bottom sheets: paper background, `scrim` barrier, mockup's
+    // 26px top corners (line 127).
+    bottomSheetTheme: const BottomSheetThemeData(
+      backgroundColor: BqColors.paper,
+      modalBarrierColor: BqColors.scrim,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(BqRadii.sheet),
+        ),
+      ),
+    ),
   );
 }
 
