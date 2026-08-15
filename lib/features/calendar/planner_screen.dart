@@ -27,26 +27,35 @@ import 'package:intl/intl.dart';
 import 'package:boostque/core/domain/cycle_math.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
+import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/core/widgets/bq_segmented.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/planner_gantt.dart';
+import 'package:boostque/features/calendar/planner_load_chart.dart';
 import 'package:boostque/features/calendar/planner_providers.dart';
+import 'package:boostque/features/calendar/planner_view_model.dart';
 
 /// Screen horizontal padding — the same edge the Calendar screen runs down
 /// (mockup lines 286, 294).
 const double _screenPadding = 20;
+
+/// Vertical gap between two Цикли cards (mockup lines 333, 352). Рік uses 14;
+/// the two are mockup-exact per segment and deliberately not unified.
+const double _cyclesCardGap = 12;
+
+/// Summary-chip geometry (mockup line 295).
+const double _chipPadVertical = 12;
+const double _chipPadHorizontal = 14;
+const double _chipInnerGap = 9;
+const double _chipBottomMargin = 16;
 
 /// Segment indices, in the order the control renders them (mockup lines
 /// 290-291). Цикли is index 1 and the default: its ~4-month window contains
 /// today and answers PLAN-01, while Рік is the zoom-out.
 const int _segYear = 0;
 const int _segCycles = 1;
-
-/// The editorial comfort rule this product applies — never a medical
-/// threshold. Named once here; every surface that mentions it reads this.
-const int _editorialLimit = 5;
 
 /// The planner page, rendered inside the Calendar tab (DECIDED-1).
 class PlannerScreen extends ConsumerWidget {
@@ -187,10 +196,8 @@ class _Header extends ConsumerWidget {
   }
 }
 
-/// Цикли scroll body: the gantt card, closed by the disclaimer.
-///
-/// A seam — plan 04-03 inserts the summary chip, the load chart and the week
-/// detail above the gantt without touching the async surfaces below.
+/// Цикли scroll body: the summary chip, the gantt, the load chart and the
+/// week detail, closed by the disclaimer.
 class _CyclesBody extends ConsumerWidget {
   const _CyclesBody();
 
@@ -206,7 +213,91 @@ class _CyclesBody extends ConsumerWidget {
         // empty row list IS the empty state: no stack at all, or no schedule
         // anywhere in it.
         isEmpty: (model) => model.rows.isEmpty,
-        cards: (model) => [PlannerGantt(model: model)],
+        cards: (model) => [
+          _CyclesSummaryChip(model: model),
+          PlannerGantt(model: model),
+          const SizedBox(height: _cyclesCardGap),
+          PlannerLoadChart(model: model),
+        ],
+      ),
+    );
+  }
+}
+
+/// The Цикли summary chip: this week's concurrent load against the limit.
+///
+/// "This week" is the CALENDAR week containing today — which is exactly why
+/// the buckets are full Monday weeks and not the mockup's window-aligned
+/// sevens (DECIDED-3). It is deliberately NOT the selected week: the chip
+/// summarises where the user is standing, not where they are looking.
+class _CyclesSummaryChip extends ConsumerWidget {
+  const _CyclesSummaryChip({required this.model});
+
+  final CyclesModel model;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final today = ref.watch(todayProvider);
+    final index = model.weeks.indexWhere(
+      (w) =>
+          !w.bucket.start.isAfter(today) &&
+          !w.bucket.endInclusive.isBefore(today),
+    );
+    final load = index < 0 ? 0 : model.weeks[index].load;
+
+    // AT or above the limit, deliberately — a week sitting exactly at the
+    // limit is worth a nudge because the user can still move a start date.
+    // The Рік peak chip warns only ABOVE it, and that asymmetry is
+    // transcribed on purpose (DECIDED-6). Do not reconcile them.
+    final atLimit = load >= editorialLimit;
+    final Color fg = atLimit ? BqColors.warn : BqColors.calm;
+    final Color bg = atLimit ? BqColors.warnBg : BqColors.calmBg;
+
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(bottom: _chipBottomMargin),
+      child: Container(
+        key: const ValueKey<String>('cycles-summary-chip'),
+        padding: const EdgeInsetsDirectional.symmetric(
+          vertical: _chipPadVertical,
+          horizontal: _chipPadHorizontal,
+        ),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius:
+              const BorderRadius.all(Radius.circular(BqRadii.button)),
+        ),
+        child: Row(
+          children: [
+            // A flexible sentence against a rigid trailing badge — never two
+            // rigid children (WR-04).
+            Expanded(
+              child: Text(
+                // The count is PRE-FORMATTED through its own plural key and
+                // passed into the sentence (the cycleSummaryCyclic idiom).
+                l10n.plannerThisWeek(l10n.substancesCount(load)),
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                  height: 1.35,
+                  color: fg,
+                ),
+              ),
+            ),
+            const SizedBox(width: _chipInnerGap),
+            Text(
+              l10n.limitBadge(editorialLimit),
+              maxLines: 1,
+              softWrap: false,
+              style: BqText.mono(
+                size: 11,
+                weight: FontWeight.w400,
+                color: fg,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -225,7 +316,9 @@ class _YearBody extends ConsumerWidget {
       // Rendered ABOVE the closing disclaimer, never instead of it: the
       // mockup's Year footnote carries no editorial framing of the limit, and
       // PLAN-04 needs both (M9, DECIDED-8).
-      footnote: context.l10n.yearFootnote(_editorialLimit),
+      // The ONE place the editorial limit is defined is the pure model — the
+      // screen never restates the number.
+      footnote: context.l10n.yearFootnote(editorialLimit),
       children: _surface(
         context,
         ref,

@@ -1052,10 +1052,12 @@ void main() {
 
       double opacityOf(int i) => tester
           .widget<Opacity>(
-            find.descendant(
-              of: find.byKey(ValueKey<String>('load-week-$i')),
-              matching: find.byType(Opacity),
-            ),
+            find
+                .ancestor(
+                  of: find.byKey(ValueKey<String>('load-week-$i')),
+                  matching: find.byType(Opacity),
+                )
+                .first,
           )
           .opacity;
 
@@ -1092,21 +1094,15 @@ void main() {
       expect(node.label, contains('4 з 5 слотів'),
           reason: 'a pre-formatted weekLoadLabel inside weekBarSemantics');
       expect(node.label, contains('серп.'), reason: 'the week range');
+      // The action must sit on THIS node — `excludeSemantics` drops every
+      // descendant action, which is the WR-02 bug shape.
       expect(
-        find.byKey(const ValueKey('load-week-2')),
-        containsSemantics(
-          isButton: true,
-          isSelected: true,
-          hasTapAction: true,
-        ),
+        node,
+        isSemantics(isButton: true, isSelected: true, hasTapAction: true),
       );
       expect(
-        find.byKey(const ValueKey('load-week-4')),
-        containsSemantics(
-          isButton: true,
-          isSelected: false,
-          hasTapAction: true,
-        ),
+        tester.getSemantics(find.byKey(const ValueKey('load-week-4'))),
+        isSemantics(isButton: true, isSelected: false, hasTapAction: true),
       );
 
       handle.dispose();
@@ -1123,10 +1119,12 @@ void main() {
           reason: 'the 5 limit is drawn structurally, as the cap of the main '
               'bar — a second line there would be redundant chrome');
 
-      // 22.8px above the chart baseline, which is the bottom of a column.
+      // 22.8px above the chart baseline, which is the bottom of a column —
+      // 0.6 x 38px, the height of a load-3 bar (DECIDED-2).
       final line = tester.getRect(find.byKey(const ValueKey('load-threshold')));
       final column = tester.getRect(find.byKey(const ValueKey('load-week-0')));
-      expect(column.bottom - line.top, closeTo(22.8, 0.6));
+      expect(column.bottom - line.bottom, closeTo(22.8, 0.1));
+      expect(line.height, 1);
 
       await tearDownTree(tester, container);
     });
