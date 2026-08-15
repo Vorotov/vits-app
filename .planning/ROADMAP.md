@@ -60,7 +60,16 @@ Plans:
   4. User can pause and resume a regimen; a paused regimen produces no doses and shows a PAUSED status
   5. User can edit or delete a supplement; deleting soft-deletes it along with its regimen and any future doses
 
-**Plans**: TBD
+**Plans:** 5 plans
+
+Plans:
+
+- [ ] 02-01-PLAN.md — Tracer: manual add → card via real DB, plus softDeleteCascade + watchDay pause/deletedAt filters (wave 1)
+- [ ] 02-02-PLAN.md — UI-SPEC token additions, bqTheme() form/picker/sheet sub-themes, BqSegmented (wave 1)
+- [ ] 02-03-PLAN.md — RegimenEditorController + RegimenDraft (PF-8 id reuse) and statusOf/scheduleSummaryOf pure helpers, unit-tested (wave 2)
+- [ ] 02-04-PLAN.md — Regimen editor screen: pickers, sliders, 28-bar preview, slots, pinned footer with save/pause/confirmed delete (wave 3)
+- [ ] 02-05-PLAN.md — Bundled catalog + cross-locale search, full stack cards/states, two-tab add sheet, editor navigation (wave 4)
+
 **UI hint**: yes
 
 ### Phase 3: Daily Tracking
