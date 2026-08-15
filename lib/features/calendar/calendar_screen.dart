@@ -218,11 +218,21 @@ class _DayBodyState extends ConsumerState<_DayBody> {
 
   @override
   Widget build(BuildContext context) {
+    // The shell keeps this screen mounted on every tab (IndexedStack), so
+    // "watched" is not the same as "looked at". TickerMode carries the shell's
+    // answer: while the Calendar tab is offstage the ticker is not watched, so
+    // the autoDispose StreamProvider tears its periodic timer down and the day
+    // list stops rebuilding once a minute for nobody (WR-05). The last minute
+    // stays cached, and re-entering the tab re-subscribes with an immediate
+    // first value.
+    final visible = TickerMode.valuesOf(context).enabled;
     // Riverpod 3: pattern-match the AsyncValue; there is no `valueOrNull`.
-    final tick = switch (ref.watch(nowMinutesProvider)) {
-      AsyncData(:final value) => value,
-      _ => null,
-    };
+    final tick = visible
+        ? switch (ref.watch(nowMinutesProvider)) {
+            AsyncData(:final value) => value,
+            _ => null,
+          }
+        : null;
     if (tick != null) _nowMinutes = tick;
     final today = ref.watch(todayProvider);
     final viewingToday = widget.day == today;

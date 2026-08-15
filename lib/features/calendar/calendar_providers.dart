@@ -28,6 +28,11 @@ class SelectedDayController extends Notifier<DateTime?> {
 }
 
 /// Calendar day selection; autoDispose per D-23 (screen-scoped state).
+///
+/// Note the shell keeps the Calendar screen mounted on every tab, so this
+/// never actually disposes while the app is running (WR-05) — the browsed day
+/// therefore survives a tab round trip, which is the behavior the user expects
+/// anyway.
 final selectedDayProvider =
     NotifierProvider.autoDispose<SelectedDayController, DateTime?>(
   SelectedDayController.new,
@@ -51,11 +56,16 @@ final resolvedDayProvider = Provider.autoDispose<DateTime>(
 /// deliberately produces a minute-of-day integer — never a date — so no code
 /// path can derive "which day it is" from it.
 ///
-/// Calendar-scoped, therefore autoDispose (D-23): the periodic subscription
-/// exists only while the Calendar tab is watched and is cancelled the moment it
-/// is not, so the app never keeps a timer alive for a screen nobody is looking
-/// at. The first value is emitted immediately, so the current-block header and
-/// the overdue treatment are correct on the first frame that has data.
+/// Calendar-scoped, therefore autoDispose (D-23). autoDispose alone does NOT
+/// make that true under the app shell: `IndexedStack` keeps the Calendar screen
+/// mounted on every tab, so a provider watched unconditionally in `build` would
+/// live from app launch forever (WR-05). What actually cancels the periodic
+/// subscription is the screen's `TickerMode` gate — `_DayBody` stops watching
+/// this provider while the tab is offstage, and autoDispose then tears the
+/// timer down. Keep the two together: dropping the gate silently re-arms a
+/// timer nobody is looking at. The first value is emitted immediately, so the
+/// current-block header and the overdue treatment are correct on the first
+/// frame that has data.
 ///
 /// A block boundary can therefore be up to a minute late. That latency is
 /// intentional: a per-second tick would rebuild the whole day list sixty times

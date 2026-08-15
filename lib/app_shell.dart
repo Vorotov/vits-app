@@ -35,12 +35,22 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return Scaffold(
+      // [IndexedStack] builds and KEEPS every child mounted — only painting is
+      // suppressed — so all three screens are alive from app launch on every
+      // tab. [TickerMode] is how an offstage screen learns it is offstage
+      // (WR-05): the Calendar tab reads it to stop watching the minute ticker
+      // and to stop warming the visible week while nobody is looking at it,
+      // which is what its autoDispose providers were documented to do and,
+      // under a bare IndexedStack, never did.
       body: IndexedStack(
         index: _selectedIndex,
-        children: const [
-          StackScreen(),
-          CalendarScreen(),
-          SettingsScreen(),
+        children: [
+          for (final (index, screen) in const <Widget>[
+            StackScreen(),
+            CalendarScreen(),
+            SettingsScreen(),
+          ].indexed)
+            TickerMode(enabled: index == _selectedIndex, child: screen),
         ],
       ),
       bottomNavigationBar: Container(

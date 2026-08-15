@@ -9,6 +9,7 @@ import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
+import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/main.dart';
 
 /// D-27: the shell renders localized tab labels in en and uk, switches tabs,
@@ -96,6 +97,53 @@ void main() {
     expect(tester.takeException(), isNull);
 
     await flushTearDown(tester);
+  });
+
+  testWidgets('uk: the minute ticker runs only while the Calendar tab is the '
+      'visible one (WR-05)', (tester) async {
+    final container = ProviderContainer(overrides: [
+      dbProvider.overrideWith((ref) {
+        final db = BoostqueDb.forTesting(NativeDatabase.memory());
+        ref.onDispose(db.close);
+        return db;
+      }),
+    ]);
+    await tester.pumpWidget(UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(
+        locale: const Locale('uk'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: bqTheme(),
+        home: const AppShell(),
+      ),
+    ));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+
+    expect(container.exists(nowMinutesProvider), isFalse,
+        reason: 'the app opens on the Stack tab — an IndexedStack mounts the '
+            'Calendar too, but no periodic clock may run for it');
+
+    await tester.tap(find.text('Календар'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    expect(container.exists(nowMinutesProvider), isTrue,
+        reason: 'the visible calendar needs the minute of day for its current '
+            'block and overdue treatments');
+
+    await tester.tap(find.text('Стек'));
+    for (var i = 0; i < 10; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+    expect(container.exists(nowMinutesProvider), isFalse,
+        reason: 'leaving the tab cancels the subscription again');
+
+    await flushTearDown(tester);
+    container.dispose();
+    await tester.pump(const Duration(milliseconds: 10));
   });
 
   testWidgets('uk: switching to Settings renders heading without overflow',
