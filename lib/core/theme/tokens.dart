@@ -72,6 +72,37 @@ abstract final class BqColors {
   /// 1px hairline borders — mockup's `rgba(23,23,27,.08)` top border on the
   /// tab bar (alpha 0x14 ≈ 0.078). Claude's-discretion addition per UI-SPEC.
   static const Color hairline = Color(0x1417171B);
+
+  // --- Phase-2 additions (02-UI-SPEC "Token Additions", mockup-sourced) ---
+
+  /// 1px border on cards, result rows, panels, slot rows — mockup's
+  /// `rgba(23,23,27,.09)` (lines 107, 141, 505, 542). Also the segmented
+  /// control's container fill (same mockup value; see `BqSegmented`).
+  static const Color cardBorder = Color(0x1717171B);
+
+  /// 1px border on text inputs, date fields, secondary buttons — mockup's
+  /// `rgba(23,23,27,.14)` (lines 139, 508, 556; the .13 date-field border
+  /// collapses into this — locked simplification).
+  static const Color inputBorder = Color(0x2417171B);
+
+  /// Modal-sheet barrier color — mockup's `rgba(23,23,27,.32)` (line 126).
+  static const Color scrim = Color(0x5217171B);
+
+  /// Sheet drag-handle pill — mockup's `rgba(23,23,27,.16)` (line 128).
+  static const Color dragHandle = Color(0x2917171B);
+
+  /// Dashed border of "+ Додати слот часу" — mockup's `rgba(74,78,124,.4)`
+  /// (line 549).
+  static const Color accentBorder = Color(0x664A4E7C);
+
+  /// Видалити button border — mockup's `rgba(168,68,60,.3)` (line 557).
+  static const Color riskBorder = Color(0x4DA8443C);
+
+  /// Disabled "+ Додати слот часу" text at the 6-slot cap (mockup line 951).
+  static const Color textDisabled = Color(0xFFB9B9C0);
+
+  /// Disabled slot "−" glyph at the 1-slot floor (mockup line 946).
+  static const Color iconDisabled = Color(0xFFD8D7D1);
 }
 
 /// Supplement color-tag series palette (D-06) — exactly 8 colors, in mockup
@@ -97,6 +128,17 @@ abstract final class BqRadii {
   static const double button = 12.0;
   static const double chip = 5.0;
   static const double seg = 10.0;
+
+  // --- Phase-2 additions (02-UI-SPEC "Token Additions", mockup-sourced) ---
+
+  /// Search input, date fields (mockup lines 139, 508).
+  static const double input = 11.0;
+
+  /// Active segment pill inside `BqSegmented` (mockup lines 134, 501).
+  static const double segInner = 8.0;
+
+  /// Bottom-sheet top corners, via `bottomSheetTheme` (mockup line 127).
+  static const double sheet = 26.0;
 }
 
 /// Spacing scale — standard 8-point scale (UI-SPEC).
