@@ -328,10 +328,21 @@ class DriftIntakeRepository implements IntakeRepository {
       // paused-and-pending — taken/skipped history stays visible while a
       // regimen is paused, and resuming restores pending doses with zero
       // writes. Soft-deleted log rows are excluded outright.
+      //
+      // A soft-deleted SLOT follows the same rule (CR-02): removing a dose
+      // time in the regimen editor stamps `regimenSlots.deletedAt` while the
+      // already-materialized IntakeLog rows survive, so without this filter a
+      // deleted 20:00 dose would keep rendering — and keep accepting marks —
+      // forever. Pending doses of a removed slot vanish; anything the user
+      // already recorded on it stays readable history.
       ..where(db.intakeLogs.date.equals(utcDay) &
           db.intakeLogs.deletedAt.isNull() &
           db.regimens.deletedAt.isNull() &
           db.supplements.deletedAt.isNull() &
+          (db.regimenSlots.deletedAt.isNull() |
+              db.intakeLogs.status
+                  .equalsValue(domain.DoseStatus.pending)
+                  .not()) &
           (db.regimens.paused.equals(false) |
               db.intakeLogs.status
                   .equalsValue(domain.DoseStatus.pending)

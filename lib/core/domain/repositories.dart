@@ -89,6 +89,9 @@ abstract class IntakeRepository {
   /// Materialized doses for the calendar day of [day], joined with slot,
   /// regimen, and supplement; ordered by slot minutesFromMidnight asc with
   /// log id asc as tiebreak. Soft-deleted parents are excluded.
+  ///
+  /// A paused regimen and a soft-deleted SLOT both hide only their PENDING
+  /// doses: anything the user already recorded on them stays visible history.
   Stream<List<DayDose>> watchDay(DateTime day);
 
   /// Idempotently materializes one pending IntakeLog per active slot for the
