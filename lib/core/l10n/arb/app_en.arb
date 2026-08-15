@@ -37,5 +37,29 @@
         "type": "int"
       }
     }
+  },
+  "stackTitle": "My stack",
+  "@stackTitle": {
+    "description": "Stack screen heading"
+  },
+  "addSupplement": "Add supplement",
+  "@addSupplement": {
+    "description": "Primary CTA on the Stack screen; also the add-supplement sheet title"
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Dismiss action in the add-supplement sheet header"
+  },
+  "nameLabel": "Name",
+  "@nameLabel": {
+    "description": "Label for the required supplement name field in the manual add form"
+  },
+  "doseLabel": "Dose",
+  "@doseLabel": {
+    "description": "Label for the optional dose description field in the manual add form"
+  },
+  "addManualSupplement": "Add supplement",
+  "@addManualSupplement": {
+    "description": "Primary CTA of the manual entry form in the add-supplement sheet"
   }
 }

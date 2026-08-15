@@ -49,4 +49,22 @@ class AppLocalizationsUk extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get stackTitle => 'Мій стек';
+
+  @override
+  String get addSupplement => 'Додати добавку';
+
+  @override
+  String get close => 'Закрити';
+
+  @override
+  String get nameLabel => 'Назва';
+
+  @override
+  String get doseLabel => 'Доза';
+
+  @override
+  String get addManualSupplement => 'Додати добавку';
 }

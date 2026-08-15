@@ -46,4 +46,22 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get stackTitle => 'My stack';
+
+  @override
+  String get addSupplement => 'Add supplement';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get nameLabel => 'Name';
+
+  @override
+  String get doseLabel => 'Dose';
+
+  @override
+  String get addManualSupplement => 'Add supplement';
 }
