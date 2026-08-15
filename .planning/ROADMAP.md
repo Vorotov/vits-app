@@ -109,7 +109,16 @@ Plans:
   3. User can view a 12-month Year matrix of per-supplement coverage bars (lighter = planned) and tap a month for a detail breakdown
   4. Every planner screen carries the educational-material disclaimer and presents the 5-substance limit as an editorial comfort rule, not a medical threshold
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+
+- [ ] 04-01-PLAN.md — Tracer: window math + pure planner projections + a reachable gantt, with the zero-write gate (wave 1)
+- [ ] 04-02-PLAN.md — Full Phase-4 ARB set (plurals, month case, copy-safety gate) + planner shell, empty/error, disclaimer on both segments (wave 2)
+- [ ] 04-03-PLAN.md — Цикли complete: gantt chrome, concurrent-load chart, inline week detail (wave 3)
+- [ ] 04-04-PLAN.md — Рік complete: year grid with computed extent, month detail, peak chip, footnote (wave 4)
+- [ ] 04-05-PLAN.md — Phase-close invariants: text-scale matrix, assistive-tech activation, read-only + PLAN-04 gates (wave 5)
+
 **UI hint**: yes
 
 ### Phase 5: Localization & Settings
