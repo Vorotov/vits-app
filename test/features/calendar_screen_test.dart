@@ -2087,6 +2087,355 @@ void main() {
       await tearDownTree(tester, container);
     });
   });
+
+  // --- Past-day browsing + the empty / loading / error surfaces (plan 03-05,
+  // Task 2; UI-SPEC S4 "Empty day", DECIDED-3/7, Interaction Contract 6,
+  // E1 #1-#4, T-03-15 / T-03-16) ---
+  //
+  // The load-bearing test in this group is the raw-row proof: rendering a
+  // past day is allowed to MATERIALIZE rows, and is never allowed to give
+  // one a status. "Missed" is a derived reading of a `pending` row, and the
+  // database is where that claim is checked.
+  group('browsing', () {
+    final pinnedToday = DateTime.utc(2026, 8, 13); // четвер
+    final pastDay = DateTime.utc(2026, 8, 11);
+    final futureDay = DateTime.utc(2026, 8, 14);
+    // Three weeks back — deliberately OUTSIDE the visible week, so its
+    // provider is genuinely cold and the day switch has a loading frame.
+    final farPast = DateTime.utc(2026, 7, 20);
+
+    const emptyTitle = 'Доз на цей день немає';
+    const emptyBody = 'Жоден цикл не активний цього дня.';
+    const emptyBodyNoStack =
+        'Додайте добавку у вкладці «Стек», щоб побачити тут дози.';
+    const loadError = 'Не вдалося завантажити день. Спробуйте ще раз.';
+    const disclaimer = 'Розклад складено з ваших власних записів. '
+        'Освітній матеріал, не медична порада.';
+
+    Supplement supp(String name) => Supplement(
+          id: 's1',
+          name: name,
+          doseText: '',
+          colorValue: 0xFF6B6FA8,
+          note: '',
+        );
+
+    Regimen reg({DateTime? startDate, int offDays = 0}) => Regimen(
+          id: 'r1',
+          supplementId: 's1',
+          kind: RegimenKind.cyclic,
+          startDate: startDate ?? DateTime.utc(2020, 1, 1),
+          endDate: null,
+          onDays: 1,
+          offDays: offDays,
+          paused: false,
+          slots: const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+          ],
+        );
+
+    /// Fails if ANY painted surface or text in the current tree carries a
+    /// warn or destructive color (TRACK-03 neutrality mandate).
+    void expectNoWarnOrRiskPaint(WidgetTester tester) {
+      // A plain list, not a const Set: dart:ui's Color has no primitive
+      // equality, so it cannot be a const set element.
+      final banned = <Color>[
+        BqColors.warnBorder,
+        BqColors.warnBg,
+        BqColors.warn,
+        BqColors.risk,
+        BqColors.riskBg,
+        BqColors.riskBorder,
+      ];
+      for (final container in tester.widgetList<Container>(
+        find.byType(Container),
+      )) {
+        expect(banned.contains(container.color), isFalse,
+            reason: 'a Container fill uses a warn/destructive token');
+        final decoration = container.decoration;
+        if (decoration is BoxDecoration) {
+          expect(banned.contains(decoration.color), isFalse,
+              reason: 'a decorated fill uses a warn/destructive token');
+          final border = decoration.border;
+          if (border is Border) {
+            expect(banned.contains(border.top.color), isFalse,
+                reason: 'a border uses a warn/destructive token');
+          }
+        }
+      }
+      for (final text in tester.widgetList<Text>(find.byType(Text))) {
+        expect(banned.contains(text.style?.color), isFalse,
+            reason: 'text uses a warn/destructive token');
+      }
+    }
+
+    testWidgets('uk: browsing a past day renders the not-marked chip while '
+        'EVERY raw intake-log row stays pending (T-03-15, TRACK-03)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Магній').evaluate().isNotEmpty,
+        'the dose row on today',
+      );
+
+      container.read(selectedDayProvider.notifier).select(pastDay);
+      await pumpUntil(
+        tester,
+        () => find.text('не позначено').evaluate().isNotEmpty,
+        'the not-marked chip on the browsed past day',
+      );
+
+      // The WHOLE table, not just the browsed day: browsing (and the strip's
+      // week pre-materialization) may create rows, and may never grade one.
+      var raw = <IntakeLog>[];
+      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      await pumpUntil(tester, () => raw.isNotEmpty, 'the materialized rows');
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      expect(raw.every((r) => r.status == DoseStatus.pending), isTrue,
+          reason: 'rendering a past day is a READ — "missed" is derived in a '
+              'pure helper and the row it describes is still pending');
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      rawSub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: no warn or destructive color renders anywhere on a past '
+        'day, and its unmarked dose is still tappable (DECIDED-3)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('не прийнято вчасно').evaluate().isNotEmpty,
+        'the warn treatment that today legitimately carries',
+      );
+
+      container.read(selectedDayProvider.notifier).select(pastDay);
+      await pumpUntil(
+        tester,
+        () => find.text('не позначено').evaluate().isNotEmpty,
+        'the browsed past day',
+      );
+
+      expect(find.text('не прийнято вчасно'), findsNothing,
+          reason: 'overdue is a today-only treatment');
+      expectNoWarnOrRiskPaint(tester);
+
+      // Still live: marking a dose taken late is a legitimate correction.
+      var raw = <IntakeLog>[];
+      final rawSub = rawLogsFor(pastDay).listen((v) => raw = v);
+      await pumpUntil(tester, () => raw.isNotEmpty, "the past day's row");
+      await tester.tap(find.text('Магній'));
+      await pumpUntil(
+        tester,
+        () => raw.single.status == DoseStatus.taken,
+        'the late correction to persist',
+      );
+
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      rawSub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: switching to a day whose stream has not resolved HOLDS '
+        'the previous rows — the list never blanks between days (PF-7)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      // Starts on the Monday of the CURRENT week, so the far-past day is
+      // genuinely doseless — the held rows cannot be confused with its own.
+      await container
+          .read(regimenRepoProvider)
+          .upsert(reg(startDate: DateTime.utc(2026, 8, 10)));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Магній').evaluate().isNotEmpty,
+        'the dose row on today',
+      );
+
+      container.read(selectedDayProvider.notifier).select(farPast);
+      await tester.pump();
+
+      expect(find.text('Магній'), findsOneWidget,
+          reason: 'on the very next frame the previous list is still on '
+              'screen — blanking it would read as "this day is empty"');
+      expect(find.text('20 липня'), findsOneWidget,
+          reason: 'the header moved immediately, so the switch is visible');
+      expect(find.byType(CircularProgressIndicator), findsNothing,
+          reason: 'no spinner ever flashes on a local-DB stream');
+
+      await pumpUntil(
+        tester,
+        () => find.text(emptyTitle).evaluate().isNotEmpty,
+        'the far-past day to resolve to its own (empty) content',
+      );
+      expect(find.text('Магній'), findsNothing,
+          reason: 'once the new day resolves it replaces the held list');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a day with no active cycle renders the empty title with '
+        'the no-cycle body, no block header and NO ring — and still closes '
+        'with the disclaimer (DECIDED-7)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg(offDays: 100000));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text(emptyTitle).evaluate().isNotEmpty,
+        'the empty-day block',
+      );
+
+      expect(find.text(emptyBody), findsOneWidget,
+          reason: 'the stack HAS supplements — an off day is a correct, '
+              'expected state and needs no call to action');
+      expect(find.text(emptyBodyNoStack), findsNothing);
+      expect(find.byType(DayBlockSection), findsNothing,
+          reason: 'no block header stands over an empty day');
+      expect(find.byType(DayProgressRing), findsNothing,
+          reason: 'a "0/0" ring is meaningless chrome (DECIDED-7)');
+      expect(find.text(disclaimer), findsOneWidget,
+          reason: 'the disclaimer closes EVERY day, including empty ones');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: with an EMPTY stack the empty day names the one next '
+        'step instead', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      // Nothing seeded at all: no supplements, no regimens.
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text(emptyBodyNoStack).evaluate().isNotEmpty,
+        'the empty-stack body variant',
+      );
+
+      expect(find.text(emptyTitle), findsOneWidget);
+      expect(find.text(emptyBody), findsNothing,
+          reason: '"no cycle is active" would be a dead end for a user who '
+              'has not added anything yet');
+      expect(find.text(disclaimer), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: an errored day stream renders the documented copy plus '
+        'retry, and never a stack trace (T-03-16)', (tester) async {
+      usePhoneSurface(tester);
+      final container = ProviderContainer(overrides: [
+        dbProvider.overrideWith((ref) {
+          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          ref.onDispose(database.close);
+          db = database;
+          return database;
+        }),
+        todayProvider.overrideWith(() => _FixedToday(pinnedToday)),
+        nowMinutesProvider.overrideWith((ref) => Stream.value(600)),
+        intakeRepoProvider.overrideWith((ref) => _ErroringIntakeRepo(
+              DriftIntakeRepository(
+                ref.watch(dbProvider),
+                regimens: ref.watch(regimenRepoProvider),
+              ),
+            )),
+      ]);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text(loadError).evaluate().isNotEmpty,
+        'the day-load error copy',
+      );
+
+      expect(find.text('Повторити'), findsOneWidget,
+          reason: 'the error surface always offers the way out');
+      expect(find.textContaining('refused'), findsNothing,
+          reason: 'the storage exception message never reaches the screen');
+      expect(find.textContaining('Exception'), findsNothing);
+      expect(find.textContaining('Error'), findsNothing);
+      expect(find.text(disclaimer), findsOneWidget,
+          reason: 'the body still closes normally on an errored day');
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      // Retry re-subscribes; the stubbed repository errors again, so the
+      // surface is stable rather than crashing.
+      await tester.tap(find.text('Повторити'));
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      expect(find.text(loadError), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a FUTURE day inside the current week renders plain '
+        'pending rows — no overdue, no not-marked (E-10)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('не прийнято вчасно').evaluate().isNotEmpty,
+        "today's overdue treatment",
+      );
+
+      container.read(selectedDayProvider.notifier).select(futureDay);
+      await pumpUntil(
+        tester,
+        () => find.text('14 серпня').evaluate().isNotEmpty,
+        'the browsed future day',
+      );
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      expect(find.text('Магній'), findsOneWidget,
+          reason: 'a future day inside the current week is reachable and '
+              'renders its planned doses');
+      expect(find.text('не прийнято вчасно'), findsNothing);
+      expect(find.text('не позначено'), findsNothing,
+          reason: 'a day that has not happened cannot be missed');
+      expectNoWarnOrRiskPaint(tester);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+  });
 }
 
 /// An [IntakeRepository] whose writes take a full second to land, so a test
@@ -2126,6 +2475,28 @@ class _FailingIntakeRepo implements IntakeRepository {
   @override
   Future<void> setStatus(String logId, DoseStatus status) =>
       Future<void>.error(StateError('write refused by the test repository'));
+}
+
+/// An [IntakeRepository] whose day stream always fails, so the screen's
+/// `AsyncValue.error` branch can be exercised end to end. Materialization
+/// still succeeds — the failure is in the READ, which is where the day
+/// surface's error copy lives.
+class _ErroringIntakeRepo implements IntakeRepository {
+  _ErroringIntakeRepo(this.inner);
+
+  final IntakeRepository inner;
+
+  @override
+  Stream<List<DayDose>> watchDay(DateTime day) =>
+      Stream<List<DayDose>>.error(StateError('day read refused by the test '
+          'repository'));
+
+  @override
+  Future<void> ensureLogsForDay(DateTime day) => inner.ensureLogsForDay(day);
+
+  @override
+  Future<void> setStatus(String logId, DoseStatus status) =>
+      inner.setStatus(logId, status);
 }
 
 /// A clock frozen on one day: [TodayController] with no timer and no
