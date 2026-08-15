@@ -1385,6 +1385,299 @@ void main() {
       await tearDownTree(tester, container);
     });
   });
+
+  // --- Dose action sheet (plan 03-04, Task 3; UI-SPEC S5, DECIDED-2) ---
+  //
+  // The sheet is a CHOOSER: every assertion below is about which actions it
+  // offers and what the RAW database row becomes afterwards. The sheet itself
+  // performs no write — `DoseRow._apply` does, through the same guard tap uses.
+  group('dose action sheet', () {
+    final pinnedToday = DateTime.utc(2026, 8, 13);
+
+    const markTaken = 'Позначити прийнято';
+    const markSkipped = 'Позначити пропущено';
+    const undoMark = 'Зняти позначку';
+
+    const supplement = Supplement(
+      id: 's1',
+      name: 'Магній',
+      doseText: '',
+      colorValue: 0xFF6B6FA8,
+      note: '',
+    );
+
+    Regimen reg() => Regimen(
+          id: 'r1',
+          supplementId: 's1',
+          kind: RegimenKind.cyclic,
+          startDate: DateTime.utc(2020, 1, 1),
+          endDate: null,
+          onDays: 1,
+          offDays: 0,
+          paused: false,
+          slots: const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: '400 мг'),
+          ],
+        );
+
+    /// Pumps the screen, waits for the single dose row, and returns a live
+    /// view of the raw log table plus its subscription.
+    Future<(Finder, List<IntakeLog> Function(), StreamSubscription<void>)>
+        pumpRow(WidgetTester tester, ProviderContainer container) async {
+      await tester.pumpWidget(app(container));
+      final row = find.text('Магній');
+      await pumpUntil(tester, () => row.evaluate().isNotEmpty, 'the dose row');
+      var raw = <IntakeLog>[];
+      final sub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      await pumpUntil(tester, () => raw.length == 1, 'the materialized log');
+      return (row, () => raw, sub);
+    }
+
+    testWidgets('uk: long-pressing a PENDING row offers mark-taken and '
+        'mark-skipped, with no undo row', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, _, sub) = await pumpRow(tester, container);
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(markTaken).evaluate().isNotEmpty,
+        'the action sheet',
+      );
+
+      expect(find.text(markSkipped), findsOneWidget);
+      expect(find.text(undoMark), findsNothing,
+          reason: 'there is nothing to undo on a pending dose — the row is '
+              'absent, never disabled');
+      expect(find.text('Магній'), findsNWidgets(2),
+          reason: 'the sheet header repeats the supplement name');
+      expect(find.text('08:00 · 400 мг'), findsOneWidget,
+          reason: 'the mono subtitle composes the 24-hour slot time with the '
+              "slot's dose label");
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: long-pressing a TAKEN row offers mark-skipped and undo, '
+        'with no mark-taken row', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, raw, sub) = await pumpRow(tester, container);
+
+      await tester.tap(row);
+      await pumpUntil(
+        tester,
+        () => raw().single.status == DoseStatus.taken,
+        'the row to become taken',
+      );
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(undoMark).evaluate().isNotEmpty,
+        'the action sheet',
+      );
+
+      expect(find.text(markSkipped), findsOneWidget);
+      expect(find.text(markTaken), findsNothing);
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: long-pressing a SKIPPED row offers mark-taken and undo, '
+        'with no mark-skipped row', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, raw, sub) = await pumpRow(tester, container);
+
+      unawaited(container
+          .read(intakeRepoProvider)
+          .setStatus(raw().single.id, DoseStatus.skipped));
+      await pumpUntil(
+        tester,
+        () => raw().single.status == DoseStatus.skipped,
+        'the row to become skipped',
+      );
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(undoMark).evaluate().isNotEmpty,
+        'the action sheet',
+      );
+
+      expect(find.text(markTaken), findsOneWidget);
+      expect(find.text(markSkipped), findsNothing);
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: choosing mark-skipped pops the sheet and drives the RAW '
+        'row to skipped', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, raw, sub) = await pumpRow(tester, container);
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(markSkipped).evaluate().isNotEmpty,
+        'the action sheet',
+      );
+      // The sheet is mounted before it has finished sliding up; let the
+      // route transition run out so the action row is actually hit-testable.
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      await tester.tap(find.text(markSkipped));
+      await pumpUntil(
+        tester,
+        () => raw().single.status == DoseStatus.skipped,
+        'the chosen status to persist through the row write path',
+      );
+      await pumpUntil(
+        tester,
+        () => find.text(markSkipped).evaluate().isEmpty,
+        'the sheet to finish popping',
+      );
+
+      expect(find.text(markSkipped), findsNothing,
+          reason: 'the sheet pops as soon as an action is chosen');
+      expect(find.text('пропущено'), findsOneWidget,
+          reason: 'the row re-renders from the stream, not from sheet state');
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: dismissing the sheet without choosing leaves the raw '
+        'status unchanged', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, raw, sub) = await pumpRow(tester, container);
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(markTaken).evaluate().isNotEmpty,
+        'the action sheet',
+      );
+
+      // Barrier tap at the very top of the screen — well clear of the sheet.
+      await tester.tapAt(const Offset(200, 20));
+      await pumpUntil(
+        tester,
+        () => find.text(markTaken).evaluate().isEmpty,
+        'the sheet to dismiss',
+      );
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      expect(raw().single.status, DoseStatus.pending,
+          reason: 'dismissal is not a choice — nothing is written');
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a long press issued while the tap write is STILL in '
+        'flight is swallowed — one write, no sheet (T-03-02)', (tester) async {
+      usePhoneSurface(tester);
+      // A deliberately slow repository holds the write open long enough for
+      // the long-press timeout to elapse mid-flight — the Phase-2
+      // double-activation pattern, applied across two different gestures.
+      final container = ProviderContainer(overrides: [
+        dbProvider.overrideWith((ref) {
+          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          ref.onDispose(database.close);
+          db = database;
+          return database;
+        }),
+        todayProvider.overrideWith(() => _FixedToday(pinnedToday)),
+        nowMinutesProvider.overrideWith((ref) => Stream.value(400)),
+        intakeRepoProvider.overrideWith((ref) => _SlowIntakeRepo(
+              DriftIntakeRepository(
+                ref.watch(dbProvider),
+                regimens: ref.watch(regimenRepoProvider),
+              ),
+            )),
+      ]);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, raw, sub) = await pumpRow(tester, container);
+
+      await tester.tap(row);
+      await tester.pump(const Duration(milliseconds: 10));
+      expect(raw().single.status, DoseStatus.pending,
+          reason: 'the slow write has not landed yet — it is in flight');
+
+      // `longPress` pumps past the long-press timeout while the write is open.
+      await tester.longPress(row);
+      await tester.pump(const Duration(milliseconds: 10));
+      expect(find.text(markSkipped), findsNothing,
+          reason: 'the sheet must not open while a write is in flight');
+
+      await pumpUntil(
+        tester,
+        () => raw().single.status == DoseStatus.taken,
+        'the single allowed write to land',
+      );
+      expect(raw().single.status, DoseStatus.taken,
+          reason: 'exactly one write was allowed through, and it is the tap');
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+  });
+}
+
+/// An [IntakeRepository] whose writes take a full second to land, so a test
+/// can act while one is genuinely in flight. Reads delegate to the real
+/// Drift implementation.
+class _SlowIntakeRepo implements IntakeRepository {
+  _SlowIntakeRepo(this.inner);
+
+  final IntakeRepository inner;
+
+  @override
+  Stream<List<DayDose>> watchDay(DateTime day) => inner.watchDay(day);
+
+  @override
+  Future<void> ensureLogsForDay(DateTime day) => inner.ensureLogsForDay(day);
+
+  @override
+  Future<void> setStatus(String logId, DoseStatus status) async {
+    await Future<void>.delayed(const Duration(seconds: 1));
+    await inner.setStatus(logId, status);
+  }
 }
 
 /// An [IntakeRepository] whose writes always fail; reads delegate to the real

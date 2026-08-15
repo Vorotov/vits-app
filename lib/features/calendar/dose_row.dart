@@ -29,6 +29,7 @@ import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/features/calendar/day_view_model.dart';
+import 'package:boostque/features/calendar/dose_action_sheet.dart';
 
 /// The five exhaustive row states of the S4 table. No sixth combination may
 /// render, and no two may render at once.
@@ -106,6 +107,18 @@ class _DoseRowState extends ConsumerState<DoseRow> {
             ? DoseStatus.pending
             : DoseStatus.taken,
       );
+
+  /// The labelled alternative to tap: the sheet chooses, this row writes.
+  ///
+  /// Refused while a write is in flight, exactly like tap — so a tap
+  /// immediately followed by a long press cannot slip a second write past the
+  /// guard (T-03-02).
+  Future<void> _onLongPress() async {
+    if (_busy) return;
+    final chosen = await showDoseActionSheet(context, widget.dose);
+    if (chosen == null) return;
+    await _apply(chosen);
+  }
 
   /// Resolution order is the whole guarantee that exactly one state renders.
   _RowState _resolveState() {
@@ -237,6 +250,7 @@ class _DoseRowState extends ConsumerState<DoseRow> {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: _onTap,
+          onLongPress: _onLongPress,
           onTapDown: (_) => setState(() => _pressed = true),
           onTapUp: (_) => setState(() => _pressed = false),
           onTapCancel: () => setState(() => _pressed = false),
