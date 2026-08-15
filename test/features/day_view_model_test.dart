@@ -20,14 +20,13 @@ void main() {
     String id = 's1',
     String name = 'Магній',
     String note = '',
-  }) =>
-      Supplement(
-        id: id,
-        name: name,
-        doseText: '400 мг',
-        colorValue: 0xFF6B6FA8,
-        note: note,
-      );
+  }) => Supplement(
+    id: id,
+    name: name,
+    doseText: '400 мг',
+    colorValue: 0xFF6B6FA8,
+    note: note,
+  );
 
   /// A [DayDose] as `watchDay` emits it: the embedded regimen carries ONLY
   /// this dose's own slot (PF-6) — never the regimen's full slot set.
@@ -93,8 +92,11 @@ void main() {
     test('the boundary const is the single source of the four blocks', () {
       expect(blockStartsMinutes, hasLength(4));
       for (var i = 0; i < blockStartsMinutes.length; i++) {
-        expect(blockIndexOf(blockStartsMinutes[i]), i,
-            reason: 'each start minute opens its own block');
+        expect(
+          blockIndexOf(blockStartsMinutes[i]),
+          i,
+          reason: 'each start minute opens its own block',
+        );
       }
     });
   });
@@ -109,27 +111,38 @@ void main() {
 
       final blocks = groupIntoBlocks(doses);
 
-      expect(blocks, hasLength(2), reason: 'День and Вечір are empty -> hidden');
+      expect(
+        blocks,
+        hasLength(2),
+        reason: 'День and Вечір are empty -> hidden',
+      );
       expect(blocks[0].blockIndex, 0);
       expect(blocks[1].blockIndex, 3);
-      expect(blocks[0].earliestMinutes, 570,
-          reason: 'the earliest REAL slot time, not the 08:00 anchor (M5)');
+      expect(
+        blocks[0].earliestMinutes,
+        570,
+        reason: 'the earliest REAL slot time, not the 08:00 anchor (M5)',
+      );
       expect(blocks[1].earliestMinutes, 1350);
-      expect(blocks[0].doses.map((d) => d.logId), ['l1', 'l2'],
-          reason: 'input slot-time order preserved inside the block');
+      expect(blocks[0].doses.map((d) => d.logId), [
+        'l1',
+        'l2',
+      ], reason: 'input slot-time order preserved inside the block');
       expect(blocks[1].doses.map((d) => d.logId), ['l3']);
     });
 
-    test('blocks come out in chronological order regardless of input order',
-        () {
-      final blocks = groupIntoBlocks([
-        dose(logId: 'night', minutes: 1320),
-        dose(logId: 'morning', minutes: 480, regimenId: 'r2'),
-        dose(logId: 'day', minutes: 720, regimenId: 'r3'),
-      ]);
-      expect(blocks.map((b) => b.blockIndex), [0, 1, 3]);
-      expect(blocks.map((b) => b.earliestMinutes), [480, 720, 1320]);
-    });
+    test(
+      'blocks come out in chronological order regardless of input order',
+      () {
+        final blocks = groupIntoBlocks([
+          dose(logId: 'night', minutes: 1320),
+          dose(logId: 'morning', minutes: 480, regimenId: 'r2'),
+          dose(logId: 'day', minutes: 720, regimenId: 'r3'),
+        ]);
+        expect(blocks.map((b) => b.blockIndex), [0, 1, 3]);
+        expect(blocks.map((b) => b.earliestMinutes), [480, 720, 1320]);
+      },
+    );
 
     test('empty day yields no blocks', () {
       expect(groupIntoBlocks(const []), isEmpty);
@@ -137,24 +150,26 @@ void main() {
   });
 
   group('doseCyclePosition (PF-6)', () {
-    test('m comes from the day list even though every regimen.slots holds 1',
-        () {
-      final a1 = dose(logId: 'a1', minutes: 480);
-      final a2 = dose(logId: 'a2', minutes: 780);
-      final a3 = dose(logId: 'a3', minutes: 1140);
-      final b1 = dose(logId: 'b1', minutes: 600, regimenId: 'r2');
-      final day = [a1, b1, a2, a3];
+    test(
+      'm comes from the day list even though every regimen.slots holds 1',
+      () {
+        final a1 = dose(logId: 'a1', minutes: 480);
+        final a2 = dose(logId: 'a2', minutes: 780);
+        final a3 = dose(logId: 'a3', minutes: 1140);
+        final b1 = dose(logId: 'b1', minutes: 600, regimenId: 'r2');
+        final day = [a1, b1, a2, a3];
 
-      // The production shape: each embedded regimen carries one slot only.
-      for (final d in day) {
-        expect(d.regimen.slots, hasLength(1));
-      }
+        // The production shape: each embedded regimen carries one slot only.
+        for (final d in day) {
+          expect(d.regimen.slots, hasLength(1));
+        }
 
-      expect(doseCyclePosition(day, a1), (n: 1, m: 3));
-      expect(doseCyclePosition(day, a2), (n: 2, m: 3));
-      expect(doseCyclePosition(day, a3), (n: 3, m: 3));
-      expect(doseCyclePosition(day, b1), (n: 1, m: 1));
-    });
+        expect(doseCyclePosition(day, a1), (n: 1, m: 3));
+        expect(doseCyclePosition(day, a2), (n: 2, m: 3));
+        expect(doseCyclePosition(day, a3), (n: 3, m: 3));
+        expect(doseCyclePosition(day, b1), (n: 1, m: 1));
+      },
+    );
 
     test('n follows the day list order (slot-time ordered by watchDay)', () {
       final early = dose(logId: 'e', minutes: 480);
@@ -170,8 +185,11 @@ void main() {
 
     test('pending on a strictly past day -> missed', () {
       expect(
-        isMissed(dose(logId: 'l1', minutes: 480),
-            viewedDay: yesterday, today: today),
+        isMissed(
+          dose(logId: 'l1', minutes: 480),
+          viewedDay: yesterday,
+          today: today,
+        ),
         isTrue,
       );
     });
@@ -184,13 +202,19 @@ void main() {
 
     test('taken or skipped on a past day -> never missed', () {
       expect(
-        isMissed(dose(logId: 'l1', minutes: 480, status: DoseStatus.taken),
-            viewedDay: yesterday, today: today),
+        isMissed(
+          dose(logId: 'l1', minutes: 480, status: DoseStatus.taken),
+          viewedDay: yesterday,
+          today: today,
+        ),
         isFalse,
       );
       expect(
-        isMissed(dose(logId: 'l2', minutes: 480, status: DoseStatus.skipped),
-            viewedDay: yesterday, today: today),
+        isMissed(
+          dose(logId: 'l2', minutes: 480, status: DoseStatus.skipped),
+          viewedDay: yesterday,
+          today: today,
+        ),
         isFalse,
       );
     });
@@ -212,28 +236,40 @@ void main() {
     test('today, pending, slot time strictly past -> overdue', () {
       final d = dose(logId: 'l1', minutes: 480);
       expect(isOverdue(d, viewingToday: true, nowMinutes: 481), isTrue);
-      expect(isOverdue(d, viewingToday: true, nowMinutes: 480), isFalse,
-          reason: 'boundary: exactly due is not yet overdue');
+      expect(
+        isOverdue(d, viewingToday: true, nowMinutes: 480),
+        isFalse,
+        reason: 'boundary: exactly due is not yet overdue',
+      );
       expect(isOverdue(d, viewingToday: true, nowMinutes: 479), isFalse);
     });
 
     test('marked doses are never overdue', () {
       expect(
-        isOverdue(dose(logId: 'l1', minutes: 480, status: DoseStatus.taken),
-            viewingToday: true, nowMinutes: 1200),
+        isOverdue(
+          dose(logId: 'l1', minutes: 480, status: DoseStatus.taken),
+          viewingToday: true,
+          nowMinutes: 1200,
+        ),
         isFalse,
       );
       expect(
-        isOverdue(dose(logId: 'l2', minutes: 480, status: DoseStatus.skipped),
-            viewingToday: true, nowMinutes: 1200),
+        isOverdue(
+          dose(logId: 'l2', minutes: 480, status: DoseStatus.skipped),
+          viewingToday: true,
+          nowMinutes: 1200,
+        ),
         isFalse,
       );
     });
 
     test('no non-today view can derive overdue, whatever the now-minute', () {
       final d = dose(logId: 'l1', minutes: 480);
-      expect(isOverdue(d, viewingToday: false, nowMinutes: 1439), isFalse,
-          reason: 'TRACK-03 neutrality: past days carry no warn state');
+      expect(
+        isOverdue(d, viewingToday: false, nowMinutes: 1439),
+        isFalse,
+        reason: 'TRACK-03 neutrality: past days carry no warn state',
+      );
       expect(isOverdue(d, viewingToday: false, nowMinutes: 0), isFalse);
     });
   });
@@ -246,10 +282,14 @@ void main() {
         dose(logId: 'l1', minutes: 480, status: DoseStatus.taken),
         dose(logId: 'l2', minutes: 600, status: DoseStatus.taken),
       ]);
-      expect(blockTagOf(block, viewingToday: true, nowMinutes: 1200),
-          isA<AllTakenTag>());
-      expect(blockTagOf(block, viewingToday: false, nowMinutes: 0),
-          isA<AllTakenTag>());
+      expect(
+        blockTagOf(block, viewingToday: true, nowMinutes: 1200),
+        isA<AllTakenTag>(),
+      );
+      expect(
+        blockTagOf(block, viewingToday: false, nowMinutes: 0),
+        isA<AllTakenTag>(),
+      );
     });
 
     test('all marked with at least one skip -> allMarked, never allTaken', () {
@@ -257,16 +297,20 @@ void main() {
         dose(logId: 'l1', minutes: 480, status: DoseStatus.taken),
         dose(logId: 'l2', minutes: 600, status: DoseStatus.skipped),
       ]);
-      expect(blockTagOf(block, viewingToday: true, nowMinutes: 1200),
-          isA<AllMarkedTag>());
+      expect(
+        blockTagOf(block, viewingToday: true, nowMinutes: 1200),
+        isA<AllMarkedTag>(),
+      );
     });
 
     test('every dose skipped -> allMarked', () {
       final block = blockOf([
         dose(logId: 'l1', minutes: 480, status: DoseStatus.skipped),
       ]);
-      expect(blockTagOf(block, viewingToday: true, nowMinutes: 1200),
-          isA<AllMarkedTag>());
+      expect(
+        blockTagOf(block, viewingToday: true, nowMinutes: 1200),
+        isA<AllMarkedTag>(),
+      );
     });
 
     test('today, past block with a pending dose -> progress(done, total)', () {
@@ -277,7 +321,11 @@ void main() {
       final tag = blockTagOf(block, viewingToday: true, nowMinutes: 601);
       expect(tag, isA<ProgressTag>());
       final progress = tag as ProgressTag;
-      expect(progress.done, 1, reason: 'taken vs total (UI-SPEC blockProgress)');
+      expect(
+        progress.done,
+        1,
+        reason: 'taken vs total (UI-SPEC blockProgress)',
+      );
       expect(progress.total, 2);
     });
 
@@ -297,11 +345,16 @@ void main() {
         dose(logId: 'l1', minutes: 480, status: DoseStatus.taken),
         dose(logId: 'l2', minutes: 600),
       ]);
-      expect(blockTagOf(block, viewingToday: true, nowMinutes: 600),
-          isA<MealTag>(),
-          reason: 'boundary: exactly-due is not past');
-      expect(blockTagOf(block, viewingToday: true, nowMinutes: 300),
-          isA<MealTag>(), reason: 'a future block of today');
+      expect(
+        blockTagOf(block, viewingToday: true, nowMinutes: 600),
+        isA<MealTag>(),
+        reason: 'boundary: exactly-due is not past',
+      );
+      expect(
+        blockTagOf(block, viewingToday: true, nowMinutes: 300),
+        isA<MealTag>(),
+        reason: 'a future block of today',
+      );
     });
 
     test('a past day never shows progress, however late the now-minute', () {
@@ -309,18 +362,20 @@ void main() {
         dose(logId: 'l1', minutes: 480, status: DoseStatus.taken),
         dose(logId: 'l2', minutes: 600),
       ]);
-      expect(blockTagOf(block, viewingToday: false, nowMinutes: 1439),
-          isA<MealTag>(),
-          reason: 'TRACK-03 neutrality: no warn tag off today');
+      expect(
+        blockTagOf(block, viewingToday: false, nowMinutes: 1439),
+        isA<MealTag>(),
+        reason: 'TRACK-03 neutrality: no warn tag off today',
+      );
     });
 
     test('sealed hierarchy switches exhaustively', () {
       String describe(BlockTag t) => switch (t) {
-            AllTakenTag() => 'allTaken',
-            AllMarkedTag() => 'allMarked',
-            ProgressTag() => 'progress',
-            MealTag() => 'meal',
-          };
+        AllTakenTag() => 'allTaken',
+        AllMarkedTag() => 'allMarked',
+        ProgressTag() => 'progress',
+        MealTag() => 'meal',
+      };
       expect(describe(const MealTag()), 'meal');
     });
   });
@@ -335,8 +390,11 @@ void main() {
     test('first block whose doses have not all passed', () {
       expect(currentBlockIndex(blocks, viewingToday: true, nowMinutes: 300), 0);
       expect(currentBlockIndex(blocks, viewingToday: true, nowMinutes: 481), 1);
-      expect(currentBlockIndex(blocks, viewingToday: true, nowMinutes: 980), 3,
-          reason: 'the evening block is empty and therefore absent');
+      expect(
+        currentBlockIndex(blocks, viewingToday: true, nowMinutes: 980),
+        3,
+        reason: 'the evening block is empty and therefore absent',
+      );
     });
 
     test('boundary: a dose exactly at the now-minute has not passed', () {
@@ -345,19 +403,27 @@ void main() {
 
     test('null once every block of today has passed', () {
       expect(
-          currentBlockIndex(blocks, viewingToday: true, nowMinutes: 1439), null);
+        currentBlockIndex(blocks, viewingToday: true, nowMinutes: 1439),
+        null,
+      );
     });
 
     test('null for any non-today view', () {
-      expect(currentBlockIndex(blocks, viewingToday: false, nowMinutes: 300),
-          isNull);
-      expect(currentBlockIndex(blocks, viewingToday: false, nowMinutes: 1439),
-          isNull);
+      expect(
+        currentBlockIndex(blocks, viewingToday: false, nowMinutes: 300),
+        isNull,
+      );
+      expect(
+        currentBlockIndex(blocks, viewingToday: false, nowMinutes: 1439),
+        isNull,
+      );
     });
 
     test('null for an empty day', () {
-      expect(currentBlockIndex(const [], viewingToday: true, nowMinutes: 600),
-          isNull);
+      expect(
+        currentBlockIndex(const [], viewingToday: true, nowMinutes: 600),
+        isNull,
+      );
     });
   });
 
@@ -393,19 +459,29 @@ void main() {
       final block = groupIntoBlocks([
         dose(logId: 'l1', minutes: 480, status: DoseStatus.taken, paused: true),
       ]).single;
-      expect(blockTagOf(block, viewingToday: true, nowMinutes: 1200),
-          isA<AllTakenTag>());
+      expect(
+        blockTagOf(block, viewingToday: true, nowMinutes: 1200),
+        isA<AllTakenTag>(),
+      );
       expect(
         dayRingCounts([
-          dose(logId: 'l1',
-              minutes: 480, status: DoseStatus.taken, paused: true),
+          dose(
+            logId: 'l1',
+            minutes: 480,
+            status: DoseStatus.taken,
+            paused: true,
+          ),
         ]),
         (taken: 1, total: 1),
       );
       expect(
         isMissed(
-          dose(logId: 'l1',
-              minutes: 480, status: DoseStatus.taken, paused: true),
+          dose(
+            logId: 'l1',
+            minutes: 480,
+            status: DoseStatus.taken,
+            paused: true,
+          ),
           viewedDay: DateTime.utc(2026, 8, 14),
           today: DateTime.utc(2026, 8, 15),
         ),
