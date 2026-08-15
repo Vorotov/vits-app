@@ -29,6 +29,7 @@ import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/features/calendar/calendar_screen.dart';
+import 'package:boostque/features/calendar/day_progress_ring.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -264,5 +265,96 @@ void main() {
     expect(tester.takeException(), isNull);
 
     await tearDownTree(tester, container);
+  });
+
+  // --- DayProgressRing (plan 03-03, Task 2; UI-SPEC E4 / M10 / DECIDED-7) ---
+  //
+  // The ring is a pure StatelessWidget over two ints, so this group needs no
+  // database and no provider container — just the localized MaterialApp so
+  // `context.l10n.ringSemantics` resolves against real uk delegates. No timer
+  // is alive here, so no tearDownTree is required.
+  group('DayProgressRing', () {
+    Widget ringApp(Widget child) => MaterialApp(
+          locale: const Locale('uk'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: bqTheme(),
+          home: Scaffold(body: Center(child: child)),
+        );
+
+    testWidgets('uk: taken 2 of 5 renders "2/5" and the localized '
+        'ringSemantics label', (tester) async {
+      usePhoneSurface(tester);
+      final semantics = tester.ensureSemantics();
+
+      await tester
+          .pumpWidget(ringApp(const DayProgressRing(taken: 2, total: 5)));
+
+      expect(find.text('2/5'), findsOneWidget,
+          reason: 'the mono counter renders both counts, slash-separated');
+      expect(
+        tester.getSemantics(find.byType(DayProgressRing)).label,
+        '2 з 5 доз прийнято',
+        reason: 'a bare canvas is invisible to screen readers — the ring '
+            'carries ringSemantics in the active locale',
+      );
+      expect(tester.takeException(), isNull);
+      semantics.dispose();
+    });
+
+    testWidgets('shouldRepaint compares ONLY the fraction (Interaction '
+        'Contract 9)', (tester) async {
+      usePhoneSurface(tester);
+      await tester.pumpWidget(ringApp(
+        const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DayProgressRing(taken: 2, total: 5), // fraction .4
+            DayProgressRing(taken: 4, total: 10), // fraction .4 — same
+            DayProgressRing(taken: 4, total: 5), // fraction .8 — different
+          ],
+        ),
+      ));
+
+      final painters = tester
+          .widgetList<CustomPaint>(
+            find.descendant(
+              of: find.byType(DayProgressRing),
+              matching: find.byType(CustomPaint),
+            ),
+          )
+          .map((c) => c.painter)
+          .whereType<CustomPainter>()
+          .toList();
+      expect(painters.length, 3,
+          reason: 'each ring paints through exactly one CustomPainter');
+
+      expect(painters[0].shouldRepaint(painters[1]), isFalse,
+          reason: '2/5 and 4/10 are the same fraction — no repaint');
+      expect(painters[0].shouldRepaint(painters[2]), isTrue,
+          reason: '.4 -> .8 changes what is drawn — repaint');
+    });
+
+    testWidgets('renders at both extremes: 0 of 4 (empty arc) and 4 of 4 '
+        '(full sweep)', (tester) async {
+      usePhoneSurface(tester);
+
+      await tester
+          .pumpWidget(ringApp(const DayProgressRing(taken: 0, total: 4)));
+      expect(find.text('0/4'), findsOneWidget,
+          reason: 'the ring still renders at zero progress (DECIDED-7 hides '
+              'it only at total == 0)');
+      expect(tester.takeException(), isNull);
+
+      await tester
+          .pumpWidget(ringApp(const DayProgressRing(taken: 4, total: 4)));
+      expect(find.text('4/4'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    test('constructing at total == 0 is a programming error (DECIDED-7 — the '
+        'header omits the ring entirely)', () {
+      expect(() => DayProgressRing(taken: 0, total: 0), throwsAssertionError);
+    });
   });
 }
