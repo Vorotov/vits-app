@@ -518,12 +518,12 @@ No blocking gaps.
 | A5 | Finished-course card status (E-4) has no mockup reference; proposed treatment is invented | Edge Coverage | Product-taste risk; flag in discuss/verify |
 | A6 | New-regimen default = 1 slot at 08:00 (vs mockup demo's 3 slots) | P-5 | UX preference only; either passes requirements |
 
-## Open Questions
+## Open Questions (RESOLVED — all four answered by the approved 02-UI-SPEC and lifted into plans)
 
-1. **Confirmation UX for delete** — mockup shows only the risk-colored button, no dialog. Recommend a confirm dialog (irreversible in v1, no undo). Planner/user call.
-2. **Finished-course status label** (E-4/A5) — no mockup state exists; needs a small copy decision.
-3. **Manual-entry tab copy** — the camera tab's replacement label ("Вручну" / "Add manually") is invented; confirm at UAT.
-4. **Empty-stack state** — mockup never shows zero supplements; design a minimal empty state (header + add button suffice) — discretion.
+1. **Confirmation UX for delete** — RESOLVED: confirm dialog required (02-UI-SPEC Copywriting Contract `deleteConfirmTitle`/`deleteConfirmBody`; implemented in 02-04 T2).
+2. **Finished-course status label** (E-4/A5) — RESOLVED: ЗАВЕРШЕНО chip in planned styling (`statusFinished`, D10; 02-03/02-05); en copy flagged for UAT.
+3. **Manual-entry tab copy** — RESOLVED: "Вручну" tab + `addManualSupplement` CTA (Copywriting Contract row; 02-05); confirm wording at UAT.
+4. **Empty-stack state** — RESOLVED: `emptyStackTitle`/`emptyStackBody` below the still-visible CTA (UI Consideration #1; 02-05).
 
 ## Sources
 
