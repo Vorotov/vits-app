@@ -1177,6 +1177,166 @@ void main() {
       await tearDownTree(tester, container);
     });
   });
+
+  // ---------------------------------------------------------------------
+  // The inline week detail (plan 04-03 task 3, UI-SPEC S6a item 4, P-7,
+  // P-13, DECIDED-8, Interaction Contracts 3 and 5).
+  // ---------------------------------------------------------------------
+
+  group('week detail', () {
+    Future<void> openBands(
+      WidgetTester tester,
+      ProviderContainer container, {
+      String locale = 'uk',
+    }) async {
+      await seedBands(container);
+      await openPlanner(tester, container, locale: locale);
+      await pumpUntil(
+        tester,
+        () => find.byKey(const ValueKey('week-detail-card'))
+            .evaluate()
+            .isNotEmpty,
+        'the week detail card',
+      );
+    }
+
+    Color? fillOf(WidgetTester tester, String key) {
+      final box = tester.widget<Container>(find.byKey(ValueKey<String>(key)));
+      return (box.decoration! as BoxDecoration).color;
+    }
+
+    testWidgets('at load 0 it reads comfort, five empty pips and five free '
+        'slots — an empty chip row, never an empty state (UI-SPEC truth #11)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      await tester.tap(find.byKey(const ValueKey('load-week-0')));
+      await tester.pump();
+
+      expect(find.text('КОМФОРТНО'), findsOneWidget);
+      expect(fillOf(tester, 'week-verdict-chip'), BqColors.calmBg);
+      expect(byKeyPrefix('week-pip-'), findsNWidgets(5));
+      for (var i = 0; i < 5; i++) {
+        expect(fillOf(tester, 'week-pip-$i'), BqColors.surface,
+            reason: 'no slot is used in a week with no cycles');
+      }
+      expect(
+        find.textContaining('0 з 5 слотів · Вільно 5 — можна планувати старт'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<Wrap>(find.byKey(const ValueKey('week-name-chips')))
+            .children,
+        isEmpty,
+        reason: 'zero names is a normal state of a real week — an empty Wrap, '
+            'never an empty-state block',
+      );
+      expect(find.text('Планувати ще нічого'), findsNothing);
+      expect(find.text(
+        'До трьох речовин одночасно легко відстежувати: якщо щось піде не '
+        'так, зрозуміло, що саме прибрати.',
+      ), findsOneWidget);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('at load 4 it reads МЕЖА in the warn band with four filled '
+        'pips and one empty (P-7)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      // The default selection is the bucket containing today — load 4.
+      final range = DateFormat.MMMd('uk');
+      expect(
+        find.text('${range.format(DateTime.utc(2026, 8, 10))} – '
+            '${range.format(DateTime.utc(2026, 8, 16))}'),
+        findsOneWidget,
+      );
+      expect(find.text('МЕЖА'), findsOneWidget);
+      expect(fillOf(tester, 'week-verdict-chip'), BqColors.warnBg);
+      expect(byKeyPrefix('week-pip-'), findsNWidgets(5));
+      for (var i = 0; i < 4; i++) {
+        expect(fillOf(tester, 'week-pip-$i'), BqColors.accent);
+      }
+      expect(fillOf(tester, 'week-pip-4'), BqColors.surface);
+      expect(
+        find.textContaining('4 з 5 слотів · Вільно 1 — можна планувати старт'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<Wrap>(find.byKey(const ValueKey('week-name-chips')))
+            .children
+            .length,
+        4,
+      );
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('tapping an over-limit week re-renders the card IN PLACE: '
+        'seven pips, the last two in risk, and the truncated note (P-13, '
+        'DECIDED-8)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      await tester.tap(find.byKey(const ValueKey('load-week-3')));
+      await tester.pump();
+
+      expect(find.text('ПОНАД МЕЖУ'), findsOneWidget);
+      expect(fillOf(tester, 'week-verdict-chip'), BqColors.riskBg);
+      expect(byKeyPrefix('week-pip-'), findsNWidgets(7),
+          reason: 'the excess runs PAST the row — the visual half of what the '
+              'note says in words');
+      expect(fillOf(tester, 'week-pip-4'), BqColors.accent);
+      expect(fillOf(tester, 'week-pip-5'), BqColors.risk);
+      expect(fillOf(tester, 'week-pip-6'), BqColors.risk);
+      expect(find.textContaining('7 з 5 слотів · Вільних слотів немає'),
+          findsOneWidget);
+      expect(
+        find.text('Цього тижня перетинаються 7 циклів. Варто зсунути старт '
+            'частини з них або обговорити такий обсяг із лікарем.'),
+        findsOneWidget,
+        reason: 'a pre-formatted cyclesCount inside the note key',
+      );
+
+      // Inline, always — the user is comparing this against the chart
+      // directly above it (P-13).
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.byType(Dialog), findsNothing);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the excluded pharmacological clause is nowhere in the tree, '
+        'in either locale (M2, PF-5)', (tester) async {
+      usePhoneSurface(tester);
+      for (final locale in const ['uk', 'en']) {
+        final container = makeContainer();
+        await openBands(tester, container, locale: locale);
+        await tester.tap(find.byKey(const ValueKey('load-week-3')));
+        await tester.pump();
+
+        for (final excluded in const [
+          'жиророзчин',
+          'сумарне навантаження',
+          'fat-soluble',
+          'cumulative load',
+        ]) {
+          expect(find.textContaining(excluded), findsNothing,
+              reason: '"$excluded" is a pharmacological claim inside the '
+                  'never-ship interaction-advice exclusion');
+        }
+
+        await tearDownTree(tester, container);
+      }
+    });
+  });
 }
 
 /// Pins `todayProvider` to a fixed calendar day.
