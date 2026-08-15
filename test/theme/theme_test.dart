@@ -41,6 +41,25 @@ void main() {
     });
   });
 
+  group('BqColors — Phase-2 token additions (02-UI-SPEC Token Additions)', () {
+    test('ink-alpha borders and overlays', () {
+      expect(BqColors.cardBorder, const Color(0x1717171B));
+      expect(BqColors.inputBorder, const Color(0x2417171B));
+      expect(BqColors.scrim, const Color(0x5217171B));
+      expect(BqColors.dragHandle, const Color(0x2917171B));
+    });
+
+    test('accent/risk translucent borders', () {
+      expect(BqColors.accentBorder, const Color(0x664A4E7C));
+      expect(BqColors.riskBorder, const Color(0x4DA8443C));
+    });
+
+    test('disabled states', () {
+      expect(BqColors.textDisabled, const Color(0xFFB9B9C0));
+      expect(BqColors.iconDisabled, const Color(0xFFD8D7D1));
+    });
+  });
+
   group('BqSeriesColors — supplement color-tag series (D-06)', () {
     test('exactly 8 colors, exact order', () {
       expect(BqSeriesColors.palette.length, 8);
@@ -65,6 +84,12 @@ void main() {
       expect(BqRadii.button, 12.0);
       expect(BqRadii.chip, 5.0);
       expect(BqRadii.seg, 10.0);
+    });
+
+    test('Phase-2 additions (02-UI-SPEC Token Additions)', () {
+      expect(BqRadii.input, 11.0);
+      expect(BqRadii.segInner, 8.0);
+      expect(BqRadii.sheet, 26.0);
     });
   });
 
@@ -139,6 +164,49 @@ void main() {
       final IconThemeData? unselected = nav.iconTheme?.resolve(const {});
       expect(selected?.color, BqColors.accent);
       expect(unselected?.color, BqColors.textFaint);
+    });
+
+    test('inputDecorationTheme — surface fill, input radius, inputBorder side',
+        () {
+      final InputDecorationThemeData input = t.inputDecorationTheme;
+      expect(input.filled, isTrue);
+      expect(input.fillColor, BqColors.surface);
+      expect(input.hintStyle?.color, BqColors.textMuted);
+      final InputBorder? enabled = input.enabledBorder;
+      expect(enabled, isA<OutlineInputBorder>());
+      final OutlineInputBorder outline = enabled! as OutlineInputBorder;
+      expect(
+        outline.borderRadius,
+        const BorderRadius.all(Radius.circular(BqRadii.input)),
+      );
+      expect(outline.borderSide.color, BqColors.inputBorder);
+      expect(outline.borderSide.width, 1.0);
+    });
+
+    test('sliderTheme — accent active track/thumb, field inactive track', () {
+      final SliderThemeData slider = t.sliderTheme;
+      expect(slider.activeTrackColor, BqColors.accent);
+      expect(slider.thumbColor, BqColors.accent);
+      expect(slider.inactiveTrackColor, BqColors.field);
+    });
+
+    test('bottomSheetTheme — paper bg, scrim barrier, sheet top radius', () {
+      final BottomSheetThemeData sheet = t.bottomSheetTheme;
+      expect(sheet.backgroundColor, BqColors.paper);
+      expect(sheet.modalBarrierColor, BqColors.scrim);
+      expect(sheet.shape, isA<RoundedRectangleBorder>());
+      final BorderRadius radius =
+          (sheet.shape! as RoundedRectangleBorder).borderRadius
+              as BorderRadius;
+      expect(radius.topLeft, const Radius.circular(BqRadii.sheet));
+      expect(radius.topRight, const Radius.circular(BqRadii.sheet));
+      expect(radius.bottomLeft, Radius.zero);
+      expect(radius.bottomRight, Radius.zero);
+    });
+
+    test('datePickerTheme / timePickerTheme — surface backgrounds', () {
+      expect(t.datePickerTheme.backgroundColor, BqColors.surface);
+      expect(t.timePickerTheme.backgroundColor, BqColors.surface);
     });
   });
 
