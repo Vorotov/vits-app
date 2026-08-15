@@ -2667,6 +2667,35 @@ void main() {
       });
     }
 
+    for (final scale in <double>[1.0, 1.6, 2.0]) {
+      testWidgets(
+          'uk: the block header renders without overflowing at textScaler '
+          '$scale (WR-04)', (tester) async {
+        usePhoneSurface(tester);
+        final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+        await container.read(supplementRepoProvider).upsert(supp('Магній'));
+        await container.read(regimenRepoProvider).upsert(everyDay());
+
+        await tester.pumpWidget(
+            app(container, textScaler: TextScaler.linear(scale)));
+        await pumpUntil(
+          tester,
+          () => find.byType(DayBlockSection).evaluate().isNotEmpty,
+          'the block header',
+        );
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 20));
+        }
+
+        expect(tester.takeException(), isNull,
+            reason: 'the three header texts must shrink, not overflow, when '
+                'the text scale grows them past the row');
+        expect(find.byType(DayBlockSection), findsOneWidget);
+
+        await tearDownTree(tester, container);
+      });
+    }
+
     testWidgets('the reserved strip extent grows with the text scaler and is '
         'the mockup 82px at scale 1.0 (CR-01)', (tester) async {
       expect(stripHeightFor(TextScaler.noScaling), 82,

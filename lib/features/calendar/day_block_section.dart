@@ -8,8 +8,10 @@
 ///
 /// The header time is the block's EARLIEST REAL slot time (M5): printing the
 /// mockup's 08:00 anchor above a 09:30-only morning would be false
-/// information. The divider between the label and the tag is the flexible
-/// element, so a long label or a long tag can never overflow the header row.
+/// information. The header's three text children each carry a one-third-of-row
+/// ceiling and ellipsize, so no combination of a long label, a long tag and a
+/// large accessibility text scale can overflow the row — the divider between
+/// them absorbs the slack, but it was never what made the row safe (WR-04).
 library;
 
 import 'package:flutter/material.dart';
@@ -83,41 +85,70 @@ class DayBlockSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Text(
-                timeText,
-                style: BqText.mono(
-                  size: 13,
-                  color: isCurrentBlock ? BqColors.accent : BqColors.ink,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w500,
-                  color: BqColors.textSecondary,
-                ),
-              ),
-              const SizedBox(width: 10),
-              // The flexible element of the header (E1 long-text truth).
-              const Expanded(
-                child: SizedBox(height: 1, child: ColoredBox(
-                  color: BqColors.cardBorder,
-                )),
-              ),
-              const SizedBox(width: 10),
-              _BlockTagChip(
-                tag: blockTagOf(
-                  block,
-                  viewingToday: viewingToday,
-                  nowMinutes: nowMinutes,
-                ),
-                blockIndex: block.blockIndex,
-              ),
-            ],
+          // Every text-bearing child of the header gets a hard ceiling of one
+          // third of the row (WR-04). `Expanded` on the divider protects the
+          // DIVIDER, not the row: three non-flexible children overflowed by
+          // 65px at textScaler 2.0, and a long enough label or tag did the
+          // same at scale 1.0. Three ceilings that sum to the row width minus
+          // its gaps make that arithmetically impossible, while leaving the
+          // mockup layout untouched at scale 1.0 — every child is far below
+          // its ceiling there, so the divider still absorbs all the slack.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const gaps = 30.0; // the three 10px gaps
+              final ceiling = constraints.maxWidth.isFinite
+                  ? ((constraints.maxWidth - gaps) / 3).clamp(0.0, 4000.0)
+                  : double.infinity;
+              return Row(
+                children: [
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: ceiling),
+                    child: Text(
+                      timeText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: BqText.mono(
+                        size: 13,
+                        color: isCurrentBlock ? BqColors.accent : BqColors.ink,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: ceiling),
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: BqColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: SizedBox(
+                      height: 1,
+                      child: ColoredBox(color: BqColors.cardBorder),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: ceiling),
+                    child: _BlockTagChip(
+                      tag: blockTagOf(
+                        block,
+                        viewingToday: viewingToday,
+                        nowMinutes: nowMinutes,
+                      ),
+                      blockIndex: block.blockIndex,
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 9),
           for (final (i, dose) in block.doses.indexed) ...[
@@ -188,6 +219,8 @@ class _BlockTagChip extends StatelessWidget {
       ),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: BqText.mono(size: 11, color: fg, weight: FontWeight.w400),
       ),
     );
