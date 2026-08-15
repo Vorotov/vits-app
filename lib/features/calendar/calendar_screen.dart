@@ -4,12 +4,15 @@
 /// - fixed header (plan 03-03): title, locale-formatted subtitle, the
 ///   `backToToday` escape hatch, and [DayProgressRing] on the end side. It
 ///   lives OUTSIDE the scroll view, so it never scrolls away.
-/// - week strip (plan 03-05): inserted at the gap marked below.
+/// - week strip (plan 03-05): [WeekStrip], 16px below the header and also
+///   outside the scroll view — a bounded Monday-first week pager.
 /// - scroll body: the day's doses as chronological time blocks
 ///   ([DayBlockSection], plan 03-04), closed by the two-sentence disclaimer
 ///   line (plan 03-03, mockup line 264).
-/// - empty / error surfaces (`emptyDayTitle`, `dayLoadError` + retry) arrive in
-///   plan 03-05; today the body simply renders nothing for those branches.
+/// - empty / loading / error surfaces (plan 03-05): the empty-day title with
+///   the body variant matching the user's stack, the previously rendered list
+///   held across a day switch, and the documented day-load error copy plus a
+///   retry — never a spinner, never raw exception text.
 ///
 /// Screen states: following today · browsing a past day · a day with no doses
 /// (ring omitted, DECIDED-7) · the dose stream loading (no spinner — a local-DB
@@ -36,6 +39,7 @@ import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/day_block_section.dart';
 import 'package:boostque/features/calendar/day_progress_ring.dart';
 import 'package:boostque/features/calendar/day_view_model.dart';
+import 'package:boostque/features/calendar/week_strip.dart';
 
 /// Screen horizontal padding — the mockup-exact override used by both the
 /// header and the scroll body, so one edge runs down the whole screen
@@ -58,9 +62,9 @@ class CalendarScreen extends ConsumerWidget {
           children: [
             _Header(day: day, doses: doses),
             // Header -> week strip gap (mockup line 215, on the BqSpace
-            // scale). Plan 03-05 inserts `WeekStrip` directly below this gap;
-            // deliberately no placeholder widget stands in for it.
+            // scale). The strip sits OUTSIDE the scroll view, like the header.
             const SizedBox(height: BqSpace.md),
+            const WeekStrip(),
             Expanded(child: _DayBody(doses: doses, day: day)),
           ],
         ),
@@ -193,6 +197,15 @@ class _DayBodyState extends ConsumerState<_DayBody> {
   /// better than withholding the whole day list waiting for a clock read.
   int _nowMinutes = 0;
 
+  /// The last dose list that actually resolved.
+  ///
+  /// PF-7 / Interaction Contract 6: switching days puts the new day's stream
+  /// in `AsyncLoading`, and blanking the list for that frame reads as "this
+  /// day is empty" — a lie that flashes. The previous rows stay on screen
+  /// until the new day resolves; the header, ring and strip update
+  /// immediately regardless, so the day change is never invisible.
+  List<DayDose>? _held;
+
   @override
   Widget build(BuildContext context) {
     // Riverpod 3: pattern-match the AsyncValue; there is no `valueOrNull`.
@@ -202,6 +215,7 @@ class _DayBodyState extends ConsumerState<_DayBody> {
     };
     if (tick != null) _nowMinutes = tick;
     final viewingToday = widget.day == ref.watch(todayProvider);
+    final l10n = context.l10n;
 
     return ListView(
       // Bottom >= 84px clears the nav bar (Phase-2 rule, locked); 18px top and
@@ -215,36 +229,126 @@ class _DayBodyState extends ConsumerState<_DayBody> {
       children: [
         ...widget.doses.when(
           data: (list) {
-            // Grouping, ordering and empty-block omission are the pure
-            // helpers' job (DECIDED-1) — this widget only renders the result.
-            final blocks = groupIntoBlocks(list);
-            final current = currentBlockIndex(
-              blocks,
-              viewingToday: viewingToday,
-              nowMinutes: _nowMinutes,
-            );
-            return <Widget>[
-              for (final block in blocks)
-                DayBlockSection(
-                  block: block,
-                  dayDoses: list,
-                  day: widget.day,
-                  viewingToday: viewingToday,
-                  nowMinutes: _nowMinutes,
-                  isCurrentBlock: block.blockIndex == current,
-                ),
-            ];
+            _held = list;
+            return _blocks(list, viewingToday: viewingToday);
           },
-          // Loading: empty list area, NO spinner — the local-DB stream
-          // resolves within a frame and a spinner would flash.
-          loading: () => const <Widget>[],
-          // The documented error surface (`dayLoadError` + retry) is owned by
-          // plan 03-05; rendering nothing is the interim state.
-          error: (_, _) => const <Widget>[],
+          // Loading: hold the last rendered list when there is one, otherwise
+          // an empty list area — and NO spinner either way, because the
+          // local-DB stream resolves within a frame and a spinner would only
+          // flash.
+          loading: () => _held == null
+              ? const <Widget>[]
+              : _blocks(_held!, viewingToday: viewingToday),
+          // Error: the documented copy plus a retry that re-subscribes.
+          // A raw exception or stack trace is NEVER placed in the tree
+          // (T-03-16).
+          error: (_, _) => <Widget>[
+            Text(
+              l10n.dayLoadError,
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: BqColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: BqSpace.sm),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: TextButton(
+                onPressed: () =>
+                    ref.invalidate(dayDosesProvider(widget.day)),
+                child: Text(
+                  l10n.retry,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: BqColors.accent,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
         // Closes the body on EVERY day, including empty and error ones
         // (UI-SPEC S4, M9).
         const _Disclaimer(),
+      ],
+    );
+  }
+
+  /// The day's time blocks, or the empty-day block when it has no doses.
+  ///
+  /// Grouping, ordering and empty-block omission are the pure helpers' job
+  /// (DECIDED-1) — this widget only renders the result. A zero-dose day
+  /// renders no block header at all, and the header's own zero-total rule
+  /// keeps the ring off it (DECIDED-7).
+  List<Widget> _blocks(
+    List<DayDose> list, {
+    required bool viewingToday,
+  }) {
+    if (list.isEmpty) return const <Widget>[_EmptyDayState()];
+
+    final blocks = groupIntoBlocks(list);
+    final current = currentBlockIndex(
+      blocks,
+      viewingToday: viewingToday,
+      nowMinutes: _nowMinutes,
+    );
+    return <Widget>[
+      for (final block in blocks)
+        DayBlockSection(
+          block: block,
+          dayDoses: list,
+          day: widget.day,
+          viewingToday: viewingToday,
+          nowMinutes: _nowMinutes,
+          isCurrentBlock: block.blockIndex == current,
+        ),
+    ];
+  }
+}
+
+/// Empty day (UI-SPEC S4 "Empty day"): a title plus the body variant that
+/// matches the user's actual situation.
+///
+/// An off-week with a stocked stack is a CORRECT, expected state and gets no
+/// call to action; an empty stack gets the one next step that helps — named,
+/// not linked, because the nav bar is the affordance.
+class _EmptyDayState extends ConsumerWidget {
+  const _EmptyDayState();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final hasStack = switch (ref.watch(stackEntriesProvider)) {
+      AsyncData(:final value) => value.isNotEmpty,
+      // Until the stack resolves, assume it has entries: "no cycle active"
+      // is the neutral statement, while wrongly telling a user with a full
+      // stack to go add a supplement would be actively misleading.
+      _ => true,
+    };
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.emptyDayTitle,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            height: 1.3,
+            color: BqColors.ink,
+          ),
+        ),
+        const SizedBox(height: BqSpace.sm),
+        Text(
+          hasStack ? l10n.emptyDayBody : l10n.emptyDayBodyNoStack,
+          style: const TextStyle(
+            fontSize: 13,
+            height: 1.5,
+            color: BqColors.textMuted,
+          ),
+        ),
       ],
     );
   }
