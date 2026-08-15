@@ -110,6 +110,7 @@
   "undoMark": "Зняти позначку",
   "backToToday": "Сьогодні",
   "doseSheetSubtitle": "{time} · {dose}",
+  "doseSheetSubtitleTimeOnly": "{time}",
   "emptyDayTitle": "Доз на цей день немає",
   "emptyDayBody": "Жоден цикл не активний цього дня.",
   "emptyDayBodyNoStack": "Додайте добавку у вкладці «Стек», щоб побачити тут дози.",

@@ -83,7 +83,13 @@ class _DoseActionSheet extends StatelessWidget {
             ),
             const SizedBox(height: BqSpace.xs),
             Text(
-              l10n.doseSheetSubtitle(time, dose.slot.doseLabel),
+              // The dose label is optional and often empty, so the separator
+              // is part of the STRING, not of the layout: interpolating an
+              // empty label left "08:00 · " with a dangling middle dot on the
+              // sheet while the row guarded exactly this case (WR-07).
+              dose.slot.doseLabel.isEmpty
+                  ? l10n.doseSheetSubtitleTimeOnly(time)
+                  : l10n.doseSheetSubtitle(time, dose.slot.doseLabel),
               style: BqText.mono(
                 size: 11.5,
                 color: BqColors.textMuted,

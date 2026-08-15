@@ -411,6 +411,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String doseSheetSubtitleTimeOnly(String time) {
+    return '$time';
+  }
+
+  @override
   String get emptyDayTitle => 'No doses on this day';
 
   @override

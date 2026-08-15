@@ -758,6 +758,12 @@ abstract class AppLocalizations {
   /// **'{time} · {dose}'**
   String doseSheetSubtitle(String time, String dose);
 
+  /// Dose action-sheet subtitle when the slot carries no dose label: the 24-hour slot time alone, with no separator (the dose label is optional, and '08:00 · ' with a dangling middle dot is not a string the user should ever see)
+  ///
+  /// In en, this message translates to:
+  /// **'{time}'**
+  String doseSheetSubtitleTimeOnly(String time);
+
   /// Empty-state heading for a day with zero doses (invented — the mockup has no empty state). A correct, expected state on an off-week, never an error
   ///
   /// In en, this message translates to:

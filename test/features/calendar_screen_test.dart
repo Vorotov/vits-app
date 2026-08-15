@@ -1492,6 +1492,48 @@ void main() {
       await tearDownTree(tester, container);
     });
 
+    testWidgets('uk: a slot with NO dose label gets a time-only subtitle — no '
+        'dangling separator (WR-07)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(Regimen(
+            id: 'r1',
+            supplementId: 's1',
+            kind: RegimenKind.cyclic,
+            startDate: DateTime.utc(2020, 1, 1),
+            endDate: null,
+            onDays: 1,
+            offDays: 0,
+            paused: false,
+            slots: const [
+              DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+            ],
+          ));
+      final (row, _, sub) = await pumpRow(tester, container);
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(markTaken).evaluate().isNotEmpty,
+        'the action sheet',
+      );
+
+      expect(find.text('08:00'), findsNWidgets(2),
+          reason: 'the sheet subtitle is the bare slot time, alongside the '
+              "block header's — the dose label is optional and the separator "
+              'belongs to the string, so an empty label drops it too');
+      expect(find.textContaining('·'), findsNothing,
+          reason: '"08:00 · " with a trailing middle dot is not a string the '
+              'user may ever see (the row already guards this)');
+      expect(tester.takeException(), isNull);
+
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
     testWidgets('uk: choosing an action after the row has left the tree is a '
         'no-op, not a deactivated-ancestor crash (WR-03)', (tester) async {
       usePhoneSurface(tester);

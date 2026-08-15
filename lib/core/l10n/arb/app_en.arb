@@ -539,6 +539,15 @@
       }
     }
   },
+  "doseSheetSubtitleTimeOnly": "{time}",
+  "@doseSheetSubtitleTimeOnly": {
+    "description": "Dose action-sheet subtitle when the slot carries no dose label: the 24-hour slot time alone, with no separator (the dose label is optional, and '08:00 · ' with a dangling middle dot is not a string the user should ever see)",
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "emptyDayTitle": "No doses on this day",
   "@emptyDayTitle": {
     "description": "Empty-state heading for a day with zero doses (invented — the mockup has no empty state). A correct, expected state on an off-week, never an error"
