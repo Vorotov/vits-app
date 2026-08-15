@@ -206,6 +206,16 @@ class _DayBodyState extends ConsumerState<_DayBody> {
   /// immediately regardless, so the day change is never invisible.
   List<DayDose>? _held;
 
+  /// The day [_held] actually belongs to.
+  ///
+  /// Held rows carry the PREVIOUS day's `logId`, so rendering them with the
+  /// newly selected day's identity was wrong twice over (WR-01): a tap landing
+  /// in the hold window wrote to a day the user is no longer looking at, and
+  /// past-day rows momentarily took today's overdue treatment — the exact
+  /// styling TRACK-03 forbids off today. The held frame now renders with the
+  /// day the rows came from, and is inert until the new day resolves.
+  DateTime? _heldDay;
+
   @override
   Widget build(BuildContext context) {
     // Riverpod 3: pattern-match the AsyncValue; there is no `valueOrNull`.
@@ -214,7 +224,8 @@ class _DayBodyState extends ConsumerState<_DayBody> {
       _ => null,
     };
     if (tick != null) _nowMinutes = tick;
-    final viewingToday = widget.day == ref.watch(todayProvider);
+    final today = ref.watch(todayProvider);
+    final viewingToday = widget.day == today;
     final l10n = context.l10n;
 
     return ListView(
@@ -230,15 +241,35 @@ class _DayBodyState extends ConsumerState<_DayBody> {
         ...widget.doses.when(
           data: (list) {
             _held = list;
-            return _blocks(list, viewingToday: viewingToday);
+            _heldDay = widget.day;
+            return _blocks(list, widget.day, viewingToday: viewingToday);
           },
           // Loading: hold the last rendered list when there is one, otherwise
           // an empty list area — and NO spinner either way, because the
           // local-DB stream resolves within a frame and a spinner would only
           // flash.
-          loading: () => _held == null
-              ? const <Widget>[]
-              : _blocks(_held!, viewingToday: viewingToday),
+          //
+          // The held rows are rendered with THEIR OWN day (WR-01) and wrapped
+          // in an IgnorePointer: a gesture in this window would otherwise
+          // write to the day the user just left, with the header, ring and
+          // strip all showing a different one.
+          loading: () {
+            final held = _held;
+            final heldDay = _heldDay;
+            if (held == null || heldDay == null) return const <Widget>[];
+            return <Widget>[
+              IgnorePointer(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: _blocks(
+                    held,
+                    heldDay,
+                    viewingToday: heldDay == today,
+                  ),
+                ),
+              ),
+            ];
+          },
           // Error: the documented copy plus a retry that re-subscribes.
           // A raw exception or stack trace is NEVER placed in the tree
           // (T-03-16).
@@ -278,12 +309,16 @@ class _DayBodyState extends ConsumerState<_DayBody> {
 
   /// The day's time blocks, or the empty-day block when it has no doses.
   ///
+  /// [day] is the day [list] BELONGS to — which is `widget.day` for a resolved
+  /// list and the held day for a held one (WR-01), never assumed to be either.
+  ///
   /// Grouping, ordering and empty-block omission are the pure helpers' job
   /// (DECIDED-1) — this widget only renders the result. A zero-dose day
   /// renders no block header at all, and the header's own zero-total rule
   /// keeps the ring off it (DECIDED-7).
   List<Widget> _blocks(
-    List<DayDose> list, {
+    List<DayDose> list,
+    DateTime day, {
     required bool viewingToday,
   }) {
     if (list.isEmpty) return const <Widget>[_EmptyDayState()];
@@ -299,7 +334,7 @@ class _DayBodyState extends ConsumerState<_DayBody> {
         DayBlockSection(
           block: block,
           dayDoses: list,
-          day: widget.day,
+          day: day,
           viewingToday: viewingToday,
           nowMinutes: _nowMinutes,
           isCurrentBlock: block.blockIndex == current,

@@ -2309,6 +2309,86 @@ void main() {
       await tearDownTree(tester, container);
     });
 
+    testWidgets('uk: the held rows keep the identity of the day they came '
+        'from — no missed chip, no overdue flash (WR-01)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('не прийнято вчасно').evaluate().isNotEmpty,
+        "today's overdue row",
+      );
+
+      // The far-past day's provider is cold, so this frame is a hold frame.
+      container.read(selectedDayProvider.notifier).select(farPast);
+      await tester.pump();
+
+      expect(find.text('Магній'), findsOneWidget,
+          reason: 'the rows are held (PF-7)');
+      expect(find.text('не прийнято вчасно'), findsOneWidget,
+          reason: "the held rows are TODAY's and keep today's treatment — "
+              'rendering them with the new day would restyle them mid-switch');
+      expect(find.text('не позначено'), findsNothing,
+          reason: "today's doses are not missed; that chip would mean the "
+              "held rows were graded against the day they do not belong to");
+      expect(tester.takeException(), isNull);
+
+      await pumpUntil(
+        tester,
+        () => find.text('не позначено').evaluate().isNotEmpty,
+        'the far-past day to resolve to its own rows',
+      );
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a tap during the hold window cannot write to the day the '
+        'user just left (WR-01)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg());
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Магній').evaluate().isNotEmpty,
+        'the dose row on today',
+      );
+
+      var raw = <IntakeLog>[];
+      final rawSub = rawLogsFor(pinnedToday).listen((v) => raw = v);
+      await pumpUntil(tester, () => raw.length == 1, "today's row");
+
+      container.read(selectedDayProvider.notifier).select(farPast);
+      await tester.pump();
+
+      // A real finger landing on the held row in the hold window. `tapAt`
+      // rather than `tap`: the held frame is deliberately not hit-testable.
+      await tester.tapAt(tester.getCenter(find.text('Магній')));
+      await pumpUntil(
+        tester,
+        () => find.text('не позначено').evaluate().isNotEmpty,
+        'the far-past day to resolve to its own rows',
+      );
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      expect(raw.single.status, DoseStatus.pending,
+          reason: "the tap landed while the header, ring and strip all showed "
+              'another day — it must not mark a dose on the day left behind');
+      expect(tester.takeException(), isNull);
+
+      // ignore: unawaited_futures
+      rawSub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
     testWidgets('uk: a day with no active cycle renders the empty title with '
         'the no-cycle body, no block header and NO ring — and still closes '
         'with the disclaimer (DECIDED-7)', (tester) async {
