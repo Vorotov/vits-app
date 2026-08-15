@@ -180,4 +180,94 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get deleteConfirmBody =>
       'Розклад і майбутні дози буде видалено. Історію прийому збережемо.';
+
+  @override
+  String get catalogAshwagandhaName => 'Ашваганда KSM-66';
+
+  @override
+  String get catalogAshwagandhaDose => '300 мг · капсули';
+
+  @override
+  String get catalogCreatineName => 'Креатин моногідрат';
+
+  @override
+  String get catalogCreatineDose => '5 г · порошок';
+
+  @override
+  String get catalogMelatoninName => 'Мелатонін 3 мг';
+
+  @override
+  String get catalogMelatoninDose => '3 мг · таблетки';
+
+  @override
+  String get catalogNmnName => 'NMN 250 мг';
+
+  @override
+  String get catalogNmnDose => '250 мг · капсули';
+
+  @override
+  String get catalogB12Name => 'Вітамін B12 метилкобаламін';
+
+  @override
+  String get catalogB12Dose => '1000 мкг · таблетки';
+
+  @override
+  String get catalogQ10Name => 'Коензим Q10 убіквінол';
+
+  @override
+  String get catalogQ10Dose => '100 мг · капсули';
+
+  @override
+  String get catalogIodineName => 'Йод 150 мкг';
+
+  @override
+  String get catalogIodineDose => '150 мкг · таблетки';
+
+  @override
+  String get catalogIronName => 'Залізо бісглицинат';
+
+  @override
+  String get catalogIronDose => '25 мг · капсули';
+
+  @override
+  String get catalogHypericumName => 'Зверобій';
+
+  @override
+  String get catalogHypericumDose => 'екстракт 300 мг · капсули';
+
+  @override
+  String get catalogMagnesiumName => 'Магній бісглицинат';
+
+  @override
+  String get catalogMagnesiumDose => '400 мг · капсули';
+
+  @override
+  String get catalogChondroName => 'Хондропротектор';
+
+  @override
+  String get catalogChondroDose => 'глюкозамін 500 + хондроїтин 400';
+
+  @override
+  String get catalogD3Name => 'Вітамін D3';
+
+  @override
+  String get catalogD3Dose => '2000 МО · краплі';
+
+  @override
+  String get catalogOmega3Name => 'Омега-3';
+
+  @override
+  String get catalogOmega3Dose => 'EPA 500 / DHA 250';
+
+  @override
+  String get catalogZincName => 'Цинк піколінат';
+
+  @override
+  String get catalogZincDose => '15 мг · таблетки';
+
+  @override
+  String get catalogCurcuminName => 'Куркумін';
+
+  @override
+  String get catalogCurcuminDose => '500 мг + піперин';
 }

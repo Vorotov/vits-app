@@ -349,6 +349,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Its schedule and future doses will be removed. Your intake history is kept.'**
   String get deleteConfirmBody;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Ashwagandha KSM-66'**
+  String get catalogAshwagandhaName;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'300 mg · capsules'**
+  String get catalogAshwagandhaDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Creatine monohydrate'**
+  String get catalogCreatineName;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'5 g · powder'**
+  String get catalogCreatineDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Melatonin 3 mg'**
+  String get catalogMelatoninName;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'3 mg · tablets'**
+  String get catalogMelatoninDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'NMN 250 mg'**
+  String get catalogNmnName;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'250 mg · capsules'**
+  String get catalogNmnDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Vitamin B12 methylcobalamin'**
+  String get catalogB12Name;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'1000 mcg · tablets'**
+  String get catalogB12Dose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Coenzyme Q10 ubiquinol'**
+  String get catalogQ10Name;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'100 mg · capsules'**
+  String get catalogQ10Dose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Iodine 150 mcg'**
+  String get catalogIodineName;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'150 mcg · tablets'**
+  String get catalogIodineDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Iron bisglycinate'**
+  String get catalogIronName;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'25 mg · capsules'**
+  String get catalogIronDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1; uk keeps the mockup's Зверобій spelling per A4)
+  ///
+  /// In en, this message translates to:
+  /// **'St. John\'s wort'**
+  String get catalogHypericumName;
+
+  /// Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'extract 300 mg · capsules'**
+  String get catalogHypericumDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Magnesium bisglycinate'**
+  String get catalogMagnesiumName;
+
+  /// Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'400 mg · capsules'**
+  String get catalogMagnesiumDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Chondroprotector'**
+  String get catalogChondroName;
+
+  /// Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'glucosamine 500 + chondroitin 400'**
+  String get catalogChondroDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Vitamin D3'**
+  String get catalogD3Name;
+
+  /// Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'2000 IU · drops'**
+  String get catalogD3Dose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Omega-3'**
+  String get catalogOmega3Name;
+
+  /// Catalog entry dose text (verbatim from the uk BASE_STACK dose — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'EPA 500 / DHA 250'**
+  String get catalogOmega3Dose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Zinc picolinate'**
+  String get catalogZincName;
+
+  /// Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'15 mg · tablets'**
+  String get catalogZincDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Curcumin'**
+  String get catalogCurcuminName;
+
+  /// Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'500 mg + piperine'**
+  String get catalogCurcuminDose;
 }
 
 class _AppLocalizationsDelegate

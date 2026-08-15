@@ -226,5 +226,125 @@
   "deleteConfirmBody": "Its schedule and future doses will be removed. Your intake history is kept.",
   "@deleteConfirmBody": {
     "description": "Delete confirmation dialog body stating that intake history is kept"
+  },
+  "catalogAshwagandhaName": "Ashwagandha KSM-66",
+  "@catalogAshwagandhaName": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"
+  },
+  "catalogAshwagandhaDose": "300 mg · capsules",
+  "@catalogAshwagandhaDose": {
+    "description": "Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)"
+  },
+  "catalogCreatineName": "Creatine monohydrate",
+  "@catalogCreatineName": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"
+  },
+  "catalogCreatineDose": "5 g · powder",
+  "@catalogCreatineDose": {
+    "description": "Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)"
+  },
+  "catalogMelatoninName": "Melatonin 3 mg",
+  "@catalogMelatoninName": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"
+  },
+  "catalogMelatoninDose": "3 mg · tablets",
+  "@catalogMelatoninDose": {
+    "description": "Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)"
+  },
+  "catalogNmnName": "NMN 250 mg",
+  "@catalogNmnName": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"
+  },
+  "catalogNmnDose": "250 mg · capsules",
+  "@catalogNmnDose": {
+    "description": "Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)"
+  },
+  "catalogB12Name": "Vitamin B12 methylcobalamin",
+  "@catalogB12Name": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"
+  },
+  "catalogB12Dose": "1000 mcg · tablets",
+  "@catalogB12Dose": {
+    "description": "Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)"
+  },
+  "catalogQ10Name": "Coenzyme Q10 ubiquinol",
+  "@catalogQ10Name": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"
+  },
+  "catalogQ10Dose": "100 mg · capsules",
+  "@catalogQ10Dose": {
+    "description": "Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)"
+  },
+  "catalogIodineName": "Iodine 150 mcg",
+  "@catalogIodineName": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"
+  },
+  "catalogIodineDose": "150 mcg · tablets",
+  "@catalogIodineDose": {
+    "description": "Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)"
+  },
+  "catalogIronName": "Iron bisglycinate",
+  "@catalogIronName": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"
+  },
+  "catalogIronDose": "25 mg · capsules",
+  "@catalogIronDose": {
+    "description": "Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)"
+  },
+  "catalogHypericumName": "St. John's wort",
+  "@catalogHypericumName": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1; uk keeps the mockup's Зверобій spelling per A4)"
+  },
+  "catalogHypericumDose": "extract 300 mg · capsules",
+  "@catalogHypericumDose": {
+    "description": "Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)"
+  },
+  "catalogMagnesiumName": "Magnesium bisglycinate",
+  "@catalogMagnesiumName": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"
+  },
+  "catalogMagnesiumDose": "400 mg · capsules",
+  "@catalogMagnesiumDose": {
+    "description": "Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)"
+  },
+  "catalogChondroName": "Chondroprotector",
+  "@catalogChondroName": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"
+  },
+  "catalogChondroDose": "glucosamine 500 + chondroitin 400",
+  "@catalogChondroDose": {
+    "description": "Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)"
+  },
+  "catalogD3Name": "Vitamin D3",
+  "@catalogD3Name": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"
+  },
+  "catalogD3Dose": "2000 IU · drops",
+  "@catalogD3Dose": {
+    "description": "Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)"
+  },
+  "catalogOmega3Name": "Omega-3",
+  "@catalogOmega3Name": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"
+  },
+  "catalogOmega3Dose": "EPA 500 / DHA 250",
+  "@catalogOmega3Dose": {
+    "description": "Catalog entry dose text (verbatim from the uk BASE_STACK dose — review at UAT, A1)"
+  },
+  "catalogZincName": "Zinc picolinate",
+  "@catalogZincName": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"
+  },
+  "catalogZincDose": "15 mg · tablets",
+  "@catalogZincDose": {
+    "description": "Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)"
+  },
+  "catalogCurcuminName": "Curcumin",
+  "@catalogCurcuminName": {
+    "description": "Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)"
+  },
+  "catalogCurcuminDose": "500 mg + piperine",
+  "@catalogCurcuminDose": {
+    "description": "Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)"
   }
 }
