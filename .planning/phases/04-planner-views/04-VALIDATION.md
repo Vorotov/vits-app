@@ -1,8 +1,8 @@
 ---
 phase: 4
 slug: planner-views
-status: draft
-nyquist_compliant: false
+status: ready
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-08-16
 ---
@@ -36,11 +36,24 @@ created: 2026-08-16
 
 ## Per-Task Verification Map
 
-*(Filled by gsd-planner. Per 04-RESEARCH.md ## Validation Architecture: the planner is a pure projection of `isActiveOn` — its view-model gets unit tests over pinned windows including leap years and year boundaries; the zero-write invariant gets a row-count regression test (`test/providers_planner_test.dart`) proving no IntakeLog rows are created by opening either planner screen; rendering gets widget tests including text-scale coverage per the CR-01/WR-04 lessons; PLAN-04 disclaimer presence gets a per-screen assertion.)*
+Filled from the 5 committed plans (14 tasks). Per 04-RESEARCH.md ## Validation Architecture: the planner is a pure projection of `isActiveOn` — window/segment/load/year math gets unit tests over pinned windows (leap year, year boundary, paused, soft-deleted); the zero-write invariant is gated at four layers (import grep, provider row-count, selection-tap row-count, full-render row-count); rendering gets widget tests including a text-scale matrix; PLAN-04 is gated by an ARB forbidden-vocabulary test plus per-segment disclaimer finders.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| — | — | — | PLAN-01..04 | — | N/A (offline, read-only projections, zero writes) | unit/widget | `flutter test` | ✅ infra exists | ⬜ pending |
+| 04-01/T1 | 04-01 | 1 | PLAN-01 | T-04-01 | tracer path performs zero writes (row-count gate on first commit) | widget (tracer e2e) | `flutter test test/features/planner_screen_test.dart` | ⬜ created by task | ⬜ pending |
+| 04-01/T2 | 04-01 | 1 | PLAN-01 | — | pure view-model: no clock, no strings, no persistence | unit (pure fn) | `flutter test test/features/planner_view_model_test.dart` | ⬜ created by task | ⬜ pending |
+| 04-01/T3 | 04-01 | 1 | PLAN-01 | T-04-01 | leap-year/year-boundary math; paused + soft-deleted excluded; provider row-count zero | unit + provider | `flutter test test/features/planner_view_model_test.dart test/providers_planner_test.dart` | ⬜ created by task | ⬜ pending |
+| 04-02/T1 | 04-02 | 2 | PLAN-01, PLAN-04 | T-04-02 | forbidden-vocabulary absent from both locales | unit (ARB + plurals) | `flutter gen-l10n && flutter test test/l10n/plurals_test.dart test/l10n/planner_copy_test.dart` | ⬜ created by task | ⬜ pending |
+| 04-02/T2 | 04-02 | 2 | PLAN-04 | T-04-02 | disclaimer renders on BOTH segments unconditionally | widget | `flutter test test/features/planner_screen_test.dart` | ✅ extend 04-01 file | ⬜ pending |
+| 04-02/T3 | 04-02 | 2 | PLAN-01 | — | — | widget | `flutter test test/features/planner_screen_test.dart` | ✅ extend | ⬜ pending |
+| 04-03/T1 | 04-03 | 3 | PLAN-01 | — | — | widget | `flutter test test/features/planner_screen_test.dart` | ✅ extend | ⬜ pending |
+| 04-03/T2 | 04-03 | 3 | PLAN-02 | T-04-01 | week selection writes nothing (row-count across a tap); accessible action on the Semantics node | widget | `flutter test test/features/planner_screen_test.dart` | ✅ extend | ⬜ pending |
+| 04-03/T3 | 04-03 | 3 | PLAN-02 | — | — | widget | `flutter test test/features/planner_screen_test.dart` | ✅ extend | ⬜ pending |
+| 04-04/T1 | 04-04 | 4 | PLAN-03 | — | year grid extent scales with text size and supplement count | widget | `flutter test test/features/planner_screen_test.dart` | ✅ extend | ⬜ pending |
+| 04-04/T2 | 04-04 | 4 | PLAN-03, PLAN-04 | T-04-02 | footnote renders ABOVE the disclaimer (rendered position asserted) | widget | `flutter test test/features/planner_screen_test.dart` | ✅ extend | ⬜ pending |
+| 04-04/T3 | 04-04 | 4 | PLAN-03 | T-04-01 | full render pass creates zero IntakeLog rows; live mutation respects soft delete | widget + row-count | `flutter test test/features/planner_screen_test.dart` | ✅ extend | ⬜ pending |
+| 04-05/T1 | 04-05 | 5 | PLAN-01..03 | — | no layout exception at 1.0/1.6/2.0 x uk/en; actions reachable via semantics activation | widget (scale matrix) | `flutter test test/features/planner_screen_test.dart` | ✅ extend | ⬜ pending |
+| 04-05/T2 | 04-05 | 5 | PLAN-04 | T-04-01, T-04-02 | read-only + editorial invariants as executable gates | unit (invariants) | `flutter test test/features/planner_invariants_test.dart` | ⬜ created by task | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 

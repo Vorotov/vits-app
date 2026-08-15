@@ -810,7 +810,9 @@ No blocking gaps and no new external dependency. Nothing in this phase requires 
 | A11 | Per-column `HitTestBehavior.opaque` over the full 46px chart height is an adequate touch target for 18 weeks | PF-8 | If it tests badly, widen the chart's vertical padding or reduce the bucket count; the model is unaffected |
 | A12 | ~10k `isActiveOn` calls per recompute is imperceptible (sub-millisecond AOT, low single-digit ms in debug) | Summary | If profiling disagrees, cache runs per regimen across both views — a pure-function memo, no architecture change |
 
-## Open Questions
+## Open Questions (RESOLVED — all four settled in the approved 04-UI-SPEC.md)
+
+> Q1 → RESOLVED: DECIDED-1 (in-tab page swap from a Today-header text action). Q2 → RESOLVED: DECIDED-2 (single comfort-3 dashed line; the 5-limit is expressed structurally by the bar cap plus textually by the badge/legend). Q3 → RESOLVED: DECIDED-5 (no cap on year-grid card height). Q4 → RESOLVED: DECIDED-6 (>=/> asymmetry transcribed verbatim, rationale recorded so it is not 'fixed' later).
 
 1. **How does the user reach the planner?** (P-3, A1)
    - What we know: the mockup renders both planner screens with **Календар** selected in the nav bar and titles them Планувальник; screen 02 has no segmented control and no visible link.
