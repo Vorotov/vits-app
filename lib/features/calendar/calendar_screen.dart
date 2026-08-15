@@ -5,9 +5,9 @@
 ///   `backToToday` escape hatch, and [DayProgressRing] on the end side. It
 ///   lives OUTSIDE the scroll view, so it never scrolls away.
 /// - week strip (plan 03-05): inserted at the gap marked below.
-/// - scroll body: the day's doses — flat rows here, replaced by mockup-exact
-///   grouped time blocks, chips and the action sheet in plan 03-04 — closed by
-///   the two-sentence disclaimer line (plan 03-03, mockup line 264).
+/// - scroll body: the day's doses as chronological time blocks
+///   ([DayBlockSection], plan 03-04), closed by the two-sentence disclaimer
+///   line (plan 03-03, mockup line 264).
 /// - empty / error surfaces (`emptyDayTitle`, `dayLoadError` + retry) arrive in
 ///   plan 03-05; today the body simply renders nothing for those branches.
 ///
@@ -17,7 +17,8 @@
 ///
 /// The clock is never read in this file: the day arrives through
 /// [resolvedDayProvider], which follows the app's single clock source
-/// `todayProvider` (03-01, IN-06), rather than a per-build `DateTime.now()`.
+/// `todayProvider` (03-01, IN-06), and the minute of day arrives through
+/// `nowMinutesProvider` — never through a per-build wall-clock read.
 /// Weekday and month names come from intl `DateFormat` with the ACTIVE locale
 /// — never from ARB and never from a hand-built table.
 library;
@@ -26,14 +27,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
+import 'package:boostque/features/calendar/day_block_section.dart';
 import 'package:boostque/features/calendar/day_progress_ring.dart';
 import 'package:boostque/features/calendar/day_view_model.dart';
 
@@ -61,7 +61,7 @@ class CalendarScreen extends ConsumerWidget {
             // scale). Plan 03-05 inserts `WeekStrip` directly below this gap;
             // deliberately no placeholder widget stands in for it.
             const SizedBox(height: BqSpace.md),
-            Expanded(child: _DayBody(doses: doses)),
+            Expanded(child: _DayBody(doses: doses, day: day)),
           ],
         ),
       ),
@@ -170,14 +170,39 @@ String _capitalizeFirst(String value) {
   return first.toUpperCase() + value.substring(first.length);
 }
 
-/// Scrolling day body, closed by the disclaimer.
-class _DayBody extends StatelessWidget {
-  const _DayBody({required this.doses});
+/// Scrolling day body: the day's non-empty time blocks, closed by the
+/// disclaimer.
+class _DayBody extends ConsumerStatefulWidget {
+  const _DayBody({required this.doses, required this.day});
 
   final AsyncValue<List<DayDose>> doses;
 
+  /// The resolved day these doses belong to.
+  final DateTime day;
+
+  @override
+  ConsumerState<_DayBody> createState() => _DayBodyState();
+}
+
+class _DayBodyState extends ConsumerState<_DayBody> {
+  /// Last minute-of-day the ticker delivered.
+  ///
+  /// The body renders from this cache rather than blocking on the provider's
+  /// first frame: `nowMinutes` decides only the accent header and the overdue
+  /// treatment, and holding the previous minute for one frame is strictly
+  /// better than withholding the whole day list waiting for a clock read.
+  int _nowMinutes = 0;
+
   @override
   Widget build(BuildContext context) {
+    // Riverpod 3: pattern-match the AsyncValue; there is no `valueOrNull`.
+    final tick = switch (ref.watch(nowMinutesProvider)) {
+      AsyncData(:final value) => value,
+      _ => null,
+    };
+    if (tick != null) _nowMinutes = tick;
+    final viewingToday = widget.day == ref.watch(todayProvider);
+
     return ListView(
       // Bottom >= 84px clears the nav bar (Phase-2 rule, locked); 18px top and
       // 20px horizontal are the mockup-exact body padding (line 225).
@@ -188,14 +213,28 @@ class _DayBody extends StatelessWidget {
         bottom: 84,
       ),
       children: [
-        ...doses.when(
-          data: (list) => <Widget>[
-            for (final (i, dose) in list.indexed) ...[
-              // 7px between rows (UI-SPEC S4).
-              if (i > 0) const SizedBox(height: 7),
-              _DoseRow(dose: dose),
-            ],
-          ],
+        ...widget.doses.when(
+          data: (list) {
+            // Grouping, ordering and empty-block omission are the pure
+            // helpers' job (DECIDED-1) — this widget only renders the result.
+            final blocks = groupIntoBlocks(list);
+            final current = currentBlockIndex(
+              blocks,
+              viewingToday: viewingToday,
+              nowMinutes: _nowMinutes,
+            );
+            return <Widget>[
+              for (final block in blocks)
+                DayBlockSection(
+                  block: block,
+                  dayDoses: list,
+                  day: widget.day,
+                  viewingToday: viewingToday,
+                  nowMinutes: _nowMinutes,
+                  isCurrentBlock: block.blockIndex == current,
+                ),
+            ];
+          },
           // Loading: empty list area, NO spinner — the local-DB stream
           // resolves within a frame and a spinner would flash.
           loading: () => const <Widget>[],
@@ -230,95 +269,6 @@ class _Disclaimer extends StatelessWidget {
           fontWeight: FontWeight.w400,
           height: 1.5,
           color: BqColors.textFaint,
-        ),
-      ),
-    );
-  }
-}
-
-/// One materialized dose: tap toggles `pending <-> taken`.
-///
-/// The mockup-exact row anatomy (`BqRadii.doseRow`, chips, strike-through,
-/// skipped/missed/overdue states) arrives in plan 03-04; this slice carries
-/// the tap contract and token-only placeholder decoration.
-class _DoseRow extends ConsumerStatefulWidget {
-  const _DoseRow({required this.dose});
-
-  final DayDose dose;
-
-  @override
-  ConsumerState<_DoseRow> createState() => _DoseRowState();
-}
-
-class _DoseRowState extends ConsumerState<_DoseRow> {
-  /// In-flight guard (PF-4 / the CR-01 lesson): while this row's `setStatus`
-  /// write is pending it swallows further gestures, so a rapid double tap ends
-  /// deterministically at `taken` instead of oscillating back to `pending`.
-  bool _busy = false;
-
-  Future<void> _toggle() async {
-    if (_busy) return;
-    // `next` is computed from the CURRENTLY rendered status, never from a
-    // value captured earlier (PF-4).
-    final next = widget.dose.status == DoseStatus.taken
-        ? DoseStatus.pending
-        : DoseStatus.taken;
-    setState(() => _busy = true);
-    try {
-      await ref.read(intakeRepoProvider).setStatus(widget.dose.logId, next);
-    } finally {
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final taken = widget.dose.status == DoseStatus.taken;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: _toggle,
-      child: Container(
-        // 13/14 row padding (UI-SPEC S4 row anatomy).
-        padding: const EdgeInsetsDirectional.fromSTEB(14, 13, 14, 13),
-        decoration: BoxDecoration(
-          color: BqColors.surface,
-          border: Border.all(color: BqColors.cardBorder),
-          borderRadius: BorderRadius.circular(BqRadii.doseRow),
-        ),
-        child: Row(
-          children: [
-            // 24px check circle; filled `calm` once taken (UI-SPEC S4).
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: taken ? BqColors.calm : BqColors.surface,
-                border: Border.all(
-                  color: taken ? BqColors.calm : BqColors.checkBorder,
-                  width: 1.8,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                widget.dose.supplement.name,
-                style: const TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w500,
-                  color: BqColors.ink,
-                ),
-              ),
-            ),
-            if (widget.dose.slot.doseLabel.isNotEmpty) ...[
-              const SizedBox(width: 7),
-              Text(
-                widget.dose.slot.doseLabel,
-                style: BqText.mono(size: 11.5, color: BqColors.textFaint),
-              ),
-            ],
-          ],
         ),
       ),
     );

@@ -23,14 +23,18 @@
 /// `TodayController` is a pending timer that would otherwise fail the test.
 library;
 
+import 'dart:async';
+
 import 'package:boostque/core/db/database.dart' show BoostqueDb, IntakeLog;
 import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
+import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/calendar_screen.dart';
+import 'package:boostque/features/calendar/day_block_section.dart';
 import 'package:boostque/features/calendar/day_progress_ring.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
@@ -59,8 +63,11 @@ void main() {
   ///
   /// [today] pins the app's single clock so every intl assertion below is
   /// deterministic on any machine, on any day (the header's date strings are
-  /// clock-derived — UI-SPEC S4).
-  ProviderContainer makeContainer({DateTime? today}) {
+  /// clock-derived — UI-SPEC S4). [nowMinutes] pins the OTHER sanctioned clock
+  /// read — the minute ticker — so current-block and overdue assertions do not
+  /// depend on what time the suite happens to run at; it also replaces the
+  /// periodic timer with a single-value stream.
+  ProviderContainer makeContainer({DateTime? today, int? nowMinutes}) {
     return ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
@@ -70,6 +77,8 @@ void main() {
           return database;
         }),
         if (today != null) todayProvider.overrideWith(() => _FixedToday(today)),
+        if (nowMinutes != null)
+          nowMinutesProvider.overrideWith((ref) => Stream.value(nowMinutes)),
       ],
     );
   }
@@ -110,7 +119,8 @@ void main() {
   }
 
   /// Pumps frames until [condition] holds (Drift emissions arrive
-  /// asynchronously — never `pumpAndSettle`, the midnight timer never settles).
+  /// asynchronously — never settle the tree: the midnight timer and the minute
+  /// ticker are both permanently pending).
   Future<void> pumpUntil(
     WidgetTester tester,
     bool Function() condition,
@@ -527,6 +537,358 @@ void main() {
       );
       expect(tester.takeException(), isNull);
 
+      await tearDownTree(tester, container);
+    });
+  });
+
+  // --- Time blocks (plan 03-04, Task 1; UI-SPEC S4 "Scroll body",
+  // DECIDED-1 / DECIDED-6, M5) ---
+  //
+  // Both clocks are pinned in every test here: `today` fixes the date and
+  // `nowMinutes` fixes the minute ticker, so "current block", "past block" and
+  // the warn progress tag are deterministic rather than a function of when the
+  // suite runs. The ticker means the tree NEVER settles — `pump(Duration)`
+  // loops only, `tearDownTree` in every body.
+  group('blocks', () {
+    final pinnedToday = DateTime.utc(2026, 8, 13);
+    final pastDay = DateTime.utc(2026, 8, 11);
+
+    Supplement supp(String id, String name) => Supplement(
+          id: id,
+          name: name,
+          doseText: '',
+          colorValue: 0xFF6B6FA8,
+          note: '',
+        );
+
+    Regimen reg(
+      String id,
+      String supplementId,
+      List<DoseSlot> slots, {
+      bool paused = false,
+    }) =>
+        Regimen(
+          id: id,
+          supplementId: supplementId,
+          kind: RegimenKind.cyclic,
+          startDate: DateTime.utc(2020, 1, 1),
+          endDate: null,
+          onDays: 1,
+          offDays: 0,
+          paused: paused,
+          slots: slots,
+        );
+
+    testWidgets('uk: only non-empty blocks render, in chronological order '
+        '(DECIDED-1)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(supplementRepoProvider).upsert(supp('s2', 'Цинк'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+          ]));
+      await container.read(regimenRepoProvider).upsert(reg('r2', 's2', const [
+            DoseSlot(id: 'sl2', minutesFromMidnight: 1140, doseLabel: ''),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Ранок').evaluate().isNotEmpty,
+        'the morning block header',
+      );
+
+      expect(find.byType(DayBlockSection), findsNWidgets(2),
+          reason: 'a day with morning and evening doses renders exactly two '
+              'blocks — the two empty ones are omitted entirely');
+      expect(find.text('Вечір'), findsOneWidget);
+      expect(find.text('День'), findsNothing,
+          reason: 'an empty block renders nothing at all — no header, no '
+              'placeholder row');
+      expect(find.text('Ніч'), findsNothing);
+      expect(
+        tester.getTopLeft(find.text('Ранок')).dy <
+            tester.getTopLeft(find.text('Вечір')).dy,
+        isTrue,
+        reason: 'blocks render in block order, morning first',
+      );
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: the block header shows the EARLIEST REAL slot time, not '
+        'the mockup anchor (M5)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 570, doseLabel: ''),
+            DoseSlot(id: 'sl2', minutesFromMidnight: 660, doseLabel: ''),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Ранок').evaluate().isNotEmpty,
+        'the morning block header',
+      );
+
+      expect(find.text('09:30'), findsOneWidget,
+          reason: 'the header time is the earliest slot actually in the block');
+      expect(find.text('08:00'), findsNothing,
+          reason: "printing the mockup's 08:00 anchor above a 09:30 block "
+              'would be false information (M5)');
+      expect(find.text('11:00'), findsNothing,
+          reason: 'only the earliest slot time heads the block');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: on today ONLY the current block header time is accented',
+        (tester) async {
+      usePhoneSurface(tester);
+      // 10:00: the 09:30 morning block has fully passed, the 19:00 evening
+      // block has not — so evening is the current block.
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(supplementRepoProvider).upsert(supp('s2', 'Цинк'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 570, doseLabel: ''),
+          ]));
+      await container.read(regimenRepoProvider).upsert(reg('r2', 's2', const [
+            DoseSlot(id: 'sl2', minutesFromMidnight: 1140, doseLabel: ''),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('19:00').evaluate().isNotEmpty,
+        'both block headers',
+      );
+
+      expect(tester.widget<Text>(find.text('19:00')).style?.color,
+          BqColors.accent,
+          reason: 'the current block leads the day in the accent color (P-5)');
+      expect(tester.widget<Text>(find.text('09:30')).style?.color, BqColors.ink,
+          reason: 'a past block keeps the neutral ink time');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: on a NON-today day no header time is accented',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 1140, doseLabel: ''),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('19:00').evaluate().isNotEmpty,
+        "today's evening block",
+      );
+      expect(tester.widget<Text>(find.text('19:00')).style?.color,
+          BqColors.accent);
+
+      container.read(selectedDayProvider.notifier).select(pastDay);
+      await pumpUntil(
+        tester,
+        () => find.text('11 серпня').evaluate().isNotEmpty,
+        'the browsed past day',
+      );
+      // The past day re-materializes through its own stream; let it land
+      // before reading the header color back.
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      expect(find.text('19:00'), findsOneWidget,
+          reason: 'the past day carries the same 19:00 block');
+      expect(tester.widget<Text>(find.text('19:00')).style?.color, BqColors.ink,
+          reason: 'the accent header time is a today-only treatment');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a fully-taken block shows the calm all-taken tag',
+        (tester) async {
+      usePhoneSurface(tester);
+      // 06:40 — the 08:00 block has NOT passed, so the untouched block shows
+      // its plain meal tag rather than the progress tag.
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      final row = find.text('Магній');
+      await pumpUntil(tester, () => row.evaluate().isNotEmpty, 'the dose row');
+
+      expect(find.text('зі сніданком'), findsOneWidget,
+          reason: 'an unhandled, not-yet-due block shows its neutral meal tag');
+
+      await tester.tap(row);
+      await pumpUntil(
+        tester,
+        () => find.text('усе прийнято').evaluate().isNotEmpty,
+        'the all-taken block tag',
+      );
+
+      expect(tester.widget<Text>(find.text('усе прийнято')).style?.color,
+          BqColors.calm,
+          reason: 'all-taken is the calm treatment (DECIDED-6)');
+      expect(find.text('зі сніданком'), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a block where every dose is marked and one is skipped '
+        'shows the NEUTRAL all-marked tag (DECIDED-6)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: 'перша'),
+            DoseSlot(id: 'sl2', minutesFromMidnight: 540, doseLabel: 'друга'),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('перша').evaluate().isNotEmpty,
+        'both dose rows',
+      );
+
+      var raw = <IntakeLog>[];
+      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      await pumpUntil(tester, () => raw.length == 2, 'both materialized logs');
+
+      final intake = container.read(intakeRepoProvider);
+      unawaited(intake.setStatus(
+          raw.firstWhere((r) => r.slotId == 'sl1').id, DoseStatus.taken));
+      unawaited(intake.setStatus(
+          raw.firstWhere((r) => r.slotId == 'sl2').id, DoseStatus.skipped));
+      await pumpUntil(
+        tester,
+        () => find.text('усе відмічено').evaluate().isNotEmpty,
+        'the all-marked block tag',
+      );
+
+      expect(tester.widget<Text>(find.text('усе відмічено')).style?.color,
+          BqColors.textSecondary,
+          reason: 'a block holding a skip must not claim everything was taken '
+              'and must not be warn-framed');
+      expect(find.text('усе прийнято'), findsNothing);
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      rawSub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets("uk: a PAST block of today with a pending dose shows the warn "
+        '{done} з {total} tag', (tester) async {
+      usePhoneSurface(tester);
+      // 20:00 — the whole morning block has passed.
+      final container = makeContainer(today: pinnedToday, nowMinutes: 1200);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: 'перша'),
+            DoseSlot(id: 'sl2', minutesFromMidnight: 540, doseLabel: 'друга'),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('перша').evaluate().isNotEmpty,
+        'both dose rows',
+      );
+
+      expect(find.text('0 з 2'), findsOneWidget,
+          reason: 'a past block of today with pending doses reports progress');
+
+      await tester.tap(find.text('Магній').first);
+      await pumpUntil(
+        tester,
+        () => find.text('1 з 2').evaluate().isNotEmpty,
+        'the progress tag to follow the write',
+      );
+
+      expect(tester.widget<Text>(find.text('1 з 2')).style?.color,
+          BqColors.warn,
+          reason: 'the progress tag is the warn treatment — today only '
+              '(DECIDED-5)');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a paused regimen contributes NO pending row and no '
+        'placeholder, while its taken row still renders (PF-9)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: 'перша'),
+            DoseSlot(id: 'sl2', minutesFromMidnight: 540, doseLabel: 'друга'),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('друга').evaluate().isNotEmpty,
+        'both dose rows',
+      );
+
+      var raw = <IntakeLog>[];
+      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      await pumpUntil(tester, () => raw.length == 2, 'both materialized logs');
+
+      unawaited(container.read(intakeRepoProvider).setStatus(
+          raw.firstWhere((r) => r.slotId == 'sl1').id, DoseStatus.taken));
+      await pumpUntil(
+        tester,
+        () => raw.any((r) => r.status == DoseStatus.taken),
+        'the first dose to be taken',
+      );
+
+      unawaited(container.read(regimenRepoProvider).upsert(reg(
+            'r1',
+            's1',
+            const [
+              DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: 'перша'),
+              DoseSlot(id: 'sl2', minutesFromMidnight: 540, doseLabel: 'друга'),
+            ],
+            paused: true,
+          )));
+      await pumpUntil(
+        tester,
+        () => find.text('друга').evaluate().isEmpty,
+        "the paused regimen's pending row to disappear",
+      );
+
+      expect(find.text('перша'), findsOneWidget,
+          reason: 'already-taken history stays visible while paused');
+      expect(find.text('Ранок'), findsOneWidget,
+          reason: 'the block itself still renders for the surviving row');
+      expect(raw.length, 2,
+          reason: 'the pending row is filtered by the QUERY — nothing is '
+              'deleted and no placeholder stands in for it');
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      rawSub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
       await tearDownTree(tester, container);
     });
   });
