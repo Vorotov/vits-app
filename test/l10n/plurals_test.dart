@@ -68,6 +68,53 @@ void main() {
       expect(l10n.blockProgress(1, 3), '1 з 3');
       expect(l10n.doseCycleChip(2, 3), 'доза 2 з 3');
     });
+
+    test('monthsCount covers all four CLDR forms incl. 11-14 exception', () {
+      expect(l10n.monthsCount(1), '1 місяць'); // one
+      expect(l10n.monthsCount(2), '2 місяці'); // few
+      expect(l10n.monthsCount(5), '5 місяців'); // many
+      expect(l10n.monthsCount(11), '11 місяців'); // many (11-14 exception)
+      expect(l10n.monthsCount(21), '21 місяць'); // one (i%10=1)
+    });
+
+    test('cyclesCount covers all four CLDR forms incl. 11-14 exception', () {
+      expect(l10n.cyclesCount(1), '1 цикл'); // one
+      expect(l10n.cyclesCount(2), '2 цикли'); // few
+      expect(l10n.cyclesCount(5), '5 циклів'); // many
+      expect(l10n.cyclesCount(11), '11 циклів'); // many (11-14 exception)
+      expect(l10n.cyclesCount(21), '21 цикл'); // one (i%10=1)
+    });
+
+    test('periodsCount covers all four CLDR forms incl. 11-14 exception', () {
+      expect(l10n.periodsCount(1), '1 період'); // one
+      expect(l10n.periodsCount(2), '2 періоди'); // few
+      expect(l10n.periodsCount(5), '5 періодів'); // many
+      expect(l10n.periodsCount(11), '11 періодів'); // many (11-14 exception)
+      expect(l10n.periodsCount(21), '21 період'); // one (i%10=1)
+    });
+
+    test('planner sentence keys take PRE-FORMATTED counts, never a nested '
+        'plural block', () {
+      // The composition convention: the count is declined once, by its own
+      // plural key, then passed in as a finished string.
+      expect(
+        l10n.plannerThisWeek(l10n.substancesCount(5)),
+        'Цього тижня одночасно 5 речовин',
+      );
+      expect(
+        l10n.weekNoteOverLimit(l10n.cyclesCount(2)),
+        'Цього тижня перетинаються 2 цикли. Варто зсунути старт частини з '
+        'них або обговорити такий обсяг із лікарем.',
+      );
+      expect(
+        l10n.plannerYearSubtitle('2026', l10n.monthsCount(12)),
+        '2026 · 12 місяців',
+      );
+      expect(
+        l10n.monthMeta(l10n.substancesCount(1), 5),
+        '1 речовина · межа 5',
+      );
+    });
   });
 
   group('en plurals', () {
@@ -107,6 +154,24 @@ void main() {
     test('blockProgress and doseCycleChip interpolate bare numerals', () {
       expect(l10n.blockProgress(1, 3), '1 of 3');
       expect(l10n.doseCycleChip(2, 3), 'dose 2 of 3');
+    });
+
+    test('monthsCount uses one/other', () {
+      expect(l10n.monthsCount(1), '1 month');
+      expect(l10n.monthsCount(2), '2 months');
+      expect(l10n.monthsCount(21), '21 months');
+    });
+
+    test('cyclesCount uses one/other', () {
+      expect(l10n.cyclesCount(1), '1 cycle');
+      expect(l10n.cyclesCount(2), '2 cycles');
+      expect(l10n.cyclesCount(21), '21 cycles');
+    });
+
+    test('periodsCount uses one/other', () {
+      expect(l10n.periodsCount(1), '1 period');
+      expect(l10n.periodsCount(2), '2 periods');
+      expect(l10n.periodsCount(21), '21 periods');
     });
   });
 }

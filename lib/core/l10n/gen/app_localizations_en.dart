@@ -437,4 +437,196 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plannerTitle => 'Planner';
+
+  @override
+  String get plannerSegYear => 'Year';
+
+  @override
+  String get plannerSegCycles => 'Cycles';
+
+  @override
+  String plannerRangeSubtitle(String start, String end, String year) {
+    return '$start — $end $year';
+  }
+
+  @override
+  String plannerRangeSubtitleCrossYear(
+    String start,
+    String startYear,
+    String end,
+    String endYear,
+  ) {
+    return '$start $startYear — $end $endYear';
+  }
+
+  @override
+  String plannerYearSubtitle(String year, String months) {
+    return '$year · $months';
+  }
+
+  @override
+  String monthsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count months',
+      one: '$count month',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String cyclesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count cycles',
+      one: '$count cycle',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String periodsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count periods',
+      one: '$count period',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String plannerThisWeek(String count) {
+    return '$count at the same time this week';
+  }
+
+  @override
+  String limitBadge(int max) {
+    return 'limit $max';
+  }
+
+  @override
+  String get legendTaking => 'taking';
+
+  @override
+  String get legendPlanned => 'planned';
+
+  @override
+  String get legendPaused => 'paused';
+
+  @override
+  String get loadChartTitle => 'CONCURRENT LOAD';
+
+  @override
+  String get loadChartMeta => 'by week';
+
+  @override
+  String loadAxisLegend(int max, int comfort) {
+    return 'limit $max · comfort $comfort';
+  }
+
+  @override
+  String weekLoadLabel(int load, int max) {
+    return '$load of $max slots';
+  }
+
+  @override
+  String weekFreeSlots(int n) {
+    return '$n free — you can plan a start';
+  }
+
+  @override
+  String get weekNoFreeSlots => 'No free slots';
+
+  @override
+  String get verdictComfort => 'COMFORTABLE';
+
+  @override
+  String get verdictLimit => 'AT THE LIMIT';
+
+  @override
+  String get verdictOverLimit => 'OVER THE LIMIT';
+
+  @override
+  String get weekNoteComfort =>
+      'Up to three substances at once is easy to track: if something goes wrong, it is clear what to remove.';
+
+  @override
+  String get weekNoteLimit =>
+      'Five is our default limit. Above it, it becomes hard to tell what is producing an effect and what is a side sensation.';
+
+  @override
+  String weekNoteOverLimit(String cycles) {
+    return '$cycles overlap this week. Consider moving the start of some of them, or discussing this volume with your doctor.';
+  }
+
+  @override
+  String peakMonth(String month) {
+    return 'Densest month — $month';
+  }
+
+  @override
+  String peakMonthsTie(String month) {
+    return 'Densest months, including $month';
+  }
+
+  @override
+  String get yearLegendHint => 'lighter = planned';
+
+  @override
+  String monthMeta(String count, int max) {
+    return '$count · limit $max';
+  }
+
+  @override
+  String get monthStateTaking => 'taking';
+
+  @override
+  String get monthStatePlanned => 'planned';
+
+  @override
+  String get monthStatePartial => 'part of the month';
+
+  @override
+  String get monthEmpty => 'No cycle is active this month.';
+
+  @override
+  String get emptyPlannerTitle => 'Nothing to plan yet';
+
+  @override
+  String get emptyPlannerBody =>
+      'Add a supplement on the Stack tab — its cycles will appear here.';
+
+  @override
+  String get emptyPlannerBodyNoRegimen =>
+      'Your supplements don\'t have a schedule yet. Open one on the Stack tab to set a cycle.';
+
+  @override
+  String get plannerLoadError => 'Couldn\'t load the planner. Try again.';
+
+  @override
+  String get plannerDisclaimer =>
+      'The 5-substance limit is our editorial rule for easier tracking, not a medical standard. Educational material, not medical advice.';
+
+  @override
+  String yearFootnote(int max) {
+    return 'The year view shows how cycles overlap. A red number on a month means it exceeds our limit of $max substances at once.';
+  }
+
+  @override
+  String ganttRowSemantics(String name, String schedule, String periods) {
+    return '$name, $schedule, $periods';
+  }
+
+  @override
+  String weekBarSemantics(String range, String load) {
+    return '$range, $load';
+  }
+
+  @override
+  String monthCardSemantics(String month, String count) {
+    return '$month, $count';
+  }
 }

@@ -447,4 +447,203 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get plannerTitle => 'Планувальник';
+
+  @override
+  String get plannerSegYear => 'Рік';
+
+  @override
+  String get plannerSegCycles => 'Цикли';
+
+  @override
+  String plannerRangeSubtitle(String start, String end, String year) {
+    return '$start — $end $year';
+  }
+
+  @override
+  String plannerRangeSubtitleCrossYear(
+    String start,
+    String startYear,
+    String end,
+    String endYear,
+  ) {
+    return '$start $startYear — $end $endYear';
+  }
+
+  @override
+  String plannerYearSubtitle(String year, String months) {
+    return '$year · $months';
+  }
+
+  @override
+  String monthsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count місяці',
+      many: '$count місяців',
+      few: '$count місяці',
+      one: '$count місяць',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String cyclesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count цикли',
+      many: '$count циклів',
+      few: '$count цикли',
+      one: '$count цикл',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String periodsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count періоди',
+      many: '$count періодів',
+      few: '$count періоди',
+      one: '$count період',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String plannerThisWeek(String count) {
+    return 'Цього тижня одночасно $count';
+  }
+
+  @override
+  String limitBadge(int max) {
+    return 'межа $max';
+  }
+
+  @override
+  String get legendTaking => 'приймаю';
+
+  @override
+  String get legendPlanned => 'заплановано';
+
+  @override
+  String get legendPaused => 'пауза';
+
+  @override
+  String get loadChartTitle => 'ОДНОЧАСНЕ НАВАНТАЖЕННЯ';
+
+  @override
+  String get loadChartMeta => 'по тижнях';
+
+  @override
+  String loadAxisLegend(int max, int comfort) {
+    return 'межа $max · комфорт $comfort';
+  }
+
+  @override
+  String weekLoadLabel(int load, int max) {
+    return '$load з $max слотів';
+  }
+
+  @override
+  String weekFreeSlots(int n) {
+    return 'Вільно $n — можна планувати старт';
+  }
+
+  @override
+  String get weekNoFreeSlots => 'Вільних слотів немає';
+
+  @override
+  String get verdictComfort => 'КОМФОРТНО';
+
+  @override
+  String get verdictLimit => 'МЕЖА';
+
+  @override
+  String get verdictOverLimit => 'ПОНАД МЕЖУ';
+
+  @override
+  String get weekNoteComfort =>
+      'До трьох речовин одночасно легко відстежувати: якщо щось піде не так, зрозуміло, що саме прибрати.';
+
+  @override
+  String get weekNoteLimit =>
+      'П\'ять — наша межа за замовчуванням. Вище стає важко відрізнити, що дає ефект, а що — побічні відчуття.';
+
+  @override
+  String weekNoteOverLimit(String cycles) {
+    return 'Цього тижня перетинаються $cycles. Варто зсунути старт частини з них або обговорити такий обсяг із лікарем.';
+  }
+
+  @override
+  String peakMonth(String month) {
+    return 'Найщільніший місяць — $month';
+  }
+
+  @override
+  String peakMonthsTie(String month) {
+    return 'Найщільніші місяці, зокрема $month';
+  }
+
+  @override
+  String get yearLegendHint => 'світліше = заплановано';
+
+  @override
+  String monthMeta(String count, int max) {
+    return '$count · межа $max';
+  }
+
+  @override
+  String get monthStateTaking => 'приймаю';
+
+  @override
+  String get monthStatePlanned => 'заплановано';
+
+  @override
+  String get monthStatePartial => 'частина місяця';
+
+  @override
+  String get monthEmpty => 'Цього місяця жоден цикл не активний.';
+
+  @override
+  String get emptyPlannerTitle => 'Планувати ще нічого';
+
+  @override
+  String get emptyPlannerBody =>
+      'Додайте добавку у вкладці «Стек» — її цикли з\'являться тут.';
+
+  @override
+  String get emptyPlannerBodyNoRegimen =>
+      'У ваших добавок ще немає розкладу. Відкрийте добавку у вкладці «Стек», щоб задати цикл.';
+
+  @override
+  String get plannerLoadError =>
+      'Не вдалося завантажити планувальник. Спробуйте ще раз.';
+
+  @override
+  String get plannerDisclaimer =>
+      'Межа в 5 речовин — наше редакційне правило для зручності відстеження, а не медичний норматив. Освітній матеріал, не медична порада.';
+
+  @override
+  String yearFootnote(int max) {
+    return 'Рік показує, як цикли накладаються один на одний. Червоне число в місяці означає перевищення нашої межі у $max речовин одночасно.';
+  }
+
+  @override
+  String ganttRowSemantics(String name, String schedule, String periods) {
+    return '$name, $schedule, $periods';
+  }
+
+  @override
+  String weekBarSemantics(String range, String load) {
+    return '$range, $load';
+  }
+
+  @override
+  String monthCardSemantics(String month, String count) {
+    return '$month, $count';
+  }
 }

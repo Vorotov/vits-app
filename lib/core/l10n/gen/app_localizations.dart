@@ -805,6 +805,263 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Planner'**
   String get plannerTitle;
+
+  /// First segment label of the planner's BqSegmented control (mockup line 290); the zoom-out view
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get plannerSegYear;
+
+  /// Second segment label of the planner's BqSegmented control (mockup line 291) and the DEFAULT segment — its ~4-month window contains today and answers PLAN-01
+  ///
+  /// In en, this message translates to:
+  /// **'Cycles'**
+  String get plannerSegCycles;
+
+  /// Цикли header subtitle naming the window (mockup line 288). `start`/`end` are intl LLLL standalone month names for the ACTIVE locale — never ARB, never MMMM (which yields the uk genitive case, PF-4)
+  ///
+  /// In en, this message translates to:
+  /// **'{start} — {end} {year}'**
+  String plannerRangeSubtitle(String start, String end, String year);
+
+  /// Цикли header subtitle when the window crosses 31 December (E-8): each month carries its own year. Same LLLL standalone month rule as plannerRangeSubtitle
+  ///
+  /// In en, this message translates to:
+  /// **'{start} {startYear} — {end} {endYear}'**
+  String plannerRangeSubtitleCrossYear(
+    String start,
+    String startYear,
+    String end,
+    String endYear,
+  );
+
+  /// Рік header subtitle (mockup line 402); `months` is a pre-formatted monthsCount string, never a raw number
+  ///
+  /// In en, this message translates to:
+  /// **'{year} · {months}'**
+  String plannerYearSubtitle(String year, String months);
+
+  /// Count of months, pre-formatted into plannerYearSubtitle. uk carries all four CLDR forms
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} month} other{{count} months}}'**
+  String monthsCount(int count);
+
+  /// Count of cycles overlapping a week (mockup line 658), pre-formatted into weekNoteOverLimit. uk carries all four CLDR forms
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} cycle} other{{count} cycles}}'**
+  String cyclesCount(int count);
+
+  /// Count of painted runs on a gantt row — accessibility only, pre-formatted into ganttRowSemantics because the painted bands are invisible to assistive tech. uk carries all four CLDR forms
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} period} other{{count} periods}}'**
+  String periodsCount(int count);
+
+  /// Цикли summary chip label (mockup line 920); `count` is a pre-formatted substancesCount string — the existing key, reused, never duplicated
+  ///
+  /// In en, this message translates to:
+  /// **'{count} at the same time this week'**
+  String plannerThisWeek(String count);
+
+  /// Mono badge inside the Цикли summary chip (mockup line 297) naming the editorial 5-substance rule — a limit of ours, never a safety threshold
+  ///
+  /// In en, this message translates to:
+  /// **'limit {max}'**
+  String limitBadge(int max);
+
+  /// Gantt legend entry for a solid accent segment (mockup line 326)
+  ///
+  /// In en, this message translates to:
+  /// **'taking'**
+  String get legendTaking;
+
+  /// Gantt legend entry for a hatched segment (mockup line 327). The legend has EXACTLY THREE entries: the mockup's fourth, `є взаємодія`, does not ship (M1) — it is an interaction claim on the never-ship exclusion list. Do not add a fourth key here
+  ///
+  /// In en, this message translates to:
+  /// **'planned'**
+  String get legendPlanned;
+
+  /// Gantt legend entry for a bare track (mockup line 329) — the swatch is the same chip colour as the track, which is how the design says a paused row is an empty track
+  ///
+  /// In en, this message translates to:
+  /// **'paused'**
+  String get legendPaused;
+
+  /// Mono eyebrow above the weekly load chart (mockup line 335)
+  ///
+  /// In en, this message translates to:
+  /// **'CONCURRENT LOAD'**
+  String get loadChartTitle;
+
+  /// Mono meta beside loadChartTitle (mockup line 336)
+  ///
+  /// In en, this message translates to:
+  /// **'by week'**
+  String get loadChartMeta;
+
+  /// Centre label of the load chart's axis row (mockup line 348); both numbers are editorial rules of this product
+  ///
+  /// In en, this message translates to:
+  /// **'limit {max} · comfort {comfort}'**
+  String loadAxisLegend(int max, int comfort);
+
+  /// Week-detail meta (mockup line 913), also pre-formatted into weekBarSemantics
+  ///
+  /// In en, this message translates to:
+  /// **'{load} of {max} slots'**
+  String weekLoadLabel(int load, int max);
+
+  /// Week-detail hint when the week is below the editorial limit (mockup line 921)
+  ///
+  /// In en, this message translates to:
+  /// **'{n} free — you can plan a start'**
+  String weekFreeSlots(int n);
+
+  /// Week-detail hint when the week is at or above the editorial limit (mockup line 921)
+  ///
+  /// In en, this message translates to:
+  /// **'No free slots'**
+  String get weekNoFreeSlots;
+
+  /// Week verdict chip at load <= 3 (mockup line 778)
+  ///
+  /// In en, this message translates to:
+  /// **'COMFORTABLE'**
+  String get verdictComfort;
+
+  /// Week verdict chip at load <= 5 (mockup line 781) — at OUR limit, not a warning
+  ///
+  /// In en, this message translates to:
+  /// **'AT THE LIMIT'**
+  String get verdictLimit;
+
+  /// Week verdict chip at load > 5 (mockup line 784) — above OUR editorial limit, never 'unsafe'
+  ///
+  /// In en, this message translates to:
+  /// **'OVER THE LIMIT'**
+  String get verdictOverLimit;
+
+  /// Verdict note under the comfort band (mockup line 779, uk verbatim)
+  ///
+  /// In en, this message translates to:
+  /// **'Up to three substances at once is easy to track: if something goes wrong, it is clear what to remove.'**
+  String get weekNoteComfort;
+
+  /// Verdict note at the limit (mockup line 782, uk verbatim) — 'our default limit', explicitly this product's rule
+  ///
+  /// In en, this message translates to:
+  /// **'Five is our default limit. Above it, it becomes hard to tell what is producing an effect and what is a side sensation.'**
+  String get weekNoteLimit;
+
+  /// Verdict note above the limit (mockup line 785), shipped TRUNCATED. The mockup's trailing clause about the cumulative load of fat-soluble forms is deliberately absent: it is a pharmacological claim inside the never-ship interaction-advice exclusion (PF-5, DECIDED-8). If the truncation ever reads oddly, rewrite the final sentence — the clause is NEVER restored. `cycles` is a pre-formatted cyclesCount string
+  ///
+  /// In en, this message translates to:
+  /// **'{cycles} overlap this week. Consider moving the start of some of them, or discussing this volume with your doctor.'**
+  String weekNoteOverLimit(String cycles);
+
+  /// Рік peak chip when one month leads (mockup line 967); `month` is an intl LLLL standalone (nominative) form
+  ///
+  /// In en, this message translates to:
+  /// **'Densest month — {month}'**
+  String peakMonth(String month);
+
+  /// Рік peak chip when several months tie (mockup line 967); `month` is an intl LLLL standalone (nominative) form
+  ///
+  /// In en, this message translates to:
+  /// **'Densest months, including {month}'**
+  String peakMonthsTie(String month);
+
+  /// Closing entry of the Рік legend explaining the two-tone swatch (mockup line 436)
+  ///
+  /// In en, this message translates to:
+  /// **'lighter = planned'**
+  String get yearLegendHint;
+
+  /// Month-detail header meta (mockup line 972); `count` is a pre-formatted substancesCount string
+  ///
+  /// In en, this message translates to:
+  /// **'{count} · limit {max}'**
+  String monthMeta(String count, int max);
+
+  /// Month-detail row state when the whole month is covered and already running (mockup line 850)
+  ///
+  /// In en, this message translates to:
+  /// **'taking'**
+  String get monthStateTaking;
+
+  /// Month-detail row state when the month's coverage is entirely in the future (mockup line 850)
+  ///
+  /// In en, this message translates to:
+  /// **'planned'**
+  String get monthStatePlanned;
+
+  /// Month-detail row state when coverage is partial (mockup line 850)
+  ///
+  /// In en, this message translates to:
+  /// **'part of the month'**
+  String get monthStatePartial;
+
+  /// Month-detail body when no supplement covers the month (invented — the mockup never renders a zero-coverage month). A correct, expected state, never an error
+  ///
+  /// In en, this message translates to:
+  /// **'No cycle is active this month.'**
+  String get monthEmpty;
+
+  /// Planner empty-state heading, rendered on BOTH segments (invented — the mockup has no empty state)
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing to plan yet'**
+  String get emptyPlannerTitle;
+
+  /// Planner empty-state body when the stack is empty; names the Stack tab rather than linking to it — the nav bar is the affordance
+  ///
+  /// In en, this message translates to:
+  /// **'Add a supplement on the Stack tab — its cycles will appear here.'**
+  String get emptyPlannerBody;
+
+  /// Planner empty-state body when supplements exist but none has a regimen (DECIDED-7) — a user who owns supplements is never told to go add one
+  ///
+  /// In en, this message translates to:
+  /// **'Your supplements don\'t have a schedule yet. Open one on the Stack tab to set a cycle.'**
+  String get emptyPlannerBodyNoRegimen;
+
+  /// AsyncValue.error copy for the planner's stack stream, paired with the existing `retry` key; raw exception text and stack traces never enter the widget tree
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the planner. Try again.'**
+  String get plannerLoadError;
+
+  /// PLAN-04 closure (mockup line 374, uk verbatim). Rendered as the LAST element of BOTH planner segments — Цикли and Рік — and on the empty and error surfaces too, because PLAN-04 is unconditional. It frames the 5-substance limit as THIS PRODUCT'S editorial rule and explicitly not a medical standard; that framing is the half of PLAN-04 that does the work, which is why the bare `disclaimerEducational` cannot stand in for it (DECIDED-8). On the Рік segment `yearFootnote` renders ABOVE this key, never instead of it (M9)
+  ///
+  /// In en, this message translates to:
+  /// **'The 5-substance limit is our editorial rule for easier tracking, not a medical standard. Educational material, not medical advice.'**
+  String get plannerDisclaimer;
+
+  /// Рік closing note (mockup line 454, uk verbatim), rendered directly above plannerDisclaimer with an 8px gap
+  ///
+  /// In en, this message translates to:
+  /// **'The year view shows how cycles overlap. A red number on a month means it exceeds our limit of {max} substances at once.'**
+  String yearFootnote(int max);
+
+  /// Accessibility label of a gantt row: the painted bands are invisible to assistive tech, so the run count is spoken. `schedule` is the shared schedule-summary composition (minus the daily-slot tail) and `periods` is a pre-formatted periodsCount string
+  ///
+  /// In en, this message translates to:
+  /// **'{name}, {schedule}, {periods}'**
+  String ganttRowSemantics(String name, String schedule, String periods);
+
+  /// Accessibility label of a load-chart week column; `range` is an intl-formatted bucket range and `load` a pre-formatted weekLoadLabel string
+  ///
+  /// In en, this message translates to:
+  /// **'{range}, {load}'**
+  String weekBarSemantics(String range, String load);
+
+  /// Accessibility label of a year-grid month card; `month` is an intl LLLL standalone form and `count` a pre-formatted substancesCount string
+  ///
+  /// In en, this message translates to:
+  /// **'{month}, {count}'**
+  String monthCardSemantics(String month, String count);
 }
 
 class _AppLocalizationsDelegate
