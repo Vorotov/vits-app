@@ -63,6 +63,58 @@ class DriftSupplementRepository implements SupplementRepository {
       SupplementsCompanion(deletedAt: Value(now), updatedAt: Value(now)),
     );
   }
+
+  /// Cascade soft delete (STACK-04, T-02-01): one transaction stamping the
+  /// supplement, its active regimens, their active slots, and every PENDING
+  /// IntakeLog dated [fromDay] or later. Taken/skipped rows and past pending
+  /// rows keep `deletedAt` null — history is never touched. Stamping logs is
+  /// safe here (unlike pause, PF-1) precisely because deletion is permanent.
+  @override
+  Future<void> softDeleteCascade(String supplementId,
+          {required DateTime fromDay}) =>
+      db.transaction(() async {
+        final now = DateTime.now().toUtc();
+        final day = dateOnly(fromDay);
+
+        await (db.update(db.supplements)
+              ..where((t) => t.id.equals(supplementId)))
+            .write(SupplementsCompanion(
+          deletedAt: Value(now),
+          updatedAt: Value(now),
+        ));
+
+        final regimenRows = await (db.select(db.regimens)
+              ..where((t) =>
+                  t.supplementId.equals(supplementId) & t.deletedAt.isNull()))
+            .get();
+        final regimenIds = [for (final r in regimenRows) r.id];
+
+        await (db.update(db.regimens)..where((t) => t.id.isIn(regimenIds)))
+            .write(RegimensCompanion(
+          deletedAt: Value(now),
+          updatedAt: Value(now),
+        ));
+
+        await (db.update(db.regimenSlots)
+              ..where((t) =>
+                  t.regimenId.isIn(regimenIds) & t.deletedAt.isNull()))
+            .write(RegimenSlotsCompanion(
+          deletedAt: Value(now),
+          updatedAt: Value(now),
+        ));
+
+        // IntakeLogs carries regimenId directly — no join needed.
+        await (db.update(db.intakeLogs)
+              ..where((t) =>
+                  t.regimenId.isIn(regimenIds) &
+                  t.date.isBiggerOrEqualValue(day) &
+                  t.status.equalsValue(domain.DoseStatus.pending) &
+                  t.deletedAt.isNull()))
+            .write(IntakeLogsCompanion(
+          deletedAt: Value(now),
+          updatedAt: Value(now),
+        ));
+      });
 }
 
 /// Drift implementation of [RegimenRepository].
@@ -270,9 +322,18 @@ class DriftIntakeRepository implements IntakeRepository {
         db.supplements.id.equalsExp(db.regimens.supplementId),
       ),
     ])
+      // Pause filter (REGI-04, PF-1): the ONE excluded combination is
+      // paused-and-pending — taken/skipped history stays visible while a
+      // regimen is paused, and resuming restores pending doses with zero
+      // writes. Soft-deleted log rows are excluded outright.
       ..where(db.intakeLogs.date.equals(utcDay) &
+          db.intakeLogs.deletedAt.isNull() &
           db.regimens.deletedAt.isNull() &
-          db.supplements.deletedAt.isNull())
+          db.supplements.deletedAt.isNull() &
+          (db.regimens.paused.equals(false) |
+              db.intakeLogs.status
+                  .equalsValue(domain.DoseStatus.pending)
+                  .not()))
       ..orderBy([
         OrderingTerm.asc(db.regimenSlots.minutesFromMidnight),
         OrderingTerm.asc(db.intakeLogs.id),

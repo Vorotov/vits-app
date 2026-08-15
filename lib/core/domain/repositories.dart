@@ -52,6 +52,15 @@ abstract class SupplementRepository {
 
   /// Soft delete: stamps `deletedAt`, never removes the row (DATA-02).
   Future<void> softDelete(String id);
+
+  /// Cascade soft delete: stamps `deletedAt` on the supplement, its active
+  /// regimens and their slots, and every PENDING IntakeLog dated [fromDay]
+  /// (UTC date-only) or later — one transaction, never removing a row
+  /// (DATA-02). Past days and taken/skipped rows are never touched.
+  /// [fromDay] is passed in by the caller as `dateOnly(DateTime.now())`
+  /// because domain code never reads the clock.
+  Future<void> softDeleteCascade(String supplementId,
+      {required DateTime fromDay});
 }
 
 /// Regimen persistence contract. Slots are included on every read.
