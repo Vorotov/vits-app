@@ -36,6 +36,7 @@ import 'package:boostque/features/calendar/planner_gantt.dart';
 import 'package:boostque/features/calendar/planner_load_chart.dart';
 import 'package:boostque/features/calendar/planner_providers.dart';
 import 'package:boostque/features/calendar/planner_view_model.dart';
+import 'package:boostque/features/calendar/planner_week_detail.dart';
 
 /// Screen horizontal padding — the same edge the Calendar screen runs down
 /// (mockup lines 286, 294).
@@ -218,6 +219,10 @@ class _CyclesBody extends ConsumerWidget {
           PlannerGantt(model: model),
           const SizedBox(height: _cyclesCardGap),
           PlannerLoadChart(model: model),
+          const SizedBox(height: _cyclesCardGap),
+          // Inline, directly under the chart it is read against — never a
+          // sheet, never a dialog (P-13).
+          PlannerWeekDetail(model: model),
         ],
       ),
     );

@@ -301,8 +301,14 @@ void main() {
     expect(find.byType(GanttRowBar), findsNWidgets(2),
         reason: 'two regimens: one active, one paused — the supplement with '
             'no regimen at all draws no row (DECIDED-7)');
-    expect(find.text('Магній бісглицинат'), findsOneWidget);
-    expect(find.text('Креатин моногідрат'), findsOneWidget,
+    // Scoped to the gantt: an active supplement's name also appears as a
+    // week-detail name chip further down the same scroll body.
+    Finder inGantt(String name) => find.descendant(
+          of: find.byType(PlannerGantt),
+          matching: find.text(name),
+        );
+    expect(inGantt('Магній бісглицинат'), findsOneWidget);
+    expect(inGantt('Креатин моногідрат'), findsOneWidget,
         reason: 'a paused regimen keeps its row and shows a bare track');
     expect(find.text('Вітамін D3'), findsNothing);
 
@@ -410,11 +416,23 @@ void main() {
     String locale = 'uk',
   }) async {
     await tester.pumpWidget(plannerApp(container, locale: locale));
+    // The Цикли body is now four cards deep, so anything below the chart
+    // lives outside the viewport until the body is scrolled.
     await pumpUntil(
       tester,
       () => find.byType(BqSegmented).evaluate().isNotEmpty,
       'the planner header',
     );
+  }
+
+  /// Drags the planner's scroll body up by [dy] logical pixels.
+  ///
+  /// A `ListView` only builds what its viewport (plus cache extent) covers, so
+  /// the closing disclaimer and the week-detail card have to be scrolled into
+  /// range before a finder can see them.
+  Future<void> scrollBody(WidgetTester tester, double dy) async {
+    await tester.drag(find.byType(ListView), Offset(0, -dy));
+    await tester.pump();
   }
 
   group('planner shell', () {
@@ -487,6 +505,8 @@ void main() {
         () => find.byType(GanttRowBar).evaluate().isNotEmpty,
         'the gantt rows',
       );
+      // Цикли is four cards deep now; its closing line sits below the fold.
+      await scrollBody(tester, 500);
 
       expect(disclaimer, findsOneWidget, reason: 'Цикли closes with it');
 
@@ -1191,6 +1211,14 @@ void main() {
     }) async {
       await seedBands(container);
       await openPlanner(tester, container, locale: locale);
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('load-week-').evaluate().isNotEmpty,
+        'the load chart columns',
+      );
+      // Brings the chart and the card below it into one screenful, which is
+      // the exact reading posture the inline detail exists for (P-13).
+      await scrollBody(tester, 300);
       await pumpUntil(
         tester,
         () => find.byKey(const ValueKey('week-detail-card'))
