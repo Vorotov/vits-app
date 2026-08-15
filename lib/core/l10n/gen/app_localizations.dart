@@ -146,6 +146,72 @@ abstract class AppLocalizations {
   /// **'My stack'**
   String get stackTitle;
 
+  /// Stack header summary under the heading — two ICU plural placeholders (total supplements · active count)
+  ///
+  /// In en, this message translates to:
+  /// **'{total, plural, one{{total} supplement} other{{total} supplements}} · {active, plural, one{{active} active} other{{active} active}}'**
+  String stackSummary(int total, int active);
+
+  /// Mono eyebrow label above the stack card list; omitted when the list is empty
+  ///
+  /// In en, this message translates to:
+  /// **'SUPPLEMENTS'**
+  String get supplementsLabel;
+
+  /// Status chip label for an active regimen
+  ///
+  /// In en, this message translates to:
+  /// **'ACTIVE'**
+  String get statusActive;
+
+  /// Status chip label for a paused regimen
+  ///
+  /// In en, this message translates to:
+  /// **'PAUSED'**
+  String get statusPaused;
+
+  /// Status chip label for a regimen starting in the future
+  ///
+  /// In en, this message translates to:
+  /// **'PLANNED'**
+  String get statusPlanned;
+
+  /// Status chip label for a supplement with no regimen yet (E-7)
+  ///
+  /// In en, this message translates to:
+  /// **'JUST ADDED'**
+  String get statusFresh;
+
+  /// Status chip label for a course whose end date is past (D10 — invented, confirm at UAT)
+  ///
+  /// In en, this message translates to:
+  /// **'FINISHED'**
+  String get statusFinished;
+
+  /// Empty-state heading on the Stack screen, below the still-visible CTA
+  ///
+  /// In en, this message translates to:
+  /// **'Your stack is empty'**
+  String get emptyStackTitle;
+
+  /// Empty-state body on the Stack screen
+  ///
+  /// In en, this message translates to:
+  /// **'Add your first supplement — from the catalog or manually.'**
+  String get emptyStackBody;
+
+  /// Stack list AsyncValue.error copy — raw exception text is never user-visible
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your stack. Try again.'**
+  String get stackLoadError;
+
+  /// Retry action on the stack load-error state
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
   /// Primary CTA on the Stack screen; also the add-supplement sheet title
   ///
   /// In en, this message translates to:
@@ -157,6 +223,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get close;
+
+  /// Add-supplement sheet segmented tab: catalog search
+  ///
+  /// In en, this message translates to:
+  /// **'Search catalog'**
+  String get searchTab;
+
+  /// Add-supplement sheet segmented tab: manual entry (replaces the mockup camera tab — D1)
+  ///
+  /// In en, this message translates to:
+  /// **'Add manually'**
+  String get manualTab;
+
+  /// Hint text of the catalog search input
+  ///
+  /// In en, this message translates to:
+  /// **'Name or active substance'**
+  String get searchCatalogHint;
+
+  /// Catalog search empty-result copy — rewritten with no label-scanning promise (D3/PF-5)
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing found in the catalog. Add this supplement manually.'**
+  String get noResultsCatalog;
 
   /// Label for the required supplement name field in the manual add form
   ///
@@ -349,6 +439,186 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Its schedule and future doses will be removed. Your intake history is kept.'**
   String get deleteConfirmBody;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Ashwagandha KSM-66'**
+  String get catalogAshwagandhaName;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'300 mg · capsules'**
+  String get catalogAshwagandhaDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Creatine monohydrate'**
+  String get catalogCreatineName;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'5 g · powder'**
+  String get catalogCreatineDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Melatonin 3 mg'**
+  String get catalogMelatoninName;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'3 mg · tablets'**
+  String get catalogMelatoninDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'NMN 250 mg'**
+  String get catalogNmnName;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'250 mg · capsules'**
+  String get catalogNmnDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Vitamin B12 methylcobalamin'**
+  String get catalogB12Name;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'1000 mcg · tablets'**
+  String get catalogB12Dose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Coenzyme Q10 ubiquinol'**
+  String get catalogQ10Name;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'100 mg · capsules'**
+  String get catalogQ10Dose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Iodine 150 mcg'**
+  String get catalogIodineName;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'150 mcg · tablets'**
+  String get catalogIodineDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Iron bisglycinate'**
+  String get catalogIronName;
+
+  /// Catalog entry dose text, neutral form/dose only (invented for the CATALOG 8 — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'25 mg · capsules'**
+  String get catalogIronDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1; uk keeps the mockup's Зверобій spelling per A4)
+  ///
+  /// In en, this message translates to:
+  /// **'St. John\'s wort'**
+  String get catalogHypericumName;
+
+  /// Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'extract 300 mg · capsules'**
+  String get catalogHypericumDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Magnesium bisglycinate'**
+  String get catalogMagnesiumName;
+
+  /// Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'400 mg · capsules'**
+  String get catalogMagnesiumDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Chondroprotector'**
+  String get catalogChondroName;
+
+  /// Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'glucosamine 500 + chondroitin 400'**
+  String get catalogChondroDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Vitamin D3'**
+  String get catalogD3Name;
+
+  /// Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'2000 IU · drops'**
+  String get catalogD3Dose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Omega-3'**
+  String get catalogOmega3Name;
+
+  /// Catalog entry dose text (verbatim from the uk BASE_STACK dose — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'EPA 500 / DHA 250'**
+  String get catalogOmega3Dose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Zinc picolinate'**
+  String get catalogZincName;
+
+  /// Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'15 mg · tablets'**
+  String get catalogZincDose;
+
+  /// Catalog entry name (en translation of the uk mockup copy — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'Curcumin'**
+  String get catalogCurcuminName;
+
+  /// Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)
+  ///
+  /// In en, this message translates to:
+  /// **'500 mg + piperine'**
+  String get catalogCurcuminDose;
 }
 
 class _AppLocalizationsDelegate

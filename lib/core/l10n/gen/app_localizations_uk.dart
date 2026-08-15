@@ -54,10 +54,74 @@ class AppLocalizationsUk extends AppLocalizations {
   String get stackTitle => 'Мій стек';
 
   @override
+  String stackSummary(int total, int active) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total добавки',
+      many: '$total добавок',
+      few: '$total добавки',
+      one: '$total добавка',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      active,
+      locale: localeName,
+      other: '$active активні',
+      many: '$active активних',
+      few: '$active активні',
+      one: '$active активна',
+    );
+    return '$_temp0 · $_temp1';
+  }
+
+  @override
+  String get supplementsLabel => 'ДОБАВКИ';
+
+  @override
+  String get statusActive => 'АКТИВНА';
+
+  @override
+  String get statusPaused => 'ПАУЗА';
+
+  @override
+  String get statusPlanned => 'ЗАПЛАНОВАНО';
+
+  @override
+  String get statusFresh => 'ЩОЙНО ДОДАНО';
+
+  @override
+  String get statusFinished => 'ЗАВЕРШЕНО';
+
+  @override
+  String get emptyStackTitle => 'Стек порожній';
+
+  @override
+  String get emptyStackBody => 'Додайте першу добавку — з каталогу або вручну.';
+
+  @override
+  String get stackLoadError => 'Не вдалося завантажити стек. Спробуйте ще раз.';
+
+  @override
+  String get retry => 'Повторити';
+
+  @override
   String get addSupplement => 'Додати добавку';
 
   @override
   String get close => 'Закрити';
+
+  @override
+  String get searchTab => 'Пошук у базі';
+
+  @override
+  String get manualTab => 'Вручну';
+
+  @override
+  String get searchCatalogHint => 'Назва або діюча речовина';
+
+  @override
+  String get noResultsCatalog =>
+      'Нічого не знайшли в каталозі. Додайте цю добавку вручну.';
 
   @override
   String get nameLabel => 'Назва';
@@ -180,4 +244,94 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get deleteConfirmBody =>
       'Розклад і майбутні дози буде видалено. Історію прийому збережемо.';
+
+  @override
+  String get catalogAshwagandhaName => 'Ашваганда KSM-66';
+
+  @override
+  String get catalogAshwagandhaDose => '300 мг · капсули';
+
+  @override
+  String get catalogCreatineName => 'Креатин моногідрат';
+
+  @override
+  String get catalogCreatineDose => '5 г · порошок';
+
+  @override
+  String get catalogMelatoninName => 'Мелатонін 3 мг';
+
+  @override
+  String get catalogMelatoninDose => '3 мг · таблетки';
+
+  @override
+  String get catalogNmnName => 'NMN 250 мг';
+
+  @override
+  String get catalogNmnDose => '250 мг · капсули';
+
+  @override
+  String get catalogB12Name => 'Вітамін B12 метилкобаламін';
+
+  @override
+  String get catalogB12Dose => '1000 мкг · таблетки';
+
+  @override
+  String get catalogQ10Name => 'Коензим Q10 убіквінол';
+
+  @override
+  String get catalogQ10Dose => '100 мг · капсули';
+
+  @override
+  String get catalogIodineName => 'Йод 150 мкг';
+
+  @override
+  String get catalogIodineDose => '150 мкг · таблетки';
+
+  @override
+  String get catalogIronName => 'Залізо бісглицинат';
+
+  @override
+  String get catalogIronDose => '25 мг · капсули';
+
+  @override
+  String get catalogHypericumName => 'Зверобій';
+
+  @override
+  String get catalogHypericumDose => 'екстракт 300 мг · капсули';
+
+  @override
+  String get catalogMagnesiumName => 'Магній бісглицинат';
+
+  @override
+  String get catalogMagnesiumDose => '400 мг · капсули';
+
+  @override
+  String get catalogChondroName => 'Хондропротектор';
+
+  @override
+  String get catalogChondroDose => 'глюкозамін 500 + хондроїтин 400';
+
+  @override
+  String get catalogD3Name => 'Вітамін D3';
+
+  @override
+  String get catalogD3Dose => '2000 МО · краплі';
+
+  @override
+  String get catalogOmega3Name => 'Омега-3';
+
+  @override
+  String get catalogOmega3Dose => 'EPA 500 / DHA 250';
+
+  @override
+  String get catalogZincName => 'Цинк піколінат';
+
+  @override
+  String get catalogZincDose => '15 мг · таблетки';
+
+  @override
+  String get catalogCurcuminName => 'Куркумін';
+
+  @override
+  String get catalogCurcuminDose => '500 мг + піперин';
 }

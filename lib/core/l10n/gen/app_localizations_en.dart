@@ -51,10 +51,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stackTitle => 'My stack';
 
   @override
+  String stackSummary(int total, int active) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total supplements',
+      one: '$total supplement',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      active,
+      locale: localeName,
+      other: '$active active',
+      one: '$active active',
+    );
+    return '$_temp0 · $_temp1';
+  }
+
+  @override
+  String get supplementsLabel => 'SUPPLEMENTS';
+
+  @override
+  String get statusActive => 'ACTIVE';
+
+  @override
+  String get statusPaused => 'PAUSED';
+
+  @override
+  String get statusPlanned => 'PLANNED';
+
+  @override
+  String get statusFresh => 'JUST ADDED';
+
+  @override
+  String get statusFinished => 'FINISHED';
+
+  @override
+  String get emptyStackTitle => 'Your stack is empty';
+
+  @override
+  String get emptyStackBody =>
+      'Add your first supplement — from the catalog or manually.';
+
+  @override
+  String get stackLoadError => 'Couldn\'t load your stack. Try again.';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
   String get addSupplement => 'Add supplement';
 
   @override
   String get close => 'Close';
+
+  @override
+  String get searchTab => 'Search catalog';
+
+  @override
+  String get manualTab => 'Add manually';
+
+  @override
+  String get searchCatalogHint => 'Name or active substance';
+
+  @override
+  String get noResultsCatalog =>
+      'Nothing found in the catalog. Add this supplement manually.';
 
   @override
   String get nameLabel => 'Name';
@@ -175,4 +236,94 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get deleteConfirmBody =>
       'Its schedule and future doses will be removed. Your intake history is kept.';
+
+  @override
+  String get catalogAshwagandhaName => 'Ashwagandha KSM-66';
+
+  @override
+  String get catalogAshwagandhaDose => '300 mg · capsules';
+
+  @override
+  String get catalogCreatineName => 'Creatine monohydrate';
+
+  @override
+  String get catalogCreatineDose => '5 g · powder';
+
+  @override
+  String get catalogMelatoninName => 'Melatonin 3 mg';
+
+  @override
+  String get catalogMelatoninDose => '3 mg · tablets';
+
+  @override
+  String get catalogNmnName => 'NMN 250 mg';
+
+  @override
+  String get catalogNmnDose => '250 mg · capsules';
+
+  @override
+  String get catalogB12Name => 'Vitamin B12 methylcobalamin';
+
+  @override
+  String get catalogB12Dose => '1000 mcg · tablets';
+
+  @override
+  String get catalogQ10Name => 'Coenzyme Q10 ubiquinol';
+
+  @override
+  String get catalogQ10Dose => '100 mg · capsules';
+
+  @override
+  String get catalogIodineName => 'Iodine 150 mcg';
+
+  @override
+  String get catalogIodineDose => '150 mcg · tablets';
+
+  @override
+  String get catalogIronName => 'Iron bisglycinate';
+
+  @override
+  String get catalogIronDose => '25 mg · capsules';
+
+  @override
+  String get catalogHypericumName => 'St. John\'s wort';
+
+  @override
+  String get catalogHypericumDose => 'extract 300 mg · capsules';
+
+  @override
+  String get catalogMagnesiumName => 'Magnesium bisglycinate';
+
+  @override
+  String get catalogMagnesiumDose => '400 mg · capsules';
+
+  @override
+  String get catalogChondroName => 'Chondroprotector';
+
+  @override
+  String get catalogChondroDose => 'glucosamine 500 + chondroitin 400';
+
+  @override
+  String get catalogD3Name => 'Vitamin D3';
+
+  @override
+  String get catalogD3Dose => '2000 IU · drops';
+
+  @override
+  String get catalogOmega3Name => 'Omega-3';
+
+  @override
+  String get catalogOmega3Dose => 'EPA 500 / DHA 250';
+
+  @override
+  String get catalogZincName => 'Zinc picolinate';
+
+  @override
+  String get catalogZincDose => '15 mg · tablets';
+
+  @override
+  String get catalogCurcuminName => 'Curcumin';
+
+  @override
+  String get catalogCurcuminDose => '500 mg + piperine';
 }
