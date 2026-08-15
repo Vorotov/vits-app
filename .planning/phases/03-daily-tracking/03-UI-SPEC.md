@@ -1,7 +1,8 @@
 ---
 phase: 3
 slug: daily-tracking
-status: draft
+status: approved
+reviewed_at: 2026-08-15
 shadcn_initialized: false
 preset: none
 created: 2026-08-15
@@ -149,7 +150,7 @@ All numerals, times, and dates render in JetBrains Mono with tabular figures (`B
 | Accent (10%) | `BqColors.accent` #4A4E7C | Reserved list below only |
 | Destructive | `BqColors.risk` #A8443C | **Not used in Phase 3** — this phase adds no destructive action. Every status write is reversible by the inverse gesture, so no confirm dialog and no risk-colored control exists on this screen |
 
-**Accent reserved for (exhaustive — 4 usages):**
+**Accent reserved for (exhaustive — 5 usages; #5 is the Phase-1 NavigationBar selection, inherited unchanged and listed for completeness):**
 
 1. Today's week-strip cell: fill + border (mockup lines 756-757). Day number renders `surface`, dow + dot render `onAccentMuted`.
 2. Selected-but-not-today week-strip cell: 1.5px `accent` border on a `surface` fill (invented — the mockup has no browsed state; see DECIDED-4).
@@ -251,7 +252,7 @@ Icon-free but glyph-bearing controls carry Semantics: the dose circle is not ind
 Boundaries are locked as a single const `blockStartsMinutes = [0, 720, 1080, 1320]`: Ранок 00:00-11:59, День 12:00-17:59, Вечір 18:00-21:59, Ніч 22:00-23:59. Rationale: every default the Phase-2 editor can produce lands in the intuitive block (08:00 and 10:30 → morning; 13:00 and 16:00 → day; 19:00 and the 21:00 fallback → evening; 22:00 and 22:30 → night), and a post-midnight dose (00:00-03:59) belongs to the day it is logged on, so folding it into "Ранок" keeps the block list in chronological order — a separate "після півночі" block would sort last while displaying first. Block header time = the **earliest real slot time in the block** (not the 08:00/13:00/19:00/22:00 mockup anchors): the anchors are Phase-2 editor defaults, and printing "08:00" above a 09:30-only block would be false information. Empty blocks are hidden.
 
 **DECIDED-2 — Skip gesture and undo affordance (A3, RESEARCH P-7 / Open Question 3).**
-- **Tap** on a dose row toggles `pending ↔ taken` — mockup-exact (`tog`, line 687) and literally one tap for the dominant action and for undoing it (TRACK-02).
+- **Tap** on a dose row applies the DECIDED-2 transition table (pending → taken, taken → pending, skipped → taken) — mockup-exact for the dominant case (`tog`, line 687) and literally one tap for the dominant action and for undoing it (TRACK-02). The transition table is the single source of truth; this line never overrides it.
 - **Long-press** opens the S5 dose action sheet with explicit, labeled `markTaken` / `markSkipped` / `undoMark` rows.
 - Rejected alternative: a bare long-press that silently toggles `pending ↔ skipped` (the research recommendation). Reasons: an invisible gesture with no label is undiscoverable, has no screen-reader equivalent, and gives "skipped" no visible undo path — while TRACK-02 requires undo of *the mark*, not just of "taken". Rejected alternative: a trailing per-row skip control — it adds chrome to a row the mockup deliberately keeps to circle+text+chips.
 - Accessibility parity: the row exposes `markTaken` / `markSkipped` / `undoMark` as Semantics custom actions, so no function is reachable only by long-press.
@@ -315,7 +316,7 @@ The ring renders for whichever day is resolved, using that day's counts (`taken`
 
 ## UI Considerations
 
-Probe run 2026-08-15 over elements E1 (day dose list — `list-collection`), E2 (dose row — `interactive-control`), E3 (week strip — `nav`), E4 (progress ring — `media`), E5 (day header — `static-content`), E6 (dose action sheet — `interactive-control`). 31 applicable category probes raised; all resolved — 19 explicit truths, 3 backstops, 0 unresolved.
+Probe run 2026-08-15 over elements E1 (day dose list — `list-collection`), E2 (dose row — `interactive-control`), E3 (week strip — `nav`), E4 (progress ring — `media`), E5 (day header — `static-content`), E6 (dose action sheet — `interactive-control`). Probe engine re-run 2026-08-15 (ui-consideration-probe.cjs) over the same six surfaces raised 34 applicable category probes; the coverage matrix below resolves every one — 19 explicit truths, 3 backstops, 0 unresolved. (The engine classified the header surface as `unclassified`, a manual-review nudge only: truth #17 covers it, and the matrix row shows why each category is either covered or genuinely not applicable.)
 
 **Resolved — explicit truths (planner lifts each into `must_haves.truths`):**
 
@@ -400,11 +401,11 @@ Not applicable — Flutter project; no shadcn or npm component registry is invol
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
 **Approval:** pending
