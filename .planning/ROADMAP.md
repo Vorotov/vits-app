@@ -85,7 +85,16 @@ Plans:
   4. Doses appear only on days a regimen's cycle is actually active, verified correct across DST transitions and year boundaries
   5. The full plan-see-mark-taken loop — add a supplement, configure a cycle, see it on Today, check it off — builds and runs correctly on an iOS simulator/device and an Android emulator/device (targetSdk 36)
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+
+- [ ] 03-01-PLAN.md — Tracer: midnight-safe todayProvider + dayDosesProvider materialization choke point + tap-to-mark end-to-end, IN-06 closed (wave 1)
+- [ ] 03-02-PLAN.md — Pure day view-model (blocks, dose positions, missed/overdue, tags, ring counts) + DST/year-boundary chain proof (wave 1)
+- [ ] 03-03-PLAN.md — Token additions, full Phase-3 ARB set, DayProgressRing, fixed locale-formatted header (wave 2)
+- [ ] 03-04-PLAN.md — Time-block sections, five-state dose rows, guarded mark/undo, dose action sheet (wave 3)
+- [ ] 03-05-PLAN.md — Week strip + past-day browsing, missed-stays-pending, empty/error states, DATA-03 both-platform run (wave 4)
+
 **UI hint**: yes
 
 ### Phase 4: Planner Views
