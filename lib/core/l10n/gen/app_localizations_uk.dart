@@ -337,4 +337,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get catalogCurcuminDose => '500 мг + піперин';
+
+  @override
+  String get calendarTitleToday => 'Сьогодні';
 }

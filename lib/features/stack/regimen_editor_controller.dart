@@ -20,9 +20,10 @@
 ///   [RegimenEditorController.canAddSlot]/[RegimenEditorController.canRemoveSlot];
 ///   slots re-sort by time after every add/edit.
 /// - Date discipline (PF-2): every stored date goes through [dateOnly];
-///   course `endDate` is clamped to `>= startDate` (V-1/E-6). Reading the
-///   clock for the default start date is fine here (feature layer, not
-///   domain).
+///   course `endDate` is clamped to `>= startDate` (V-1/E-6). The default
+///   start date and the cascade-delete boundary read the day from
+///   `todayProvider`, the app's single calendar clock (plan 03-01, IN-06) —
+///   never `DateTime.now()` per call.
 /// - `togglePause()` flips the draft only — persistence happens on `save()`,
 ///   matching the mockup's "Зберегти, цикл на паузі" CTA (the footer save
 ///   button carries the pause state to disk).
@@ -37,6 +38,7 @@ import 'package:uuid/uuid.dart';
 import 'package:boostque/core/domain/cycle_math.dart';
 import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/providers.dart';
+import 'package:boostque/core/today_controller.dart';
 
 /// Sentinel for [RegimenDraft.copyWith] nullable parameters.
 const Object _unset = Object();
@@ -186,12 +188,13 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
   }
 
   /// Documented defaults for a fresh supplement (A6: 1 slot at 08:00;
-  /// mockup seed 56/28 cyclic). Reading the clock here is fine — feature
-  /// layer, not domain — and the value is normalized through [dateOnly].
+  /// mockup seed 56/28 cyclic). The day comes from `todayProvider` — the
+  /// app's single calendar clock (plan 03-01, IN-06) — already normalized as
+  /// a UTC date-only value; domain code never reads the clock.
   RegimenDraft _defaults() => RegimenDraft(
         regimenId: null,
         kind: RegimenKind.cyclic,
-        startDate: dateOnly(DateTime.now()),
+        startDate: ref.read(todayProvider),
         endDate: null,
         onDays: 56,
         offDays: 28,
@@ -406,7 +409,7 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
   Future<void> deleteSupplement() =>
       ref.read(supplementRepoProvider).softDeleteCascade(
             supplementId,
-            fromDay: dateOnly(DateTime.now()),
+            fromDay: ref.read(todayProvider),
           );
 }
 

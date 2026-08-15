@@ -24,6 +24,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  // The draft's default start date now comes from `todayProvider` (plan
+  // 03-01, IN-06), whose controller constructs an AppLifecycleListener — that
+  // requires a live WidgetsBinding even in a widget-free unit test.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late ProviderContainer container;
 
   setUp(() {

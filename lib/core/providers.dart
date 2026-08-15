@@ -25,6 +25,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'db/database.dart' show BoostqueDb;
 import 'db/drift_repositories.dart';
+import 'domain/cycle_math.dart' show dateOnly;
 import 'domain/models.dart';
 import 'domain/repositories.dart';
 
@@ -66,6 +67,34 @@ final supplementsStreamProvider = StreamProvider<List<Supplement>>(
 final regimensStreamProvider = StreamProvider<List<Regimen>>(
   (ref) => ref.watch(regimenRepoProvider).watchAll(),
 );
+
+/// Materialized doses for one calendar day — the app's materialization choke
+/// point and the ONLY production caller of `ensureLogsForDay` / consumer of
+/// `watchDay` (PF-3).
+///
+/// autoDispose (the exception D-23 permits for screen-scoped state): every
+/// browsed day opens a Drift subscription, and keeping them alive would leak
+/// one per day the user ever looks at.
+///
+/// [day] MUST be a `dateOnly()` UTC value — it is the family cache key, so a
+/// non-normalized key silently forks the cache into a phantom day (PF-1); the
+/// assert is the backstop, all keys originate from `resolvedDayProvider`.
+final dayDosesProvider = StreamProvider.autoDispose
+    .family<List<DayDose>, DateTime>((ref, day) async* {
+  assert(
+    day == dateOnly(day),
+    'dayDosesProvider key must be a dateOnly() UTC value (PF-1), got: $day',
+  );
+  // Watching the regimens stream re-runs this build on any regimen
+  // add/edit/pause/resume/delete, so the day re-materializes with no
+  // imperative refresh call anywhere in the app.
+  ref.watch(regimensStreamProvider);
+  final intake = ref.watch(intakeRepoProvider);
+  // Idempotent insert-or-ignore: re-running never duplicates a row and never
+  // resets an existing status, so calling it on every rebuild is free.
+  await intake.ensureLogsForDay(day);
+  yield* intake.watchDay(day);
+});
 
 /// Supplements paired with their regimens — the Stack tab's row list.
 ///

@@ -13,21 +13,23 @@
 /// - fresh entry: ЩОЙНО ДОДАНО chip and NO schedule chip — never a
 ///   placeholder dash (#6); chips live in a `Wrap` (#7)
 ///
-/// Card tap pushes [RegimenEditorScreen] (STACK-04 edit path). The clock is
-/// read HERE (widget layer) and passed into the pure `statusOf` as
-/// `dateOnly(DateTime.now())` — domain helpers never read the clock.
+/// Card tap pushes [RegimenEditorScreen] (STACK-04 edit path). The day comes
+/// from `todayProvider` — the app's single calendar clock, shared with the
+/// Calendar tab so both refresh together at midnight instead of each reading
+/// the clock per build (plan 03-01, closes 02-REVIEW IN-06) — and is passed
+/// into the pure `statusOf`; domain helpers never read the clock.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:boostque/core/domain/cycle_math.dart';
 import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
+import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/stack/add_supplement_sheet.dart';
 import 'package:boostque/features/stack/regimen_editor_screen.dart';
 import 'package:boostque/features/stack/stack_status.dart';
@@ -40,7 +42,7 @@ class StackScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = ref.watch(stackEntriesProvider);
     final l10n = context.l10n;
-    final today = dateOnly(DateTime.now());
+    final today = ref.watch(todayProvider);
     return Scaffold(
       body: SafeArea(
         child: ListView(

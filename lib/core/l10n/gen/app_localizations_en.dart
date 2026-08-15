@@ -329,4 +329,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get catalogCurcuminDose => '500 mg + piperine';
+
+  @override
+  String get calendarTitleToday => 'Today';
 }

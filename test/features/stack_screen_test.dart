@@ -13,6 +13,9 @@
 /// - paused entry: ПАУЗА chip, summary chip retained (S1)
 /// - active cyclic entry: АКТИВНА chip + schedule chip with slotsPerDay text
 /// - card tap navigates into RegimenEditorScreen (STACK-04 edit path)
+/// - the card's status derives from the shared `todayProvider` clock, not a
+///   per-build clock read: the same seeded regimen renders ЗАПЛАНОВАНО before
+///   its start date and АКТИВНА inside its window (plan 03-01, IN-06)
 /// - takeException null in uk locale throughout
 library;
 
@@ -21,6 +24,7 @@ import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
+import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/stack/regimen_editor_screen.dart';
 import 'package:boostque/features/stack/stack_screen.dart';
 import 'package:drift/native.dart';
@@ -44,8 +48,9 @@ void main() {
   });
 
   /// Provider container over an in-memory database; callers seed through
-  /// the repositories before pumping.
-  ProviderContainer makeContainer() {
+  /// the repositories before pumping. Passing [today] pins the shared calendar
+  /// clock so card statuses are asserted against a fixed day (IN-06).
+  ProviderContainer makeContainer({DateTime? today}) {
     final container = ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
@@ -53,6 +58,7 @@ void main() {
           ref.onDispose(db.close);
           return db;
         }),
+        if (today != null) todayProvider.overrideWith(() => _FixedToday(today)),
       ],
     );
     // Keep the stack graph warm (Riverpod 3 pauses unlistened providers).
@@ -417,6 +423,42 @@ void main() {
     await tearDownTree(tester, container);
   });
 
+  testWidgets(
+      'uk: card status follows the shared todayProvider clock — ЗАПЛАНОВАНО '
+      'before the start date, АКТИВНА inside the window (IN-06)',
+      (tester) async {
+    final l10n = await AppLocalizations.delegate.load(const Locale('uk'));
+
+    usePhoneSurface(tester);
+    // Two weeks BEFORE the regimen's 2026-08-01 start.
+    final before = makeContainer(today: DateTime.utc(2026, 7, 18));
+    await before.read(supplementRepoProvider).upsert(supplement);
+    await before.read(regimenRepoProvider).upsert(cyclicRegimen());
+    await tester.pumpWidget(app(before));
+    await pumpUntilFound(tester, find.text(l10n.statusPlanned));
+
+    expect(find.text(l10n.statusPlanned), findsOneWidget,
+        reason: 'the overridden clock sits before startDate');
+    expect(find.text(l10n.statusActive), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tearDownTree(tester, before);
+
+    // Same seed, same card — only the shared clock moves.
+    final inside = makeContainer(today: DateTime.utc(2026, 8, 10));
+    await inside.read(supplementRepoProvider).upsert(supplement);
+    await inside.read(regimenRepoProvider).upsert(cyclicRegimen());
+    await tester.pumpWidget(app(inside));
+    await pumpUntilFound(tester, find.text(l10n.statusActive));
+
+    expect(find.text(l10n.statusActive), findsOneWidget,
+        reason: 'the card re-derives its status from todayProvider, never '
+            'from a per-build clock read');
+    expect(find.text(l10n.statusPlanned), findsNothing);
+    expect(l10n.statusActive, isNot(l10n.statusPlanned));
+    expect(tester.takeException(), isNull);
+    await tearDownTree(tester, inside);
+  });
+
   testWidgets('uk: tapping a card opens the regimen editor for it (STACK-04)',
       (tester) async {
     usePhoneSurface(tester);
@@ -434,4 +476,16 @@ void main() {
 
     await tearDownTree(tester, container);
   });
+}
+
+/// Pins the shared calendar clock to a fixed UTC date-only day; overriding
+/// [TodayController.build] also means no midnight Timer and no lifecycle
+/// listener are armed inside the test.
+class _FixedToday extends TodayController {
+  _FixedToday(this.day);
+
+  final DateTime day;
+
+  @override
+  DateTime build() => day;
 }

@@ -418,5 +418,9 @@
   "catalogCurcuminDose": "500 mg + piperine",
   "@catalogCurcuminDose": {
     "description": "Catalog entry dose text (en translation of the uk BASE_STACK dose — review at UAT, A1)"
+  },
+  "calendarTitleToday": "Today",
+  "@calendarTitleToday": {
+    "description": "Calendar screen heading while the resolved day is today (mockup line 206); non-today days show the capitalized weekday from intl, not an ARB string (UI-SPEC S4)"
   }
 }
