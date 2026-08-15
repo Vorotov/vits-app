@@ -93,8 +93,12 @@ class _DoseRowState extends ConsumerState<DoseRow> {
       await ref.read(intakeRepoProvider).setStatus(widget.dose.logId, next);
     } catch (_) {
       // No rollback: nothing was ever optimistically applied, so the row is
-      // already showing the truth. The user is told the write did not land.
-      messenger.showSnackBar(SnackBar(content: Text(failureText)));
+      // already showing the truth. The user is told the write did not land —
+      // unless this row has since left the tree, in which case the messenger
+      // it captured may itself be deactivated (WR-03).
+      if (mounted) {
+        messenger.showSnackBar(SnackBar(content: Text(failureText)));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -113,10 +117,16 @@ class _DoseRowState extends ConsumerState<DoseRow> {
   /// Refused while a write is in flight, exactly like tap — so a tap
   /// immediately followed by a long press cannot slip a second write past the
   /// guard (T-03-02).
+  /// The sheet stays open until the user chooses, so this gap is arbitrarily
+  /// long — and the day stream can remove this row underneath it (a background
+  /// regimen edit, a pause emission, a midnight rollover). `_apply` resolves
+  /// `ScaffoldMessenger.of(context)` from a State that would then be
+  /// deactivated, which throws; the `mounted` check is what makes the gap safe
+  /// (WR-03).
   Future<void> _onLongPress() async {
     if (_busy) return;
     final chosen = await showDoseActionSheet(context, widget.dose);
-    if (chosen == null) return;
+    if (chosen == null || !mounted) return;
     await _apply(chosen);
   }
 

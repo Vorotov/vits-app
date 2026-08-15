@@ -1492,6 +1492,54 @@ void main() {
       await tearDownTree(tester, container);
     });
 
+    testWidgets('uk: choosing an action after the row has left the tree is a '
+        'no-op, not a deactivated-ancestor crash (WR-03)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, raw, sub) = await pumpRow(tester, container);
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(markTaken).evaluate().isNotEmpty,
+        'the action sheet',
+      );
+      // Let the sheet finish sliding in, so the tap below genuinely lands on
+      // the action rather than missing an off-screen row.
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      expect(tester.getCenter(find.text(markTaken)).dy < 844, isTrue,
+          reason: 'the sheet is fully presented before the row is removed');
+
+      // The day stream removes the row underneath the OPEN sheet — the pause
+      // filter hides a pending dose with no write at all.
+      unawaited(container.read(regimenRepoProvider).setPaused('r1', true));
+      await pumpUntil(
+        tester,
+        () => find.text('Магній').evaluate().length == 1,
+        'the row to disappear while the sheet is still open',
+      );
+
+      await tester.tap(find.text(markTaken));
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      expect(tester.takeException(), isNull,
+          reason: 'the sheet gap is arbitrarily long — resolving a '
+              'BuildContext after it must not throw');
+      expect(raw().single.status, DoseStatus.pending,
+          reason: 'a dose whose row is gone is not silently marked');
+
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
     testWidgets('uk: long-pressing a TAKEN row offers mark-skipped and undo, '
         'with no mark-taken row', (tester) async {
       usePhoneSurface(tester);
