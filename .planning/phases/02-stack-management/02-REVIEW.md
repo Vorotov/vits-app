@@ -32,6 +32,11 @@ findings:
   info: 6
   total: 11
 status: issues_found
+fixes:
+  fixed_at: 2026-08-15T14:42:51Z
+  scope: critical_warning
+  fixed: [CR-01, WR-01, WR-02, WR-03, WR-04]
+  tests_after_fixes: 162
 ---
 
 # Phase 2: Code Review Report
@@ -61,6 +66,7 @@ The findings that remain are concurrency/robustness gaps: none of the async save
 ### CR-01: Double-tap on the editor save button races `save()` and can create duplicate regimen rows (PF-8 violation → double-dosed materialization)
 
 **File:** `lib/features/stack/regimen_editor_screen.dart:832,913-916` (and `lib/features/stack/regimen_editor_controller.dart:305-345`)
+**Status:** fixed — commit `394a63f` (both layers: single-flight `save()` in the controller + `_saving` guard in a now-stateful `_EditorFooter`; regression tests: concurrent-save unit test + double-tap widget test)
 **Issue:** `_save` is wired directly to `onPressed` with no in-flight guard. Two rapid taps start two concurrent `save()` calls. For a fresh regimen (`draft.regimenId == null`), both calls run the save-time `findForSupplement` re-check *before* either upsert commits, so both get `null`, both mint a fresh UUID, and two regimen rows are persisted for one supplement. `combineStackEntries`/`findForSupplement` then show one regimen while `ensureLogsForDay` iterates **all** regimens — the hidden ghost regimen materializes a second set of doses per slot per day (exactly the "materialization double-doses" failure PF-8 warns about, threat T-02-05). Additionally, both invocations run `Navigator.maybePop`; the second fires while the footer's element may still be mounted during the exit transition and can pop the Stack route underneath the editor.
 **Fix:**
 ```dart
@@ -82,12 +88,14 @@ Either layer alone closes the duplicate-row race; the UI guard additionally prev
 ### WR-01: Double-tap in the add sheet creates duplicate supplements and corrupts navigation
 
 **File:** `lib/features/stack/add_supplement_sheet.dart:87-94,99-112,116-135,276-279`
+**Status:** fixed — commit `ca69b0b` (`_busy` guard on both add paths, manual save button disabled while busy; double-tap catalog-row widget test)
 **Issue:** `_addFromCatalog` and `_saveManual` have no in-flight guard, and every catalog result row is a bare `GestureDetector`. Two quick taps (same row, two different rows, or the manual save button) mint two UUIDs and upsert two supplement rows. Worse, `_popThenPushEditor` then runs twice on the same navigator: the first pops the sheet and pushes the editor; the second (the sheet state is still `mounted` during the exit transition) pops **the editor** and pushes a second editor — leaving a stray supplement in the stack and a confusing route stack.
 **Fix:** Add a `bool _busy = false;` field in `_AddSupplementSheetState`; set it at the top of both save paths (`if (_busy) return; _busy = true;`) and never reset it on the success path (the sheet is disposed). Optionally disable the manual save button while busy.
 
 ### WR-02: Editor crashes (Slider assertion) if a persisted regimen carries onDays/offDays outside the slider ranges
 
 **File:** `lib/features/stack/regimen_editor_controller.dart:193-209` (surfaces at `lib/features/stack/regimen_editor_screen.dart:315-334`)
+**Status:** fixed — commit `5e9c7a1` (`_clampDays` at the `_draftFrom` seed boundary: snap to the 7-day grid, clamp onDays 7..112 / offDays 0..84; unit tests for 0→7, 200→84, 60→63, 10→7)
 **Issue:** `_draftFrom` copies `onDays`/`offDays` from the DB verbatim; the cyclic panel then builds `Slider(value: draft.onDays.toDouble(), min: 7, max: 112)` and `Slider(value: draft.offDays.toDouble(), min: 0, max: 84)`. Any regimen row whose values fall outside those ranges — the Drift column default is `onDays = 0` (`database.dart:68`), and rows written by tests, a future sync backend, or any non-editor writer are unconstrained (the domain assert only requires `>= 0`) — throws `'value' must be between 'min' and 'max'` and red-screens the editor, making that supplement uneditable and undeletable through the UI.
 **Fix:** Clamp at the seed boundary in `_draftFrom`:
 ```dart
@@ -99,6 +107,7 @@ offDays: r.offDays.clamp(0, 84),
 ### WR-03: `build()` silently seeds defaults when `stackEntriesProvider` is not `AsyncData`, and a subsequent save clobbers the stored regimen's settings
 
 **File:** `lib/features/stack/regimen_editor_controller.dart:160-173`
+**Status:** fixed — commit `2cc0600` (`_seedWasBlind` flag: a blind-seeded save that would clobber an existing regimen re-seeds the draft from the store and throws `StateError` — surfaced by the WR-04 SnackBar; unit tests for refuse+re-seed+retry and the fresh-save path)
 **Issue:** The synchronous seed pattern-matches only `AsyncData`; on `AsyncLoading`/`AsyncError` it returns `_defaults()` and never re-seeds (the read is one-shot, not reactive). If the editor is ever opened before the stack graph is warm, the user of a supplement that *has* a regimen sees the default form (56/28 cyclic, 1 slot at 08:00); pressing save then reuses the correct regimen id (the `findForSupplement` re-check) but **overwrites its real settings with the defaults**, and slot reconciliation soft-deletes all existing slots. Today both entry points (card tap requires `AsyncData`; add-flow supplements have no regimen) make this unreachable, but nothing enforces that invariant for future callers (deep links, state restoration, Phase 3+ navigation).
 **Fix:** Make the fallback safe rather than silent — e.g. seed from the repository when the provider is not ready:
 ```dart
@@ -111,6 +120,7 @@ plus (belt-and-suspenders) have `save()` skip the destructive overwrite when `dr
 ### WR-04: No error handling on any async persistence path — a failed save/add/delete is silent and becomes an unhandled async exception
 
 **File:** `lib/features/stack/regimen_editor_screen.dart:832,913-916,938-944`; `lib/features/stack/add_supplement_sheet.dart:109,132`
+**Status:** fixed — commit `213aad4` (new `saveFailed` ARB key in both locales; try/catch + SnackBar on editor save, delete-dialog confirm, and both sheet add paths — screen stays open, buttons re-enable; failing-repo widget test)
 **Issue:** `controller.save()`, `deleteSupplement()`, and both sheet upserts are awaited without try/catch, and the returned futures from `onPressed` closures are unawaited by the framework. If Drift throws (disk full, corrupted file, future schema issue), the user gets no feedback: the editor still pops as if saved (`_save` proceeds to `maybePop` only on success — good — but the error itself surfaces nowhere), and the exception escapes to the zone handler. The UI-SPEC defines an error surface only for stack *load*; write failures have none.
 **Fix:** Wrap the awaits and surface a minimal failure signal (SnackBar with an existing-style ARB key, staying on screen so no data is silently lost):
 ```dart
