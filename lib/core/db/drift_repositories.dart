@@ -14,6 +14,8 @@
 /// - Fully offline: only local file/memory I/O, no network (D-26, DATA-01).
 library;
 
+import 'dart:async';
+
 import 'package:drift/drift.dart';
 import 'package:uuid/uuid.dart';
 
@@ -276,7 +278,7 @@ class DriftIntakeRepository implements IntakeRepository {
     final now = DateTime.now().toUtc();
     // Active regimens with their active slots, via the regimen repository's
     // canonical soft-delete-aware query.
-    final regimens = await _regimens.watchAll().first;
+    final regimens = await _firstEvent(_regimens.watchAll());
 
     final entries = <IntakeLogsCompanion>[
       for (final r in regimens)
@@ -360,6 +362,40 @@ class DriftIntakeRepository implements IntakeRepository {
           );
         }).toList());
   }
+}
+
+/// The first event of [stream], WITHOUT awaiting the subscription's cancel.
+///
+/// `Stream.first` completes only after `cancel()` resolves, and Drift defers a
+/// query-stream close through a timer that never settles inside flutter_test's
+/// fake-async zone — so `await someQuery.watch().first` deadlocks any widget
+/// test that materializes a day through `ensureLogsForDay` (found wiring the
+/// plan 03-01 tracer; the Phase-2 tests hit the same wall from the other side,
+/// see the "awaiting .first un-pumped deadlocks" note in stack_screen_test).
+/// Cancelling un-awaited is equivalent here: the value is already in hand and
+/// the subscription is single-use.
+Future<T> _firstEvent<T>(Stream<T> stream) {
+  final completer = Completer<T>();
+  late StreamSubscription<T> sub;
+  sub = stream.listen(
+    (value) {
+      if (completer.isCompleted) return;
+      completer.complete(value);
+      unawaited(sub.cancel());
+    },
+    onError: (Object error, StackTrace stackTrace) {
+      if (completer.isCompleted) return;
+      completer.completeError(error, stackTrace);
+      unawaited(sub.cancel());
+    },
+    onDone: () {
+      if (completer.isCompleted) return;
+      completer.completeError(
+        StateError('stream closed before emitting a value'),
+      );
+    },
+  );
+  return completer.future;
 }
 
 domain.Supplement _toSupplement(Supplement row) => domain.Supplement(

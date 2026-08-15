@@ -625,6 +625,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'500 mg + piperine'**
   String get catalogCurcuminDose;
+
+  /// Calendar screen heading while the resolved day is today (mockup line 206); non-today days show the capitalized weekday from intl, not an ARB string (UI-SPEC S4)
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get calendarTitleToday;
 }
 
 class _AppLocalizationsDelegate

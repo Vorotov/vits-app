@@ -87,5 +87,6 @@
   "catalogZincName": "Цинк піколінат",
   "catalogZincDose": "15 мг · таблетки",
   "catalogCurcuminName": "Куркумін",
-  "catalogCurcuminDose": "500 мг + піперин"
+  "catalogCurcuminDose": "500 мг + піперин",
+  "calendarTitleToday": "Сьогодні"
 }
