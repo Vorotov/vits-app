@@ -28,6 +28,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -170,13 +171,32 @@ void main() {
   /// Two regimen-bearing supplements (one of them paused) plus one fresh
   /// supplement with no regimen at all — so "one row per regimen-bearing
   /// entry" is a real filter, not a tautology.
-  Future<void> seed(ProviderContainer container) async {
+  /// A one-time course, so the gantt hint's course branch has a real subject.
+  final course = Regimen(
+    id: 'r3',
+    supplementId: 's3',
+    kind: RegimenKind.course,
+    startDate: DateTime.utc(2026, 8, 5),
+    endDate: DateTime.utc(2026, 9, 30),
+    onDays: 0,
+    offDays: 0,
+    paused: false,
+    slots: const [
+      DoseSlot(id: 'sl-z', minutesFromMidnight: 540, doseLabel: '1 крапля'),
+    ],
+  );
+
+  Future<void> seed(
+    ProviderContainer container, {
+    bool courseForVitaminD = false,
+  }) async {
     final supplements = container.read(supplementRepoProvider);
     await supplements.upsert(magnesium);
     await supplements.upsert(creatine);
     await supplements.upsert(vitaminD);
     final regimens = container.read(regimenRepoProvider);
     await regimens.upsert(cyclic('r1', 's1'));
+    if (courseForVitaminD) await regimens.upsert(course);
     await regimens.upsert(
       Regimen(
         id: 'r2',
@@ -570,6 +590,75 @@ void main() {
           reason: 'the segment index chooses which body builds and nothing '
               'else — selection state lives in its own provider');
 
+      await tearDownTree(tester, container);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // The gantt row hint (plan 04-02 task 3, M13).
+  // ---------------------------------------------------------------------
+
+  group('gantt row hint', () {
+    testWidgets('reads the Stack card\'s own schedule description, minus the '
+        'daily-slot tail (M13)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container, courseForVitaminD: true);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      // Cyclic with a break: the same "on / off" composition the Stack chip
+      // renders, in the same words.
+      expect(find.text('2 тижні / 2 тижні'), findsOneWidget);
+      // Cyclic with no break: the no-break wording, never "0 тижнів".
+      expect(find.text('4 тижні / без перерви'), findsOneWidget);
+      expect(find.textContaining('0 тижнів'), findsNothing);
+      // Course: the locale-formatted inclusive range.
+      final range = DateFormat.yMd('uk');
+      expect(
+        find.text('${range.format(DateTime.utc(2026, 8, 5))} – '
+            '${range.format(DateTime.utc(2026, 9, 30))}'),
+        findsOneWidget,
+      );
+      // The planner is about time, not daily doses: the slot tail the Stack
+      // card appends is absent from every hint.
+      expect(find.textContaining('раз на день'), findsNothing);
+      expect(find.textContaining('рази на день'), findsNothing);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('each row speaks its name, its schedule and its run count — '
+        'the painted bands are invisible to assistive tech', (tester) async {
+      usePhoneSurface(tester);
+      final handle = tester.ensureSemantics();
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      final label = tester.getSemantics(find.byType(GanttRowBar).first).label;
+      expect(label, startsWith('Магній бісглицинат, 2 тижні / 2 тижні, '),
+          reason: 'name, then the shared schedule description');
+      expect(label, endsWith('періодів'),
+          reason: 'closing with a pre-formatted periodsCount — the count of '
+              'painted runs is the information the canvas carries');
+
+      // A paused regimen paints nothing, and says so honestly rather than
+      // claiming a period it does not have.
+      final paused = tester.getSemantics(find.byType(GanttRowBar).at(1)).label;
+      expect(paused, startsWith('Креатин моногідрат, 4 тижні / без перерви, '));
+      expect(paused, endsWith('0 періодів'));
+
+      handle.dispose();
       await tearDownTree(tester, container);
     });
   });
