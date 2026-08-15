@@ -90,7 +90,16 @@ void main() {
     );
   }
 
-  Widget app(ProviderContainer container, {Locale locale = const Locale('uk')}) {
+  /// [textScaler] pins the accessibility text scale for the whole tree — the
+  /// axis CR-01 and WR-04 both broke on, and the one the suite had no coverage
+  /// of at all (IN-08). [home] lets a test pump one calendar widget in
+  /// isolation instead of the whole screen.
+  Widget app(
+    ProviderContainer container, {
+    Locale locale = const Locale('uk'),
+    TextScaler textScaler = TextScaler.noScaling,
+    Widget home = const CalendarScreen(),
+  }) {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
@@ -98,7 +107,11 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: bqTheme(),
-        home: const CalendarScreen(),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+          child: child!,
+        ),
+        home: home,
       ),
     );
   }
@@ -2434,6 +2447,79 @@ void main() {
       expect(tester.takeException(), isNull);
 
       await tearDownTree(tester, container);
+    });
+  });
+
+  // --- Accessibility text scaling (CR-01, IN-08) ---
+  //
+  // 1.6 is inside the normal iOS "Larger Text" and Android font-size ranges,
+  // and 2.0 is reachable on both: at those scales a fixed-height strip clipped
+  // every cell. These pump the strip ALONE so the assertion is about the
+  // strip's own layout and nothing else on the screen.
+  group('text scaling', () {
+    final pinnedToday = DateTime.utc(2026, 8, 13);
+
+    Supplement supp(String name) => Supplement(
+          id: 's1',
+          name: name,
+          doseText: '',
+          colorValue: 0xFF6B6FA8,
+          note: '',
+        );
+
+    Regimen everyDay() => Regimen(
+          id: 'r1',
+          supplementId: 's1',
+          kind: RegimenKind.cyclic,
+          startDate: DateTime.utc(2020, 1, 1),
+          endDate: null,
+          onDays: 1,
+          offDays: 0,
+          paused: false,
+          slots: const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+          ],
+        );
+
+    for (final scale in <double>[1.0, 1.3, 1.6, 2.0, 3.0]) {
+      testWidgets(
+          'uk: the week strip renders every cell without clipping at '
+          'textScaler $scale (CR-01)', (tester) async {
+        usePhoneSurface(tester);
+        final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+        await container.read(supplementRepoProvider).upsert(supp('Магній'));
+        await container.read(regimenRepoProvider).upsert(everyDay());
+
+        await tester.pumpWidget(app(
+          container,
+          textScaler: TextScaler.linear(scale),
+          home: const Scaffold(body: Column(children: [WeekStrip()])),
+        ));
+        await pumpUntil(
+          tester,
+          () =>
+              find.byKey(ValueKey<DateTime>(pinnedToday)).evaluate().isNotEmpty,
+          'the week strip',
+        );
+        for (var i = 0; i < 10; i++) {
+          await tester.pump(const Duration(milliseconds: 20));
+        }
+
+        expect(tester.takeException(), isNull,
+            reason: 'a RenderFlex overflow at an accessibility text scale is '
+                'a clipped day number in release, not just debug stripes');
+        expect(find.byKey(ValueKey<DateTime>(pinnedToday)), findsOneWidget);
+
+        await tearDownTree(tester, container);
+      });
+    }
+
+    testWidgets('the reserved strip extent grows with the text scaler and is '
+        'the mockup 82px at scale 1.0 (CR-01)', (tester) async {
+      expect(stripHeightFor(TextScaler.noScaling), 82,
+          reason: 'design fidelity at the default scale is unchanged');
+      expect(stripHeightFor(const TextScaler.linear(2.0)) > 82, isTrue,
+          reason: 'the extent follows the text it has to hold');
     });
   });
 }

@@ -52,13 +52,27 @@ import 'package:boostque/features/calendar/calendar_providers.dart';
 /// and there is no page after it.
 const int weekPageCount = 53;
 
-/// Height reserved for the strip.
+/// The part of the strip's height that does NOT follow the text scale:
+/// padding 9/10, the 6px and 7px gaps, the 4px dot, the 1px borders, plus the
+/// design slack the mockup's 82px carries at scale 1.0.
+const double _stripFixedExtent = 48;
+
+/// The text-bearing part of a cell at scale 1.0: the mono 10 dow line plus the
+/// 14px day number, with their line boxes.
+const double _stripTextExtent = 34;
+
+/// Height reserved for the strip, for [scaler].
 ///
-/// The `PageView` needs a bounded cross-axis extent; cells size to their own
-/// content inside it (padding 9/10 + dow + 6 + number + 7 + dot) and align to
-/// the top, so a larger text scale grows the cell into the slack rather than
-/// overflowing it.
-const double _stripHeight = 82;
+/// The `PageView` needs a BOUNDED cross-axis extent, so this extent has to be
+/// computed rather than measured — and a constant would clip the cells at any
+/// accessibility text scale (CR-01 reproduced 7 bottom overflows at 1.6 and at
+/// 2.0). Only the two text lines grow with the scaler; the paddings, the gaps
+/// and the 4px dot do not. Scaling only the text part therefore keeps the
+/// mockup-exact 82px at scale 1.0 while growing exactly as fast as the content
+/// it has to hold — the locked "no fixed-size text container" rule applies to
+/// the vertical axis too.
+double stripHeightFor(TextScaler scaler) =>
+    _stripFixedExtent + scaler.scale(_stripTextExtent);
 
 /// Gap between the seven cells (mockup line 215).
 const double _cellGap = 5;
@@ -121,7 +135,7 @@ class _WeekStripState extends ConsumerState<WeekStrip> {
     });
 
     return SizedBox(
-      height: _stripHeight,
+      height: stripHeightFor(MediaQuery.textScalerOf(context)),
       child: PageView.builder(
         controller: _controller,
         itemCount: weekPageCount,
@@ -232,6 +246,14 @@ class _WeekCell extends ConsumerWidget {
                 Text(
                   DateFormat.E(locale).format(day).toUpperCase(),
                   textAlign: TextAlign.center,
+                  // A 2-3 character weekday abbreviation and a day number are
+                  // single-line by nature: wrapping one at a large text scale
+                  // would grow the cell by a whole line and clip the dot
+                  // (CR-01), so the line count is pinned and only the line
+                  // HEIGHT follows the scaler — which is what the strip's
+                  // reserved extent is computed from.
+                  maxLines: 1,
+                  softWrap: false,
                   style: BqText.mono(
                     size: 10,
                     color: labelColor,
@@ -242,6 +264,8 @@ class _WeekCell extends ConsumerWidget {
                 Text(
                   DateFormat.d(locale).format(day),
                   textAlign: TextAlign.center,
+                  maxLines: 1,
+                  softWrap: false,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
