@@ -444,4 +444,7 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get calendarDisclaimer =>
       'Розклад складено з ваших власних записів. Освітній матеріал, не медична порада.';
+
+  @override
+  String get plannerTitle => 'Планувальник';
 }

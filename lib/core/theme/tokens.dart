@@ -119,6 +119,48 @@ abstract final class BqColors {
   /// dot collapse into one token, a locked simplification — the delta is
   /// invisible on a 4px dot).
   static const Color onAccentMuted = Color(0xB3FFFFFF);
+
+  // --- Phase-4 additions (04-UI-SPEC "Token Additions", mockup-sourced) ---
+
+  /// The 4px-on stroke of a planned gantt segment's diagonal hatch — mockup's
+  /// `repeating-linear-gradient(115deg,rgba(74,78,124,.18) 0 4px,…)`
+  /// (line 647). Accent at .18.
+  static const Color plannedHatchStrong = Color(0x2E4A4E7C);
+
+  /// The 4px-off fill under that hatch — mockup's `…rgba(74,78,124,.06)
+  /// 4px 8px)` (line 647). Accent at .06.
+  static const Color plannedHatchWeak = Color(0x0F4A4E7C);
+
+  /// 1px outline of a planned gantt segment and of the `legendPlanned`
+  /// swatch — mockup's `border:'rgba(74,78,124,.45)'` (line 647).
+  static const Color plannedBorder = Color(0x734A4E7C);
+
+  /// The 1px full-height today line on the gantt — mockup's
+  /// `background:#17171B;opacity:.35` (line 305). Ink at .35.
+  static const Color todayMarker = Color(0x5917171B);
+
+  /// The comfort-3 dashed reference line of the load chart — mockup's
+  /// `repeating-linear-gradient(90deg,rgba(23,23,27,.22) 0 4px,transparent
+  /// 4px 8px)` (line 339). Ink at .22.
+  ///
+  /// Deliberately a SEPARATE token even though it currently equals
+  /// [checkBorder] — the same mechanism [BqRadii.dayCell] uses against
+  /// [BqRadii.input]: a chart reference line must never be restyled by a
+  /// change to a checkbox border. Do not collapse the two.
+  static const Color thresholdDash = Color(0x3817171B);
+
+  /// Load-chart bar in the comfort band (load <= 3) — mockup's `'#7C80AB'`
+  /// (line 907). A desaturated accent-family tone that is deliberately NOT
+  /// [accent], so the chart does not consume accent budget.
+  static const Color loadBar = Color(0xFF7C80AB);
+
+  /// Fill of the selected month card in the Year grid — mockup's
+  /// `bg: sel ? '#F2F2F7' : '#FBFBF9'` (line 833).
+  static const Color monthSelectedBg = Color(0xFFF2F2F7);
+
+  /// The 4px unfilled coverage-bar track inside a month card — mockup's
+  /// `background:#F0EFEA` (line 423).
+  static const Color yearBarTrack = Color(0xFFF0EFEA);
 }
 
 /// Supplement color-tag series palette (D-06) — exactly 8 colors, in mockup
