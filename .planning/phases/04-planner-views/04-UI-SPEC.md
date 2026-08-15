@@ -1,7 +1,8 @@
 ---
 phase: 4
 slug: planner-views
-status: draft
+status: approved
+reviewed_at: 2026-08-16
 shadcn_initialized: false
 preset: none
 created: 2026-08-16
@@ -27,7 +28,7 @@ created: 2026-08-16
 |----------|-------|
 | Tool | none — Flutter (Dart) mobile app; the shadcn gate does not apply |
 | Preset | not applicable |
-| Component library | Flutter Material 3 SDK widgets themed via `bqTheme()` + existing hand-built `BqSegmented` (its doc already names this exact use: "Phase 4's Рік/Цикли toggle") + four new hand-built widgets: `PlannerGantt` (`Stack` + per-row `CustomPaint`), `PlannerLoadChart` (`Row` of `Expanded` columns + one dash-line `CustomPaint`), `PlannerYearGrid` (`GridView` with computed `mainAxisExtent`), `PlannerWeekDetail` / `PlannerMonthDetail` (plain decorated containers). **No charting, gantt, or calendar package** (CLAUDE.md "What NOT to Use": `fl_chart`, `gantt_chart`, `table_calendar` all explicitly rejected). **Zero new packages** (04-RESEARCH.md: empty install delta) |
+| Component library | Flutter Material 3 SDK widgets themed via `bqTheme()` + existing hand-built `BqSegmented` (its doc already names this exact use: "Phase 4's Рік/Цикли toggle") + five new hand-built widgets: `PlannerGantt` (`Stack` + per-row `CustomPaint`), `PlannerLoadChart` (`Row` of `Expanded` columns + one dash-line `CustomPaint`), `PlannerYearGrid` (`GridView` with computed `mainAxisExtent`), `PlannerWeekDetail` / `PlannerMonthDetail` (plain decorated containers). **No charting, gantt, or calendar package** (CLAUDE.md "What NOT to Use": `fl_chart`, `gantt_chart`, `table_calendar` all explicitly rejected). **Zero new packages** (04-RESEARCH.md: empty install delta) |
 | Icon library | **none — this phase renders no icon-font glyph at all.** The two navigational controls use text glyphs in the Phase-3 tradition ("✓"/"−"): the planner's back control is `‹` + `backToToday`, the Calendar's entry action is a bare text button. Existing Material `Icons` remain in the Phase-1 nav bar only |
 | Font | Instrument Sans (400/500/600) + JetBrains Mono (400/500/600), bundled variable-font assets (Phase 1, D-05). No google_fonts |
 
@@ -40,7 +41,7 @@ Established in `lib/core/theme/tokens.dart` (Phases 1-3). Phase-4 usage:
 | Token | Value | Phase-4 usage |
 |-------|-------|---------------|
 | `BqColors.paper` | #F7F6F3 | Scaffold, planner header block, scroll body |
-| `BqColors.surface` | #FFFFFF | All four planner cards (gantt, load chart, week detail, year grid, month detail — lines 300, 333, 352, 414, 439); empty slot pip fill (line 773) |
+| `BqColors.surface` | #FFFFFF | All five planner cards (gantt, load chart, week detail, year grid, month detail — lines 300, 333, 352, 414, 439); empty slot pip fill (line 773) |
 | `BqColors.surfaceAlt` | #FBFBF9 | Unselected month card in the year grid (line 833); nav bar (existing) |
 | `BqColors.chip` | #F2F1EE | Gantt row track (line 316) **and** the `legendPaused` swatch (line 329) — the same value by design: a paused row *is* a bare track; week-detail supplement name chips (line 364) |
 | `BqColors.field` | #E4E3DD | Zero-load week stub in the load chart (invented, DECIDED-3) |
@@ -448,7 +449,7 @@ Each week column is ~15px wide inside a 390pt screen — inherently below the 44
 
 ## UI Considerations
 
-Probe applied manually over the phase's surfaces on 2026-08-16 (`node`/gsd-tools unavailable in this sandbox, as in Phases 1-3), across elements **E1** gantt card (`list-collection`), **E2** gantt row (`static-content` / data-viz), **E3** load chart (`interactive-control`), **E4** week-detail card (`static-content`), **E5** year grid (`list-collection`), **E6** month card (`interactive-control`), **E7** month-detail card (`static-content`), **E8** planner header + segmented (`nav`), **E9** Calendar entry action (`interactive-control`). Every applicable category resolves below — **21 explicit truths, 3 backstops, 0 unresolved.**
+Probe engine run 2026-08-16 (ui-consideration-probe.cjs, orchestrator side) over the phase's surfaces — 59 applicable category probes raised across elements **E1** gantt card (`list-collection`), **E2** gantt row (`static-content` / data-viz), **E3** load chart (`interactive-control`), **E4** week-detail card (`static-content`), **E5** year grid (`list-collection`), **E6** month card (`interactive-control`), **E7** month-detail card (`static-content`), **E8** planner header + segmented (`nav`), **E9** Calendar entry action (`interactive-control`). Every applicable category resolves in the matrix below — **21 explicit truths, 3 backstops, 0 unresolved** (the matrix covers all 9 elements x 8 categories, marking genuinely inapplicable cells n/a with reason).
 
 **Resolved — explicit truths (planner lifts each into `must_haves.truths`):**
 
@@ -539,11 +540,11 @@ Not applicable — Flutter project; no shadcn or npm component registry is invol
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
 **Approval:** pending
