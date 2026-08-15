@@ -20,8 +20,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'package:boostque/core/l10n/l10n.dart';
+import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/features/calendar/planner_view_model.dart';
+import 'package:boostque/features/stack/schedule_summary_text.dart';
+import 'package:boostque/features/stack/stack_status.dart';
 
 /// Height of a row's track (mockup line 316 `height:11px`).
 const double _trackHeight = 11;
@@ -36,6 +40,9 @@ const double _rowGap = 13;
 /// Gap between a row's name line and its track (mockup line 313
 /// `margin-bottom:6px`).
 const double _nameGap = 6;
+
+/// Gap between a row's name and its schedule hint (mockup line 312 `gap:8px`).
+const double _nameHintGap = 8;
 
 /// Card padding (mockup line 300 `padding:16px 14px 14px`).
 const double _cardPadTop = 16;
@@ -94,20 +101,40 @@ class GanttRowBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final name = row.entry.supplement.name;
+    // The Stack card's own words for this regimen, minus its daily-slot tail:
+    // the planner is about time, not daily doses. Composing a second
+    // description here is exactly how the two tabs would drift apart (M13).
+    final hint = scheduleSummaryText(
+      scheduleSummaryOf(row.entry),
+      l10n: l10n,
+      // The locale ALWAYS comes from the widget tree, never a literal tag.
+      locale: Localizations.localeOf(context).toString(),
+      withSlots: false,
+    );
 
     return MergeSemantics(
       child: Semantics(
-        // The painted bands are invisible to assistive tech; for now the row
-        // announces its supplement. The fuller label — schedule summary plus
-        // period count — lands with its ARB keys in plan 04-02.
-        label: name,
+        // The painted bands are invisible to assistive tech, so the row speaks
+        // what the canvas is carrying: its schedule and how many runs of it
+        // fall inside the window.
+        label: l10n.ganttRowSemantics(
+          name,
+          hint,
+          l10n.periodsCount(row.runs.length),
+        ),
         excludeSemantics: true,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
+            // Two flexible children and nothing rigid: at any text scale the
+            // label truncates instead of overflowing, and the NAME keeps
+            // layout priority because it is what identifies the row (WR-04).
             Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
               children: [
                 Flexible(
                   child: Text(
@@ -122,6 +149,21 @@ class GanttRowBar extends StatelessWidget {
                     ),
                   ),
                 ),
+                if (hint.isNotEmpty) ...[
+                  const SizedBox(width: _nameHintGap),
+                  Flexible(
+                    child: Text(
+                      hint,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: BqText.mono(
+                        size: 10.5,
+                        weight: FontWeight.w400,
+                        color: BqColors.textFaint,
+                      ).copyWith(height: 1.3),
+                    ),
+                  ),
+                ],
               ],
             ),
             const SizedBox(height: _nameGap),
