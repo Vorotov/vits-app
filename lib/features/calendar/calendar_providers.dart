@@ -43,3 +43,32 @@ final selectedDayProvider =
 final resolvedDayProvider = Provider.autoDispose<DateTime>(
   (ref) => ref.watch(selectedDayProvider) ?? ref.watch(todayProvider),
 );
+
+/// Minutes elapsed since LOCAL midnight, re-emitted once a minute (P-5).
+///
+/// This is the second and last sanctioned clock read in the app: the calendar
+/// *date* still comes only from `core/today_controller.dart`, and this provider
+/// deliberately produces a minute-of-day integer — never a date — so no code
+/// path can derive "which day it is" from it.
+///
+/// Calendar-scoped, therefore autoDispose (D-23): the periodic subscription
+/// exists only while the Calendar tab is watched and is cancelled the moment it
+/// is not, so the app never keeps a timer alive for a screen nobody is looking
+/// at. The first value is emitted immediately, so the current-block header and
+/// the overdue treatment are correct on the first frame that has data.
+///
+/// A block boundary can therefore be up to a minute late. That latency is
+/// intentional: a per-second tick would rebuild the whole day list sixty times
+/// more often to move one header's color, and nothing on this screen is
+/// second-accurate.
+final nowMinutesProvider = StreamProvider.autoDispose<int>((ref) async* {
+  yield _minuteOfDay();
+  yield* Stream<void>.periodic(const Duration(minutes: 1))
+      .map((_) => _minuteOfDay());
+});
+
+/// Local wall-clock minute of day, 0..1439.
+int _minuteOfDay() {
+  final now = DateTime.now();
+  return now.hour * 60 + now.minute;
+}

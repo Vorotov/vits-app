@@ -23,7 +23,7 @@
 ///   course `endDate` is clamped to `>= startDate` (V-1/E-6). The default
 ///   start date and the cascade-delete boundary read the day from
 ///   `todayProvider`, the app's single calendar clock (plan 03-01, IN-06) —
-///   never `DateTime.now()` per call.
+///   never a fresh wall-clock read per call.
 /// - `togglePause()` flips the draft only — persistence happens on `save()`,
 ///   matching the mockup's "Зберегти, цикл на паузі" CTA (the footer save
 ///   button carries the pause state to disk).

@@ -23,15 +23,24 @@
 /// `TodayController` is a pending timer that would otherwise fail the test.
 library;
 
+import 'dart:async';
+
 import 'package:boostque/core/db/database.dart' show BoostqueDb, IntakeLog;
+import 'package:boostque/core/db/drift_repositories.dart'
+    show DriftIntakeRepository;
 import 'package:boostque/core/domain/models.dart';
+import 'package:boostque/core/domain/repositories.dart'
+    show DayDose, IntakeRepository;
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
+import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/calendar_screen.dart';
+import 'package:boostque/features/calendar/day_block_section.dart';
 import 'package:boostque/features/calendar/day_progress_ring.dart';
+import 'package:boostque/features/calendar/dose_row.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -59,8 +68,11 @@ void main() {
   ///
   /// [today] pins the app's single clock so every intl assertion below is
   /// deterministic on any machine, on any day (the header's date strings are
-  /// clock-derived — UI-SPEC S4).
-  ProviderContainer makeContainer({DateTime? today}) {
+  /// clock-derived — UI-SPEC S4). [nowMinutes] pins the OTHER sanctioned clock
+  /// read — the minute ticker — so current-block and overdue assertions do not
+  /// depend on what time the suite happens to run at; it also replaces the
+  /// periodic timer with a single-value stream.
+  ProviderContainer makeContainer({DateTime? today, int? nowMinutes}) {
     return ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
@@ -70,6 +82,8 @@ void main() {
           return database;
         }),
         if (today != null) todayProvider.overrideWith(() => _FixedToday(today)),
+        if (nowMinutes != null)
+          nowMinutesProvider.overrideWith((ref) => Stream.value(nowMinutes)),
       ],
     );
   }
@@ -110,7 +124,8 @@ void main() {
   }
 
   /// Pumps frames until [condition] holds (Drift emissions arrive
-  /// asynchronously — never `pumpAndSettle`, the midnight timer never settles).
+  /// asynchronously — never settle the tree: the midnight timer and the minute
+  /// ticker are both permanently pending).
   Future<void> pumpUntil(
     WidgetTester tester,
     bool Function() condition,
@@ -530,6 +545,1157 @@ void main() {
       await tearDownTree(tester, container);
     });
   });
+
+  // --- Time blocks (plan 03-04, Task 1; UI-SPEC S4 "Scroll body",
+  // DECIDED-1 / DECIDED-6, M5) ---
+  //
+  // Both clocks are pinned in every test here: `today` fixes the date and
+  // `nowMinutes` fixes the minute ticker, so "current block", "past block" and
+  // the warn progress tag are deterministic rather than a function of when the
+  // suite runs. The ticker means the tree NEVER settles — `pump(Duration)`
+  // loops only, `tearDownTree` in every body.
+  group('blocks', () {
+    final pinnedToday = DateTime.utc(2026, 8, 13);
+    final pastDay = DateTime.utc(2026, 8, 11);
+
+    Supplement supp(String id, String name) => Supplement(
+          id: id,
+          name: name,
+          doseText: '',
+          colorValue: 0xFF6B6FA8,
+          note: '',
+        );
+
+    Regimen reg(
+      String id,
+      String supplementId,
+      List<DoseSlot> slots, {
+      bool paused = false,
+    }) =>
+        Regimen(
+          id: id,
+          supplementId: supplementId,
+          kind: RegimenKind.cyclic,
+          startDate: DateTime.utc(2020, 1, 1),
+          endDate: null,
+          onDays: 1,
+          offDays: 0,
+          paused: paused,
+          slots: slots,
+        );
+
+    testWidgets('uk: only non-empty blocks render, in chronological order '
+        '(DECIDED-1)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(supplementRepoProvider).upsert(supp('s2', 'Цинк'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+          ]));
+      await container.read(regimenRepoProvider).upsert(reg('r2', 's2', const [
+            DoseSlot(id: 'sl2', minutesFromMidnight: 1140, doseLabel: ''),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Ранок').evaluate().isNotEmpty,
+        'the morning block header',
+      );
+
+      expect(find.byType(DayBlockSection), findsNWidgets(2),
+          reason: 'a day with morning and evening doses renders exactly two '
+              'blocks — the two empty ones are omitted entirely');
+      expect(find.text('Вечір'), findsOneWidget);
+      expect(find.text('День'), findsNothing,
+          reason: 'an empty block renders nothing at all — no header, no '
+              'placeholder row');
+      expect(find.text('Ніч'), findsNothing);
+      expect(
+        tester.getTopLeft(find.text('Ранок')).dy <
+            tester.getTopLeft(find.text('Вечір')).dy,
+        isTrue,
+        reason: 'blocks render in block order, morning first',
+      );
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: the block header shows the EARLIEST REAL slot time, not '
+        'the mockup anchor (M5)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 570, doseLabel: ''),
+            DoseSlot(id: 'sl2', minutesFromMidnight: 660, doseLabel: ''),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Ранок').evaluate().isNotEmpty,
+        'the morning block header',
+      );
+
+      expect(find.text('09:30'), findsOneWidget,
+          reason: 'the header time is the earliest slot actually in the block');
+      expect(find.text('08:00'), findsNothing,
+          reason: "printing the mockup's 08:00 anchor above a 09:30 block "
+              'would be false information (M5)');
+      expect(find.text('11:00'), findsNothing,
+          reason: 'only the earliest slot time heads the block');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: on today ONLY the current block header time is accented',
+        (tester) async {
+      usePhoneSurface(tester);
+      // 10:00: the 09:30 morning block has fully passed, the 19:00 evening
+      // block has not — so evening is the current block.
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(supplementRepoProvider).upsert(supp('s2', 'Цинк'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 570, doseLabel: ''),
+          ]));
+      await container.read(regimenRepoProvider).upsert(reg('r2', 's2', const [
+            DoseSlot(id: 'sl2', minutesFromMidnight: 1140, doseLabel: ''),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('19:00').evaluate().isNotEmpty,
+        'both block headers',
+      );
+
+      expect(tester.widget<Text>(find.text('19:00')).style?.color,
+          BqColors.accent,
+          reason: 'the current block leads the day in the accent color (P-5)');
+      expect(tester.widget<Text>(find.text('09:30')).style?.color, BqColors.ink,
+          reason: 'a past block keeps the neutral ink time');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: on a NON-today day no header time is accented',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 1140, doseLabel: ''),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('19:00').evaluate().isNotEmpty,
+        "today's evening block",
+      );
+      expect(tester.widget<Text>(find.text('19:00')).style?.color,
+          BqColors.accent);
+
+      container.read(selectedDayProvider.notifier).select(pastDay);
+      await pumpUntil(
+        tester,
+        () => find.text('11 серпня').evaluate().isNotEmpty,
+        'the browsed past day',
+      );
+      // The past day re-materializes through its own stream; let it land
+      // before reading the header color back.
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      expect(find.text('19:00'), findsOneWidget,
+          reason: 'the past day carries the same 19:00 block');
+      expect(tester.widget<Text>(find.text('19:00')).style?.color, BqColors.ink,
+          reason: 'the accent header time is a today-only treatment');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a fully-taken block shows the calm all-taken tag',
+        (tester) async {
+      usePhoneSurface(tester);
+      // 06:40 — the 08:00 block has NOT passed, so the untouched block shows
+      // its plain meal tag rather than the progress tag.
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      final row = find.text('Магній');
+      await pumpUntil(tester, () => row.evaluate().isNotEmpty, 'the dose row');
+
+      expect(find.text('зі сніданком'), findsOneWidget,
+          reason: 'an unhandled, not-yet-due block shows its neutral meal tag');
+
+      await tester.tap(row);
+      await pumpUntil(
+        tester,
+        () => find.text('усе прийнято').evaluate().isNotEmpty,
+        'the all-taken block tag',
+      );
+
+      expect(tester.widget<Text>(find.text('усе прийнято')).style?.color,
+          BqColors.calm,
+          reason: 'all-taken is the calm treatment (DECIDED-6)');
+      expect(find.text('зі сніданком'), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a block where every dose is marked and one is skipped '
+        'shows the NEUTRAL all-marked tag (DECIDED-6)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: 'перша'),
+            DoseSlot(id: 'sl2', minutesFromMidnight: 540, doseLabel: 'друга'),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('перша').evaluate().isNotEmpty,
+        'both dose rows',
+      );
+
+      var raw = <IntakeLog>[];
+      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      await pumpUntil(tester, () => raw.length == 2, 'both materialized logs');
+
+      final intake = container.read(intakeRepoProvider);
+      unawaited(intake.setStatus(
+          raw.firstWhere((r) => r.slotId == 'sl1').id, DoseStatus.taken));
+      unawaited(intake.setStatus(
+          raw.firstWhere((r) => r.slotId == 'sl2').id, DoseStatus.skipped));
+      await pumpUntil(
+        tester,
+        () => find.text('усе відмічено').evaluate().isNotEmpty,
+        'the all-marked block tag',
+      );
+
+      expect(tester.widget<Text>(find.text('усе відмічено')).style?.color,
+          BqColors.textSecondary,
+          reason: 'a block holding a skip must not claim everything was taken '
+              'and must not be warn-framed');
+      expect(find.text('усе прийнято'), findsNothing);
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      rawSub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets("uk: a PAST block of today with a pending dose shows the warn "
+        '{done} з {total} tag', (tester) async {
+      usePhoneSurface(tester);
+      // 20:00 — the whole morning block has passed.
+      final container = makeContainer(today: pinnedToday, nowMinutes: 1200);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: 'перша'),
+            DoseSlot(id: 'sl2', minutesFromMidnight: 540, doseLabel: 'друга'),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('перша').evaluate().isNotEmpty,
+        'both dose rows',
+      );
+
+      expect(find.text('0 з 2'), findsOneWidget,
+          reason: 'a past block of today with pending doses reports progress');
+
+      await tester.tap(find.text('Магній').first);
+      await pumpUntil(
+        tester,
+        () => find.text('1 з 2').evaluate().isNotEmpty,
+        'the progress tag to follow the write',
+      );
+
+      expect(tester.widget<Text>(find.text('1 з 2')).style?.color,
+          BqColors.warn,
+          reason: 'the progress tag is the warn treatment — today only '
+              '(DECIDED-5)');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a paused regimen contributes NO pending row and no '
+        'placeholder, while its taken row still renders (PF-9)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: 'перша'),
+            DoseSlot(id: 'sl2', minutesFromMidnight: 540, doseLabel: 'друга'),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('друга').evaluate().isNotEmpty,
+        'both dose rows',
+      );
+
+      var raw = <IntakeLog>[];
+      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      await pumpUntil(tester, () => raw.length == 2, 'both materialized logs');
+
+      unawaited(container.read(intakeRepoProvider).setStatus(
+          raw.firstWhere((r) => r.slotId == 'sl1').id, DoseStatus.taken));
+      await pumpUntil(
+        tester,
+        () => raw.any((r) => r.status == DoseStatus.taken),
+        'the first dose to be taken',
+      );
+
+      unawaited(container.read(regimenRepoProvider).upsert(reg(
+            'r1',
+            's1',
+            const [
+              DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: 'перша'),
+              DoseSlot(id: 'sl2', minutesFromMidnight: 540, doseLabel: 'друга'),
+            ],
+            paused: true,
+          )));
+      await pumpUntil(
+        tester,
+        () => find.text('друга').evaluate().isEmpty,
+        "the paused regimen's pending row to disappear",
+      );
+
+      expect(find.text('перша'), findsOneWidget,
+          reason: 'already-taken history stays visible while paused');
+      expect(find.text('Ранок'), findsOneWidget,
+          reason: 'the block itself still renders for the surviving row');
+      expect(raw.length, 2,
+          reason: 'the pending row is filtered by the QUERY — nothing is '
+              'deleted and no placeholder stands in for it');
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      rawSub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+  });
+
+  // --- Dose-row states and gestures (plan 03-04, Task 2; UI-SPEC S4 row
+  // table, DECIDED-2/3/5, T-03-02 / T-03-13 / T-03-14) ---
+  //
+  // Every state assertion reads the ROW's own decorated Container and the
+  // name Text back out of the tree, so a state that merely "looks close" in a
+  // screenshot cannot pass. Raw statuses are read through the pump-driven
+  // `db.select(db.intakeLogs)` watch, never an un-pumped await.
+  group('dose row', () {
+    final pinnedToday = DateTime.utc(2026, 8, 13);
+    final pastDay = DateTime.utc(2026, 8, 11);
+    final futureDay = DateTime.utc(2026, 8, 14);
+
+    Supplement supp(String name, {String note = ''}) => Supplement(
+          id: 's1',
+          name: name,
+          doseText: '',
+          colorValue: 0xFF6B6FA8,
+          note: note,
+        );
+
+    Regimen reg(List<DoseSlot> slots) => Regimen(
+          id: 'r1',
+          supplementId: 's1',
+          kind: RegimenKind.cyclic,
+          startDate: DateTime.utc(2020, 1, 1),
+          endDate: null,
+          onDays: 1,
+          offDays: 0,
+          paused: false,
+          slots: slots,
+        );
+
+    const oneMorningSlot = [
+      DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: '400 мг'),
+    ];
+
+    /// The dose row's own decoration — the outermost Container inside DoseRow.
+    BoxDecoration rowDecoration(WidgetTester tester) =>
+        tester.widget<Container>(find
+            .descendant(of: find.byType(DoseRow), matching: find.byType(Container))
+            .first).decoration! as BoxDecoration;
+
+    /// The row's 24px state circle (the second Container in the row).
+    BoxDecoration circleDecoration(WidgetTester tester) =>
+        tester.widget<Container>(find
+            .descendant(of: find.byType(DoseRow), matching: find.byType(Container))
+            .at(1)).decoration! as BoxDecoration;
+
+    TextStyle nameStyle(WidgetTester tester, String name) =>
+        tester.widget<Text>(find.text(name)).style!;
+
+    testWidgets('uk: a not-yet-due pending dose on today renders the empty '
+        'circle, ink name, surface fill and NO state chip', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg(oneMorningSlot));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Магній').evaluate().isNotEmpty,
+        'the dose row',
+      );
+
+      expect(circleDecoration(tester).color, BqColors.surface);
+      expect(find.text('✓'), findsNothing);
+      expect(find.text('−'), findsNothing);
+      expect(nameStyle(tester, 'Магній').color, BqColors.ink);
+      expect(nameStyle(tester, 'Магній').decoration, isNot(
+          TextDecoration.lineThrough));
+      final deco = rowDecoration(tester);
+      expect(deco.color, BqColors.surface);
+      expect((deco.border! as Border).top.color, BqColors.cardBorder);
+      expect(find.text('не прийнято вчасно'), findsNothing);
+      expect(find.text('пропущено'), findsNothing);
+      expect(find.text('не позначено'), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: once its slot time passes on today the SAME dose renders '
+        'the warn border and the overdue chip (DECIDED-5)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg(oneMorningSlot));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Магній').evaluate().isNotEmpty,
+        'the dose row',
+      );
+
+      expect(find.text('не прийнято вчасно'), findsOneWidget);
+      expect((rowDecoration(tester).border! as Border).top.color,
+          BqColors.warnBorder);
+      expect(circleDecoration(tester).color, BqColors.surface,
+          reason: 'overdue differs from pending by the row border and the '
+              'chip alone — the circle is untouched');
+      expect(nameStyle(tester, 'Магній').color, BqColors.ink);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: on a day OTHER than today that same pending dose renders '
+        'neither the overdue chip nor the warn border', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg(oneMorningSlot));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('не прийнято вчасно').evaluate().isNotEmpty,
+        'the overdue treatment on today',
+      );
+
+      container.read(selectedDayProvider.notifier).select(futureDay);
+      await pumpUntil(
+        tester,
+        () => find.text('14 серпня').evaluate().isNotEmpty,
+        'the browsed future day',
+      );
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      expect(find.text('Магній'), findsOneWidget);
+      expect(find.text('не прийнято вчасно'), findsNothing,
+          reason: 'overdue is a today-only derivation (isOverdue is gated on '
+              'viewingToday)');
+      expect(find.text('не позначено'), findsNothing,
+          reason: 'a future day is not missed either — the two are mutually '
+              'exclusive and neither applies here');
+      expect((rowDecoration(tester).border! as Border).top.color,
+          BqColors.cardBorder);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a taken dose renders the calm circle with the check '
+        'glyph, a struck muted name and the alternate fill', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg(oneMorningSlot));
+
+      await tester.pumpWidget(app(container));
+      final row = find.text('Магній');
+      await pumpUntil(tester, () => row.evaluate().isNotEmpty, 'the dose row');
+
+      await tester.tap(row);
+      await pumpUntil(
+        tester,
+        () => find.text('✓').evaluate().isNotEmpty,
+        'the taken visual',
+      );
+
+      expect(circleDecoration(tester).color, BqColors.calm);
+      expect(nameStyle(tester, 'Магній').color, BqColors.textMuted);
+      expect(nameStyle(tester, 'Магній').decoration, TextDecoration.lineThrough);
+      expect(rowDecoration(tester).color, BqColors.surfaceAlt);
+      expect(find.text('пропущено'), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a skipped dose renders the neutral circle with the minus '
+        'glyph, a struck name and the skipped chip', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg(oneMorningSlot));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Магній').evaluate().isNotEmpty,
+        'the dose row',
+      );
+
+      var raw = <IntakeLog>[];
+      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      await pumpUntil(tester, () => raw.length == 1, 'the materialized log');
+
+      unawaited(container
+          .read(intakeRepoProvider)
+          .setStatus(raw.single.id, DoseStatus.skipped));
+      await pumpUntil(
+        tester,
+        () => find.text('пропущено').evaluate().isNotEmpty,
+        'the skipped visual',
+      );
+
+      expect(find.text('−'), findsOneWidget);
+      expect(circleDecoration(tester).color, BqColors.chip);
+      expect(nameStyle(tester, 'Магній').decoration, TextDecoration.lineThrough);
+      expect(rowDecoration(tester).color, BqColors.surfaceAlt);
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      rawSub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a pending dose on a PAST day renders the live pending '
+        'visual plus the neutral not-marked chip, and stays tappable '
+        '(DECIDED-3)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg(oneMorningSlot));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Магній').evaluate().isNotEmpty,
+        'the dose row on today',
+      );
+
+      container.read(selectedDayProvider.notifier).select(pastDay);
+      await pumpUntil(
+        tester,
+        () => find.text('не позначено').evaluate().isNotEmpty,
+        'the missed treatment on the past day',
+      );
+
+      expect(nameStyle(tester, 'Магній').color, BqColors.ink,
+          reason: 'the row stays visually live — no dead-grey name');
+      expect(nameStyle(tester, 'Магній').decoration, isNot(
+          TextDecoration.lineThrough));
+      expect(circleDecoration(tester).color, BqColors.surface);
+      final deco = rowDecoration(tester);
+      expect(deco.color, BqColors.surface);
+      expect((deco.border! as Border).top.color, BqColors.cardBorder,
+          reason: 'no warn, no risk color anywhere on a past day (TRACK-03)');
+      expect(find.text('не прийнято вчасно'), findsNothing,
+          reason: 'missed and overdue can never render together');
+
+      var raw = <IntakeLog>[];
+      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      await pumpUntil(tester, () => raw.isNotEmpty, 'the past day log');
+      await tester.tap(find.text('Магній'));
+      await pumpUntil(
+        tester,
+        () => raw.any((r) => r.status == DoseStatus.taken),
+        'the late correction to persist — a missed row is still tappable',
+      );
+
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      rawSub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a regimen with three doses that day renders positions '
+        '1, 2 and 3 of 3 in slot order (PF-6)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg(const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+            DoseSlot(id: 'sl2', minutesFromMidnight: 540, doseLabel: ''),
+            DoseSlot(id: 'sl3', minutesFromMidnight: 600, doseLabel: ''),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('доза 3 з 3').evaluate().isNotEmpty,
+        'the cycle chips',
+      );
+
+      expect(find.text('доза 1 з 3'), findsOneWidget);
+      expect(find.text('доза 2 з 3'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('доза 1 з 3')).dy <
+            tester.getTopLeft(find.text('доза 2 з 3')).dy,
+        isTrue,
+        reason: 'positions follow slot-time order',
+      );
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a single dose that day renders NO cycle chip',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg(oneMorningSlot));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Магній').evaluate().isNotEmpty,
+        'the dose row',
+      );
+
+      expect(find.text('доза 1 з 1'), findsNothing,
+          reason: 'the chip is zero-information at m == 1');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a user note renders as a chip AFTER the cycle chip and '
+        'BEFORE the state chip; an empty note renders none', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container
+          .read(supplementRepoProvider)
+          .upsert(supp('Магній', note: 'з їжею'));
+      await container.read(regimenRepoProvider).upsert(reg(const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+            DoseSlot(id: 'sl2', minutesFromMidnight: 490, doseLabel: ''),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('з їжею').evaluate().isNotEmpty,
+        'the note chips',
+      );
+
+      // Reading order inside the Wrap: earlier run first, then start-to-end
+      // within a run — a chip pushed onto a second line is still "after".
+      bool before(Offset a, Offset b) =>
+          a.dy < b.dy || (a.dy == b.dy && a.dx < b.dx);
+      final cycle = tester.getTopLeft(find.text('доза 1 з 2'));
+      final note = tester.getTopLeft(find.text('з їжею').first);
+      final state = tester.getTopLeft(find.text('не прийнято вчасно').first);
+      expect(before(cycle, note), isTrue,
+          reason: 'the cycle chip leads the persistent chips');
+      expect(before(note, state), isTrue,
+          reason: 'the state chip always closes the chip row');
+
+      // An empty note contributes nothing at all.
+      unawaited(
+          container.read(supplementRepoProvider).upsert(supp('Магній')));
+      await pumpUntil(
+        tester,
+        () => find.text('з їжею').evaluate().isEmpty,
+        'the note chip to disappear when the note is cleared',
+      );
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: the longest realistic uk name plus three chips does not '
+        'overflow a 390pt row (E2 long-text)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp(
+            'Вітамін B12 метилкобаламін',
+            note: 'не разом із цинком',
+          ));
+      await container.read(regimenRepoProvider).upsert(reg(const [
+            DoseSlot(
+              id: 'sl1',
+              minutesFromMidnight: 480,
+              doseLabel: '1000 мкг · сублінгвально',
+            ),
+            DoseSlot(id: 'sl2', minutesFromMidnight: 490, doseLabel: '1000 мкг'),
+            DoseSlot(id: 'sl3', minutesFromMidnight: 500, doseLabel: '1000 мкг'),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('доза 3 з 3').evaluate().isNotEmpty,
+        'the fully-loaded rows',
+      );
+
+      expect(find.text('Вітамін B12 метилкобаламін'), findsNWidgets(3));
+      expect(find.text('не разом із цинком'), findsNWidgets(3));
+      expect(find.text('не прийнято вчасно'), findsNWidgets(3));
+      expect(tester.takeException(), isNull,
+          reason: 'no RenderFlex overflow at 390pt with the longest uk name '
+              'and a full chip stack');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: tapping a SKIPPED row writes taken (DECIDED-2 tap '
+        'column)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg(oneMorningSlot));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Магній').evaluate().isNotEmpty,
+        'the dose row',
+      );
+
+      var raw = <IntakeLog>[];
+      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      await pumpUntil(tester, () => raw.length == 1, 'the materialized log');
+
+      unawaited(container
+          .read(intakeRepoProvider)
+          .setStatus(raw.single.id, DoseStatus.skipped));
+      await pumpUntil(
+        tester,
+        () => find.text('пропущено').evaluate().isNotEmpty,
+        'the skipped visual',
+      );
+
+      await tester.tap(find.text('Магній'));
+      await pumpUntil(
+        tester,
+        () => raw.single.status == DoseStatus.taken,
+        'the tap on a skipped row to write taken',
+      );
+
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      rawSub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a failed write leaves the row at its previous status and '
+        'surfaces markFailed once (T-03-13)', (tester) async {
+      usePhoneSurface(tester);
+      final container = ProviderContainer(overrides: [
+        dbProvider.overrideWith((ref) {
+          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          ref.onDispose(database.close);
+          db = database;
+          return database;
+        }),
+        todayProvider.overrideWith(() => _FixedToday(pinnedToday)),
+        nowMinutesProvider.overrideWith((ref) => Stream.value(400)),
+        intakeRepoProvider.overrideWith((ref) => _FailingIntakeRepo(
+              DriftIntakeRepository(
+                ref.watch(dbProvider),
+                regimens: ref.watch(regimenRepoProvider),
+              ),
+            )),
+      ]);
+      await container.read(supplementRepoProvider).upsert(supp('Магній'));
+      await container.read(regimenRepoProvider).upsert(reg(oneMorningSlot));
+
+      await tester.pumpWidget(app(container));
+      final row = find.text('Магній');
+      await pumpUntil(tester, () => row.evaluate().isNotEmpty, 'the dose row');
+
+      var raw = <IntakeLog>[];
+      final rawSub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      await pumpUntil(tester, () => raw.length == 1, 'the materialized log');
+
+      await tester.tap(row);
+      await pumpUntil(
+        tester,
+        () => find.text('Не вдалося зберегти позначку.').evaluate().isNotEmpty,
+        'the markFailed feedback',
+      );
+
+      expect(find.text('Не вдалося зберегти позначку.'), findsOneWidget,
+          reason: 'the failure is surfaced exactly once');
+      expect(raw.single.status, DoseStatus.pending,
+          reason: 'nothing was written');
+      expect(find.text('✓'), findsNothing,
+          reason: 'no optimistic-then-reverted visual — the stream is the '
+              'only source of truth');
+      expect(nameStyle(tester, 'Магній').color, BqColors.ink);
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      rawSub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+  });
+
+  // --- Dose action sheet (plan 03-04, Task 3; UI-SPEC S5, DECIDED-2) ---
+  //
+  // The sheet is a CHOOSER: every assertion below is about which actions it
+  // offers and what the RAW database row becomes afterwards. The sheet itself
+  // performs no write — `DoseRow._apply` does, through the same guard tap uses.
+  group('dose action sheet', () {
+    final pinnedToday = DateTime.utc(2026, 8, 13);
+
+    const markTaken = 'Позначити прийнято';
+    const markSkipped = 'Позначити пропущено';
+    const undoMark = 'Зняти позначку';
+
+    const supplement = Supplement(
+      id: 's1',
+      name: 'Магній',
+      doseText: '',
+      colorValue: 0xFF6B6FA8,
+      note: '',
+    );
+
+    Regimen reg() => Regimen(
+          id: 'r1',
+          supplementId: 's1',
+          kind: RegimenKind.cyclic,
+          startDate: DateTime.utc(2020, 1, 1),
+          endDate: null,
+          onDays: 1,
+          offDays: 0,
+          paused: false,
+          slots: const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: '400 мг'),
+          ],
+        );
+
+    /// Pumps the screen, waits for the single dose row, and returns a live
+    /// view of the raw log table plus its subscription.
+    Future<(Finder, List<IntakeLog> Function(), StreamSubscription<void>)>
+        pumpRow(WidgetTester tester, ProviderContainer container) async {
+      await tester.pumpWidget(app(container));
+      final row = find.text('Магній');
+      await pumpUntil(tester, () => row.evaluate().isNotEmpty, 'the dose row');
+      var raw = <IntakeLog>[];
+      final sub = db.select(db.intakeLogs).watch().listen((v) => raw = v);
+      await pumpUntil(tester, () => raw.length == 1, 'the materialized log');
+      return (row, () => raw, sub);
+    }
+
+    testWidgets('uk: long-pressing a PENDING row offers mark-taken and '
+        'mark-skipped, with no undo row', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, _, sub) = await pumpRow(tester, container);
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(markTaken).evaluate().isNotEmpty,
+        'the action sheet',
+      );
+
+      expect(find.text(markSkipped), findsOneWidget);
+      expect(find.text(undoMark), findsNothing,
+          reason: 'there is nothing to undo on a pending dose — the row is '
+              'absent, never disabled');
+      expect(find.text('Магній'), findsNWidgets(2),
+          reason: 'the sheet header repeats the supplement name');
+      expect(find.text('08:00 · 400 мг'), findsOneWidget,
+          reason: 'the mono subtitle composes the 24-hour slot time with the '
+              "slot's dose label");
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: long-pressing a TAKEN row offers mark-skipped and undo, '
+        'with no mark-taken row', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, raw, sub) = await pumpRow(tester, container);
+
+      await tester.tap(row);
+      await pumpUntil(
+        tester,
+        () => raw().single.status == DoseStatus.taken,
+        'the row to become taken',
+      );
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(undoMark).evaluate().isNotEmpty,
+        'the action sheet',
+      );
+
+      expect(find.text(markSkipped), findsOneWidget);
+      expect(find.text(markTaken), findsNothing);
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: long-pressing a SKIPPED row offers mark-taken and undo, '
+        'with no mark-skipped row', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, raw, sub) = await pumpRow(tester, container);
+
+      unawaited(container
+          .read(intakeRepoProvider)
+          .setStatus(raw().single.id, DoseStatus.skipped));
+      await pumpUntil(
+        tester,
+        () => raw().single.status == DoseStatus.skipped,
+        'the row to become skipped',
+      );
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(undoMark).evaluate().isNotEmpty,
+        'the action sheet',
+      );
+
+      expect(find.text(markTaken), findsOneWidget);
+      expect(find.text(markSkipped), findsNothing);
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: choosing mark-skipped pops the sheet and drives the RAW '
+        'row to skipped', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, raw, sub) = await pumpRow(tester, container);
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(markSkipped).evaluate().isNotEmpty,
+        'the action sheet',
+      );
+      // The sheet is mounted before it has finished sliding up; let the
+      // route transition run out so the action row is actually hit-testable.
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      await tester.tap(find.text(markSkipped));
+      await pumpUntil(
+        tester,
+        () => raw().single.status == DoseStatus.skipped,
+        'the chosen status to persist through the row write path',
+      );
+      await pumpUntil(
+        tester,
+        () => find.text(markSkipped).evaluate().isEmpty,
+        'the sheet to finish popping',
+      );
+
+      expect(find.text(markSkipped), findsNothing,
+          reason: 'the sheet pops as soon as an action is chosen');
+      expect(find.text('пропущено'), findsOneWidget,
+          reason: 'the row re-renders from the stream, not from sheet state');
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: dismissing the sheet without choosing leaves the raw '
+        'status unchanged', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, raw, sub) = await pumpRow(tester, container);
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(markTaken).evaluate().isNotEmpty,
+        'the action sheet',
+      );
+
+      // Barrier tap at the very top of the screen — well clear of the sheet.
+      await tester.tapAt(const Offset(200, 20));
+      await pumpUntil(
+        tester,
+        () => find.text(markTaken).evaluate().isEmpty,
+        'the sheet to dismiss',
+      );
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      expect(raw().single.status, DoseStatus.pending,
+          reason: 'dismissal is not a choice — nothing is written');
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a long press issued while the tap write is STILL in '
+        'flight is swallowed — one write, no sheet (T-03-02)', (tester) async {
+      usePhoneSurface(tester);
+      // A deliberately slow repository holds the write open long enough for
+      // the long-press timeout to elapse mid-flight — the Phase-2
+      // double-activation pattern, applied across two different gestures.
+      final container = ProviderContainer(overrides: [
+        dbProvider.overrideWith((ref) {
+          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          ref.onDispose(database.close);
+          db = database;
+          return database;
+        }),
+        todayProvider.overrideWith(() => _FixedToday(pinnedToday)),
+        nowMinutesProvider.overrideWith((ref) => Stream.value(400)),
+        intakeRepoProvider.overrideWith((ref) => _SlowIntakeRepo(
+              DriftIntakeRepository(
+                ref.watch(dbProvider),
+                regimens: ref.watch(regimenRepoProvider),
+              ),
+            )),
+      ]);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, raw, sub) = await pumpRow(tester, container);
+
+      await tester.tap(row);
+      await tester.pump(const Duration(milliseconds: 10));
+      expect(raw().single.status, DoseStatus.pending,
+          reason: 'the slow write has not landed yet — it is in flight');
+
+      // `longPress` pumps past the long-press timeout while the write is open.
+      await tester.longPress(row);
+      await tester.pump(const Duration(milliseconds: 10));
+      expect(find.text(markSkipped), findsNothing,
+          reason: 'the sheet must not open while a write is in flight');
+
+      await pumpUntil(
+        tester,
+        () => raw().single.status == DoseStatus.taken,
+        'the single allowed write to land',
+      );
+      expect(raw().single.status, DoseStatus.taken,
+          reason: 'exactly one write was allowed through, and it is the tap');
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+  });
+}
+
+/// An [IntakeRepository] whose writes take a full second to land, so a test
+/// can act while one is genuinely in flight. Reads delegate to the real
+/// Drift implementation.
+class _SlowIntakeRepo implements IntakeRepository {
+  _SlowIntakeRepo(this.inner);
+
+  final IntakeRepository inner;
+
+  @override
+  Stream<List<DayDose>> watchDay(DateTime day) => inner.watchDay(day);
+
+  @override
+  Future<void> ensureLogsForDay(DateTime day) => inner.ensureLogsForDay(day);
+
+  @override
+  Future<void> setStatus(String logId, DoseStatus status) async {
+    await Future<void>.delayed(const Duration(seconds: 1));
+    await inner.setStatus(logId, status);
+  }
+}
+
+/// An [IntakeRepository] whose writes always fail; reads delegate to the real
+/// Drift implementation so the day still materializes and renders.
+class _FailingIntakeRepo implements IntakeRepository {
+  _FailingIntakeRepo(this.inner);
+
+  final IntakeRepository inner;
+
+  @override
+  Stream<List<DayDose>> watchDay(DateTime day) => inner.watchDay(day);
+
+  @override
+  Future<void> ensureLogsForDay(DateTime day) => inner.ensureLogsForDay(day);
+
+  @override
+  Future<void> setStatus(String logId, DoseStatus status) =>
+      Future<void>.error(StateError('write refused by the test repository'));
 }
 
 /// A clock frozen on one day: [TodayController] with no timer and no
