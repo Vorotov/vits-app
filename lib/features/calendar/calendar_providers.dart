@@ -49,6 +49,38 @@ final resolvedDayProvider = Provider.autoDispose<DateTime>(
   (ref) => ref.watch(selectedDayProvider) ?? ref.watch(todayProvider),
 );
 
+/// Which page the Calendar tab currently renders (DECIDED-1).
+///
+/// The planner is a second PAGE inside this tab, never a pushed route: the app
+/// shell is an `IndexedStack` and a root-level push would cover the
+/// `NavigationBar` that the mockup deliberately keeps visible on both planner
+/// screens.
+enum CalendarPage { today, planner }
+
+/// The Calendar tab's page swap (DECIDED-1).
+///
+/// autoDispose per D-23 (Calendar-tab state). As with [selectedDayProvider],
+/// the shell keeps the Calendar screen mounted on every tab, so this never
+/// actually disposes while the app runs (WR-05) — the page therefore survives
+/// a tab round trip.
+class CalendarPageController extends Notifier<CalendarPage> {
+  @override
+  CalendarPage build() => CalendarPage.today;
+
+  /// Opens the planner page.
+  void showPlanner() => state = CalendarPage.planner;
+
+  /// Returns to the Today page — the target of both the planner's back control
+  /// and the system back gesture.
+  void showToday() => state = CalendarPage.today;
+}
+
+/// The Calendar tab's current page; autoDispose per D-23.
+final calendarPageProvider =
+    NotifierProvider.autoDispose<CalendarPageController, CalendarPage>(
+  CalendarPageController.new,
+);
+
 /// Minutes elapsed since LOCAL midnight, re-emitted once a minute (P-5).
 ///
 /// This is the second and last sanctioned clock read in the app: the calendar

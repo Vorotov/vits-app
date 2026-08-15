@@ -434,4 +434,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get calendarDisclaimer =>
       'This schedule is built from your own entries. Educational material, not medical advice.';
+
+  @override
+  String get plannerTitle => 'Planner';
 }

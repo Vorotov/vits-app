@@ -76,6 +76,47 @@ void main() {
     });
   });
 
+  group('BqColors — Phase-4 token additions (04-UI-SPEC Token Additions)', () {
+    test('plannedHatchStrong — hatch stroke rgba(74,78,124,.18)', () {
+      expect(BqColors.plannedHatchStrong, const Color(0x2E4A4E7C));
+    });
+
+    test('plannedHatchWeak — hatch under-fill rgba(74,78,124,.06)', () {
+      expect(BqColors.plannedHatchWeak, const Color(0x0F4A4E7C));
+    });
+
+    test('plannedBorder — planned segment outline rgba(74,78,124,.45)', () {
+      expect(BqColors.plannedBorder, const Color(0x734A4E7C));
+    });
+
+    test('todayMarker — gantt today line, ink at .35', () {
+      expect(BqColors.todayMarker, const Color(0x5917171B));
+    });
+
+    test('thresholdDash — comfort-3 dashed line, ink at .22', () {
+      expect(BqColors.thresholdDash, const Color(0x3817171B));
+    });
+
+    test(
+        'thresholdDash is a token of its own, not an alias of checkBorder '
+        '(equal today, independent forever)', () {
+      expect(BqColors.thresholdDash, BqColors.checkBorder);
+    });
+
+    test('loadBar — comfort-band load bar #7C80AB, and NOT accent', () {
+      expect(BqColors.loadBar, const Color(0xFF7C80AB));
+      expect(BqColors.loadBar, isNot(BqColors.accent));
+    });
+
+    test('monthSelectedBg — selected month card fill #F2F2F7', () {
+      expect(BqColors.monthSelectedBg, const Color(0xFFF2F2F7));
+    });
+
+    test('yearBarTrack — month-card coverage track #F0EFEA', () {
+      expect(BqColors.yearBarTrack, const Color(0xFFF0EFEA));
+    });
+  });
+
   group('BqSeriesColors — supplement color-tag series (D-06)', () {
     test('exactly 8 colors, exact order', () {
       expect(BqSeriesColors.palette.length, 8);

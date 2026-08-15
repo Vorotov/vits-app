@@ -80,15 +80,6 @@ double stripHeightFor(TextScaler scaler) =>
 /// Gap between the seven cells (mockup line 215).
 const double _cellGap = 5;
 
-/// The Monday of [day]'s week, as a date-only UTC value.
-///
-/// Pure arithmetic on the UTC calendar day — `subtract` on a UTC value can
-/// never be bitten by a DST transition (the project's date-only rule).
-DateTime mondayOfWeek(DateTime day) {
-  final d = dateOnly(day);
-  return d.subtract(Duration(days: d.weekday - DateTime.monday));
-}
-
 /// The week-start rendered by [page], counting back from today's week on the
 /// last page.
 DateTime weekStartForPage(int page, DateTime today) =>

@@ -799,6 +799,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This schedule is built from your own entries. Educational material, not medical advice.'**
   String get calendarDisclaimer;
+
+  /// ONE key, TWO placements (04-UI-SPEC Copywriting Contract): the planner screen's own title (mockup line 287) and the Calendar header's entry button. Sharing the key is deliberate — the button always names its destination exactly, the same convention `backToToday` follows. Verb-free by design; never 'Open planner'
+  ///
+  /// In en, this message translates to:
+  /// **'Planner'**
+  String get plannerTitle;
 }
 
 class _AppLocalizationsDelegate
