@@ -1,7 +1,8 @@
 ---
 phase: 2
 slug: stack-management
-status: draft
+status: approved
+reviewed_at: 2026-08-15
 shadcn_initialized: false
 preset: none
 created: 2026-08-15
@@ -146,6 +147,8 @@ Component-level type specs (mockup-exact, locked as this project's mockup-fideli
 | НА ПАУЗІ badge | JetBrains Mono 9.5/500, ls .04em, `textSecondary` on `chip` | line 483 |
 | "+" in result rows / "−" in slot rows | Instrument 20/500 `accent` / 16/400 | lines 146, 545 |
 
+> Component-level size list is CLOSED: the executor may not introduce any font size not enumerated in this section (checker Dimension 4 note — keeps the mockup-verbatim exemption bounded).
+
 All numerals, times, and dates render in JetBrains Mono with tabular figures (`BqText.mono()`), matching the mockup's `font-feature-settings:'tnum'` convention. Time display is forced 24-hour in BOTH the `showTimePicker` (MediaQuery builder wrap) and the slot-row display (`formatTimeOfDay(..., alwaysUse24HourFormat: true)`) — one convention everywhere (02-RESEARCH.md PF-3, locked).
 
 ---
@@ -184,6 +187,7 @@ All copy ships as ARB keys in `app_en.arb` + `app_uk.arb` (zero hardcoded string
 | Primary CTA (Stack) | `addSupplement` — uk "Додати добавку" · en "Add supplement" (line 88) |
 | Primary CTA (editor, active) | `saveAndStart` — uk "Додати й запустити цикл" · en "Add and start cycle" (line 960) |
 | Primary CTA (editor, paused) | `saveWhilePaused` — uk "Зберегти, цикл на паузі" · en "Save, cycle paused" (line 960) |
+| Primary CTA (manual tab) | `addManualSupplement` — uk "Додати добавку" · en "Add supplement" (invented — mockup's camera tab has no equivalent; specific verb+noun per checker BLOCK fix; generic `save` is NOT used as any primary CTA — it survives only as a conventional dialog action if needed) |
 | Empty state heading | `emptyStackTitle` — uk "Стек порожній" · en "Your stack is empty" (invented — mockup shows no empty state; discretion per 02-RESEARCH.md) |
 | Empty state body | `emptyStackBody` — uk "Додайте першу добавку — з каталогу або вручну." · en "Add your first supplement — from the catalog or manually." Next step = the `addSupplement` CTA, which stays visible above the empty state |
 | No-results (catalog search) | `noResultsCatalog` — uk "Нічого не знайшли в каталозі. Додайте цю добавку вручну." · en "Nothing found in the catalog. Add this supplement manually." (REWRITE — mockup line 150 promises label scanning, which is v2; must not ship, PF-5) |
@@ -197,6 +201,8 @@ All copy ships as ARB keys in `app_en.arb` + `app_uk.arb` (zero hardcoded string
 | Catalog | `catalog{Id}Name` / `catalog{Id}Dose` × 15 entries — names verbatim from mockup CATALOG + BASE_STACK (lines 587-604); dose text = neutral form/dose only, NO notes/scores/interaction claims. Mockup's "Зверобій" spelling kept as-is (A4 — user copy call at UAT) |
 
 Voice (mockup КОПІРАЙТ panel, line 56, locked): lexicon is "цикл, перерва, слот, прийнято, одночасно"; never effect promises, never guilt-framing, never imperative "пити".
+
+Icon-only controls carry Semantics/tooltip labels (checker Dimension 2 fix): catalog result-row "+" → semantics `addSupplement` + entry name; slot-row "−" → `removeSlot` uk "Видалити слот {time}" · en "Remove slot {time}"; editor back chevron → SDK default back label (acceptable, stated here); `BqSegmented` semantics per 02-RESEARCH.md P-10.
 
 ---
 
@@ -218,7 +224,7 @@ Voice (mockup КОПІРАЙТ panel, line 56, locked): lexicon is "цикл, п
 - Header row: title 18/600 + trailing "Закрити" text button (13/400 `accent`).
 - `BqSegmented` two tabs: "Пошук у базі" / "Вручну" (manual tab REPLACES the mockup camera tab — locked v1 scope).
 - Search tab: input (surface fill, radius `BqRadii.input`, 1px `inputBorder`, padding 13/14, hint `searchCatalogHint` "Назва або діюча речовина") → result list (10px gaps): surface rows, radius `BqRadii.button`, 1px `cardBorder`, padding 13/14, name 14/600 + doseText 12/400 `textMuted` 2px below + trailing "+" 20/500 `accent`. Empty query shows the full 15-entry catalog; matching is trim+lowercase `contains` across active locale AND en (P-2).
-- Manual tab: name field (required, non-empty after trim — Save disabled otherwise) + dose field (optional), same input styling; `textCapitalization: sentences` (PF-9); Save button styled as the primary CTA.
+- Manual tab: name field (required, non-empty after trim — Save disabled otherwise) + dose field (optional), same input styling; `textCapitalization: sentences` (PF-9); primary CTA is `addManualSupplement` ("Додати добавку" / "Add supplement" — Copywriting Contract row), styled as the accent primary button, disabled until name is non-empty after trim.
 - On pick/save: create supplement (round-robin series color), close sheet, push RegimenEditorScreen.
 
 ### S3 — Regimen editor (mockup screen 05, lines 480-561)
@@ -270,7 +276,7 @@ The mockup is authoritative for visuals only. These deviations are locked by sco
 
 ## UI Considerations
 
-Probe run 2026-08-15 over elements E1 (stack list), E2 (add sheet: search results + manual form), E3 (regimen editor form), E4 (cycle preview strip), E5 (footer actions). 16 applicable, 14 resolved explicit, 2 resolved backstop, 0 unresolved.
+Probe engine run 2026-08-15 (ui-consideration-probe.cjs) over elements E1 (stack list), E2 (add sheet: search results + manual form), E3 (regimen editor form), E4 (cycle preview strip), E5 (footer actions). 36 applicable category probes raised; all resolved — 18 explicit truths, 2 backstop, 0 unresolved. Truths #1-14 below plus #17-20 (synchronous-surface resolutions) cover the full matrix in the coverage table.
 
 **Resolved — explicit truths (planner lifts each into `must_haves.truths`):**
 
@@ -288,6 +294,10 @@ Probe run 2026-08-15 over elements E1 (stack list), E2 (add sheet: search result
 12. E3 structural states: slot count is clamped 1-6 by construction (disabled controls, never hidden); course end < start is unpickable (`firstDate: startDate`) and end clamps when start moves — invalid regimens are unrepresentable in the UI.
 13. E3 paused state: paused renders all four pause signals together (badge, pause-button label, save label, save hint) per Interaction Contract 5.
 14. E4: the preview strip always renders exactly 28 bars for both modes, derived from `isActiveOn` on the draft — a course ending mid-window shows inactive `field` bars after the end, never an empty strip.
+17. E2/E3/E4 no-loading/no-error by construction: the catalog is an in-memory const list (search is synchronous — no loading spinner, no error state exists); the regimen editor controller seeds synchronously from the passed StackEntry/defaults (never an async gap, never an empty form — new regimens open pre-filled with the documented defaults); the preview strip derives synchronously from the draft. No loading or error UI may be invented for these surfaces.
+18. E3 populated/overflow: the editor body is one scroll view; with 6 slots + course mode on a 667pt screen every control remains reachable by scrolling, and the footer stays pinned (not scrolled away).
+19. E5 error/confirm: Видалити never deletes directly — it opens the confirmation dialog (Copywriting Contract row); dialog dismiss returns to the editor unchanged.
+20. E3 long-text: slot dose-label input text stays on one line inside its row via Flexible + ellipsis on DISPLAY rows only (mockup line 544); the input itself scrolls horizontally — no fixed-width container.
 
 **Resolved — backstop (planner lifts as `{ statement, verification: backstop }`):**
 
@@ -296,21 +306,16 @@ Probe run 2026-08-15 over elements E1 (stack list), E2 (add sheet: search result
 16. statement: The longest uk button labels ("Зберегти, цикл на паузі", "Відновити цикл", "Додати й запустити цикл") render on one line without clipping at 390pt width in the editor footer, and no fixed-width container constrains them; verified visually in uk locale on a simulator before phase sign-off.
     verification: backstop
 
-| Category | Element(s) | Status | Resolution / Reason |
-|----------|------------|--------|---------------------|
-| empty | E1 stack list | ✅ covered | #1 |
-| loading | E1 stack list | ✅ covered | #2 |
-| error | E1 stack list | ✅ covered | #3 |
-| populated/overflow | E1 stack list | ✅ covered | #4 |
-| zero-one-many | E1 summary | ✅ covered | #5 |
-| partial | E1 fresh card | ✅ covered | #6 |
-| long-text | E1 cards, E2 results | ✅ covered | #7, #10 |
-| empty/zero | E2 search | ✅ covered | #8, #9 |
-| validation | E2 manual form, E3 editor | ✅ covered | #11, #12 |
-| state-pairing | E3 paused | ✅ covered | #13 |
-| edge-window | E4 preview strip | ✅ covered | #14 |
-| overflow (keyboard) | E2 sheet | 🧪 backstop | #15 |
-| long-text (uk buttons) | E5 footer | 🧪 backstop | #16 |
+| Category | E1 stack list | E2 add sheet | E3 editor form | E4 preview strip | E5 footer |
+|----------|--------------|--------------|----------------|------------------|-----------|
+| empty | ✅ #1 | ✅ #8, #9 | ✅ #17 (pre-filled, never empty) | ✅ #14 (never empty) | n/a (static) |
+| loading | ✅ #2 | ✅ #17 (sync) | ✅ #17 (sync) | ✅ #17 (sync) | ✅ #17 (sync) |
+| error | ✅ #3 | ✅ #11/#17 (validation is the only error surface) | ✅ #12 (invalid unrepresentable) | ✅ #17 (none) | ✅ #19 (confirm dialog) |
+| populated | ✅ #4 | ✅ #8 | ✅ #12, #18 | ✅ #14 | ✅ #13 |
+| partial | ✅ #6 | ✅ #11 (save disabled) | ✅ #12 (clamped defaults) | ✅ #14 (mid-window course) | n/a |
+| overflow | ✅ #4 (scroll + ≥84px) | 🧪 #15 (keyboard, backstop) | ✅ #18 (scroll, pinned footer) | ✅ #14 (fixed 28 flex bars) | 🧪 #16 (uk labels, backstop) |
+| zero-one-many | ✅ #5 (ICU plural) | ✅ #8/#9 (all/filtered/none) | ✅ #12 (slots 1-6 clamp) | ✅ #14 | n/a |
+| long-text | ✅ #7 | ✅ #10 | ✅ #20 | n/a (no text) | 🧪 #16 (backstop) |
 
 ---
 
@@ -347,11 +352,11 @@ Not applicable — Flutter project; no shadcn or npm component registry is invol
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
 **Approval:** pending
