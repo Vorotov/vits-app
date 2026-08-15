@@ -110,11 +110,11 @@ void main() {
   /// path from the Calendar header is proven once, by the tests above, and
   /// every shell assertion below is about the planner itself. It also keeps
   /// the Today page — and its bounded materialization — out of these tests.
-  Widget plannerApp(ProviderContainer container) {
+  Widget plannerApp(ProviderContainer container, {String locale = 'uk'}) {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
-        locale: const Locale('uk'),
+        locale: Locale(locale),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: bqTheme(),
@@ -122,6 +122,16 @@ void main() {
       ),
     );
   }
+
+  /// Finds every widget carrying a `ValueKey<String>` under [prefix].
+  ///
+  /// Painted primitives — gridlines, the today marker, bars, pips — have no
+  /// distinguishing type of their own, so this codebase gives each a keyed
+  /// container and finds it by key (the `week-dot` idiom).
+  Finder byKeyPrefix(String prefix) => find.byWidgetPredicate((w) {
+        final key = w.key;
+        return key is ValueKey<String> && key.value.startsWith(prefix);
+      });
 
   void usePhoneSurface(WidgetTester tester) {
     tester.view.physicalSize = const Size(1170, 2532);
@@ -349,9 +359,10 @@ void main() {
 
   Future<void> openPlanner(
     WidgetTester tester,
-    ProviderContainer container,
-  ) async {
-    await tester.pumpWidget(plannerApp(container));
+    ProviderContainer container, {
+    String locale = 'uk',
+  }) async {
+    await tester.pumpWidget(plannerApp(container, locale: locale));
     await pumpUntil(
       tester,
       () => find.byType(BqSegmented).evaluate().isNotEmpty,
@@ -659,6 +670,204 @@ void main() {
       expect(paused, endsWith('0 періодів'));
 
       handle.dispose();
+      await tearDownTree(tester, container);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // The gantt chrome (plan 04-03 task 1, UI-SPEC S6a item 2, P-4/P-8,
+  // PF-3, M1, Interaction Contract 12).
+  // ---------------------------------------------------------------------
+
+  group('gantt chrome', () {
+    testWidgets('four standalone uk month abbreviations render in window '
+        'order, uppercased (PF-4)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      // The Aug-Nov window around the pinned clock, in the STANDALONE
+      // (nominative) abbreviated forms — `LLL`, never `MMM` and never a table.
+      expect(find.text('СЕРП.'), findsOneWidget);
+      expect(find.text('ВЕР.'), findsOneWidget);
+      expect(find.text('ЖОВТ.'), findsOneWidget);
+      expect(find.text('ЛИСТ.'), findsOneWidget);
+      expect(byKeyPrefix('gantt-month-'), findsNWidgets(4));
+
+      // Window order, read off the keyed slots rather than the tree order.
+      for (final (index, label) in <(int, String)>[
+        (0, 'СЕРП.'),
+        (1, 'ВЕР.'),
+        (2, 'ЖОВТ.'),
+        (3, 'ЛИСТ.'),
+      ]) {
+        expect(
+          tester.widget<Text>(find.byKey(ValueKey('gantt-month-$index'))).data,
+          label,
+        );
+      }
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('month columns are sized to REAL day counts — a 31-day month '
+        'is wider than a 30-day one (PF-3, T-04-11)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      final august =
+          tester.getSize(find.byKey(const ValueKey('gantt-month-0'))).width;
+      final september =
+          tester.getSize(find.byKey(const ValueKey('gantt-month-1'))).width;
+      final october =
+          tester.getSize(find.byKey(const ValueKey('gantt-month-2'))).width;
+
+      expect(august, greaterThan(september),
+          reason: 'August has 31 days and September 30 — fixed quarter '
+              'columns would make these equal');
+      expect(october, closeTo(august, 0.01),
+          reason: 'October is also 31 days');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('three gridlines sit at the interior month boundaries and '
+        'exactly one today marker renders (P-4)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      expect(byKeyPrefix('gantt-gridline-'), findsNWidgets(3),
+          reason: 'a four-month window has three interior boundaries');
+      expect(find.byKey(const ValueKey('gantt-today-marker')), findsOneWidget,
+          reason: 'today is inside the window by construction, so the marker '
+              'always renders — there is no absent branch');
+
+      // The boundaries sit at the cumulative REAL day fractions of a 122-day
+      // window — 31/122, 61/122, 92/122 — never at 0.25 / 0.50 / 0.75.
+      final track = tester.getRect(find.byType(GanttRowBar).first);
+      double fractionOf(int i) =>
+          (tester.getRect(byKeyPrefix('gantt-gridline-').at(i)).left -
+              track.left) /
+          track.width;
+      expect(fractionOf(0), closeTo(31 / 122, 0.002));
+      expect(fractionOf(1), closeTo(61 / 122, 0.002));
+      expect(fractionOf(2), closeTo(92 / 122, 0.002));
+      expect(fractionOf(1), isNot(closeTo(0.5, 0.002)),
+          reason: 'an even-quarter layout would land the middle rule at 0.5');
+
+      // (todayIndex + 0.5) / span for the pinned 13 August clock.
+      final marker = tester.getRect(find.byKey(const ValueKey(
+        'gantt-today-marker',
+      )));
+      expect((marker.left - track.left) / track.width,
+          closeTo(12.5 / 122, 0.002));
+      expect(marker.height, greaterThan(0),
+          reason: 'the rules span the full height of the row stack');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the legend renders exactly three entries in BOTH locales — '
+        'the mockup\'s interaction entry does not ship (M1)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      expect(byKeyPrefix('gantt-legend-'), findsNWidgets(3));
+      expect(find.text('приймаю'), findsOneWidget);
+      expect(find.text('заплановано'), findsOneWidget);
+      expect(find.text('пауза'), findsOneWidget);
+      expect(find.text('є взаємодія'), findsNothing,
+          reason: 'an interaction claim this product does not make');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the legend still renders exactly three entries in en',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container, locale: 'en');
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      expect(byKeyPrefix('gantt-legend-'), findsNWidgets(3));
+      expect(find.text('taking'), findsOneWidget);
+      expect(find.text('planned'), findsOneWidget);
+      expect(find.text('paused'), findsOneWidget);
+      expect(find.textContaining('interaction'), findsNothing);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('changing the selected week does not rebuild the gantt '
+        '(Interaction Contract 12)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      final sub = container.listen(resolvedWeekIndexProvider, (_, _) {});
+      addTearDown(sub.close);
+
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      Finder painted() => find.descendant(
+            of: find.byType(GanttRowBar).first,
+            matching: find.byType(CustomPaint),
+          );
+      final before = tester.widget<CustomPaint>(painted());
+      expect(
+        find.descendant(
+          of: find.byType(PlannerGantt),
+          matching: find.byType(RepaintBoundary),
+        ),
+        findsWidgets,
+        reason: 'the card is isolated behind its own boundary',
+      );
+
+      container.read(selectedWeekProvider.notifier).select(4);
+      await tester.pump();
+      expect(container.read(resolvedWeekIndexProvider), 4);
+
+      expect(identical(tester.widget<CustomPaint>(painted()), before), isTrue,
+          reason: 'the gantt subtree did not even rebuild, so it cannot have '
+              'repainted — selection lives in a provider the gantt never '
+              'watches');
+
       await tearDownTree(tester, container);
     });
   });
