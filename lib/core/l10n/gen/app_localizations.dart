@@ -139,6 +139,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, one{{count} week} other{{count} weeks}}'**
   String weeksCount(int count);
+
+  /// Stack screen heading
+  ///
+  /// In en, this message translates to:
+  /// **'My stack'**
+  String get stackTitle;
+
+  /// Primary CTA on the Stack screen; also the add-supplement sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Add supplement'**
+  String get addSupplement;
+
+  /// Dismiss action in the add-supplement sheet header
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// Label for the required supplement name field in the manual add form
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get nameLabel;
+
+  /// Label for the optional dose description field in the manual add form
+  ///
+  /// In en, this message translates to:
+  /// **'Dose'**
+  String get doseLabel;
+
+  /// Primary CTA of the manual entry form in the add-supplement sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Add supplement'**
+  String get addManualSupplement;
 }
 
 class _AppLocalizationsDelegate
