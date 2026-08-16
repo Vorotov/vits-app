@@ -11,6 +11,7 @@
 /// `PlannerScreen` directly, so the tap path under test is the real one.
 library;
 
+import 'package:boostque/app_shell.dart';
 import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/l10n/l10n.dart';
@@ -26,9 +27,11 @@ import 'package:boostque/features/calendar/planner_gantt.dart';
 import 'package:boostque/features/calendar/planner_providers.dart';
 import 'package:boostque/features/calendar/planner_screen.dart';
 import 'package:boostque/features/calendar/planner_year_grid.dart';
+import 'package:boostque/features/calendar/week_strip.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
@@ -464,6 +467,206 @@ void main() {
     await tester.drag(find.byType(ListView), Offset(0, -dy));
     await tester.pump();
   }
+
+  // ---------------------------------------------------------------------
+  // System back (UI-SPEC S6 truth #18: "system back from the planner returns
+  // to Today rather than leaving the tab").
+  //
+  // These are the only tests in the suite that mount the REAL [AppShell]:
+  // truth #18 is a claim about the nav bar and the route stack, and neither
+  // exists when `CalendarScreen` is pumped as a bare `home`. The back itself
+  // is driven down the actual platform channel a hardware/gesture back
+  // arrives on, so the assertion covers the whole path — engine message ->
+  // `WidgetsBinding.handlePopRoute` -> `WidgetsApp.didPopRoute` ->
+  // `Navigator.maybePop` -> the screen's `PopScope` — rather than calling
+  // the callback by hand, which would prove nothing about who invokes it.
+  // ---------------------------------------------------------------------
+
+  group('system back', () {
+    /// The real three-tab shell — nav bar, `IndexedStack` and all.
+    Widget shellApp(ProviderContainer container) {
+      return UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          locale: const Locale('uk'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: bqTheme(),
+          home: const AppShell(),
+        ),
+      );
+    }
+
+    /// Every method call the app makes on `SystemChannels.platform`.
+    ///
+    /// `SystemNavigator.pop()` — "close the app" — travels this channel, and
+    /// it is the ONLY observable difference between a back the screen
+    /// consumed and a back that fell through to the platform. Asserting on
+    /// the widget tree alone cannot tell those apart, because a real app
+    /// exit leaves the tree exactly as it was.
+    List<MethodCall> recordPlatformCalls(WidgetTester tester) {
+      final calls = <MethodCall>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          calls.add(call);
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+      return calls;
+    }
+
+    /// Delivers the engine's `popRoute` notification on
+    /// `SystemChannels.navigation` — an Android hardware/gesture back, or an
+    /// iOS back, as the framework actually receives it.
+    Future<void> systemBack(WidgetTester tester) async {
+      final message = const JSONMethodCodec().encodeMethodCall(
+        const MethodCall('popRoute'),
+      );
+      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+        SystemChannels.navigation.name,
+        message,
+        (_) {},
+      );
+      await tester.pump();
+    }
+
+    /// Opens the Calendar tab of the real shell and waits for the Today page.
+    Future<void> openCalendarTab(
+      WidgetTester tester,
+      ProviderContainer container,
+    ) async {
+      await tester.pumpWidget(shellApp(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Календар').evaluate().isNotEmpty,
+        'the shell nav bar',
+      );
+      await tester.tap(find.text('Календар'));
+      await pumpUntil(
+        tester,
+        () => find.text('Планувальник').evaluate().isNotEmpty,
+        'the Calendar header entry action',
+      );
+    }
+
+    int selectedTab(WidgetTester tester) =>
+        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex;
+
+    testWidgets('a system back with the planner open returns to Today and '
+        'never leaves the Calendar tab (UI-SPEC truth #18)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      final platformCalls = recordPlatformCalls(tester);
+
+      await openCalendarTab(tester, container);
+      await tester.tap(find.text('Планувальник'));
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the planner gantt rows',
+      );
+      expect(find.byType(PlannerScreen), findsOneWidget);
+      expect(selectedTab(tester), 1,
+          reason: 'the planner lives UNDER Calendar — opening it never moves '
+              'the nav bar selection');
+
+      // Cleared here so the assertion below is about the back gesture only,
+      // not about anything the app said to the platform while starting up.
+      platformCalls.clear();
+      await systemBack(tester);
+      await pumpUntil(
+        tester,
+        () => find.byType(PlannerScreen).evaluate().isEmpty,
+        'the Today page to come back',
+      );
+
+      // 1. Back on Today: a Today-only element is present, and every
+      //    planner-only element is gone from the tree rather than covered.
+      expect(find.text('Сьогодні'), findsWidgets,
+          reason: 'the Today header is back');
+      expect(find.byType(WeekStrip), findsOneWidget,
+          reason: 'the week strip belongs to the Today page alone');
+      expect(find.byType(GanttRowBar), findsNothing);
+      expect(find.byType(BqSegmented), findsNothing,
+          reason: 'the Цикли/Рік control is a planner-only affordance');
+
+      // 2. Still inside the tab, and the app was never asked to close: the
+      //    PopScope consumed the back instead of letting it bubble.
+      expect(selectedTab(tester), 1,
+          reason: 'system back returned to Today WITHIN the Calendar tab — it '
+              'did not fall back to another destination');
+      expect(find.text('Мій стек'), findsNothing,
+          reason: 'nor did it surface the Stack tab underneath');
+      expect(
+        platformCalls.where((call) => call.method == 'SystemNavigator.pop'),
+        isEmpty,
+        reason: 'a back the screen did NOT consume ends in '
+            'SystemNavigator.pop — closing the app. The PopScope must swallow '
+            'this one, which is exactly the half of truth #18 ("rather than '
+            'leaving the tab") that a widget-tree assertion cannot see: an '
+            'app exit leaves the tree looking identical.',
+      );
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a second system back, now on Today, is NOT swallowed — it '
+        'bubbles to the platform, so the interception is scoped to the '
+        'planner and never traps the user', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      final platformCalls = recordPlatformCalls(tester);
+
+      await openCalendarTab(tester, container);
+      await tester.tap(find.text('Планувальник'));
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the planner gantt rows',
+      );
+      await systemBack(tester);
+      await pumpUntil(
+        tester,
+        () => find.byType(PlannerScreen).evaluate().isEmpty,
+        'the Today page to come back',
+      );
+
+      platformCalls.clear();
+      await systemBack(tester);
+      await pumpUntil(
+        tester,
+        () => platformCalls.any((c) => c.method == 'SystemNavigator.pop'),
+        'the back on Today to reach the platform',
+      );
+
+      // The Today page mounts no PopScope, so back leaves the app exactly as
+      // it does from any single-screen Android app. That is the correct
+      // contract: `canPop: false` is conditional on the planner being open,
+      // so consuming a back the app has nowhere to spend would strand the
+      // user on Today with a dead back button.
+      expect(
+        platformCalls.map((call) => call.method),
+        contains('SystemNavigator.pop'),
+        reason: 'back from the app\'s root page is an exit, not a no-op',
+      );
+      expect(selectedTab(tester), 1,
+          reason: 'and the tab selection is untouched by a back the app '
+              'declined to handle');
+      expect(find.byType(PlannerScreen), findsNothing,
+          reason: 'back on Today never re-opens the planner');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+  });
 
   group('planner shell', () {
     testWidgets('Цикли is the default segment; the subtitle and the body '
