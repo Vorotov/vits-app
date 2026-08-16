@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Stack Management** - User builds their supplement stack and configures cyclic/course dosing regimens (completed 2026-08-15)
 - [x] **Phase 3: Daily Tracking** - User sees and checks off today's doses; the core loop runs end-to-end on iOS and Android (completed 2026-08-15)
 - [x] **Phase 4: Planner Views** - User sees cycle overlap and yearly coverage via the Cycles gantt and Year matrix (completed 2026-08-16)
-- [ ] **Phase 5: Localization & Settings** - Every screen is verified bilingual; user can override the app language
+- [x] **Phase 5: Localization & Settings** - Every screen is verified bilingual; user can override the app language (completed 2026-08-16)
 
 ## Phase Details
 
@@ -137,11 +137,11 @@ Plans:
 
 Plans:
 
-- [ ] 05-01-PLAN.md — Tracer: Settings screen + generated language picker, derived locale set, declared en fallback, flash-free persisted override (wave 1)
-- [ ] 05-02-PLAN.md — Amendment A1: the designed error surface beats the Riverpod retry-loading state on all three async screens; A3 locale-aware sentence casing (wave 1)
-- [ ] 05-03-PLAN.md — Criterion-4 gates: one-new-ARB-file contract, zero-hardcoded-strings, ARB parity + derived plural forms, system-language resolution (wave 2)
-- [ ] 05-04-PLAN.md — Bilingual render matrix across app shell / stack / add-sheet / editor / calendar / dose sheet, plus pushed-route and open-sheet propagation (wave 2)
-- [ ] 05-05-PLAN.md — Amendment A2 two-placeholder a11y key, carried-todo closure (LOCKED-FONT), phase gate + both-device backstops (wave 3)
+- [x] 05-01-PLAN.md — Tracer: Settings screen + generated language picker, derived locale set, declared en fallback, flash-free persisted override (wave 1)
+- [x] 05-02-PLAN.md — Amendment A1: the designed error surface beats the Riverpod retry-loading state on all three async screens; A3 locale-aware sentence casing (wave 1)
+- [x] 05-03-PLAN.md — Criterion-4 gates: one-new-ARB-file contract, zero-hardcoded-strings, ARB parity + derived plural forms, system-language resolution (wave 2)
+- [x] 05-04-PLAN.md — Bilingual render matrix across app shell / stack / add-sheet / editor / calendar / dose sheet, plus pushed-route and open-sheet propagation (wave 2)
+- [x] 05-05-PLAN.md — Amendment A2 two-placeholder a11y key, carried-todo closure (LOCKED-FONT), phase gate + both-device backstops (wave 3)
 
 **UI hint**: yes
 
@@ -156,4 +156,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Stack Management | 5/5 | Complete    | 2026-08-15 |
 | 3. Daily Tracking | 5/5 | Complete    | 2026-08-15 |
 | 4. Planner Views | 5/5 | Complete    | 2026-08-16 |
-| 5. Localization & Settings | 0/5 | Planned | - |
+| 5. Localization & Settings | 5/5 | Complete    | 2026-08-16 |

@@ -1,7 +1,7 @@
 ---
 phase: 05-localization-settings
 verified: 2026-08-16T04:16:03Z
-status: human_needed
+status: passed
 score: 43/45 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
@@ -53,7 +53,7 @@ warnings:
 
 **Phase Goal:** The whole app — every screen built in Phases 2 through 4 — is genuinely bilingual by default and instantly switchable by the user.
 **Verified:** 2026-08-16T04:16:03Z
-**Status:** human_needed
+**Status:** passed — all human-verification items confirmed in 05-UAT.md (P1 re-run green on both devices; P2/P3 closed with a real on-device test incl. a genuine force-stop relaunch)
 **Re-verification:** No — initial verification
 **Milestone context:** FINAL v1 phase. A milestone-level requirement sweep is included below.
 

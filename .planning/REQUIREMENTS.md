@@ -37,10 +37,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Localization
 
-- [ ] **L10N-01**: App ships in Ukrainian and English with correct plural forms (uk uses all CLDR forms: one/few/many/other, incl. 11–14 exception)
-- [ ] **L10N-02**: App follows the system language when supported, falling back to English
-- [ ] **L10N-03**: User can override the language in Settings; the change applies instantly and persists across restarts
-- [ ] **L10N-04**: All dates, month names and numbers are locale-formatted; zero hardcoded user-visible strings (new languages = one ARB file)
+- [x] **L10N-01**: App ships in Ukrainian and English with correct plural forms (uk uses all CLDR forms: one/few/many/other, incl. 11–14 exception)
+- [x] **L10N-02**: App follows the system language when supported, falling back to English
+- [x] **L10N-03**: User can override the language in Settings; the change applies instantly and persists across restarts
+- [x] **L10N-04**: All dates, month names and numbers are locale-formatted; zero hardcoded user-visible strings (new languages = one ARB file)
 
 ### Data & Platform
 
@@ -113,10 +113,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLAN-02 | Phase 4 | Complete |
 | PLAN-03 | Phase 4 | Complete |
 | PLAN-04 | Phase 4 | Complete |
-| L10N-01 | Phase 5 | Pending |
-| L10N-02 | Phase 5 | Pending |
-| L10N-03 | Phase 5 | Pending |
-| L10N-04 | Phase 5 | Pending |
+| L10N-01 | Phase 5 | Complete |
+| L10N-02 | Phase 5 | Complete |
+| L10N-03 | Phase 5 | Complete |
+| L10N-04 | Phase 5 | Complete |
 
 **Coverage:**
 
