@@ -31,6 +31,14 @@ findings:
   info: 7
   total: 15
 status: issues_found
+fix_applied: 2026-08-16
+fix_report: .planning/phases/05-localization-settings/05-REVIEW-FIX.md
+fixed:
+  critical: 2
+  warning: 6
+  info: 0
+remaining:
+  info: 7
 ---
 
 # Phase 5: Code Review Report
@@ -79,6 +87,9 @@ their rationales claim.
 ## Critical Issues
 
 ### CR-01: A tampered or wrong-typed `app_locale` value crashes the app at launch
+
+**Status:** FIXED in `eb2b837` — `build()` reads `get` (Object?) and type-tests
+before the membership check; regression test covers int/bool/double/List.
 
 **File:** `lib/core/l10n/locale_controller.dart:31`
 **Issue:** `SharedPreferences.getString` is implemented as
@@ -130,6 +141,11 @@ throw.
 
 ### CR-02: An unguarded `SharedPreferences.getInstance()` in `main()` can leave the app permanently blank
 
+**Status:** FIXED in `18d85c9` — `sharedPreferencesProvider` is nullable, `main()`
+catches and reports, the controller reads through `?.` and no-ops the write;
+new gate `test/l10n/cold_start_degradation_test.dart` drives the real `main()`
+against a broken store.
+
 **File:** `lib/main.dart:16`
 **Issue:** `final prefs = await SharedPreferences.getInstance();` sits between
 `ensureInitialized()` and `runApp()` with no `try`/`catch`. If it throws —
@@ -180,6 +196,10 @@ DECIDED-8 behaviour for a failed write.
 
 ### WR-01: `stackEntriesProvider` still drops an error when the other stream is loading
 
+**Status:** FIXED in `049f87b` — the composition is now an explicit precedence
+(error, then value, then loading) across BOTH sources; regression test in both
+locales errors the regimen stream during the supplement stream's first load.
+
 **File:** `lib/core/providers.dart:181-191`
 **Issue:** The A1 rule ("has an error beats is loading") is applied *inside*
 each `when`, but not *between* them. The outer `supplements.when(...)` evaluates
@@ -219,6 +239,10 @@ has not yet emitted, and asserts the Stack error copy renders.
 
 ### WR-02: The A1 flag added to the Stack screen is inert, and its comment says otherwise
 
+**Status:** FIXED in `6f38a5a` — the preferred option was taken: the screen now
+uses the planner's `switch` on `hasError`, and the comment states what actually
+protects the surface (both layers hold independently).
+
 **File:** `lib/features/stack/stack_screen.dart:103-111`
 **Issue:** `entries` comes from `stackEntriesProvider`, a plain
 `Provider<AsyncValue<...>>` whose four return paths each construct a *fresh*
@@ -254,6 +278,11 @@ robust on its own terms so both layers hold independently:
 ```
 
 ### WR-03: A3 was applied to one casing site; four locale-independent `toUpperCase()` calls survive, two documented as "locale-aware"
+
+**Status:** FIXED in `6b5a0dd` — new `lib/core/l10n/casing.dart` holds
+`bqUpperCase(value, locale)` (default Unicode mapping + the documented tr/az
+dotted-i exception); all four sites call it and both false comments are
+corrected. `test/l10n/casing_test.dart` pins both branches.
 
 **Files:** `lib/features/calendar/week_strip.dart:278`,
 `lib/features/calendar/planner_gantt.dart:155`,
@@ -293,6 +322,10 @@ and replace all four call sites with `bqUpperCase(format.format(...), locale)`.
 All four sites already have the active `locale` string in scope.
 
 ### WR-04: The language-change write is a discarded future — a failed write is *not* silent, it is an unhandled async error
+
+**Status:** FIXED in `7bb0464` — the controller try/catches both failure shapes
+(a throw AND a `false` return) and reports them to `FlutterError`; the call site
+says `unawaited(...)`. Two regression tests over a write-refusing store.
 
 **File:** `lib/features/settings/language_picker.dart:70-71`
 (with `lib/core/l10n/locale_controller.dart:46-59`)
@@ -337,6 +370,12 @@ and mark the call site explicitly fire-and-forget with `unawaited(...)`
 
 ### WR-05: Locale identity is collapsed to `languageCode` in three places, so a country-qualified ARB breaks the picker's core invariant
 
+**Status:** FIXED in `fbdfcf0` — the first option was taken (full locale
+identity, not the ARB-regex tightening): `supportedLanguageCodes` became a
+tag→`Locale` map (`supportedLocaleTags`), `build()` returns the generated
+instance, `setLocale` persists `toLanguageTag()`, the picker compares whole
+locales. Existing `uk`/`en` values are byte-identical, so no migration.
+
 **Files:** `lib/core/l10n/locale_controller.dart:23-25,40-41,57`,
 `lib/features/settings/language_picker.dart:67`
 **Issue:** The shipped-language set is `{locale.languageCode}`, the persisted
@@ -369,6 +408,11 @@ unnoticed.
 
 ### WR-06: The A1 flag silently disables the `IgnorePointer` hold on a same-day reload
 
+**Status:** FIXED in `5554d17` — the behaviour was restored rather than the
+comment rewritten: the body matches `hasError`, then data-and-settled, then
+held-and-inert for EVERY loading shape. Regression test taps a held row during
+a regimen-triggered reload and asserts the log stays pending.
+
 **File:** `lib/features/calendar/calendar_screen.dart:310-350`
 **Issue:** The comment states "the hold itself is unchanged: a genuine day
 switch with no error still takes the loading arm" — true for a day switch (a new
@@ -399,6 +443,12 @@ property instead of relying on arm ordering, the way the planner does:
 or leave the current shape and replace the comment with what actually happens.
 
 ## Info
+
+**None of the Info findings below were fixed** — they were deliberately left out
+of the fix scope (`05-REVIEW-FIX.md`) and remain open as documented. IN-03's
+narrowing advice was partially honoured in spirit by the two allowlist entries
+added during the fixes, both of which are scoped to a file or a constructor
+rather than opened wide.
 
 ### IN-01: The sanitization allowlist is a public **mutable** `Set`
 
