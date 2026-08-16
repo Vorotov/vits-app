@@ -100,69 +100,77 @@ class StackScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: BqSpace.md),
-            ...entries.when(
-              // "Has an error" beats "is loading": Riverpod 3 reports a
-              // failing provider as an AsyncLoading that CARRIES the error
-              // while it retries on its own backoff, and `when` defaults
-              // skipLoadingOnReload to false — so without this the designed
-              // error surface below is unreachable for the whole ~38.2s
-              // backoff window and the body renders blank (A1 / P-9,
-              // 04-REVIEW.md CR-02).
-              skipLoadingOnReload: true,
-              data: (list) => list.isEmpty
-                  // Empty state below the still-visible CTA; the ДОБАВКИ
-                  // eyebrow is omitted when the list is empty (#1).
-                  ? const <Widget>[_EmptyStackState()]
-                  : <Widget>[
-                      // Mono eyebrow, 10px above the list (S1).
-                      Text(
-                        l10n.supplementsLabel,
-                        style: BqText.mono(
-                          size: 10.5,
-                          color: BqColors.textMuted,
-                          letterSpacing: 0.63,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      for (final (i, entry) in list.indexed) ...[
-                        if (i > 0) const SizedBox(height: 9),
-                        _StackCard(entry: entry, today: today),
-                      ],
-                    ],
-              // Loading: empty list area, NO spinner — the local-DB stream
-              // resolves within a frame; a spinner would flash (#2).
-              loading: () => const <Widget>[],
+            // "Has an error" beats "is loading", matched on the PROPERTY and
+            // in this arm order — the same shape the planner's `_surface` uses
+            // (`planner_screen.dart:618`), so the two screens cannot drift into
+            // rendering a failure differently (A1 / P-9, 04-REVIEW.md CR-02).
+            //
+            // This is the screen's OWN protection and it holds whatever
+            // `stackEntriesProvider` hands over, including Riverpod 3's
+            // "AsyncLoading that carries an error while it retries" shape. The
+            // derivation's error-before-value-before-loading precedence
+            // (`providers.dart`) is a second, independent layer; before
+            // 05-REVIEW WR-02 this screen passed `skipLoadingOnReload: true` to
+            // `when` instead, which could never change the outcome here (that
+            // flag is only consulted when `isReloading` is true, and every
+            // value the derivation returns is freshly constructed with no
+            // previous state attached) while its comment claimed the error
+            // surface depended on it.
+            ...switch (entries) {
               // Error: documented copy + retry only — never exception text
               // (#3, T-02-08).
-              error: (_, _) => <Widget>[
-                Text(
-                  l10n.stackLoadError,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    height: 1.4,
-                    color: BqColors.textSecondary,
+              AsyncValue(hasError: true) => <Widget>[
+                  Text(
+                    l10n.stackLoadError,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.4,
+                      color: BqColors.textSecondary,
+                    ),
                   ),
-                ),
-                const SizedBox(height: BqSpace.sm),
-                Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: TextButton(
-                    // The same named recovery path the planner's retry uses,
-                    // so the two screens can never drift into recovering
-                    // differently (CR-02).
-                    onPressed: () => retryStack(ref),
-                    child: Text(
-                      l10n.retry,
-                      style: const TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: BqColors.accent,
+                  const SizedBox(height: BqSpace.sm),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton(
+                      // The same named recovery path the planner's retry uses,
+                      // so the two screens can never drift into recovering
+                      // differently (CR-02).
+                      onPressed: () => retryStack(ref),
+                      child: Text(
+                        l10n.retry,
+                        style: const TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w600,
+                          color: BqColors.accent,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              // Empty state below the still-visible CTA; the ДОБАВКИ eyebrow
+              // is omitted when the list is empty (#1).
+              AsyncData(value: final list) when list.isEmpty =>
+                const <Widget>[_EmptyStackState()],
+              AsyncData(value: final list) => <Widget>[
+                  // Mono eyebrow, 10px above the list (S1).
+                  Text(
+                    l10n.supplementsLabel,
+                    style: BqText.mono(
+                      size: 10.5,
+                      color: BqColors.textMuted,
+                      letterSpacing: 0.63,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  for (final (i, entry) in list.indexed) ...[
+                    if (i > 0) const SizedBox(height: 9),
+                    _StackCard(entry: entry, today: today),
+                  ],
+                ],
+              // Loading: empty list area, NO spinner — the local-DB stream
+              // resolves within a frame; a spinner would flash (#2).
+              _ => const <Widget>[],
+            },
           ],
         ),
       ),

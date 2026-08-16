@@ -30,6 +30,7 @@ import 'dart:io';
 
 import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/domain/models.dart';
+import 'package:boostque/core/domain/repositories.dart' show StackEntry;
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/l10n/locale_controller.dart';
 import 'package:boostque/core/providers.dart';
@@ -628,6 +629,43 @@ void main() {
           reason: 'the error copy without its recovery control is a dead end');
       expect(find.textContaining('boom-from-drift'), findsNothing,
           reason: 'raw exception text never enters the widget tree (T-05-03)');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets(
+        '$locale: the screen renders the error surface from a RETRYING '
+        'failure on its own terms, not because of what the derivation '
+        'returns (WR-02)', (tester) async {
+      usePhoneSurface(tester);
+      // The screen is pinned straight to a failed value, bypassing
+      // stackEntriesProvider's own wiring, so what is asserted here is the
+      // SCREEN's rendering rule — the layer WR-02 found was decorative (a
+      // `skipLoadingOnReload` argument that could never change an outcome,
+      // under a comment claiming the error surface depended on it).
+      //
+      // The rule is a match on the hasError PROPERTY, in this arm order, so
+      // every shape a failure takes during Riverpod's backoff reaches the
+      // error arm — the plain error below, the `retrying` error 3.4.2 parks in
+      // between attempts, and a loading value that carries a previous error.
+      // Matching an error SUBTYPE alone would cover only the first.
+      final failed = AsyncError<List<StackEntry>>(
+        Exception('boom-from-drift'),
+        StackTrace.empty,
+      );
+      expect(failed.hasError, isTrue);
+
+      final container = ProviderContainer(
+        overrides: [stackEntriesProvider.overrideWithValue(failed)],
+      );
+
+      await tester.pumpWidget(app(container, locale: locale));
+      await tester.pump();
+
+      expect(find.text(loadError), findsOneWidget, reason: blankBodyReason);
+      expect(find.text(retryLabel), findsOneWidget,
+          reason: 'the error copy without its recovery control is a dead end');
       expect(tester.takeException(), isNull);
 
       await tearDownTree(tester, container);
