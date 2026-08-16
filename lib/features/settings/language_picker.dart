@@ -23,6 +23,8 @@
 /// need a fresh `ListTileTheme` to match the card idiom (DECIDED-3).
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -66,9 +68,16 @@ class LanguagePicker extends ConsumerWidget {
             // checks the System row and exactly one row is ever checked.
             selected: locale?.languageCode == current?.languageCode,
             // Idempotent on the already-selected row (Interaction Contract 2):
-            // not a toggle-off, not an error.
-            onTap: () =>
-                ref.read(localeControllerProvider.notifier).setLocale(locale),
+            // not a toggle-off, no failure state.
+            //
+            // `unawaited` says fire-and-forget OUT LOUD rather than by
+            // accident: the language is applied to `state` before the write
+            // starts (PF-3), so there is nothing here to wait for, and the
+            // controller owns what happens if the write does not land
+            // (DECIDED-8).
+            onTap: () => unawaited(
+              ref.read(localeControllerProvider.notifier).setLocale(locale),
+            ),
           ),
         ],
       ],

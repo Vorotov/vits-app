@@ -8,8 +8,10 @@ library;
 
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:boostque/core/l10n/l10n.dart';
@@ -113,6 +115,77 @@ void main() {
   });
 
   test(
+      'a write that FAILS is swallowed and reported, never left to the zone '
+      '(WR-04, DECIDED-8)', () async {
+    // The call site fires this future and forgets it (`unawaited`), so an
+    // escaping error would become an unhandled root-zone error — printed in
+    // release, an outright failure in any test that happens to be pumping.
+    // "Deliberately not surfaced" has to mean swallowed HERE.
+    final prefs = _RejectingPrefs();
+    when(() => prefs.get(any())).thenReturn(null);
+    when(() => prefs.setString(any(), any()))
+        .thenThrow(Exception('storage is full'));
+    final container = ProviderContainer(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    );
+    addTearDown(container.dispose);
+
+    final reported = <FlutterErrorDetails>[];
+    final previous = FlutterError.onError;
+    FlutterError.onError = reported.add;
+    addTearDown(() => FlutterError.onError = previous);
+
+    await expectLater(
+      container
+          .read(localeControllerProvider.notifier)
+          .setLocale(const Locale('uk')),
+      completes,
+      reason: 'the future must complete normally: the caller does not await '
+          'it, so an error escaping here has nowhere to go but the zone',
+    );
+
+    expect(
+      container.read(localeControllerProvider),
+      const Locale('uk'),
+      reason: 'state-first (PF-3): the language the user just tapped is the '
+          'truth for the session even when the disk refuses it',
+    );
+    expect(
+      reported,
+      hasLength(1),
+      reason: 'silent to the USER (DECIDED-8) is not the same as invisible to '
+          'a crash logger — a store that refuses writes is a real device fault',
+    );
+  });
+
+  test('a REJECTED write (setString answering false) is reported too (WR-04)',
+      () async {
+    final prefs = _RejectingPrefs();
+    when(() => prefs.get(any())).thenReturn(null);
+    when(() => prefs.setString(any(), any())).thenAnswer((_) async => false);
+    final container = ProviderContainer(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+    );
+    addTearDown(container.dispose);
+
+    final reported = <FlutterErrorDetails>[];
+    final previous = FlutterError.onError;
+    FlutterError.onError = reported.add;
+    addTearDown(() => FlutterError.onError = previous);
+
+    await container
+        .read(localeControllerProvider.notifier)
+        .setLocale(const Locale('uk'));
+
+    expect(
+      reported,
+      hasLength(1),
+      reason: "a `false` return has the same consequence as a throw — the next "
+          'launch reverts — so dropping it would hide half the failure mode',
+    );
+  });
+
+  test(
       'a wrong-TYPED stored value sanitizes to follow-system rather than '
       'throwing at root-build time (CR-01, T-01-07)', () async {
     // The value under this key is untrusted in its TYPE as well as its
@@ -145,3 +218,6 @@ void main() {
     );
   });
 }
+
+/// A store that answers reads but refuses writes — the DECIDED-8 failure.
+class _RejectingPrefs extends Mock implements SharedPreferences {}

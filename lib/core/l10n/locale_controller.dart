@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:boostque/core/l10n/gen/app_localizations.dart';
@@ -68,10 +69,34 @@ class LocaleController extends Notifier<Locale?> {
     // cannot remember it — the exact cost DECIDED-8 already accepts for a
     // write that fails.
     if (prefs == null) return;
-    if (locale == null) {
-      await prefs.remove(_prefsKey);
-    } else {
-      await prefs.setString(_prefsKey, locale.languageCode);
+    // DECIDED-8's "deliberately not surfaced" means SWALLOWED HERE, not left
+    // to the zone. The call site fires this future and forgets it, so an
+    // escaping `PlatformException` (a full or read-only store, a channel
+    // failure) would become an unhandled root-zone error: printed in release,
+    // an outright failure in any test that happens to be pumping — the exact
+    // opposite of silent (WR-04). `setString`/`remove` also answer `false` for
+    // a rejected write, which has the same consequence as a throw and is
+    // therefore reported the same way.
+    try {
+      final persisted = locale == null
+          ? await prefs.remove(_prefsKey)
+          : await prefs.setString(_prefsKey, locale.languageCode);
+      if (!persisted) {
+        throw StateError('the language store rejected the write');
+      }
+    } catch (error, stack) {
+      // Reported for the crash logger, never to the user: the language
+      // visibly DID take effect, so an error banner about it would be more
+      // confusing than the silent, self-correcting behaviour (DECIDED-8). The
+      // cost is one launch of amnesia.
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          library: 'boostque',
+          context: ErrorDescription('persisting the language override'),
+        ),
+      );
     }
   }
 }
