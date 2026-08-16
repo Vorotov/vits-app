@@ -273,7 +273,7 @@ Visual contract, restated as a truth the checker can hold: **on all three screen
 
 ### A3 — Locale-independent sentence casing (PF-6)
 
-`calendar_screen.dart:232-236`'s hand-rolled `_capitalizeFirst` is swapped for `intl`'s `toBeginningOfSentenceCase(value, locale)`. Correct-but-lucky for uk/en today; wrong for `tr`/`az`/`lt` — exactly the class of bug criterion 4 invites. **Zero visual change in either shipped locale**, and `month_names_test.dart` catches it instantly if the output differs. The four `toUpperCase()` sites on already-uppercase-safe abbreviations (`planner_year_grid.dart:163`, `planner_month_detail.dart:120`, `planner_gantt.dart:155`, `week_strip.dart:278`) are **left alone in v1** — recorded here as a known constraint, not a task.
+`calendar_screen.dart:232-236`'s hand-rolled `_capitalizeFirst` is swapped for `intl`'s `toBeginningOfSentenceCase(value, locale)`. Correct-but-lucky for uk/en today; wrong for `tr`/`az` — exactly the class of bug criterion 4 invites. **Zero visual change in either shipped locale**, and `month_names_test.dart` catches it instantly if the output differs. The four `toUpperCase()` sites on already-uppercase-safe abbreviations (`planner_year_grid.dart:163`, `planner_month_detail.dart:120`, `planner_gantt.dart:155`, `week_strip.dart:278`) are **left alone in v1** — recorded here as a known constraint, not a task.
 
 ---
 
@@ -387,7 +387,7 @@ Cross-cutting: #10 (a11y), #11 (text scale + wrong-language guard), #13 (screen-
 - `EdgeInsetsDirectional` only; **not one fixed-width or fixed-height container around any `Text` on this screen.** uk endonyms and en labels differ in length, and a future ARB may bring a much longer one — the row must accommodate it without a code change (criterion 4 applies to *layout*, not just to strings).
 - Every user-visible string from ARB keys, both files in the same commit. This screen introduces **no plural key** — nothing here is counted — so the four-form uk CLDR obligation adds no work, and none may be invented.
 - `languageName` is resolved with `lookupAppLocalizations(locale)`, `languageSystem` and `settingsLanguageTitle` with `context.l10n`. **The asymmetry is the design.** In-repo precedent for the synchronous lookup: `catalog.dart:158`.
-- Uppercase eyebrow text is stored uppercase in the ARB, never produced by `toUpperCase()` at runtime — side-stepping PF-6's locale-independent-casing trap (`tr`/`az`/`lt`).
+- Uppercase eyebrow text is stored uppercase in the ARB, never produced by `toUpperCase()` at runtime — side-stepping PF-6's locale-independent-casing trap (`tr`/`az`).
 - **Formatters and `context.l10n` are read inside `build`, never in `initState` and never into a `late final` field** (PF-4). The codebase currently has zero such caches across all 17 `DateFormat` sites; this screen must not be the first.
 - The list order comes from the generated `supportedLocales`, whose order is now **declared** in `l10n.yaml` (`preferred-supported-locales: [en]`) rather than inherited from alphabetization — the fallback language is `supportedLocales.first`, and without the declaration adding `app_de.arb` would silently make German the app's fallback (PF-1). The picker must never re-sort it.
 - Scroll body pads bottom ≥84px to clear the nav bar (locked from Phase 2).
