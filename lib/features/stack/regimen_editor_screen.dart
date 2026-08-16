@@ -945,10 +945,29 @@ class _EditorFooterState extends State<_EditorFooter> {
     setState(() => _saving = true);
     try {
       await widget.controller.save();
-    } catch (_) {
+    } catch (error, stackTrace) {
+      // Everything that reaches here is a FAILED WRITE. The controller guards
+      // its own post-await `state` writes with `ref.mounted` (WR-03), so a
+      // screen popped mid-save no longer arrives here disguised as one — that
+      // is what made a genuine write failure and a disposed provider
+      // indistinguishable, with the user getting no feedback for either.
+      if (!mounted) {
+        // The screen is gone: there is no button to re-enable and no surface
+        // to show a SnackBar on. Report it rather than swallow it, so a write
+        // that really did fail is never lost just because the user navigated.
+        FlutterError.reportError(FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'boostque',
+          context: ErrorDescription(
+            'saving the regimen editor draft after the screen was popped',
+          ),
+        ));
+        return;
+      }
       // WR-04: re-enable the button for a retry and surface the failure;
       // do NOT pop — the draft is still on screen.
-      if (mounted) setState(() => _saving = false);
+      setState(() => _saving = false);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.l10n.saveFailed)),

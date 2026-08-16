@@ -383,6 +383,9 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
     var regimenId = draft.regimenId;
     if (regimenId == null) {
       final found = await repo.findForSupplement(supplementId);
+      // The screen went away during the lookup: nothing has been written yet,
+      // so there is nothing to finish and nobody to re-seed for (WR-03).
+      if (!ref.mounted) return;
       if (found != null && _seedWasBlind) {
         // WR-03: the draft was seeded with defaults before the stack graph
         // was warm — persisting it would silently overwrite the regimen's
@@ -431,6 +434,16 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
           ),
       ],
     ));
+
+    // The write COMMITTED; only the id write-back is left. `state =` on a
+    // disposed autoDispose Notifier throws (Riverpod 3 `Ref.mounted`), and
+    // this provider is kept alive by nothing but the editor screen's
+    // `ref.watch` — tapping Save and immediately using back pops the route
+    // and disposes it mid-write. That throw used to land in the screen's
+    // `catch`, the one written for a FAILED WRITE, making "the write failed"
+    // and "the screen went away" indistinguishable and both silent (WR-03).
+    // There is no draft left to stamp, so stop here instead.
+    if (!ref.mounted) return;
 
     // MERGE the resolved ids into the CURRENT draft — never write the
     // pre-await snapshot back (WR-01). Only the save button is disabled while
