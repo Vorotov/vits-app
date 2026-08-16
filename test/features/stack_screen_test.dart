@@ -25,6 +25,7 @@
 ///   source gates over pubspec.yaml + lib/core/theme/ (T-05-11)
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:boostque/core/db/database.dart' show BoostqueDb;
@@ -590,6 +591,43 @@ void main() {
           reason: 'raw exception text never enters the widget tree (T-05-03)');
       expect(find.textContaining('Exception'), findsNothing,
           reason: 'nor does the exception type name (T-05-03)');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets(
+        '$locale: a failing regimen stream reaches the error surface while the '
+        'supplement stream is still in its FIRST load (WR-01)', (tester) async {
+      usePhoneSurface(tester);
+      // The composition inside stackEntriesProvider evaluates `supplements`
+      // first, so its loading arm decided the outcome for BOTH sources: an
+      // error already sitting in `regimens` was discarded. skipLoadingOnReload
+      // cannot help here by construction — a first load carries no previous
+      // value, so there is no reload to skip. This is the same defect class as
+      // the case above, one layer higher up.
+      final firstLoad = StreamController<List<Supplement>>();
+      addTearDown(firstLoad.close);
+      final container = ProviderContainer(
+        overrides: [
+          supplementsStreamProvider.overrideWith((ref) => firstLoad.stream),
+          regimensStreamProvider.overrideWith(
+            (ref) => Stream<List<Regimen>>.error(
+              Exception('boom-from-drift'),
+              StackTrace.empty,
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(app(container, locale: locale));
+      await tester.pump();
+
+      expect(find.text(loadError), findsOneWidget, reason: blankBodyReason);
+      expect(find.text(retryLabel), findsOneWidget,
+          reason: 'the error copy without its recovery control is a dead end');
+      expect(find.textContaining('boom-from-drift'), findsNothing,
+          reason: 'raw exception text never enters the widget tree (T-05-03)');
       expect(tester.takeException(), isNull);
 
       await tearDownTree(tester, container);

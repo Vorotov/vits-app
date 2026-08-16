@@ -174,27 +174,38 @@ void retryStack(WidgetRef ref) {
 /// underlying Drift stream emits. Loading/error states propagate from
 /// whichever source is not ready yet.
 ///
-/// `skipLoadingOnReload: true` on BOTH merges is load-bearing, not stylistic.
+/// The merge rule is load-bearing, not stylistic, and it is a strict
+/// PRECEDENCE rather than a nesting: **error, then value, then loading** —
+/// evaluated across BOTH sources before either is turned into a result.
+///
 /// Riverpod 3 reports a failing stream as an `AsyncLoading` that CARRIES the
-/// error while it retries on its own backoff, and `when` defaults
-/// `skipLoadingOnReload` to false — so without these two arguments this
-/// derivation collapses a retrying failure into a plain `AsyncLoading` with no
-/// error at all, and every screen downstream (Stack directly, the planner via
-/// `whenData`, whose loading arm drops the error outright) is structurally
-/// unable to render its designed error surface for the whole ~38.2s window,
-/// no matter what rendering rule it uses (A1 / P-9, 04-REVIEW.md CR-02).
+/// error while it retries on its own backoff. A nested `supplements.when(...)`
+/// asks only the outer source what state the pair is in, so an error sitting in
+/// the source that happens to be evaluated second is discarded by the first
+/// one's loading arm — and `skipLoadingOnReload` cannot rescue that case,
+/// because a genuine FIRST load carries no previous value and therefore no
+/// reload to skip (05-REVIEW WR-01). Downstream (Stack directly, the planner
+/// via `whenData`) that leaves the designed error surface structurally
+/// unreachable for the whole ~38.2s backoff window, no matter what rendering
+/// rule the screen uses (A1 / P-9, 04-REVIEW.md CR-02).
+///
+/// Value beats loading for the opposite reason: a re-emission that still
+/// carries its previous value must keep the last good pairing on screen rather
+/// than blanking the list for a frame (what `skipLoadingOnReload: true` bought
+/// on the two `when`s this replaced).
 final stackEntriesProvider = Provider<AsyncValue<List<StackEntry>>>((ref) {
   final supplements = ref.watch(supplementsStreamProvider);
   final regimens = ref.watch(regimensStreamProvider);
-  return supplements.when(
-    skipLoadingOnReload: true,
-    data: (s) => regimens.when(
-      skipLoadingOnReload: true,
-      data: (r) => AsyncData(combineStackEntries(s, r)),
-      loading: () => const AsyncLoading(),
-      error: AsyncError.new,
-    ),
-    loading: () => const AsyncLoading(),
-    error: AsyncError.new,
-  );
+  if (supplements.hasError) {
+    return AsyncError(supplements.error!, supplements.stackTrace!);
+  }
+  if (regimens.hasError) {
+    return AsyncError(regimens.error!, regimens.stackTrace!);
+  }
+  if (supplements.hasValue && regimens.hasValue) {
+    return AsyncData(
+      combineStackEntries(supplements.requireValue, regimens.requireValue),
+    );
+  }
+  return const AsyncLoading();
 });
