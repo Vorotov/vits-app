@@ -2245,6 +2245,34 @@ void main() {
       await tearDownTree(tester, container);
     });
 
+    testWidgets('a year with ZERO coverage renders NO peak chip — it never '
+        'claims a densest month it does not have (WR-04)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      // A paused regimen keeps its entry and its grid column (DECIDED-7), so
+      // the screen-level empty state does NOT fire — reachable in three taps:
+      // add a supplement, save a regimen, pause it.
+      await container.read(supplementRepoProvider).upsert(magnesium);
+      await container.read(regimenRepoProvider).upsert(
+            cyclic('r1', 's1', paused: true),
+          );
+      await openYear(tester, container);
+
+      expect(byKeyPrefix('month-card-'), findsNWidgets(12),
+          reason: 'the grid still renders — this is the zero-LOAD case, not '
+              'the empty-STACK case the empty state keys on');
+      expect(find.byKey(const ValueKey('year-peak-chip')), findsNothing,
+          reason: 'with nothing to summarize the chip is omitted, exactly as '
+              'UI-SPEC S6c omits it on the empty surface (WR-04)');
+      expect(find.textContaining('Найщільніш'), findsNothing,
+          reason: 'a peak folded from a seed of 0 ties all twelve months, '
+              'resolves to the current one, and reads "the densest months, '
+              'including August" for a year with no coverage at all');
+      expect(find.text('0 речовин'), findsNothing);
+
+      await tearDownTree(tester, container);
+    });
+
     testWidgets('the peak chip warns STRICTLY above the editorial limit — a '
         'peak sitting exactly at it stays calm (DECIDED-6)', (tester) async {
       usePhoneSurface(tester);

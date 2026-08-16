@@ -787,6 +787,33 @@ void main() {
       expect(model.peakTied, isTrue);
       expect(model.peakIndex, 8, reason: 'September is nearer to August');
     });
+
+    test('a year with ZERO coverage has NO peak at all (WR-04)', () {
+      // Every entry keeps its row (DECIDED-7) but contributes zero load — a
+      // stack whose regimens are all paused, or all start after this year.
+      final model = buildYearModel(
+        [
+          StackEntry(supplement: magnesium, regimen: cyclic(paused: true)),
+          StackEntry(
+            supplement: creatine,
+            regimen: cyclic(id: 'r3', supplementId: 's2', paused: true),
+          ),
+        ],
+        today: today,
+      );
+
+      expect(model.entries, hasLength(2),
+          reason: 'paused entries keep their columns (DECIDED-7), so the '
+              'screen-level empty state does NOT fire here');
+      expect(model.months.every((m) => m.load == 0), isTrue);
+      expect(model.peakIndex, lessThan(0),
+          reason: '"no peak" must be REPRESENTABLE. Folding the peak from a '
+              'seed of 0 ties all twelve months at zero and resolves to the '
+              'current one, so the chip claims "the densest months, including '
+              'August — 0 substances" for a year with no coverage (WR-04)');
+      expect(model.peakTied, isFalse,
+          reason: 'twelve months tied at zero is not a tie worth reporting');
+    });
   });
 
   group('regimen-shape edges — the planner\'s observable consequence', () {

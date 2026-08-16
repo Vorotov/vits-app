@@ -526,7 +526,17 @@ class YearModel {
   /// The regimen-bearing entries, in `stackEntriesProvider` order.
   final List<StackEntry> entries;
 
-  /// Index into [months] of the busiest month.
+  /// Index into [months] of the busiest month, or **-1 when the year has no
+  /// coverage at all** — every month at load 0 (WR-04).
+  ///
+  /// "No peak" has to be representable. Folded from a seed of 0, an all-zero
+  /// year ties all twelve months, resolves to the current one, and the chip
+  /// reads "the densest months, including August — 0 substances". The screen
+  /// omits the chip on a negative index, the same way UI-SPEC S6c omits it on
+  /// the empty surface: there is nothing to summarize.
+  ///
+  /// This is NOT the empty state. A paused regimen keeps its entry
+  /// (DECIDED-7), so `entries` is non-empty while every load is zero.
   final int peakIndex;
 
   /// Whether more than one month shares the peak load — the copy says
@@ -596,11 +606,14 @@ YearModel buildYearModel(
     }
   }
 
+  // A year nothing covers has NO peak — see [YearModel.peakIndex] (WR-04).
+  final hasPeak = peakLoad > 0;
+
   return YearModel(
     year: t.year,
     months: List.unmodifiable(months),
     entries: List.unmodifiable(kept),
-    peakIndex: peakIndex,
-    peakTied: tiedIndices.length > 1,
+    peakIndex: hasPeak ? peakIndex : -1,
+    peakTied: hasPeak && tiedIndices.length > 1,
   );
 }

@@ -387,6 +387,13 @@ class _YearPeakChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A year with no coverage at all has no peak to name (WR-04). Rendering
+    // nothing is the same answer UI-SPEC S6c gives on the empty surface —
+    // the chip is omitted because there is nothing to summarize — and it is
+    // the only honest one: the alternative reads "the densest months,
+    // including August — 0 substances".
+    if (model.peakIndex < 0) return const SizedBox.shrink();
+
     final l10n = context.l10n;
     // The locale ALWAYS comes from the widget tree, never a literal tag.
     final locale = Localizations.localeOf(context).toString();
