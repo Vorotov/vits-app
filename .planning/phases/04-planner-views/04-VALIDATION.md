@@ -43,7 +43,7 @@ Filled from the 5 committed plans (14 tasks). Per 04-RESEARCH.md ## Validation A
 | 04-01/T1 | 04-01 | 1 | PLAN-01 | T-04-01 | tracer path performs zero writes (row-count gate on first commit) | widget (tracer e2e) | `flutter test test/features/planner_screen_test.dart` | ⬜ created by task | ⬜ pending |
 | 04-01/T2 | 04-01 | 1 | PLAN-01 | — | pure view-model: no clock, no strings, no persistence | unit (pure fn) | `flutter test test/features/planner_view_model_test.dart` | ⬜ created by task | ⬜ pending |
 | 04-01/T3 | 04-01 | 1 | PLAN-01 | T-04-01 | leap-year/year-boundary math; paused + soft-deleted excluded; provider row-count zero | unit + provider | `flutter test test/features/planner_view_model_test.dart test/providers_planner_test.dart` | ⬜ created by task | ⬜ pending |
-| 04-02/T1 | 04-02 | 2 | PLAN-01, PLAN-04 | T-04-02 | forbidden-vocabulary absent from both locales | unit (ARB + plurals) | `flutter gen-l10n && flutter test test/l10n/plurals_test.dart test/l10n/planner_copy_test.dart` | ⬜ created by task | ⬜ pending |
+| 04-02/T1 | 04-02 | 2 | PLAN-01, PLAN-04 | T-04-02 | forbidden-vocabulary absent from both locales | unit (ARB + plurals) | `flutter gen-l10n && flutter test test/l10n/plurals_test.dart test/l10n/planner_copy_safety_test.dart` | ⬜ created by task | ⬜ pending |
 | 04-02/T2 | 04-02 | 2 | PLAN-04 | T-04-02 | disclaimer renders on BOTH segments unconditionally | widget | `flutter test test/features/planner_screen_test.dart` | ✅ extend 04-01 file | ⬜ pending |
 | 04-02/T3 | 04-02 | 2 | PLAN-01 | — | — | widget | `flutter test test/features/planner_screen_test.dart` | ✅ extend | ⬜ pending |
 | 04-03/T1 | 04-03 | 3 | PLAN-01 | — | — | widget | `flutter test test/features/planner_screen_test.dart` | ✅ extend | ⬜ pending |
