@@ -1888,6 +1888,235 @@ void main() {
       await tearDownTree(tester, container);
     });
   });
+
+  // ---------------------------------------------------------------------
+  // Cross-segment integration (plan 04-04 task 3, Interaction Contracts 2,
+  // 6, 7, 8 and 9, E-14, E-15, T-04-01).
+  // ---------------------------------------------------------------------
+
+  group('cross-segment integration', () {
+    /// Two supplements covering the whole of August, so a pause or a delete
+    /// moves a number the test can name.
+    Future<void> seedPair(ProviderContainer container) => seedCourses(
+          container,
+          [
+            ('q00', DateTime.utc(2026, 8, 1), DateTime.utc(2026, 8, 31)),
+            ('q01', DateTime.utc(2026, 8, 1), DateTime.utc(2026, 8, 31)),
+          ],
+        );
+
+    String? countAt(WidgetTester tester, int month) => tester
+        .widget<Text>(find.byKey(ValueKey<String>('month-$month-count')))
+        .data;
+
+    GanttRowBar rowFor(WidgetTester tester, String supplementId) =>
+        tester.widgetList<GanttRowBar>(find.byType(GanttRowBar)).firstWhere(
+              (bar) => bar.row.entry.supplement.id == supplementId,
+            );
+
+    testWidgets('a week selected on Цикли and a month selected on Рік are '
+        'independent — two round trips through the segmented control leave '
+        'both intact (Interaction Contract 2)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedBands(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('load-week-').evaluate().isNotEmpty,
+        'the load chart columns',
+      );
+      await scrollBody(tester, 300);
+      await tester.tap(find.byKey(const ValueKey('load-week-3')));
+      await tester.pump();
+      expect(container.read(resolvedWeekIndexProvider), 3);
+
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('month-card-').evaluate().isNotEmpty,
+        'the year grid',
+      );
+      await tester.tap(find.byKey(const ValueKey('month-card-2')));
+      await tester.pump();
+      expect(container.read(resolvedMonthIndexProvider), 2);
+
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(find.text('Цикли'));
+        await tester.pump();
+        await tester.tap(find.text('Рік'));
+        await tester.pump();
+      }
+
+      expect(container.read(resolvedMonthIndexProvider), 2,
+          reason: 'the segment index chooses which body builds and nothing '
+              'else — neither selection is screen-body state');
+      expect(container.read(resolvedWeekIndexProvider), 3);
+      expect(cardAt(tester, 2).color, BqColors.monthSelectedBg,
+          reason: 'and the surviving selection is the one actually drawn');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('pausing a regimen through the repositories re-renders BOTH '
+        'segments with no coverage for it, and no manual refresh (E-15, '
+        'DECIDED-7)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedPair(container);
+      await openYear(tester, container);
+
+      // August is index 7 — the month the pinned clock sits in.
+      expect(countAt(tester, 7), '2');
+
+      await container.read(regimenRepoProvider).setPaused('r-q01', true);
+      await pumpUntil(
+        tester,
+        () => countAt(tester, 7) == '1',
+        'the year grid to follow the pause',
+      );
+
+      expect(
+        tester.getSize(find.byKey(const ValueKey('month-7-bar-1'))).width,
+        0,
+        reason: 'a paused regimen contributes no coverage to any month cell',
+      );
+      expect(byKeyPrefix('month-7-track-'), findsNWidgets(2),
+          reason: 'its TRACK stays — the row is not hidden (DECIDED-7)');
+
+      await tester.tap(find.text('Цикли'));
+      await tester.pump();
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      expect(find.byType(GanttRowBar), findsNWidgets(2));
+      expect(rowFor(tester, 'q01').row.segments, isEmpty,
+          reason: 'a paused row is a bare track, which is the design\'s own '
+              'way of saying "paused"');
+      expect(rowFor(tester, 'q00').row.segments, isNotEmpty);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('deleting a supplement while the planner is mounted removes '
+        'its gantt row, its legend entry and its coverage tracks (E-15)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedPair(container);
+      await openYear(tester, container);
+
+      expect(byKeyPrefix('year-legend-entry-'), findsNWidgets(2));
+      expect(byKeyPrefix('month-7-track-'), findsNWidgets(2));
+
+      await container
+          .read(supplementRepoProvider)
+          .softDeleteCascade('q01', fromDay: today);
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('year-legend-entry-').evaluate().length == 1,
+        'the year legend to follow the delete',
+      );
+
+      expect(byKeyPrefix('month-7-track-'), findsNWidgets(1),
+          reason: 'the soft-delete filter one layer down reaches the grid');
+      expect(find.byKey(const ValueKey('year-legend-entry-q01')), findsNothing);
+      expect(countAt(tester, 7), '1');
+
+      await tester.tap(find.text('Цикли'));
+      await tester.pump();
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+      expect(find.byType(GanttRowBar), findsNWidgets(1));
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('advancing the pinned clock past midnight moves the today '
+        'marker and flips a run starting that day from planned to active '
+        '(E-14, DECIDED-4)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedCourses(container, [
+        ('n00', DateTime.utc(2026, 8, 14), DateTime.utc(2026, 8, 31)),
+      ]);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      final marker = find.byKey(const ValueKey('gantt-today-marker'));
+      final before = tester.getTopLeft(marker).dx;
+      expect(rowFor(tester, 'n00').row.segments.single.planned, isTrue,
+          reason: 'the run starts tomorrow, so it is hatched today');
+
+      (container.read(todayProvider.notifier) as _FixedToday)
+          .advanceTo(DateTime.utc(2026, 8, 14));
+      await pumpUntil(
+        tester,
+        () => !rowFor(tester, 'n00').row.segments.single.planned,
+        'the run to become active at the rollover',
+      );
+
+      expect(tester.getTopLeft(marker).dx, greaterThan(before),
+          reason: 'the today marker moved one day into the window');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a full pass of segment switching, a week selection and a '
+        'month selection writes NOT ONE IntakeLog row (T-04-01, PF-2/WR-06)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedBands(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('load-week-').evaluate().isNotEmpty,
+        'the load chart columns',
+      );
+
+      final before = (await db.select(db.intakeLogs).get()).length;
+      expect(before, 0,
+          reason: 'the planner alone materializes nothing at all');
+
+      await scrollBody(tester, 300);
+      await tester.tap(find.byKey(const ValueKey('load-week-3')));
+      await tester.pump();
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('month-card-').evaluate().isNotEmpty,
+        'the year grid',
+      );
+      await tester.tap(find.byKey(const ValueKey('month-card-2')));
+      await tester.pump();
+      await tester.tap(find.text('Цикли'));
+      await tester.pump();
+      // Give any stray materialization a generous chance to land.
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+
+      expect((await db.select(db.intakeLogs).get()).length, before,
+          reason: 'both planner segments are read-only projections — this is '
+              'the phase\'s headline guarantee, proven against the finished '
+              'screen and not only against the tracer');
+
+      await tearDownTree(tester, container);
+    });
+  });
 }
 
 /// Pins `todayProvider` to a fixed calendar day.
@@ -1898,4 +2127,9 @@ class _FixedToday extends TodayController {
 
   @override
   DateTime build() => day;
+
+  /// Moves the pinned clock — the automatable half of the midnight-rollover
+  /// backstop (E-14). The real controller re-derives the day from the system
+  /// clock at local midnight; this stands in for that tick.
+  void advanceTo(DateTime next) => state = next;
 }
