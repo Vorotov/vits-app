@@ -94,46 +94,65 @@ class PlannerMonthDetail extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              // A flexible title against a rigid meta line — never two rigid
-              // children, which is how a header overflows (WR-04).
-              Expanded(
-                child: Text(
-                  // Locale-aware uppercasing of intl output — never a
-                  // hardcoded uppercase string (M6).
-                  DateFormat('LLLL', locale)
-                      .format(month.month)
-                      .toUpperCase(),
-                  style: BqText.mono(
-                    size: _titleSize,
-                    weight: FontWeight.w600,
-                    color: BqColors.ink,
-                    letterSpacing: _titleTracking,
+          // A flexible title against a CEILED meta line. "Flexible + rigid"
+          // is only overflow-proof while the rigid child is narrower than the
+          // row; at textScaler 2.0 the meta line alone is wider than it, and
+          // the header overflowed by 90px — the WR-04 defect class again,
+          // caught by the 04-05 text-scale matrix. The remediation is
+          // `day_block_section.dart`'s: a hard ceiling that the child is far
+          // below at scale 1.0, so the mockup layout is untouched there, and
+          // that the child WRAPS inside rather than overflows past.
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final ceiling = constraints.maxWidth.isFinite
+                  ? (constraints.maxWidth - _titleMetaGap) / 2
+                  : double.infinity;
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Expanded(
+                    child: Text(
+                      // Locale-aware uppercasing of intl output — never a
+                      // hardcoded uppercase string (M6).
+                      DateFormat('LLLL', locale)
+                          .format(month.month)
+                          .toUpperCase(),
+                      style: BqText.mono(
+                        size: _titleSize,
+                        weight: FontWeight.w600,
+                        color: BqColors.ink,
+                        letterSpacing: _titleTracking,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(width: _titleMetaGap),
-              Text(
-                // The count is PRE-FORMATTED through its own plural key and
-                // passed into the sentence (the cycleSummaryCyclic idiom).
-                // The ONE place the limit is defined is the pure model.
-                l10n.monthMeta(
-                  l10n.substancesCount(rows.length),
-                  editorialLimit,
-                ),
-                maxLines: 1,
-                softWrap: false,
-                style: BqText.mono(
-                  size: _titleSize,
-                  weight: FontWeight.w400,
-                  color: BqColors.textFaint,
-                  letterSpacing: 0,
-                ),
-              ),
-            ],
+                  const SizedBox(width: _titleMetaGap),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: ceiling),
+                    child: Text(
+                      // The count is PRE-FORMATTED through its own plural key
+                      // and passed into the sentence (the cycleSummaryCyclic
+                      // idiom). The ONE place the limit is defined is the pure
+                      // model.
+                      l10n.monthMeta(
+                        l10n.substancesCount(rows.length),
+                        editorialLimit,
+                      ),
+                      // WRAPS rather than ellipsizes: the count and the limit
+                      // are both PLAN-04 content, and truncating either would
+                      // hide the editorial framing this card exists to carry.
+                      textAlign: TextAlign.end,
+                      style: BqText.mono(
+                        size: _titleSize,
+                        weight: FontWeight.w400,
+                        color: BqColors.textFaint,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: _headerBottomMargin),
           if (rows.isEmpty)
@@ -194,71 +213,88 @@ class _MonthRow extends StatelessWidget {
     // exception the Stack card already uses.
     final color = Color(entry.supplement.colorValue);
 
-    return Row(
-      key: ValueKey<String>('month-detail-row-$index'),
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsetsDirectional.only(top: _dotTopMargin),
-          child: Container(
-            width: _dotSize,
-            height: _dotSize,
-            decoration: BoxDecoration(
-              color: cell.planned
-                  ? color.withValues(alpha: _plannedDotAlpha)
-                  : color,
-              borderRadius:
-                  const BorderRadius.all(Radius.circular(_dotRadius)),
-            ),
-          ),
-        ),
-        const SizedBox(width: _dotTextGap),
-        // An expanded text column against a rigid trailing state — the state
-        // never wraps, and a long name reflows instead (WR-04).
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                entry.supplement.name,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  height: 1.3,
-                  color: BqColors.ink,
+    // An expanded text column against a CEILED trailing state. A rigid state
+    // is overflow-proof only while it is narrower than the row: at textScaler
+    // 2.0 "частина місяця" alone is wider, and the row overflowed by 40px.
+    // The ceiling is `day_block_section.dart`'s WR-04 remediation — a third of
+    // the row, which every state label is far below at scale 1.0, so the
+    // mockup layout is untouched there and the label wraps instead of
+    // overflowing at accessibility scales.
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final ceiling = constraints.maxWidth.isFinite
+            ? (constraints.maxWidth - _dotSize - _dotTextGap - _textStateGap) /
+                3
+            : double.infinity;
+        return Row(
+          key: ValueKey<String>('month-detail-row-$index'),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsetsDirectional.only(top: _dotTopMargin),
+              child: Container(
+                width: _dotSize,
+                height: _dotSize,
+                decoration: BoxDecoration(
+                  color: cell.planned
+                      ? color.withValues(alpha: _plannedDotAlpha)
+                      : color,
+                  borderRadius:
+                      const BorderRadius.all(Radius.circular(_dotRadius)),
                 ),
               ),
-              if (hint.isNotEmpty) ...[
-                const SizedBox(height: _nameHintGap),
-                Text(
-                  hint,
-                  style: const TextStyle(
+            ),
+            const SizedBox(width: _dotTextGap),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    entry.supplement.name,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      height: 1.3,
+                      color: BqColors.ink,
+                    ),
+                  ),
+                  if (hint.isNotEmpty) ...[
+                    const SizedBox(height: _nameHintGap),
+                    Text(
+                      hint,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w400,
+                        height: 1.4,
+                        color: BqColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: _textStateGap),
+            Padding(
+              padding: const EdgeInsetsDirectional.only(top: _stateTopMargin),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: ceiling),
+                child: Text(
+                  state,
+                  // WRAPS rather than ellipsizes: "частина місяця" truncated to
+                  // "частина…" would read as a different claim about the month.
+                  textAlign: TextAlign.end,
+                  style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w400,
-                    height: 1.4,
-                    color: BqColors.textMuted,
+                    color: stateColor,
                   ),
                 ),
-              ],
-            ],
-          ),
-        ),
-        const SizedBox(width: _textStateGap),
-        Padding(
-          padding: const EdgeInsetsDirectional.only(top: _stateTopMargin),
-          child: Text(
-            state,
-            maxLines: 1,
-            softWrap: false,
-            style: TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w400,
-              color: stateColor,
+              ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }

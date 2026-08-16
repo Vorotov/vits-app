@@ -28,6 +28,7 @@ import 'package:boostque/features/calendar/planner_screen.dart';
 import 'package:boostque/features/calendar/planner_year_grid.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
@@ -93,7 +94,12 @@ void main() {
     );
   }
 
-  Widget app(ProviderContainer container) {
+  /// The Calendar tab, which is where the planner is entered from.
+  ///
+  /// [textScaler] pins the accessibility text scale for the whole subtree —
+  /// the S4-amendment header action pair is only meaningful against a scale it
+  /// did not choose (WR-04).
+  Widget app(ProviderContainer container, {TextScaler? textScaler}) {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
@@ -101,6 +107,12 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: bqTheme(),
+        builder: (context, child) => textScaler == null
+            ? child!
+            : MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+                child: child!,
+              ),
         home: const CalendarScreen(),
       ),
     );
@@ -2113,6 +2125,407 @@ void main() {
           reason: 'both planner segments are read-only projections — this is '
               'the phase\'s headline guarantee, proven against the finished '
               'screen and not only against the tracer');
+
+      await tearDownTree(tester, container);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // The text-scale matrix and assistive-technology activation (plan 04-05
+  // task 1, UI-SPEC #20 and DECIDED-10, T-04-23 and T-04-24).
+  //
+  // Phase 3 shipped BOTH defect classes this group exists to catch: a fixed
+  // extent that clipped every cell at accessibility text scales (CR-01), a
+  // rigid header row that overflowed horizontally (WR-04), and a semantics
+  // node that announced a button assistive technology could not activate
+  // (WR-02). Each was found on a device, after the phase closed. A matrix in
+  // the suite is what turns that into a red test instead of a review note.
+  // ---------------------------------------------------------------------
+
+  group('text scale matrix and assistive-technology activation', () {
+    /// Eight supplements carrying the longest uk names in the catalogue, six
+    /// overlapping courses, one active cycle and one paused one.
+    ///
+    /// The overlap is deliberate: the week containing the pinned clock carries
+    /// a load of SEVEN against an editorial limit of five, so the over-bar,
+    /// the extra free-slot pips and the LONGEST verdict note are all in the
+    /// tree while the matrix runs. A matrix pumped against two short-named
+    /// supplements puts no layout under pressure and proves nothing.
+    Future<void> seedPressure(ProviderContainer container) async {
+      const names = <String>[
+        'Вітамін B12 метилкобаламін',
+        'Магній бісглицинат хелат',
+        'Хондропротектор комплекс',
+        'Омега-3 риб\'ячий жир концентрат',
+        'Вітамін D3 з вітаміном K2',
+        'Комплекс вітамінів групи B',
+        'Креатин моногідрат мікронізований',
+        'Ашваганда екстракт кореня',
+      ];
+      final supplements = container.read(supplementRepoProvider);
+      final regimens = container.read(regimenRepoProvider);
+      for (var i = 0; i < names.length; i++) {
+        await supplements.upsert(
+          Supplement(
+            id: 'p$i',
+            name: names[i],
+            doseText: '1 капсула вранці',
+            colorValue: 0xFF6B6FA8,
+            note: '',
+          ),
+        );
+      }
+      // Six courses covering the whole window: a floor of six concurrent
+      // substances everywhere, one above the limit on its own.
+      for (var i = 0; i < 6; i++) {
+        await regimens.upsert(
+          Regimen(
+            id: 'pr$i',
+            supplementId: 'p$i',
+            kind: RegimenKind.course,
+            startDate: DateTime.utc(2026, 8, 1),
+            endDate: DateTime.utc(2026, 11, 30),
+            onDays: 0,
+            offDays: 0,
+            paused: false,
+            slots: const [
+              DoseSlot(
+                id: 'ps',
+                minutesFromMidnight: 480,
+                doseLabel: '1 капс.',
+              ),
+            ],
+          ),
+        );
+      }
+      // A live 14/14 cycle covering the week the pinned clock sits in, which
+      // takes that week to seven, and a paused one that keeps its bare track.
+      await regimens.upsert(cyclic('pr6', 'p6'));
+      await regimens.upsert(cyclic('pr7', 'p7', paused: true));
+    }
+
+    /// Pumps deferred layout out: a grid delegate resolving its extent, an
+    /// intl format landing, a scroll settling.
+    Future<void> pumpFrames(WidgetTester tester, [int frames = 12]) async {
+      for (var i = 0; i < frames; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+    }
+
+    /// The page's own scroll position.
+    ///
+    /// `.first` on purpose: the Рік body nests a `GridView` — a second
+    /// `Scrollable`, pinned with `NeverScrollableScrollPhysics` — inside the
+    /// page `ListView`, and the outer one comes first in tree order.
+    ScrollPosition bodyPosition(WidgetTester tester) => tester
+        .state<ScrollableState>(
+          find
+              .descendant(
+                of: find.byType(ListView),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        )
+        .position;
+
+    /// Drags the body to its end, building every card on the way.
+    ///
+    /// A `ListView` only builds what its viewport plus cache extent covers, so
+    /// a matrix that never scrolls asserts nothing about the cards below the
+    /// fold — which at a text scaler of 2.0 is most of them.
+    Future<void> sweepBody(WidgetTester tester) async {
+      for (var i = 0; i < 80; i++) {
+        final position = bodyPosition(tester);
+        if (position.pixels >= position.maxScrollExtent) return;
+        await scrollBody(tester, 500);
+        await pumpFrames(tester, 3);
+      }
+      fail('Timed out sweeping the planner body to its end');
+    }
+
+    /// The consequence of a red case, named in device terms rather than as a
+    /// restatement of the assertion.
+    const overflowReason =
+        'a layout exception at an accessibility text scale is a clipped label '
+        'or a dropped bar in RELEASE — not debug stripes. This is the CR-01 / '
+        'WR-04 defect class Phase 3 shipped twice; the fix is a computed '
+        'extent or a flexible child, never a relaxed assertion';
+
+    for (final locale in const ['uk', 'en']) {
+      final cyclesLabel = locale == 'uk' ? 'Цикли' : 'Cycles';
+      final yearLabel = locale == 'uk' ? 'Рік' : 'Year';
+
+      for (final scale in const <double>[1.0, 1.6, 2.0]) {
+        testWidgets(
+            '$locale: the Цикли segment renders a pressured stack with no '
+            'layout exception at textScaler $scale (UI-SPEC #20)',
+            (tester) async {
+          usePhoneSurface(tester);
+          final container = makeContainer();
+          await seedPressure(container);
+          await openPlanner(
+            tester,
+            container,
+            locale: locale,
+            textScaler: TextScaler.linear(scale),
+          );
+          await pumpUntil(
+            tester,
+            () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+            'the gantt rows in $locale at textScaler $scale',
+          );
+          await pumpFrames(tester);
+          await sweepBody(tester);
+
+          expect(bodyPosition(tester).pixels,
+              bodyPosition(tester).maxScrollExtent,
+              reason: 'the sweep reached the end of the body, so every card '
+                  'below the fold was actually built and laid out');
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await tearDownTree(tester, container);
+        });
+
+        testWidgets(
+            '$locale: the Рік segment renders a pressured stack with no '
+            'layout exception at textScaler $scale (UI-SPEC #20, DECIDED-5)',
+            (tester) async {
+          usePhoneSurface(tester);
+          final container = makeContainer();
+          await seedPressure(container);
+          await openPlanner(
+            tester,
+            container,
+            locale: locale,
+            textScaler: TextScaler.linear(scale),
+          );
+          await tester.tap(find.text(yearLabel));
+          await tester.pump();
+          await pumpUntil(
+            tester,
+            () =>
+                find.byKey(const ValueKey('year-peak-chip')).evaluate().isNotEmpty,
+            'the Рік body in $locale at textScaler $scale',
+          );
+          await pumpFrames(tester);
+          await sweepBody(tester);
+
+          expect(bodyPosition(tester).pixels,
+              bodyPosition(tester).maxScrollExtent,
+              reason: 'the sweep reached the end of the body, so the grid, '
+                  'the legend and the month detail were all built');
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await tearDownTree(tester, container);
+        });
+
+        testWidgets(
+            '$locale: the EMPTY surface renders on both segments with no '
+            'layout exception at textScaler $scale (UI-SPEC #20, S6c)',
+            (tester) async {
+          usePhoneSurface(tester);
+          // Nothing seeded at all: the stack resolves empty, which is the
+          // empty surface's first variant.
+          final container = makeContainer();
+          await openPlanner(
+            tester,
+            container,
+            locale: locale,
+            textScaler: TextScaler.linear(scale),
+          );
+          await pumpFrames(tester);
+          await sweepBody(tester);
+
+          await tester.tap(find.text(yearLabel));
+          await tester.pump();
+          await pumpFrames(tester);
+          await sweepBody(tester);
+
+          await tester.tap(find.text(cyclesLabel));
+          await tester.pump();
+          await pumpFrames(tester);
+
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await tearDownTree(tester, container);
+        });
+
+        testWidgets(
+            '$locale: the ERROR surface renders on both segments with no '
+            'layout exception at textScaler $scale (UI-SPEC #20, S6c)',
+            (tester) async {
+          usePhoneSurface(tester);
+          final container = makeContainer(
+            stackState: AsyncError(
+              Exception('boom-from-drift'),
+              StackTrace.empty,
+            ),
+          );
+          await openPlanner(
+            tester,
+            container,
+            locale: locale,
+            textScaler: TextScaler.linear(scale),
+          );
+          await pumpFrames(tester);
+          await sweepBody(tester);
+
+          await tester.tap(find.text(yearLabel));
+          await tester.pump();
+          await pumpFrames(tester);
+          await sweepBody(tester);
+
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await tearDownTree(tester, container);
+        });
+      }
+    }
+
+    testWidgets('a week column is ACTIVATED through its semantics action — '
+        'not by a widget tap — and the selection follows (DECIDED-10, WR-02)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final handle = tester.ensureSemantics();
+      final container = makeContainer();
+      await seedBands(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('load-week-').evaluate().isNotEmpty,
+        'the load chart columns',
+      );
+      await scrollBody(tester, 300);
+
+      final target = find.byKey(const ValueKey('load-week-4'));
+      expect(container.read(resolvedWeekIndexProvider), isNot(4),
+          reason: 'the default selection is the bucket containing today, so '
+              'bucket 4 is a real change');
+      final node = tester.getSemantics(target);
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue,
+          reason: '`excludeSemantics` drops every descendant action, so the '
+              'column node has to carry one itself — without it the column '
+              'announces itself as a button VoiceOver and TalkBack cannot '
+              'press (WR-02)');
+
+      // Assistive technology does not tap widgets. It activates semantics
+      // actions, which is the ONLY path that proves what WR-02 got wrong.
+      tester.semantics.performAction(
+        find.semantics.byLabel(node.label),
+        SemanticsAction.tap,
+      );
+      await tester.pump();
+
+      expect(container.read(resolvedWeekIndexProvider), 4,
+          reason: 'activating the node selected the week — a screen-reader '
+              'user can drive this chart, not merely hear it');
+      expect(
+        tester.getSemantics(target),
+        isSemantics(isButton: true, isSelected: true, hasTapAction: true),
+        reason: 'and the node it activated now reports itself selected',
+      );
+      expect(
+        tester.getSemantics(find.byKey(const ValueKey('load-week-3'))),
+        isSemantics(isButton: true, isSelected: false, hasTapAction: true),
+        reason: 'every other column reports itself unselected — the selected '
+            'flag tracks the live selection, it is not a static property',
+      );
+      expect(tester.takeException(), isNull);
+
+      handle.dispose();
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a month card is ACTIVATED through its semantics action — '
+        'not by a widget tap — and the selection follows (WR-02)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final handle = tester.ensureSemantics();
+      final container = makeContainer();
+      await seedBands(container);
+      await openYear(tester, container);
+
+      final target = find.byKey(const ValueKey('month-card-5'));
+      expect(container.read(resolvedMonthIndexProvider), isNot(5),
+          reason: 'the default selection is today\'s month (August, index 7)');
+      final node = tester.getSemantics(target);
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue,
+          reason: 'the card wraps an InkWell in an excluding Semantics node, '
+              'so the action must live on the node itself (WR-02)');
+
+      tester.semantics.performAction(
+        find.semantics.byLabel(node.label),
+        SemanticsAction.tap,
+      );
+      await tester.pump();
+
+      expect(container.read(resolvedMonthIndexProvider), 5,
+          reason: 'activating the node selected the month');
+      expect(
+        tester.getSemantics(target),
+        isSemantics(isButton: true, isSelected: true, hasTapAction: true),
+      );
+      expect(
+        tester.getSemantics(find.byKey(const ValueKey('month-card-7'))),
+        isSemantics(isButton: true, isSelected: false, hasTapAction: true),
+        reason: 'the previously-selected month reports itself unselected — '
+            'the flag follows the live selection on every card',
+      );
+      expect(tester.takeException(), isNull);
+
+      handle.dispose();
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the Calendar header\'s two text actions flow onto a SECOND '
+        'LINE at textScaler 2.0 rather than overflowing (S4-amendment, WR-04)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+
+      await tester.pumpWidget(
+        app(container, textScaler: const TextScaler.linear(2.0)),
+      );
+      await pumpUntil(
+        tester,
+        () => find.text('Планувальник').evaluate().isNotEmpty,
+        'the Calendar header actions',
+      );
+      // A resolved day that is NOT today, so the second action renders too —
+      // which is the only configuration where the pair can overflow.
+      container
+          .read(selectedDayProvider.notifier)
+          .select(DateTime.utc(2026, 8, 10));
+      await pumpUntil(
+        tester,
+        () => find.text('Сьогодні').evaluate().isNotEmpty,
+        'the back-to-today action',
+      );
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      final actions = find
+          .ancestor(
+            of: find.text('Планувальник'),
+            matching: find.byType(Wrap),
+          )
+          .first;
+      final buttons =
+          find.descendant(of: actions, matching: find.byType(TextButton));
+      expect(buttons, findsNWidgets(2));
+
+      final first = tester.getRect(buttons.at(0));
+      final second = tester.getRect(buttons.at(1));
+      expect(second.top, greaterThanOrEqualTo(first.bottom),
+          reason: 'a Wrap, not a Row: at textScaler 2.0 the two uk labels do '
+              'not fit one line, and a Row would clip the second action off '
+              'the screen exactly as the Phase-3 header did (WR-04)');
+      expect(tester.takeException(), isNull,
+          reason: 'the app\'s most-used screen gained this action pair in '
+              'this phase — an overflow here reaches every user, not only '
+              'planner users');
 
       await tearDownTree(tester, container);
     });
