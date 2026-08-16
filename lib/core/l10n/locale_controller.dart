@@ -28,7 +28,15 @@ class LocaleController extends Notifier<Locale?> {
   Locale? build() {
     // Synchronous seed: the stored override is applied on frame 1, so a user
     // who set one never sees a system-language frame first (P-4 Option A).
-    final code = ref.watch(sharedPreferencesProvider).getString(_prefsKey);
+    //
+    // `get` (Object?), never `getString`: `getString` is an unguarded
+    // `as String?` downcast (shared_preferences 2.5.x), so a non-String value
+    // under this key throws a TypeError HERE — inside the build that
+    // `BoostqueApp` watches, which parks the provider in a permanent error
+    // state and bricks the launch across restarts. The type of untrusted
+    // storage is as untrusted as its content, so both are checked (CR-01).
+    final stored = ref.watch(sharedPreferencesProvider).get(_prefsKey);
+    final code = stored is String ? stored : null;
     // Stored value is untrusted local input (threat T-01-07): SharedPreferences
     // can be edited outside the app (rooted device, backup edit). Only
     // supported language codes are accepted; anything else means follow

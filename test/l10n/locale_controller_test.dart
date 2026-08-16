@@ -113,6 +113,27 @@ void main() {
   });
 
   test(
+      'a wrong-TYPED stored value sanitizes to follow-system rather than '
+      'throwing at root-build time (CR-01, T-01-07)', () async {
+    // The value under this key is untrusted in its TYPE as well as its
+    // content: `SharedPreferences.getString` is an unguarded `as String?`
+    // downcast, so a non-String value throws a TypeError INSIDE build() —
+    // which BoostqueApp.build watches, so the provider parks in a permanent
+    // error state and the root widget cannot be rebuilt into health. That is
+    // a bricked launch that survives restarts, not a cosmetic fallback.
+    for (final tampered in <Object>[7, true, 3.5, <String>['uk']]) {
+      final container = await makeContainer({'app_locale': tampered});
+
+      expect(
+        container.read(localeControllerProvider),
+        isNull,
+        reason: 'a stored ${tampered.runtimeType} must degrade to '
+            'follow-system exactly like an unsupported code does',
+      );
+    }
+  });
+
+  test(
       'the allowlist equals the generated supportedLocales language codes — '
       'derived, never enumerated (L10N-04, criterion 4)', () {
     expect(
