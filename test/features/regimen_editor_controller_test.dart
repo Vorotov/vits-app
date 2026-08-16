@@ -676,6 +676,139 @@ void main() {
     });
   });
 
+  group('destructive edits (TW-2)', () {
+    // Every regimen edit in the rest of the suite ADDS: a slot is appended, or
+    // an identical regimen is re-upserted. Nothing shrank the active set —
+    // which is exactly why CR-01 (materialized doses outliving the schedule
+    // that created them) survived five phases. These drive the shrinking
+    // edits through the EDITOR, the surface a user actually shrinks from.
+
+    /// The one production consumer of `watchDay`, read through the interface.
+    IntakeRepository intakeRepo() => container.read(intakeRepoProvider);
+
+    Future<List<DayDose>> dosesOn(DateTime day) =>
+        intakeRepo().watchDay(day).first;
+
+    Future<void> seedRegimen(Regimen r) async {
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(r);
+      await waitForRegimenEntry('s1');
+    }
+
+    Regimen cyclic({
+      required DateTime start,
+      List<DoseSlot> slots = const [
+        DoseSlot(id: 'sl-morning', minutesFromMidnight: 480, doseLabel: ''),
+      ],
+    }) =>
+        Regimen(
+          id: 'r1',
+          supplementId: 's1',
+          kind: RegimenKind.cyclic,
+          startDate: start,
+          endDate: null,
+          onDays: 7,
+          offDays: 7,
+          paused: false,
+          slots: slots,
+        );
+
+    test('moving the START DATE forward drops the days the schedule no longer '
+        'covers, while a dose already RECORDED on one of them survives',
+        () async {
+      final mon = DateTime.utc(2026, 8, 10);
+      final tue = DateTime.utc(2026, 8, 11);
+      await seedRegimen(cyclic(start: mon));
+
+      // The week strip pre-materializes the whole current week, including its
+      // future days, so this is the normal state before any edit.
+      await intakeRepo().ensureLogsForDay(mon);
+      await intakeRepo().ensureLogsForDay(tue);
+      expect(await dosesOn(tue), hasLength(1));
+
+      // Monday's dose is taken — that is history, not schedule.
+      await intakeRepo().setStatus(
+        (await dosesOn(mon)).single.logId,
+        DoseStatus.taken,
+      );
+
+      final editor = editorFor('s1');
+      editor.setStartDate(DateTime.utc(2026, 8, 12));
+      await editor.save();
+
+      expect(await dosesOn(tue), isEmpty,
+          reason: 'Tuesday is now before the start: the planner renders it as '
+              'an off-day, so Today must not keep offering a tappable dose on '
+              'it (CR-01)');
+      final monAfter = await dosesOn(mon);
+      expect(monAfter, hasLength(1),
+          reason: 'a dose the user already recorded outlives any later edit');
+      expect(monAfter.single.status, DoseStatus.taken);
+    });
+
+    test('REMOVING a slot in the editor hides its already-materialized dose '
+        'and leaves the surviving slot alone', () async {
+      final day = DateTime.utc(2026, 8, 10);
+      await seedRegimen(cyclic(
+        start: day,
+        slots: const [
+          DoseSlot(id: 'sl-morning', minutesFromMidnight: 480, doseLabel: ''),
+          DoseSlot(id: 'sl-evening', minutesFromMidnight: 1140, doseLabel: ''),
+        ],
+      ));
+      await intakeRepo().ensureLogsForDay(day);
+      expect(await dosesOn(day), hasLength(2));
+
+      final editor = editorFor('s1');
+      expect(draftOf('s1').slots.map((s) => s.id),
+          ['sl-morning', 'sl-evening']);
+      editor.removeSlot(1); // the 19:00 slot
+      await editor.save();
+
+      final after = await dosesOn(day);
+      expect(after, hasLength(1),
+          reason: 'the removed dose time stamps regimenSlots.deletedAt while '
+              'its already-materialized IntakeLog row survives — without the '
+              'read-time filter a deleted 19:00 dose keeps rendering and keeps '
+              'accepting marks forever (CR-02)');
+      expect(after.single.slot.id, 'sl-morning');
+    });
+
+    test('SHORTENING a course end date drops the days past the new end',
+        () async {
+      final inside = DateTime.utc(2026, 9, 5);
+      final dropped = DateTime.utc(2026, 9, 20);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(Regimen(
+            id: 'r1',
+            supplementId: 's1',
+            kind: RegimenKind.course,
+            startDate: DateTime.utc(2026, 9, 1),
+            endDate: DateTime.utc(2026, 9, 30),
+            onDays: 0,
+            offDays: 0,
+            paused: false,
+            slots: const [
+              DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+            ],
+          ));
+      await waitForRegimenEntry('s1');
+
+      await intakeRepo().ensureLogsForDay(inside);
+      await intakeRepo().ensureLogsForDay(dropped);
+      expect(await dosesOn(dropped), hasLength(1));
+
+      final editor = editorFor('s1');
+      editor.setEndDate(DateTime.utc(2026, 9, 10));
+      await editor.save();
+
+      expect(await dosesOn(dropped), isEmpty,
+          reason: 'the course now ends on the 10th');
+      expect(await dosesOn(inside), hasLength(1),
+          reason: 'a day still inside the shortened course is untouched');
+    });
+  });
+
   group('save-in-flight window (WR-01/WR-02/WR-03)', () {
     late GatedRegimenRepo repo;
     late ProviderContainer gated;
