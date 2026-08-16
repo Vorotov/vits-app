@@ -133,7 +133,16 @@ Plans:
   3. User can override the language in Settings; the change applies instantly across every open screen and persists across app restarts
   4. All dates, month names, and numbers throughout the app are locale-formatted, and adding a new language requires only one new ARB file with no code changes
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+
+- [ ] 05-01-PLAN.md — Tracer: Settings screen + generated language picker, derived locale set, declared en fallback, flash-free persisted override (wave 1)
+- [ ] 05-02-PLAN.md — Amendment A1: the designed error surface beats the Riverpod retry-loading state on all three async screens; A3 locale-aware sentence casing (wave 1)
+- [ ] 05-03-PLAN.md — Criterion-4 gates: one-new-ARB-file contract, zero-hardcoded-strings, ARB parity + derived plural forms, system-language resolution (wave 2)
+- [ ] 05-04-PLAN.md — Bilingual render matrix across app shell / stack / add-sheet / editor / calendar / dose sheet, plus pushed-route and open-sheet propagation (wave 2)
+- [ ] 05-05-PLAN.md — Amendment A2 two-placeholder a11y key, carried-todo closure (LOCKED-FONT), phase gate + both-device backstops (wave 3)
+
 **UI hint**: yes
 
 ## Progress
@@ -147,4 +156,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 2. Stack Management | 5/5 | Complete    | 2026-08-15 |
 | 3. Daily Tracking | 5/5 | Complete    | 2026-08-15 |
 | 4. Planner Views | 5/5 | Complete    | 2026-08-16 |
-| 5. Localization & Settings | 0/? | Not started | - |
+| 5. Localization & Settings | 0/5 | Planned | - |
