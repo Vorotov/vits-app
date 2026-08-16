@@ -84,6 +84,16 @@ class PlannerScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final segment = ref.watch(plannerSegmentProvider);
 
+    // Both selections belong to the SCREEN, for its whole lifetime — not to
+    // the body that happens to be rendering one of them (Interaction Contract
+    // 2). Switching segments unmounts a body, and these providers are
+    // autoDispose per D-23: without a listener held HERE, the last widget
+    // watching the selection goes away with the body and the user's pick is
+    // silently reset on the way back. `listen` rather than `watch` on purpose
+    // — the screen keeps them alive without rebuilding on every selection.
+    ref.listen(selectedWeekProvider, (_, _) {});
+    ref.listen(selectedMonthProvider, (_, _) {});
+
     return Scaffold(
       body: SafeArea(
         child: Column(
