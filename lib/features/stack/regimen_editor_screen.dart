@@ -125,8 +125,16 @@ class RegimenEditorScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
                       children: [
-                        _Eyebrow(text: l10n.timeSlotsLabel),
-                        const Spacer(),
+                        // Expanded, not a fixed child ahead of a Spacer: at
+                        // textScaler 1.6 the eyebrow and the slot count
+                        // together are wider than the body, and a Spacer has
+                        // no space left to give — the row overflowed by 77-84
+                        // px in BOTH languages (plan 05-04, CR-01 / WR-04
+                        // defect class). Expanded gives the label the leftover
+                        // width and lets it wrap, while still pushing the
+                        // count to the trailing edge at scale 1.0.
+                        Expanded(child: _Eyebrow(text: l10n.timeSlotsLabel)),
+                        const SizedBox(width: BqSpace.sm),
                         Text(
                           l10n.slotsPerDay(draft.slots.length),
                           style: BqText.mono(
@@ -491,11 +499,19 @@ class _SliderRow extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
           children: [
-            Text(
-              label,
-              style: const TextStyle(fontSize: 13, color: BqColors.ink),
+            // Expanded, not a fixed child ahead of a Spacer: at textScaler
+            // 1.6 the slider label and its mono value together exceed the
+            // panel width, and the row overflowed by up to 126 px in BOTH
+            // languages (plan 05-04, CR-01 / WR-04 defect class). Expanded
+            // gives the label the leftover width and lets it wrap; the value
+            // still sits at the trailing edge at scale 1.0.
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 13, color: BqColors.ink),
+              ),
             ),
-            const Spacer(),
+            const SizedBox(width: BqSpace.sm),
             Text(
               valueLabel,
               style: BqText.mono(

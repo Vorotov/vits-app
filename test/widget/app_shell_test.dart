@@ -12,12 +12,24 @@ import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/main.dart';
 
+import '../support/locale_matrix.dart';
+
 /// D-27: the shell renders localized tab labels in en and uk, switches tabs,
 /// and produces no overflow with the longest uk label ("Налаштування").
 ///
 /// Since plan 02-01 the Stack tab watches [stackEntriesProvider], so every
 /// shell test overrides [dbProvider] with an in-memory database (D-19) and
 /// flushes Drift's stream-close timers before the test ends.
+///
+/// Plan 05-04: the harness no longer hardcodes a language — it takes the
+/// `String locale` + `TextScaler?` parameter shape every suite in this
+/// repository now shares (`planner_screen_test.dart:142-163`), and the
+/// label-render claim is asserted once, by the locale × text-scale matrix at
+/// the bottom, in BOTH languages at BOTH scales. The two former single-locale
+/// label tests were folded into it rather than left alongside as duplicates;
+/// what the English test uniquely claimed — that [BoostqueApp] with no stored
+/// override follows the system locale, and that tabs switch in place — is
+/// kept below as its own test.
 void main() {
   late SharedPreferences prefs;
 
@@ -45,17 +57,27 @@ void main() {
     );
   }
 
-  Widget ukApp() {
-    return scoped(
-      MaterialApp(
-        locale: const Locale('uk'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        theme: bqTheme(),
-        home: const AppShell(),
-      ),
+  /// The shell under a rendering locale and text scale pinned from OUTSIDE —
+  /// the `plannerApp` harness signature (05-PATTERNS), so the matrix below is
+  /// a loop rather than four copies.
+  Widget shellTree({String locale = 'uk', TextScaler? textScaler}) {
+    return MaterialApp(
+      locale: Locale(locale),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      theme: bqTheme(),
+      builder: (context, child) => textScaler == null
+          ? child!
+          : MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+              child: child!,
+            ),
+      home: const AppShell(),
     );
   }
+
+  Widget shellApp({String locale = 'uk', TextScaler? textScaler}) =>
+      scoped(shellTree(locale: locale, textScaler: textScaler));
 
   /// Tears the tree down inside the test body so Drift's stream-close
   /// zero-duration timers fire before flutter_test's pending-timer check.
@@ -65,8 +87,19 @@ void main() {
     await tester.pump(const Duration(milliseconds: 10));
   }
 
-  testWidgets('en: shell shows localized tab labels and switches tabs',
-      (tester) async {
+  /// Bounded frame pumping. Never `pumpAndSettle` in the matrix: the shell
+  /// keeps a midnight `Timer` alive for the whole session, and settling
+  /// against a live clock either hangs or passes for a reason the test did not
+  /// intend (PF-7).
+  Future<void> pumpFrames(WidgetTester tester, [int frames = 20]) async {
+    for (var i = 0; i < frames; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+  }
+
+  testWidgets(
+      'en: BoostqueApp with no stored override follows the system locale and '
+      'switches tabs in place', (tester) async {
     await tester.pumpWidget(scoped(const BoostqueApp()));
     await tester.pumpAndSettle();
 
@@ -89,23 +122,6 @@ void main() {
     await flushTearDown(tester);
   });
 
-  testWidgets('uk: shell shows uk tab labels without overflow',
-      (tester) async {
-    await tester.pumpWidget(ukApp());
-    await tester.pumpAndSettle();
-
-    // E1 populated + overflow truths: all three uk labels render plus the
-    // Stack heading, and the longest label ("Налаштування") causes no
-    // RenderFlex overflow.
-    expect(find.text('Стек'), findsOneWidget);
-    expect(find.text('Мій стек'), findsOneWidget);
-    expect(find.text('Календар'), findsOneWidget);
-    expect(find.text('Налаштування'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-
-    await flushTearDown(tester);
-  });
-
   testWidgets('uk: the minute ticker runs only while the Calendar tab is the '
       'visible one (WR-05)', (tester) async {
     final container = ProviderContainer(overrides: [
@@ -121,13 +137,7 @@ void main() {
     ]);
     await tester.pumpWidget(UncontrolledProviderScope(
       container: container,
-      child: MaterialApp(
-        locale: const Locale('uk'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        theme: bqTheme(),
-        home: const AppShell(),
-      ),
+      child: shellTree(locale: 'uk'),
     ));
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 20));
@@ -159,7 +169,7 @@ void main() {
 
   testWidgets('uk: switching to Settings renders heading without overflow',
       (tester) async {
-    await tester.pumpWidget(ukApp());
+    await tester.pumpWidget(shellApp(locale: 'uk'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Налаштування'));
@@ -171,5 +181,49 @@ void main() {
     expect(tester.takeException(), isNull);
 
     await flushTearDown(tester);
+  });
+
+  // ---------------------------------------------------------------------
+  // The bilingual × text-scale matrix (plan 05-04, L10N-01 criterion 1).
+  //
+  // The shell is the frame every other screen is read inside, and before this
+  // plan it had been rendered in English exactly once, at scale 1.0, through
+  // BoostqueApp's system-locale path — never with the locale pinned, never at
+  // an accessibility scale.
+  // ---------------------------------------------------------------------
+
+  group('bilingual render matrix (L10N-01)', () {
+    for (final locale in const ['uk', 'en']) {
+      final l10n = lookupAppLocalizations(Locale(locale));
+
+      for (final scale in const <double>[1.0, 1.6]) {
+        testWidgets(
+            '$locale: the shell renders its three nav destinations and the '
+            'Stack heading in the active language, with no layout exception '
+            'at textScaler $scale (V-4, E-14)', (tester) async {
+          await tester.pumpWidget(
+            shellApp(locale: locale, textScaler: TextScaler.linear(scale)),
+          );
+          await pumpFrames(tester);
+
+          // In the RIGHT language, not merely rendered: these four strings
+          // differ between uk and en, so a shell that fell back to the other
+          // language fails here rather than passing on a bare render.
+          expect(find.text(l10n.tabStack), findsOneWidget);
+          expect(find.text(l10n.tabCalendar), findsOneWidget);
+          expect(find.text(l10n.tabSettings), findsOneWidget);
+          expect(find.text(l10n.stackTitle), findsOneWidget,
+              reason: 'the Stack tab is the one the app opens on, so its '
+                  'heading is part of the shell frame the user first reads');
+
+          if (locale == 'en') {
+            expectNoCyrillicWhileEn(tester);
+          }
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await flushTearDown(tester);
+        });
+      }
+    }
   });
 }
