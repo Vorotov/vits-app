@@ -198,7 +198,11 @@ class _MonthCard extends ConsumerWidget {
     // is transcribed on purpose (DECIDED-6). Do not reconcile them.
     final over = month.load > editorialLimit;
 
-    void select() => ref.read(selectedMonthProvider.notifier).select(index);
+    // The month's first day, never the card's position: the grid is today's
+    // calendar year, and on 1 January index 11 stops meaning the December the
+    // user tapped (WR-03).
+    void select() =>
+        ref.read(selectedMonthProvider.notifier).select(month.month);
 
     return MergeSemantics(
       child: Semantics(

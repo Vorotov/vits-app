@@ -71,18 +71,28 @@ final plannerSegmentProvider =
   PlannerSegmentController.new,
 );
 
-/// The week bucket the user picked, or `null` to follow today.
+/// The week bucket the user picked, IDENTIFIED BY ITS MONDAY, or `null` to
+/// follow today.
 ///
 /// `null` means "follow today" rather than storing today's concrete bucket —
 /// the `SelectedDayController` idiom. Sitting on the current week across
 /// midnight (or across a year rollover) then re-resolves instead of stranding
 /// the selection on a bucket that has drifted into the past.
-class SelectedWeekController extends Notifier<int?> {
+///
+/// The pick is a DATE, never a list index (WR-03). The bucket list is rebuilt
+/// from `todayProvider`, so at a month rollover the whole window slides forward
+/// and every index shifts by roughly four weeks: a stored `7` would keep
+/// indexing legally and start describing a completely different week without
+/// the user touching anything. A Monday still means the same seven days after
+/// the window moves — and when it moves out of the window entirely, the
+/// resolver says so by falling back to "follow today" instead of retargeting.
+class SelectedWeekController extends Notifier<DateTime?> {
   @override
-  int? build() => null;
+  DateTime? build() => null;
 
-  /// Selects the bucket at [index].
-  void select(int index) => state = index;
+  /// Selects the bucket beginning on [monday] — `WeekBucket.start`, a
+  /// date-only UTC value.
+  void select(DateTime monday) => state = monday;
 
   /// Clears the selection back to "follow today".
   void followToday() => state = null;
@@ -90,16 +100,17 @@ class SelectedWeekController extends Notifier<int?> {
 
 /// The picked week bucket; autoDispose per D-23.
 final selectedWeekProvider =
-    NotifierProvider.autoDispose<SelectedWeekController, int?>(
+    NotifierProvider.autoDispose<SelectedWeekController, DateTime?>(
   SelectedWeekController.new,
 );
 
 /// The week bucket actually rendered: the explicit pick, or the bucket
 /// containing today when following.
 ///
-/// ALWAYS clamped to the model's own bucket list, so a selection left over
-/// from a previous window — or from before a regimen change resized the
-/// model — can never index out of bounds (V5 input validation).
+/// Resolved by LOOKUP, so the returned index always names the week the user
+/// actually chose, and a pick the current model no longer contains degrades to
+/// following today rather than to a neighbour it never picked (WR-03). The
+/// index is therefore in range by construction, not by clamping.
 final resolvedWeekIndexProvider = Provider.autoDispose<int>((ref) {
   final model = switch (ref.watch(cyclesModelProvider)) {
     AsyncData(:final value) => value,
@@ -108,7 +119,11 @@ final resolvedWeekIndexProvider = Provider.autoDispose<int>((ref) {
   if (model == null || model.weeks.isEmpty) return 0;
 
   final selected = ref.watch(selectedWeekProvider);
-  if (selected != null) return selected.clamp(0, model.weeks.length - 1);
+  if (selected != null) {
+    final index =
+        model.weeks.indexWhere((w) => w.bucket.start == selected);
+    if (index >= 0) return index;
+  }
 
   // "Follow today" reads the model's own answer rather than re-running the
   // search the summary chip also used to run: one derivation, one truth
@@ -116,13 +131,20 @@ final resolvedWeekIndexProvider = Provider.autoDispose<int>((ref) {
   return model.currentWeekIndex;
 });
 
-/// The month card the user picked, or `null` to follow today's month.
-class SelectedMonthController extends Notifier<int?> {
+/// The month card the user picked, IDENTIFIED BY ITS FIRST DAY, or `null` to
+/// follow today's month.
+///
+/// A date rather than an index for the same reason the week selection is one
+/// (WR-03): the year model is today's calendar year, so on 1 January a stored
+/// `11` silently stops meaning the December the user tapped and starts meaning
+/// December of the NEW year.
+class SelectedMonthController extends Notifier<DateTime?> {
   @override
-  int? build() => null;
+  DateTime? build() => null;
 
-  /// Selects the month at [index] (0 = January).
-  void select(int index) => state = index;
+  /// Selects the month beginning on [monthStart] — `YearMonth.month`, a
+  /// date-only UTC value.
+  void select(DateTime monthStart) => state = monthStart;
 
   /// Clears the selection back to "follow today".
   void followToday() => state = null;
@@ -130,23 +152,25 @@ class SelectedMonthController extends Notifier<int?> {
 
 /// The picked month card; autoDispose per D-23.
 final selectedMonthProvider =
-    NotifierProvider.autoDispose<SelectedMonthController, int?>(
+    NotifierProvider.autoDispose<SelectedMonthController, DateTime?>(
   SelectedMonthController.new,
 );
 
 /// The month actually rendered: the explicit pick, or today's month when
-/// following — clamped to the model's month list for the same reason
-/// [resolvedWeekIndexProvider] clamps.
+/// following — resolved by lookup for the same reason
+/// [resolvedWeekIndexProvider] is.
 final resolvedMonthIndexProvider = Provider.autoDispose<int>((ref) {
   final model = switch (ref.watch(yearModelProvider)) {
     AsyncData(:final value) => value,
     _ => null,
   };
-  final last = (model == null || model.months.isEmpty)
-      ? 11
-      : model.months.length - 1;
+  final months = model?.months ?? const [];
+  final last = months.isEmpty ? 11 : months.length - 1;
 
   final selected = ref.watch(selectedMonthProvider);
-  if (selected != null) return selected.clamp(0, last);
+  if (selected != null) {
+    final index = months.indexWhere((m) => m.month == selected);
+    if (index >= 0) return index;
+  }
   return (ref.watch(todayProvider).month - 1).clamp(0, last);
 });

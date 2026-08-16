@@ -189,6 +189,109 @@ void main() {
     expect(bucket.endInclusive.isBefore(today), isFalse);
   });
 
+  group('selections survive a window shift by IDENTITY, never by position '
+      '(WR-03)', () {
+    late _MovableToday clock;
+
+    setUp(() {
+      container.dispose();
+      container = ProviderContainer(
+        overrides: [
+          dbProvider.overrideWith((ref) {
+            final database = BoostqueDb.forTesting(NativeDatabase.memory());
+            ref.onDispose(database.close);
+            db = database;
+            return database;
+          }),
+          todayProvider.overrideWith(() {
+            clock = _MovableToday(today);
+            return clock;
+          }),
+        ],
+      );
+    });
+
+    test('a picked week keeps describing the SAME seven days after the window '
+        'slides forward a month', () async {
+      await seed();
+      final before = await resolve(cyclesModelProvider);
+      final sub = container.listen(resolvedWeekIndexProvider, (_, _) {});
+      addTearDown(sub.close);
+      final weekSub = container.listen(selectedWeekProvider, (_, _) {});
+      addTearDown(weekSub.close);
+
+      // A week deep enough into the window to still exist after the shift.
+      final picked = before.weeks[7].bucket.start;
+      container.read(selectedWeekProvider.notifier).select(picked);
+      expect(container.read(resolvedWeekIndexProvider), 7);
+
+      // Midnight on the first of the next month: the window slides forward and
+      // every bucket index shifts by roughly four weeks.
+      clock.jumpTo(DateTime.utc(2026, 9, 1));
+      final after = await resolve(cyclesModelProvider);
+      final index = container.read(resolvedWeekIndexProvider);
+
+      expect(after.weeks[index].bucket.start, picked,
+          reason: 'the user picked a WEEK, not a slot in a list. A bare index '
+              'would still be in range and would silently start describing a '
+              'different week — the week-detail card changing what it is '
+              'about with nobody touching it');
+      expect(index, isNot(7),
+          reason: 'the same week now sits at a different index, which is '
+              'exactly why the index could not be the thing stored');
+    });
+
+    test('a picked week that the new window no longer contains falls back to '
+        'following today, not to a neighbour', () async {
+      await seed();
+      final before = await resolve(cyclesModelProvider);
+      final sub = container.listen(resolvedWeekIndexProvider, (_, _) {});
+      addTearDown(sub.close);
+      final weekSub = container.listen(selectedWeekProvider, (_, _) {});
+      addTearDown(weekSub.close);
+
+      // Bucket 0 opens on 27 July, six days before the August window — it is
+      // gone entirely once the window starts in September.
+      container
+          .read(selectedWeekProvider.notifier)
+          .select(before.weeks.first.bucket.start);
+      expect(container.read(resolvedWeekIndexProvider), 0);
+
+      clock.jumpTo(DateTime.utc(2026, 9, 1));
+      final after = await resolve(cyclesModelProvider);
+
+      expect(container.read(resolvedWeekIndexProvider), after.currentWeekIndex,
+          reason: 'a selection the model can no longer honour degrades to the '
+              '"follow today" default — the one state the user can read off '
+              'the screen — rather than to whatever week happens to sit at '
+              'the old index');
+    });
+
+    test('a picked month keeps its identity across a YEAR rollover', () async {
+      await seed();
+      final sub = container.listen(resolvedMonthIndexProvider, (_, _) {});
+      addTearDown(sub.close);
+      final monthSub = container.listen(selectedMonthProvider, (_, _) {});
+      addTearDown(monthSub.close);
+
+      final before = await resolve(yearModelProvider);
+      // December 2026 — index 11 of the 2026 grid.
+      container
+          .read(selectedMonthProvider.notifier)
+          .select(before.months[11].month);
+      expect(container.read(resolvedMonthIndexProvider), 11);
+
+      clock.jumpTo(DateTime.utc(2027, 1, 1));
+      final after = await resolve(yearModelProvider);
+      expect(after.year, 2027);
+
+      expect(container.read(resolvedMonthIndexProvider), 0,
+          reason: 'December 2026 is not a month of the 2027 grid, so the '
+              'selection follows today (January) instead of silently becoming '
+              'December 2027 — a month the user never picked');
+    });
+  });
+
   test('an entry with no regimen never reaches the model', () async {
     await container.read(supplementRepoProvider).upsert(magnesium);
 
@@ -273,4 +376,21 @@ class _FixedToday extends TodayController {
 
   @override
   DateTime build() => day;
+}
+
+/// A pinned clock that can be MOVED — the midnight rollover, without waiting
+/// for one. The real controller re-derives the day from the system clock on a
+/// timer; the tests that need a window shift drive that transition directly.
+class _MovableToday extends TodayController {
+  _MovableToday(this._day);
+
+  DateTime _day;
+
+  @override
+  DateTime build() => _day;
+
+  void jumpTo(DateTime day) {
+    _day = day;
+    state = day;
+  }
 }

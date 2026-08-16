@@ -164,6 +164,19 @@ void main() {
         return key is ValueKey<String> && key.value.startsWith(prefix);
       });
 
+  /// The Monday of bucket [index] in the currently-resolved Цикли model.
+  ///
+  /// Selections are keyed by DATE, never by position (WR-03), so a test that
+  /// wants "the fourth column" has to ask the model which week that is — the
+  /// same question the tapped column itself answers.
+  DateTime bucketStart(ProviderContainer container, int index) {
+    final model = switch (container.read(cyclesModelProvider)) {
+      AsyncData(:final value) => value,
+      _ => fail('the Цикли model has not resolved yet'),
+    };
+    return model.weeks[index].bucket.start;
+  }
+
   void usePhoneSurface(WidgetTester tester) {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
@@ -956,7 +969,9 @@ void main() {
         'the gantt rows',
       );
 
-      container.read(selectedWeekProvider.notifier).select(3);
+      container
+          .read(selectedWeekProvider.notifier)
+          .select(bucketStart(container, 3));
       await tester.pump();
       expect(container.read(resolvedWeekIndexProvider), 3);
 
@@ -1276,7 +1291,9 @@ void main() {
         reason: 'the card is isolated behind its own boundary',
       );
 
-      container.read(selectedWeekProvider.notifier).select(4);
+      container
+          .read(selectedWeekProvider.notifier)
+          .select(bucketStart(container, 4));
       await tester.pump();
       expect(container.read(resolvedWeekIndexProvider), 4);
 

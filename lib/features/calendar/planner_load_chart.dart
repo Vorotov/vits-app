@@ -276,8 +276,11 @@ class _WeekColumn extends ConsumerWidget {
             ? BqColors.warn
             : BqColors.risk;
 
+    // The bucket's Monday, never the column's position: the bucket list is
+    // rebuilt from the clock, and an index outlives the list it indexed
+    // (WR-03).
     void select() =>
-        ref.read(selectedWeekProvider.notifier).select(index);
+        ref.read(selectedWeekProvider.notifier).select(week.bucket.start);
 
     return Semantics(
       button: true,
