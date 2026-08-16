@@ -101,6 +101,14 @@ class StackScreen extends ConsumerWidget {
             ),
             const SizedBox(height: BqSpace.md),
             ...entries.when(
+              // "Has an error" beats "is loading": Riverpod 3 reports a
+              // failing provider as an AsyncLoading that CARRIES the error
+              // while it retries on its own backoff, and `when` defaults
+              // skipLoadingOnReload to false — so without this the designed
+              // error surface below is unreachable for the whole ~38.2s
+              // backoff window and the body renders blank (A1 / P-9,
+              // 04-REVIEW.md CR-02).
+              skipLoadingOnReload: true,
               data: (list) => list.isEmpty
                   // Empty state below the still-visible CTA; the ДОБАВКИ
                   // eyebrow is omitted when the list is empty (#1).

@@ -133,7 +133,16 @@ class _Header extends ConsumerWidget {
 
     final title = isToday
         ? l10n.calendarTitleToday
-        : _capitalizeFirst(DateFormat('EEEE', locale).format(day));
+        // Sentence casing goes through intl WITH the active locale, never
+        // Dart's locale-independent Unicode default casing: `i` uppercases to
+        // `I` in en and to `İ` in tr/az, and a hand-rolled helper is
+        // correct-but-lucky for the two languages that ship today and wrong
+        // for the fourth ARB file (A3 / PF-6). The locale is the same one the
+        // DateFormat above reads, threaded from the widget tree.
+        : toBeginningOfSentenceCase(
+            DateFormat('EEEE', locale).format(day),
+            locale,
+          );
     // On today the weekday leads the subtitle; on any other day the title
     // already carries it, so the subtitle drops it (UI-SPEC S4).
     final subtitle = isToday
@@ -224,17 +233,6 @@ class _Header extends ConsumerWidget {
   }
 }
 
-/// Capitalizes the first character of an intl weekday (uk renders it
-/// lowercase), leaving the rest of the string untouched.
-///
-/// Operates on the first RUNE, not the first UTF-16 code unit, so a locale
-/// whose weekday starts outside the BMP is not corrupted.
-String _capitalizeFirst(String value) {
-  if (value.isEmpty) return value;
-  final first = String.fromCharCode(value.runes.first);
-  return first.toUpperCase() + value.substring(first.length);
-}
-
 /// Scrolling day body: the day's non-empty time blocks, closed by the
 /// disclaimer.
 class _DayBody extends ConsumerStatefulWidget {
@@ -310,6 +308,15 @@ class _DayBodyState extends ConsumerState<_DayBody> {
       ),
       children: [
         ...widget.doses.when(
+          // "Has an error" beats "is loading": Riverpod 3 reports a failing
+          // provider as an AsyncLoading that CARRIES the error while it
+          // retries on its own backoff, and `when` defaults
+          // skipLoadingOnReload to false — so without this the held
+          // previous-day list below would win over the designed error surface
+          // for the whole ~38.2s backoff window (A1 / P-9, 04-REVIEW.md
+          // CR-02). The hold itself is unchanged: a genuine day switch with no
+          // error still takes the loading arm.
+          skipLoadingOnReload: true,
           data: (list) {
             _held = list;
             _heldDay = widget.day;
