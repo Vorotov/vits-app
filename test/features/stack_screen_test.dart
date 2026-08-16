@@ -20,7 +20,12 @@
 /// - plan 05-04: a locale × textScaler matrix over three screen states
 ///   (populated, empty, add-supplement sheet open) in BOTH shipped languages,
 ///   plus the E-12 copy-on-add assertion
+/// - plan 05-05: the catalog add affordance's accessibility label read off the
+///   semantics tree in BOTH languages (A2 / PF-5), and the LOCKED-FONT
+///   source gates over pubspec.yaml + lib/core/theme/ (T-05-11)
 library;
+
+import 'dart:io';
 
 import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/domain/models.dart';
@@ -734,6 +739,231 @@ void main() {
         });
       }
     }
+  });
+
+  // ---------------------------------------------------------------------
+  // Amendment A2 / PF-5: the catalog row's add affordance carries an
+  // accessibility label built from ONE ARB key with two placeholders, so the
+  // word order and the separator between "the action" and "the name" are a
+  // translator's decision rather than a Dart string literal.
+  //
+  // The label is invisible: it is never rendered text, so no text finder and
+  // no render-matrix case can see it, and the bilingual matrix above would
+  // stay green with the two fragments glued together in the wrong order for
+  // Ukrainian. It is read off the semantics tree here, in BOTH languages,
+  // because "uk and en happen to share this word order" is an assumption and
+  // not a fact about any future language (T-05-04).
+  // ---------------------------------------------------------------------
+
+  group('catalog add affordance: a11y label comes from the ARB (A2, PF-5)', () {
+    /// The expected label per language, written out as a LITERAL.
+    ///
+    /// Deliberately NOT rebuilt by calling
+    /// `l10n.addSupplementCatalogSemantics(l10n.addSupplement, name)` — that
+    /// is the exact expression the widget evaluates, so an assertion against
+    /// it would pass for any word order, any separator and any placeholder
+    /// ordering, i.e. it would pin nothing at all. Spelling the sentence out
+    /// is what makes a reordered uk translation a red test rather than a
+    /// silent change to what a screen-reader user hears.
+    const expectedLabel = <String, String>{
+      'uk': 'Додати добавку: Креатин моногідрат',
+      'en': 'Add supplement: Creatine monohydrate',
+    };
+
+    for (final locale in const ['uk', 'en']) {
+      final l10n = lookupAppLocalizations(Locale(locale));
+      final other = locale == 'uk' ? 'en' : 'uk';
+
+      testWidgets(
+          '$locale: the trailing "+" announces "${expectedLabel[locale]}" — '
+          'one ARB key, two placeholders, no Dart-side concatenation',
+          (tester) async {
+        usePhoneSurface(tester);
+        final handle = tester.ensureSemantics();
+        final container = makeContainer(today: DateTime.utc(2026, 8, 10));
+        await tester.pumpWidget(app(container, locale: locale));
+        await pumpUntilFound(tester, find.text(l10n.addSupplement));
+
+        await tester.tap(find.text(l10n.addSupplement));
+        await tester.pumpAndSettle();
+        await pumpUntilFound(tester, find.text(l10n.catalogCreatineName));
+
+        // Scope to ONE catalog row: every row carries a "+", so an unscoped
+        // finder would be ambiguous and `getSemantics` would throw.
+        final row = find
+            .ancestor(
+              of: find.text(l10n.catalogCreatineName),
+              matching: find.byType(Row),
+            )
+            .first;
+        final plus = find.descendant(of: row, matching: find.text('+'));
+        expect(plus, findsOneWidget,
+            reason: 'the icon-only affordance is the thing being labelled; if '
+                'this stops matching, the assertion below is measuring some '
+                'other node');
+
+        // `excludeSemantics: true` drops the bare "+" glyph, and the whole
+        // row is one tap target, so the "+"'s annotation is MERGED into the
+        // row's node alongside the name and dose Texts: the published label
+        // is "name\ndose\n<the sentence>", not the sentence alone. Assert on
+        // the segment rather than on the whole node — that keeps the check
+        // exact about the part this task owns (the ARB sentence) without
+        // freezing what else the row happens to announce.
+        final node = tester.getSemantics(plus);
+        final segments = node.label.split('\n');
+        expect(segments, contains(expectedLabel[locale]),
+            reason: 'an icon-only control with a wrong-language or '
+                'wrong-order label is unusable with a screen reader, and it '
+                'is invisible to every rendered assertion in this file — the '
+                'sentence belongs to the ARB (PF-5, T-05-04)');
+        expect(node, isSemantics(isButton: true),
+            reason: 'the label only helps if the node is announced as a '
+                'control the user can activate');
+        expect(node.label, isNot(contains('+')),
+            reason: 'excludeSemantics keeps the decorative glyph out of the '
+                'announcement');
+
+        // The OTHER language's sentence must not be reachable — proof the
+        // label followed the active locale rather than a captured default.
+        // Asserted against this node's own label, not through a tree-wide
+        // finder: `bySemanticsLabel` matches a node label WHOLE, and this
+        // node's label is the merged multi-line string above, so a tree-wide
+        // finder would report "not found" in both locales and prove nothing.
+        expect(node.label, isNot(contains(expectedLabel[other]!)),
+            reason: 'the label is resolved per-locale like every other ARB '
+                'value, not baked in at first build');
+
+        expect(tester.takeException(), isNull, reason: overflowReason);
+
+        handle.dispose();
+        await tearDownTree(tester, container);
+      });
+    }
+
+    test(
+        'add_supplement_sheet.dart concatenates no localized fragments — the '
+        'PF-5 source gate', () {
+      final source = File('lib/features/stack/add_supplement_sheet.dart')
+          .readAsStringSync()
+          .split('\n')
+          .where((line) => !line.trimLeft().startsWith('//'))
+          .join('\n');
+
+      expect(source, isNot(contains(r'${l10n.')),
+          reason: 'gluing two localized fragments together inside a Dart '
+              'string hardcodes this language pair\'s word order and its '
+              'separator into the binary, where no translator can reach them '
+              'and no ARB-parity gate can see them: the resulting string is '
+              'not a literal, so the no-hardcoded-strings gate passes it. The '
+              'fix is always a new ARB key with placeholders (the '
+              'weekLoadLabel idiom), never an allowlist entry (PF-5, A2)');
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // LOCKED-FONT (05-UI-SPEC, P-10, threat T-05-11): the app keeps the
+  // PLATFORM Cyrillic fallback. Instrument Sans carries no Cyrillic glyphs —
+  // cmap-verified twice, and upstream declares latin subsets only — so
+  // Ukrainian letters render from SF (iOS) / Roboto (Android) while Latin
+  // letters and digits on the same line render from Instrument Sans. The
+  // approved HTML mockup was itself rendered in a browser where that font
+  // has no Cyrillic, so the Ukrainian screens the user signed off on ARE
+  // this fallback rendering. Mixed-family lines are an ACCEPTED consequence,
+  // not a defect (see the locked-decisions section of 05-05-SUMMARY.md).
+  //
+  // These gates exist because that decision is a "change nothing" decision,
+  // and a "change nothing" decision is the kind a later reader silently
+  // reverses after seeing the symptom without the reasoning. They read
+  // SOURCE off disk rather than the running theme, because two of the three
+  // things being protected (the pubspec declaration, the absence of a
+  // fallback family) are not observable from a widget tree at all.
+  // ---------------------------------------------------------------------
+
+  group('LOCKED-FONT gates (T-05-11)', () {
+    /// Named once: every assertion below has the same consequence, and a
+    /// `reason:` that drifts between them stops naming one defect class.
+    const fontChangeReason =
+        'the bundled font families are a LOCKED v1 decision (05-UI-SPEC '
+        'LOCKED-FONT). Changing the primary family, or adding a fallback '
+        'family, changes glyph metrics app-wide: it invalidates the Phase-4 '
+        'gantt truncation measurements (156.0px allotted / 183.1px intrinsic) '
+        'and requires a full re-run of the bilingual text-scale matrix. That '
+        'is a deliberate decision with that work budgeted — never a quiet '
+        'edit, and never a red test relaxed to green';
+
+    const sansFamily = 'Instrument Sans';
+    const monoFamily = 'JetBrains Mono';
+
+    test('pubspec.yaml declares exactly two font families, unchanged', () {
+      final pubspec = File('pubspec.yaml').readAsLinesSync();
+
+      final families = pubspec
+          .map((line) => RegExp(r'^\s*-\s*family:\s*(.+?)\s*$').firstMatch(line))
+          .nonNulls
+          .map((m) => m.group(1)!)
+          .toList();
+      expect(families, <String>[sansFamily, monoFamily],
+          reason: 'a THIRD family — a Cyrillic-capable primary, or a family '
+              'added to be used as a fallback — is the forbidden remediation: '
+              '$fontChangeReason');
+
+      final assets = pubspec
+          .map((line) => RegExp(r'^\s*-\s*asset:\s*(.+?)\s*$').firstMatch(line))
+          .nonNulls
+          .map((m) => m.group(1)!)
+          .toList();
+      expect(
+          assets,
+          <String>[
+            'assets/fonts/InstrumentSans[wdth,wght].ttf',
+            'assets/fonts/JetBrainsMono[wght].ttf',
+          ],
+          reason: 'swapping the FILE behind an unchanged family name is the '
+              'same change wearing a disguise: $fontChangeReason');
+    });
+
+    test('no fontFamilyFallback anywhere under lib/', () {
+      final offenders = <String>[];
+      for (final entity in Directory('lib').listSync(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) continue;
+        if (entity.path.contains('/l10n/gen/')) continue;
+        final source = entity
+            .readAsLinesSync()
+            .where((line) => !line.trimLeft().startsWith('//'))
+            .join('\n');
+        if (source.contains('fontFamilyFallback')) offenders.add(entity.path);
+      }
+      // The glob must have resolved something — an empty scan passing
+      // silently is the way a source gate stops gating.
+      expect(Directory('lib').listSync(recursive: true).whereType<File>(),
+          isNotEmpty);
+      expect(offenders, isEmpty,
+          reason: 'a fallback family is the WORST of the rejected options — '
+              'it still mixes two families inside a single line (digits from '
+              'the primary, Cyrillic from the fallback) AND pays the bundle '
+              'cost, so it buys nothing over the platform fallback the app '
+              'already gets for free. $fontChangeReason');
+    });
+
+    test('the theme uses the bundled families and nothing else', () {
+      final theme = File('lib/core/theme/theme.dart').readAsStringSync();
+
+      final declared = RegExp(r"fontFamily:\s*'([^']+)'")
+          .allMatches(theme)
+          .map((m) => m.group(1)!)
+          .toList();
+      expect(declared, isNotEmpty,
+          reason: 'if the regex stops matching, this gate has silently '
+              'stopped reading the thing it protects');
+      expect(declared.first, sansFamily,
+          reason: 'ThemeData.fontFamily is the app-wide primary: every '
+              'non-mono string in both languages renders through it. '
+              '$fontChangeReason');
+      expect(declared.toSet(), <String>{sansFamily, monoFamily},
+          reason: 'the theme may name only families pubspec actually '
+              'bundles; anything else resolves to a platform default at '
+              'runtime with no build-time error. $fontChangeReason');
+    });
   });
 
   testWidgets(
