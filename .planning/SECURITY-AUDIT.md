@@ -69,7 +69,9 @@ is new attack surface with no threat mapping.
 the repo (and confirm `android/local.properties` / keystore paths stay
 gitignored — currently clean, nothing secret is tracked).
 
-**F-2 — T-05-10 has no mitigating evidence (declared blocking human check, not run).**
+**F-2 — RESOLVED after this audit was written (see correction below). Originally: T-05-10 has no mitigating evidence (declared blocking human check, not run).**
+
+> **CORRECTION (orchestrator, 2026-08-16):** this finding is STALE. The cold-start backstop WAS subsequently closed with real device evidence, recorded in `.planning/phases/05-localization-settings/05-UAT.md` test 3 and committed as `integration_test/l10n_device_test.dart` (`f2c5a65`), which launches through the real `app.main()` entry point. Evidence: (a) in-test, a fresh `main()` with `en` stored paints English on shell frame 1 and the loop fails if any Ukrainian frame paints first; (b) on iOS, the app itself wrote `flutter.app_locale => en` to its plist, then a rebuilt real app installed and launched → English, with a wiped-container control → Ukrainian; (c) on Android, a real picker tap wrote `flutter.app_locale=uk`, `am force-stop` confirmed the process gone via `ps -A`, and relaunch → Ukrainian, with the `en` direction also proven. T-05-10 is MITIGATED. Remaining honest gap: physical hardware was not used (simulator + emulator only).
 `.planning/phases/05-localization-settings/05-VERIFICATION.md:178, 237, 346`
 
 Phase 5 introduced an async `main()` that resolves `SharedPreferences` before
@@ -350,7 +352,7 @@ line-by-line trace.
 | T-04-01 / T-04-21 (planner read-only) | mitigate | CLOSED | `grep "ensureLogsForDay\|intakeRepo" lib/features/calendar/planner_*.dart` → only a comment; gated by `test/features/planner_invariants_test.dart:155-158` |
 | T-05-01 (locale → lookup crash) | mitigate | CLOSED | `locale_controller.dart:60-71` allowlist derived from generated `supportedLocales` |
 | T-01-09 / T-02-03 / T-02-06 (injection) | mitigate / accept | CLOSED | No raw SQL; typed builder + Companions throughout |
-| T-05-10 (async main on device) | mitigate | **OPEN** | **F-2** — declared blocking human check not run |
+| T-05-10 (async main on device) | mitigate | **CLOSED** | F-2 superseded — closed by `integration_test/l10n_device_test.dart` (real `main()`) plus genuine force-stop relaunch evidence on both platforms; see the correction note above |
 
 **Accepted risks (logged here — this file is the accepted-risks log):**
 
