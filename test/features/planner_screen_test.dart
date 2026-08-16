@@ -25,6 +25,7 @@ import 'package:boostque/core/widgets/bq_segmented.dart';
 import 'package:boostque/features/calendar/planner_gantt.dart';
 import 'package:boostque/features/calendar/planner_providers.dart';
 import 'package:boostque/features/calendar/planner_screen.dart';
+import 'package:boostque/features/calendar/planner_year_grid.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -111,7 +112,15 @@ void main() {
   /// path from the Calendar header is proven once, by the tests above, and
   /// every shell assertion below is about the planner itself. It also keeps
   /// the Today page — and its bounded materialization — out of these tests.
-  Widget plannerApp(ProviderContainer container, {String locale = 'uk'}) {
+  ///
+  /// [textScaler] pins the accessibility text scale for the whole subtree —
+  /// the year grid's computed extent is only meaningful against a scale it
+  /// did not choose (PF-7).
+  Widget plannerApp(
+    ProviderContainer container, {
+    String locale = 'uk',
+    TextScaler? textScaler,
+  }) {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
@@ -119,6 +128,12 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: bqTheme(),
+        builder: (context, child) => textScaler == null
+            ? child!
+            : MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+                child: child!,
+              ),
         home: const PlannerScreen(),
       ),
     );
@@ -414,8 +429,11 @@ void main() {
     WidgetTester tester,
     ProviderContainer container, {
     String locale = 'uk',
+    TextScaler? textScaler,
   }) async {
-    await tester.pumpWidget(plannerApp(container, locale: locale));
+    await tester.pumpWidget(
+      plannerApp(container, locale: locale, textScaler: textScaler),
+    );
     // The Цикли body is now four cards deep, so anything below the chart
     // lives outside the viewport until the body is scrolled.
     await pumpUntil(
@@ -1363,6 +1381,285 @@ void main() {
 
         await tearDownTree(tester, container);
       }
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // The year grid (plan 04-04 task 1, UI-SPEC S6b item 2, P-10, P-11,
+  // DECIDED-5, DECIDED-9, Interaction Contracts 4 and 11).
+  // ---------------------------------------------------------------------
+
+  /// Seeds one course-regimen supplement per `(id, start, endInclusive)`.
+  ///
+  /// Ids are zero-padded by every caller on purpose: the stack order is
+  /// `createdAt asc, id asc`, and two inserts landing in the same millisecond
+  /// would otherwise fall back to a STRING sort where 'y10' sorts before 'y2'.
+  Future<void> seedCourses(
+    ProviderContainer container,
+    List<(String, DateTime, DateTime)> courses,
+  ) async {
+    final supplements = container.read(supplementRepoProvider);
+    final regimens = container.read(regimenRepoProvider);
+    for (var i = 0; i < courses.length; i++) {
+      final (id, start, end) = courses[i];
+      await supplements.upsert(
+        Supplement(
+          id: id,
+          name: 'Добавка $id',
+          doseText: '1 капс.',
+          // A distinct colour per entry, so a bar painted from the WRONG
+          // supplement's colour is a visible failure rather than a coincidence.
+          colorValue: 0xFF6B6FA8 + i,
+          note: '',
+        ),
+      );
+      await regimens.upsert(
+        Regimen(
+          id: 'r-$id',
+          supplementId: id,
+          kind: RegimenKind.course,
+          startDate: start,
+          endDate: end,
+          onDays: 0,
+          offDays: 0,
+          paused: false,
+          slots: const [
+            DoseSlot(id: 'sl', minutesFromMidnight: 480, doseLabel: '1 капс.'),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> openYear(
+    WidgetTester tester,
+    ProviderContainer container, {
+    String locale = 'uk',
+    TextScaler? textScaler,
+  }) async {
+    await openPlanner(tester, container, locale: locale, textScaler: textScaler);
+    await tester.tap(find.text(locale == 'uk' ? 'Рік' : 'Year'));
+    await tester.pump();
+    await pumpUntil(
+      tester,
+      () => byKeyPrefix('month-card-').evaluate().isNotEmpty,
+      'the year grid',
+    );
+  }
+
+  Material cardAt(WidgetTester tester, int index) =>
+      tester.widget<Material>(find.byKey(ValueKey<String>('month-card-$index')));
+
+  group('year grid', () {
+    /// Two days of March for `y00`, the whole of June for `y01`..`y06`.
+    ///
+    /// June therefore carries a load of SIX — one above the editorial limit,
+    /// which is exactly the boundary the month-count colour turns on — while
+    /// March carries one.
+    Future<void> seedYear(ProviderContainer container) => seedCourses(
+          container,
+          [
+            ('y00', DateTime.utc(2026, 3, 1), DateTime.utc(2026, 3, 2)),
+            for (var i = 1; i <= 6; i++)
+              (
+                'y0$i',
+                DateTime.utc(2026, 6, 1),
+                DateTime.utc(2026, 6, 30),
+              ),
+          ],
+        );
+
+    test('monthCardExtentFor grows with the text scale and with the stack, '
+        'and is capped by neither (DECIDED-5, PF-7)', () {
+      const plain = TextScaler.noScaling;
+      const doubled = TextScaler.linear(2.0);
+
+      expect(monthCardExtentFor(doubled, 3),
+          greaterThan(monthCardExtentFor(plain, 3)),
+          reason: 'the text-bearing header line follows the scaler');
+      expect(monthCardExtentFor(plain, 12),
+          greaterThan(monthCardExtentFor(plain, 3)));
+      expect(
+        monthCardExtentFor(plain, 12) - monthCardExtentFor(plain, 3),
+        // Nine more bars: nine 4px tracks and nine 3px gaps.
+        9 * 4 + 9 * 3,
+        reason: 'the bar extent is exactly N×4 + (N−1)×3 — no cap, no rounding',
+      );
+      expect(monthCardExtentFor(plain, 0), monthCardExtentFor(plain, 0),
+          reason: 'a zero-row extent is well defined, never negative');
+      expect(monthCardExtentFor(plain, 0), greaterThan(0));
+    });
+
+    testWidgets('renders twelve month cards for today\'s year, labelled with '
+        'the uppercased uk standalone abbreviations (DECIDED-9, PF-4)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedYear(container);
+      await openYear(tester, container);
+
+      expect(byKeyPrefix('month-card-'), findsNWidgets(12));
+
+      final abbr = DateFormat('LLL', 'uk');
+      for (var m = 0; m < 12; m++) {
+        expect(
+          tester
+              .widget<Text>(find.byKey(ValueKey<String>('month-$m-label')))
+              .data,
+          abbr.format(DateTime.utc(2026, m + 1, 1)).toUpperCase(),
+          reason: 'standalone (nominative) abbreviations, uppercased in the '
+              'active locale — never a hardcoded month table (PF-4, M6)',
+        );
+      }
+
+      // One track per gantt-eligible supplement on EVERY card, whether or not
+      // that supplement covers that month — otherwise cards in one row would
+      // not be the same height.
+      for (final m in const [0, 2, 5, 11]) {
+        expect(byKeyPrefix('month-$m-track-'), findsNWidgets(7));
+      }
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('two days of coverage still paint a visible bar and a full '
+        'month paints a full-width one (P-10, the 22% floor)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedYear(container);
+      await openYear(tester, container);
+
+      final track =
+          tester.getSize(find.byKey(const ValueKey('month-2-track-0'))).width;
+      final floored =
+          tester.getSize(find.byKey(const ValueKey('month-2-bar-0'))).width;
+      final full =
+          tester.getSize(find.byKey(const ValueKey('month-5-bar-1'))).width;
+
+      expect(floored, closeTo(track * 0.22, 0.5),
+          reason: 'the mockup\'s max(round(frac × 100), 22)% floor ships');
+      expect(floored, greaterThan(track * 2 / 31),
+          reason: '2/31 of a track is a hairline — the floor is the whole '
+              'point of the rule');
+      expect(full, closeTo(track, 0.5),
+          reason: 'frac ≥ 0.85 reads as a full month');
+      expect(full, greaterThan(floored));
+      expect(
+        tester.getSize(find.byKey(const ValueKey('month-2-bar-1'))).width,
+        0,
+        reason: 'no coverage paints no bar — but the TRACK still renders',
+      );
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a month above the editorial limit counts in risk; every '
+        'other month counts faint (UI-SPEC banding, strictly above)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedYear(container);
+      await openYear(tester, container);
+
+      Color? countColor(int m) => tester
+          .widget<Text>(find.byKey(ValueKey<String>('month-$m-count')))
+          .style
+          ?.color;
+
+      expect(countColor(5), BqColors.risk,
+          reason: 'June carries six concurrent cycles — one above the limit, '
+              'which is what the year footnote explains');
+      expect(countColor(2), BqColors.textFaint,
+          reason: 'March carries one');
+      expect(countColor(0), BqColors.textFaint,
+          reason: 'an empty month is faint, never red');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('exactly one card is selected, and tapping another moves the '
+        'selection — changing only the fill and the border width '
+        '(Interaction Contract 4)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedYear(container);
+      await openYear(tester, container);
+
+      List<int> selectedIndices() => [
+            for (var m = 0; m < 12; m++)
+              if (cardAt(tester, m).color == BqColors.monthSelectedBg) m,
+          ];
+
+      // Follows today by default: the pinned clock is 13 August 2026.
+      expect(selectedIndices(), const [7]);
+      expect(
+        (cardAt(tester, 7).shape! as RoundedRectangleBorder).side.width,
+        1.6,
+      );
+      expect(
+        (cardAt(tester, 2).shape! as RoundedRectangleBorder).side.width,
+        1.0,
+      );
+      final labelColorBefore = tester
+          .widget<Text>(find.byKey(const ValueKey('month-2-label')))
+          .style
+          ?.color;
+
+      await tester.tap(find.byKey(const ValueKey('month-card-2')));
+      await tester.pump();
+
+      expect(selectedIndices(), const [2],
+          reason: 'exactly one month card is selected at any time');
+      expect(
+        (cardAt(tester, 2).shape! as RoundedRectangleBorder).side.width,
+        1.6,
+      );
+      expect(cardAt(tester, 2).color, BqColors.monthSelectedBg);
+      expect(cardAt(tester, 7).color, BqColors.surfaceAlt);
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('month-2-label')))
+            .style
+            ?.color,
+        labelColorBefore,
+        reason: 'selection changes the fill and the border width and nothing '
+            'else — the label never restyles',
+      );
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('twelve supplements at a text scaler of 2.0 grow the cards '
+        'instead of clipping them, and drop no bar (DECIDED-5, PF-7)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedCourses(container, [
+        for (var i = 0; i < 12; i++)
+          (
+            'y${i.toString().padLeft(2, '0')}',
+            DateTime.utc(2026, 1, 1),
+            DateTime.utc(2026, 12, 31),
+          ),
+      ]);
+      await openYear(
+        tester,
+        container,
+        textScaler: const TextScaler.linear(2.0),
+      );
+
+      expect(byKeyPrefix('month-card-'), findsNWidgets(12));
+      expect(byKeyPrefix('month-0-track-'), findsNWidgets(12),
+          reason: 'no bar is dropped and no card is capped (DECIDED-5)');
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'a constant card extent — or a fixed child aspect ratio — is '
+            'the CR-01/WR-04 defect class this phase exists not to repeat: '
+            'seven bottom overflows at accessibility text scales',
+      );
+
+      await tearDownTree(tester, container);
     });
   });
 }
