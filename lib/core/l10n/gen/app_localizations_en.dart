@@ -621,6 +621,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String ganttRowSemanticsPaused(String name, String schedule, String state) {
+    return '$name, $schedule, $state';
+  }
+
+  @override
+  String yearLegendEntrySemantics(String name, String state) {
+    return '$name, $state';
+  }
+
+  @override
   String weekBarSemantics(String range, String load) {
     return '$range, $load';
   }

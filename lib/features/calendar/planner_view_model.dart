@@ -163,6 +163,15 @@ class GanttRow {
   /// where the painted bands are invisible.
   int get runCount => runs.length;
 
+  /// Whether this row's regimen is paused.
+  ///
+  /// The design says "paused" with a BARE TRACK (DECIDED-7) — paint, and
+  /// nothing else. Carried on the model so the row's semantics label can say
+  /// it in words too: without this, a paused supplement announces a schedule
+  /// and zero periods, which is indistinguishable from one that is simply
+  /// off-cycle for the whole window (WR-01).
+  bool get paused => entry.regimen?.paused ?? false;
+
   const GanttRow({
     required this.entry,
     required this.runs,

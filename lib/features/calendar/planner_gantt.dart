@@ -402,12 +402,17 @@ class GanttRowBar extends StatelessWidget {
       child: Semantics(
         // The painted bands are invisible to assistive tech, so the row speaks
         // what the canvas is carrying: its schedule and how many runs of it
-        // fall inside the window.
-        label: l10n.ganttRowSemantics(
-          name,
-          hint,
-          l10n.periodsCount(row.runs.length),
-        ),
+        // fall inside the window — or, for a paused regimen, the one word the
+        // bare track stands for. "0 періодів" alone cannot distinguish a
+        // paused supplement from one that is merely off-cycle all window
+        // (WR-01); the word comes from the legend's own key, never new copy.
+        label: row.paused
+            ? l10n.ganttRowSemanticsPaused(name, hint, l10n.legendPaused)
+            : l10n.ganttRowSemantics(
+                name,
+                hint,
+                l10n.periodsCount(row.runCount),
+              ),
         excludeSemantics: true,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

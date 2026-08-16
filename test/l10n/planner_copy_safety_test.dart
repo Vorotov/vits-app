@@ -128,6 +128,8 @@ Map<String, String> plannerCopy(AppLocalizations l10n) {
     'plannerDisclaimer': l10n.plannerDisclaimer,
     'yearFootnote': l10n.yearFootnote(5),
     'ganttRowSemantics': l10n.ganttRowSemantics('N', 'S', 'P'),
+    'ganttRowSemanticsPaused': l10n.ganttRowSemanticsPaused('N', 'S', 'P'),
+    'yearLegendEntrySemantics': l10n.yearLegendEntrySemantics('N', 'P'),
     'weekBarSemantics': l10n.weekBarSemantics('R', 'L'),
     'monthCardSemantics': l10n.monthCardSemantics('M', 'C'),
   };

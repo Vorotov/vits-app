@@ -1031,11 +1031,57 @@ void main() {
           reason: 'closing with a pre-formatted periodsCount — the count of '
               'painted runs is the information the canvas carries');
 
-      // A paused regimen paints nothing, and says so honestly rather than
-      // claiming a period it does not have.
+      // A paused regimen paints a BARE TRACK and the legend turns that into
+      // one word — both purely visual (DECIDED-7). The row therefore says the
+      // state instead of counting periods: "0 періодів" cannot distinguish a
+      // paused supplement from one that is merely off-cycle all window, or
+      // from one that starts next year (WR-01).
       final paused = tester.getSemantics(find.byType(GanttRowBar).at(1)).label;
-      expect(paused, startsWith('Креатин моногідрат, 4 тижні / без перерви, '));
-      expect(paused, endsWith('0 періодів'));
+      expect(paused, 'Креатин моногідрат, 4 тижні / без перерви, пауза',
+          reason: 'the word is the legend\'s own legendPaused key, so the '
+              'PLAN-04 gate stays authoritative over ONE vocabulary for this '
+              'state');
+      expect(paused, isNot(contains('періодів')),
+          reason: 'a period count on a row that paints nothing is the claim '
+              'this label exists to stop making');
+
+      handle.dispose();
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a paused supplement is named as paused on the Рік legend '
+        'too — the only place that segment names it at all (WR-01)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final handle = tester.ensureSemantics();
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('year-legend-entry-').evaluate().isNotEmpty,
+        'the year legend',
+      );
+
+      // The legend is one merged semantics node — the entries are read as one
+      // run of text — so the assertion is about what that node SAYS, entry by
+      // entry, not about a node per entry.
+      final legend = tester
+          .getSemantics(find.byKey(
+            const ValueKey<String>('year-legend-entry-s2'),
+          ))
+          .label;
+      expect(legend, contains('Креатин моногідрат, пауза'),
+          reason: 'every coverage bar of a paused supplement is zero-width and '
+              'therefore silent, so without this the Рік segment offers a '
+              'name with nothing behind it and no reason why');
+      // The active supplement's entry is untouched: no wrapper, no second
+      // vocabulary, just the name the legend already read out.
+      expect(legend, contains('Магній бісглицинат\n'),
+          reason: 'an ACTIVE entry keeps exactly the node it had — the clause '
+              'marks the exception, never every row');
 
       handle.dispose();
       await tearDownTree(tester, container);

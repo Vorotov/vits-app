@@ -158,6 +158,8 @@
   "plannerDisclaimer": "Межа в 5 речовин — наше редакційне правило для зручності відстеження, а не медичний норматив. Освітній матеріал, не медична порада.",
   "yearFootnote": "Рік показує, як цикли накладаються один на одний. Червоне число в місяці означає перевищення нашої межі у {max} речовин одночасно.",
   "ganttRowSemantics": "{name}, {schedule}, {periods}",
+  "ganttRowSemanticsPaused": "{name}, {schedule}, {state}",
+  "yearLegendEntrySemantics": "{name}, {state}",
   "weekBarSemantics": "{range}, {load}",
   "monthCardSemantics": "{month}, {count}"
 }

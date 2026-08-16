@@ -854,6 +854,33 @@
       }
     }
   },
+  "ganttRowSemanticsPaused": "{name}, {schedule}, {state}",
+  "@ganttRowSemanticsPaused": {
+    "description": "Accessibility label of a PAUSED gantt row. DECIDED-7 says a paused row is a bare track, and the legend translates that into one word — both are purely visual, so assistive tech would otherwise hear a supplement with a schedule and zero periods and have no way to tell 'paused' from 'off-cycle all window' (WR-01). `state` is the existing legendPaused word, never new copy, so the PLAN-04 gate stays authoritative over one vocabulary",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "schedule": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "yearLegendEntrySemantics": "{name}, {state}",
+  "@yearLegendEntrySemantics": {
+    "description": "Accessibility label of a PAUSED supplement's year-legend entry — the only place a paused supplement is named on the Рік segment, since its coverage bars are all zero-width and therefore silent. `state` is the existing legendPaused word (WR-01)",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
   "weekBarSemantics": "{range}, {load}",
   "@weekBarSemantics": {
     "description": "Accessibility label of a load-chart week column; `range` is an intl-formatted bucket range and `load` a pre-formatted weekLoadLabel string",

@@ -477,32 +477,44 @@ class _YearLegend extends StatelessWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           for (final entry in model.entries)
-            Row(
-              key: ValueKey<String>('year-legend-entry-${entry.supplement.id}'),
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _TwoToneSwatch(color: Color(entry.supplement.colorValue)),
-                const SizedBox(width: _swatchLabelGap),
-                // FLEXIBLE, never rigid. The `Wrap` bounds each entry at the
-                // full body width and no further: a single long uk name
-                // ("Омега-3 риб'ячий жир концентрат") is wider than that on
-                // its own, so a rigid `Text` here overflowed the entry row by
-                // tens of pixels at EVERY text scale — the WR-04 defect class,
-                // caught by the 04-05 text-scale matrix. Flexible lets the
-                // name soft-wrap inside its own entry instead.
-                Flexible(
-                  child: Text(
-                    // The domain model carries no short name, so the legend
-                    // names the supplement the way every other surface does.
-                    entry.supplement.name,
-                    style: const TextStyle(
-                      fontSize: _legendLabelSize,
-                      fontWeight: FontWeight.w400,
-                      color: BqColors.textSecondary,
+            // A paused supplement has zero coverage in every month, so every
+            // one of its bars is zero-width and silent: this legend entry is
+            // the ONLY place the Рік segment names it at all. Without the
+            // clause, assistive tech hears a name with nothing behind it and
+            // no reason why (WR-01) — the word is the legend's own, not new
+            // copy.
+            _LegendSemantics(
+              paused: entry.regimen?.paused ?? false,
+              name: entry.supplement.name,
+              child: Row(
+                key: ValueKey<String>(
+                  'year-legend-entry-${entry.supplement.id}',
+                ),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _TwoToneSwatch(color: Color(entry.supplement.colorValue)),
+                  const SizedBox(width: _swatchLabelGap),
+                  // FLEXIBLE, never rigid. The `Wrap` bounds each entry at the
+                  // full body width and no further: a single long uk name
+                  // ("Омега-3 риб'ячий жир концентрат") is wider than that on
+                  // its own, so a rigid `Text` here overflowed the entry row
+                  // by tens of pixels at EVERY text scale — the WR-04 defect
+                  // class, caught by the 04-05 text-scale matrix. Flexible
+                  // lets the name soft-wrap inside its own entry instead.
+                  Flexible(
+                    child: Text(
+                      // The domain model carries no short name, so the legend
+                      // names the supplement the way every other surface does.
+                      entry.supplement.name,
+                      style: const TextStyle(
+                        fontSize: _legendLabelSize,
+                        fontWeight: FontWeight.w400,
+                        color: BqColors.textSecondary,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           Text(
             l10n.yearLegendHint,
@@ -514,6 +526,39 @@ class _YearLegend extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Speaks a paused supplement's state on the Рік legend, and stays out of the
+/// way otherwise.
+///
+/// An active entry keeps the tree it already had — its name is already read as
+/// plain text and a wrapper would only add a node. A paused one gets a label
+/// that names the state the grid can only paint (WR-01); `excludeSemantics`
+/// stops the name being announced twice.
+class _LegendSemantics extends StatelessWidget {
+  const _LegendSemantics({
+    required this.paused,
+    required this.name,
+    required this.child,
+  });
+
+  final bool paused;
+  final String name;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!paused) return child;
+    return Semantics(
+      label: context.l10n.yearLegendEntrySemantics(
+        name,
+        // The legend's own word, never a second vocabulary for one state.
+        context.l10n.legendPaused,
+      ),
+      excludeSemantics: true,
+      child: child,
     );
   }
 }
