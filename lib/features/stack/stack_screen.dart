@@ -139,10 +139,10 @@ class StackScreen extends ConsumerWidget {
                 Align(
                   alignment: AlignmentDirectional.centerStart,
                   child: TextButton(
-                    onPressed: () {
-                      ref.invalidate(supplementsStreamProvider);
-                      ref.invalidate(regimensStreamProvider);
-                    },
+                    // The same named recovery path the planner's retry uses,
+                    // so the two screens can never drift into recovering
+                    // differently (CR-02).
+                    onPressed: () => retryStack(ref),
                     child: Text(
                       l10n.retry,
                       style: const TextStyle(

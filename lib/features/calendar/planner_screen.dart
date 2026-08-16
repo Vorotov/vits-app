@@ -707,10 +707,13 @@ class _PlannerError extends ConsumerWidget {
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: TextButton(
-              // The ONLY provider the planner may reach for here: it reads
-              // `stackEntriesProvider` and `todayProvider` and nothing else
-              // from the core graph (Interaction Contract 6).
-              onPressed: () => ref.invalidate(stackEntriesProvider),
+              // The core graph's ONE named recovery path — the planner still
+              // reaches `stackEntriesProvider` and `todayProvider` and nothing
+              // else itself (Interaction Contract 6). Invalidating
+              // `stackEntriesProvider` here instead would be a dead control:
+              // it is a derivation with no subscription of its own, so
+              // re-running it re-reads the same errored streams (CR-02).
+              onPressed: () => retryStack(ref),
               child: Text(
                 l10n.retry,
                 style: const TextStyle(

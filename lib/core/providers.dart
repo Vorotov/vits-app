@@ -123,6 +123,24 @@ final dayDosesReadOnlyProvider = StreamProvider.autoDispose
   return ref.watch(intakeRepoProvider).watchDay(day);
 });
 
+/// Re-subscribes the two streams the stack is derived from.
+///
+/// The ONE recovery path behind every "try again" control that reads
+/// [stackEntriesProvider]. It names the STREAM providers deliberately:
+/// [stackEntriesProvider] is a plain `Provider` with no subscription of its
+/// own, and Riverpod invalidation propagates to dependents, never to
+/// dependencies — so invalidating the derivation re-runs its body against the
+/// same two errored streams and returns the same error. A retry that targets
+/// the derivation is a button that cannot work (CR-02).
+///
+/// Living here rather than in a screen keeps Interaction Contract 6 intact:
+/// the planner reaches [stackEntriesProvider] and `todayProvider` and nothing
+/// else from the core graph, and calls this named path to recover.
+void retryStack(WidgetRef ref) {
+  ref.invalidate(supplementsStreamProvider);
+  ref.invalidate(regimensStreamProvider);
+}
+
 /// Supplements paired with their regimens — the Stack tab's row list.
 ///
 /// Provider composition (RESEARCH Pattern 5): watches both stream providers

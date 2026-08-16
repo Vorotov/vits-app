@@ -850,6 +850,71 @@ void main() {
       await tearDownTree(tester, container);
     });
 
+    testWidgets('tapping retry re-subscribes the streams that actually failed, '
+        'and the planner recovers (S6c, CR-02)', (tester) async {
+      usePhoneSurface(tester);
+      // The error is seeded on the STREAM the planner's derivation reads, not
+      // on the derivation itself — which is the whole point of the finding:
+      // `stackEntriesProvider` is a plain Provider with no subscription of its
+      // own, so invalidating IT re-runs its body against the same errored
+      // streams and the surface can never recover. Riverpod invalidation
+      // propagates to dependents, never to dependencies.
+      var attempt = 0;
+      final container = ProviderContainer(
+        // Riverpod 3 retries a failed provider on its own backoff schedule and
+        // reports the interim state as loading-carrying-an-error, which the
+        // planner renders as its blank loading surface. Retries are disabled
+        // here so the error surface — the thing under test — is reached
+        // deterministically and the recovery is the BUTTON'S doing, never a
+        // background timer's.
+        retry: (retryCount, error) => null,
+        overrides: [
+          todayProvider.overrideWith(() => _FixedToday(today)),
+          nowMinutesProvider.overrideWith((ref) => Stream.value(600)),
+          supplementsStreamProvider.overrideWith((ref) {
+            attempt += 1;
+            return attempt == 1
+                ? Stream<List<Supplement>>.error(
+                    Exception('boom-from-drift'),
+                    StackTrace.empty,
+                  )
+                : Stream.value(const [magnesium]);
+          }),
+          regimensStreamProvider.overrideWith(
+            (ref) => Stream.value([cyclic('r1', 's1')]),
+          ),
+        ],
+      );
+
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => loadError.evaluate().isNotEmpty,
+        'the planner error surface',
+      );
+      expect(find.text('Повторити'), findsOneWidget);
+
+      await tester.tap(find.text('Повторити'));
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the planner to recover after retry',
+      );
+
+      expect(attempt, 2,
+          reason: 'the failing stream provider was rebuilt — a retry that '
+              'invalidates only the derived provider never re-subscribes it');
+      expect(loadError, findsNothing,
+          reason: 'the error surface is replaced by real content, so the '
+              'control the screen offers is one that can actually recover');
+      expect(find.text('Магній бісглицинат'), findsWidgets,
+          reason: 'the recovered stack is really rendered — the gantt row and '
+              'the week detail both name it');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
     testWidgets('while the stack is loading the header and segmented control '
         'render over an empty body with NO spinner (S6c)', (tester) async {
       usePhoneSurface(tester);
