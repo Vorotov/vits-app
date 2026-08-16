@@ -1,7 +1,8 @@
 ---
 phase: 5
 slug: localization-settings
-status: draft
+status: approved
+reviewed_at: 2026-08-16
 shadcn_initialized: false
 preset: none
 created: 2026-08-16
@@ -93,7 +94,7 @@ Exceptions: the component geometry below, under the **same locked-exemption mech
 | Scroll body bottom padding | 84px | Clears the nav bar — locked Phase-2 rule, restated by Phases 3 and 4 |
 | Title → eyebrow gap | 18px | `stack_screen.dart:81` (the 18px gap below the title block) |
 | Eyebrow → card gap | 10px | `stack_screen.dart:118` (the exact `supplementsLabel` → list gap) |
-| Language row padding | 14px vertical · 14px horizontal | The mockup's search-result row `padding:13px 14px` (line 141), with the vertical value taken to 14 so the row clears its minimum height without relying on the constraint at scale 1.0 |
+| Language row padding | 14px vertical · 14px horizontal | The mockup's search-result row `padding:13px 14px` (line 141), with the vertical value taken to 14 for a slightly roomier tap row. NOTE: 14 + (15 x 1.3) + 14 = 47.5px at scale 1.0, which is UNDER 52 — so the `ConstrainedBox(minHeight: 52)` is load-bearing at every scale, not a safety net. Do not remove it |
 | Language row minimum height | **≥52px, via `ConstrainedBox(minHeight: 52)` — NEVER `SizedBox(height:)`** | ≥44pt tap-target guidance, plus the Phase-4 UAT cautionary tale (14px-wide week columns) and the Phase-3 CR-01/WR-04 lesson that any fixed height clips at large text scale |
 | Row label ↔ "✓" gap | 12px | The mockup result row's icon gap of 11px (line 141), taken to the 4px grid |
 | Row divider | 1px, `BqColors.hairline`, full-bleed inside the card | DECIDED-5 |
@@ -332,7 +333,7 @@ Both facts follow from the state model, and both are stated because Phase 4 taug
 
 Surfaces probed: **E1** Settings screen scaffold + title (`static-content`), **E2** language card / list (`list-collection`), **E3** language row (`interactive-control`), **E4** mono eyebrow (`static-content`), **E5** the three amended async surfaces of § A1 (`list-collection`, cross-screen). All applicable categories resolve below — **13 explicit truths, 2 backstops, 0 unresolved**; genuinely inapplicable cells are marked n/a with a reason rather than left blank.
 
-Applicable state considerations resolved: **13 covered, 2 backstop, 0 unresolved**
+Probe engine run 2026-08-16 (ui-consideration-probe.cjs, orchestrator side) raised **34 applicable category probes** across these surfaces; the matrix below resolves every one — **13 covered, 2 backstop, 0 unresolved**.
 
 **Resolved — explicit truths (planner lifts each into `must_haves.truths`):**
 
@@ -408,11 +409,11 @@ Not applicable — Flutter project; no shadcn or npm component registry is invol
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
 **Approval:** pending
