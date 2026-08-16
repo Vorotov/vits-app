@@ -35,6 +35,14 @@ findings:
   info: 7
   total: 15
 status: issues_found
+fixes:
+  applied: 2026-08-16
+  fixed: 8
+  outstanding: 7
+  scope: all Critical and Warning findings; the 7 Info findings are left
+    documented and unfixed by request
+  verification: flutter analyze clean; flutter test 547/547 pass (529 baseline
+    + 18 new regression tests), run in the main checkout on main
 ---
 
 # Phase 4: Code Review Report
@@ -55,6 +63,8 @@ Two defects survive that. The first is a real, reproducible data bug at the wind
 ## Critical Issues
 
 ### CR-01: Week buckets count only the days inside the window, so the first and last bucket under-report their load
+
+**Status: FIXED** — `d940743`. `buildCyclesModel` now derives a second, bucket-scoped run list for concurrency (`[buckets.first.start, buckets.last.endInclusive]`) while the painted gantt rows stay window-scoped, exactly as suggested. Four regression tests in `planner_view_model_test.dart` reproduce both cited cases (27 лип – 2 серп with a 27–31 July course; 30 лис – 6 груд with a 1–20 December course) and pin that a run wholly outside the window still paints nothing; both failed against the pre-fix code.
 
 **File:** `lib/features/calendar/planner_view_model.dart:236` (with `285-297`, `244-253`)
 
@@ -114,6 +124,8 @@ Add a regression test asserting that a regimen active only on the pre-window day
 
 ### CR-02: The planner's error retry cannot recover — it invalidates a derived provider, never the stream that failed
 
+**Status: FIXED** — `146642a`. `retryStack(WidgetRef)` added to `core/providers.dart` and used by both the planner and the stack, so Interaction Contract 6 holds and the two screens cannot recover differently. The new widget test seeds the failure on the stream, taps retry and asserts the cards appear; it disables Riverpod 3's automatic provider retry so the recovery under test is the button's. (Noted while testing: Riverpod 3 reports a failed stream as loading-carrying-an-error while it retries on its own backoff, so in production the planner shows its blank loading surface during that interval and the designed error surface only after retries stop. Not in this finding's scope — worth a look in a later phase.)
+
 **File:** `lib/features/calendar/planner_screen.dart:713`
 
 **Issue:**
@@ -147,6 +159,8 @@ Interaction Contract 6 constrains what the planner *reads*, not how it recovers;
 
 ### WR-01: A paused regimen is invisible to assistive technology on both segments
 
+**Status: FIXED** — `7646e7e`. `GanttRow.paused` carries the state into the model; the gantt row speaks it instead of "0 періодів", and the Рік legend entry — the only place that segment names a paused supplement — carries the same clause. Both reuse the existing `legendPaused` word; two ARB keys added in BOTH locales (`ganttRowSemanticsPaused`, `yearLegendEntrySemantics`) and covered by the PLAN-04 gate.
+
 **File:** `lib/features/calendar/planner_gantt.dart:406-410` (and `lib/features/calendar/planner_year_grid.dart:207-210`)
 
 **Issue:** DECIDED-7 makes "a bare track" the design's statement that a row is paused, and the legend translates that into the word "пауза". Both are purely visual. The row's semantics label is
@@ -168,6 +182,8 @@ label: row.paused
 reusing the existing `legendPaused` word rather than minting new copy, so the PLAN-04 copy gate stays authoritative.
 
 ### WR-02: The summary chip re-derives "the bucket containing today" instead of reading it once
+
+**Status: FIXED** — `7e00cd0`. `CyclesModel.currentWeekIndex` is the single derivation; the chip (now a `StatelessWidget` that reads no clock) and `resolvedWeekIndexProvider` both read it, and the dishonest `load = 0` fallback is gone.
 
 **File:** `lib/features/calendar/planner_screen.dart:275-280` (duplicate of `lib/features/calendar/planner_providers.dart:113-117`)
 
@@ -198,6 +214,8 @@ and have both the chip and `resolvedWeekIndexProvider` read `model.currentWeekIn
 
 ### WR-03: Week/month selections are bare list indices, so they silently retarget when the model regenerates
 
+**Status: FIXED** — `3feb361`. Both selections now store identity (the bucket's Monday; the month's first day) and resolve by lookup, falling back to "follow today" when the pick is no longer in the model. Three provider tests drive a real window shift and a year rollover through a movable clock.
+
 **File:** `lib/features/calendar/planner_providers.dart:80-95` and `121-136`
 
 **Issue:** `SelectedWeekController` stores an `int` into a bucket list that is rebuilt from `todayProvider`. At a month rollover the window slides forward one month and the whole bucket list shifts by roughly four weeks; the clamp in `resolvedWeekIndexProvider` guarantees no range error, but index 7 now denotes a completely different week, and the week-detail card silently changes what it is describing without the user touching anything. `selectedMonthProvider` has the milder version of this on 1 January (index 11 becomes December of the *new* year).
@@ -207,6 +225,8 @@ The doc comment claims the `null`-means-follow idiom protects against exactly th
 **Fix:** store the identity, not the position — `DateTime?` holding the bucket's Monday for the week, `(int year, int month)?` or a `DateTime?` month start for the month — and resolve to an index by lookup, falling back to "follow today" when the stored value is no longer in the model. That also makes the selection survive a window shift correctly instead of merely legally.
 
 ### WR-04: The PLAN-04 copy gate enumerates its keys by hand, so new planner copy is silently unchecked
+
+**Status: FIXED** — `064af4e`. The gate reads `app_en.arb` off disk, selects the planner surface through one prefix list, and fails both ways (an ARB key the map never renders; a map entry the filter no longer classifies as planner copy). Verified by inserting a throwaway planner key — the gate fails with the intended message. `substancesCount` and `weeksCount`, both planner-rendered and previously unscanned, are now sampled. The case-sensitivity handling is untouched.
 
 **File:** `test/l10n/planner_copy_safety_test.dart:77-135`
 
@@ -226,6 +246,8 @@ expect(arbKeys.difference(coveredKeys), isEmpty,
 
 ### WR-05: The uk copy bakes the value `5` into its grammar, contradicting the "one-line, test-caught edit" claim
 
+**Status: FIXED** — `318749b`. Took the first option: both sentences now take the count pre-formatted through a plural key with all four uk CLDR forms — `slotsCount` (genitive, after «з») and `substancesLimitCount` (accusative, after «межі у …», which `substancesCount`'s nominative one-form cannot supply). At the shipped limit of 5 the rendered copy is byte-for-byte unchanged; `plurals_test.dart` pins the other values in both locales.
+
 **File:** `lib/core/l10n/arb/app_uk.arb` (`weekLoadLabel`, `yearFootnote`) against `lib/features/calendar/planner_view_model.dart:351`
 
 **Issue:** `editorialLimit`'s doc comment says "Both numbers live here once, so moving a boundary is a one-line, test-caught edit." That is false for Ukrainian. `weekLoadLabel` is `"{load} з {max} слотів"` and `yearFootnote` is `"…нашої межі у {max} речовин одночасно"`; both nouns are genitive-plural forms that agree with 5. Change the constant to 2, 3 or 4 and the app renders "2 з 2 слотів" / "межі у 3 речовин", which is ungrammatical — and no test fails, because every test passes 5.
@@ -233,6 +255,8 @@ expect(arbKeys.difference(coveredKeys), isEmpty,
 **Fix:** either ICU-pluralize on the limit (`"{max, plural, one{{max} слот} few{{max} слоти} many{{max} слотів} other{{max} слота}}"`, composed into the sentence the way `plannerThisWeek` already composes `substancesCount`), or correct the comment to state that the constant is frozen by copy and add a test that pins it (`expect(editorialLimit, 5, reason: 'uk copy is declined for 5')`).
 
 ### WR-06: The hatch geometry is written twice, and the legend swatch must match the segments by hand
+
+**Status: FIXED** — `60d0fea`. One `_paintHatch(canvas, rrect)` helper behind `_hatchStroke` / `_hatchPeriod`, two callers; the helper derives its span from the rrect's own bounds, so the geometry is identical to both originals. No dedicated test — the change is structural and unobservable except through paint; the existing render tests cover that the swatch and segments still draw.
 
 **File:** `lib/features/calendar/planner_gantt.dart:354-373` and `502-519`
 
@@ -248,6 +272,8 @@ void _paintHatch(Canvas canvas, RRect rrect) { … }
 ```
 
 ## Info
+
+**Status: NOT FIXED — left documented by request.** All seven Info findings below stand as written; none was touched by the fix pass.
 
 ### IN-01: Model members that only tests read, and a doc comment that describes a call site that does not exist
 
