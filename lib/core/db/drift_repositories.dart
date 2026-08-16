@@ -324,26 +324,29 @@ class DriftIntakeRepository implements IntakeRepository {
         db.supplements.id.equalsExp(db.regimens.supplementId),
       ),
     ])
-      // Pause filter (REGI-04, PF-1): the ONE excluded combination is
-      // paused-and-pending — taken/skipped history stays visible while a
-      // regimen is paused, and resuming restores pending doses with zero
-      // writes. Soft-deleted log rows are excluded outright.
+      // One policy governs every "this dose should no longer show" case:
+      // filter PENDING doses at read time, never stamp or remove a row. So
+      // taken/skipped history always survives, and undoing the change (resume,
+      // re-add the slot, edit the schedule back) restores the day with ZERO
+      // writes. Stamping `deletedAt` instead would be permanent: the unique
+      // (slotId, date) key plus `insertOrIgnore` means a stamped row can never
+      // be re-materialized (PF-1, the Phase-3 revival trap).
       //
-      // A soft-deleted SLOT follows the same rule (CR-02): removing a dose
-      // time in the regimen editor stamps `regimenSlots.deletedAt` while the
-      // already-materialized IntakeLog rows survive, so without this filter a
-      // deleted 20:00 dose would keep rendering — and keep accepting marks —
-      // forever. Pending doses of a removed slot vanish; anything the user
-      // already recorded on it stays readable history.
+      // Applied here in SQL: soft-deleted log rows (excluded outright),
+      // soft-deleted regimen/supplement parents (excluded outright), and a
+      // soft-deleted SLOT (CR-02) — removing a dose time in the editor stamps
+      // `regimenSlots.deletedAt` while the already-materialized IntakeLog rows
+      // survive, so without this a deleted 20:00 dose would keep rendering and
+      // keep accepting marks forever.
+      //
+      // Applied below in Dart, through `isActiveOn`: whether the CURRENT
+      // schedule still covers this day at all — pause (REGI-04) and every
+      // schedule-shape edit. See the filter in the `map` below.
       ..where(db.intakeLogs.date.equals(utcDay) &
           db.intakeLogs.deletedAt.isNull() &
           db.regimens.deletedAt.isNull() &
           db.supplements.deletedAt.isNull() &
           (db.regimenSlots.deletedAt.isNull() |
-              db.intakeLogs.status
-                  .equalsValue(domain.DoseStatus.pending)
-                  .not()) &
-          (db.regimens.paused.equals(false) |
               db.intakeLogs.status
                   .equalsValue(domain.DoseStatus.pending)
                   .not()))
@@ -352,26 +355,51 @@ class DriftIntakeRepository implements IntakeRepository {
         OrderingTerm.asc(db.intakeLogs.id),
       ]);
 
-    return query.watch().map((rows) => rows.map((row) {
-          final log = row.readTable(db.intakeLogs);
-          final slotRow = row.readTable(db.regimenSlots);
-          final regimenRow = row.readTable(db.regimens);
-          final supplementRow = row.readTable(db.supplements);
-          final slot = domain.DoseSlot(
-            id: slotRow.id,
-            minutesFromMidnight: slotRow.minutesFromMidnight,
-            doseLabel: slotRow.doseLabel,
-          );
-          return DayDose(
-            logId: log.id,
-            supplement: _toSupplement(supplementRow),
-            // The embedded regimen carries the dose's own slot as context;
-            // full slot sets come from RegimenRepository.watchAll.
-            regimen: _toRegimen(regimenRow, [slot]),
-            slot: slot,
-            status: log.status,
-          );
-        }).toList());
+    return query.watch().map((rows) {
+      final doses = <DayDose>[];
+      for (final row in rows) {
+        final log = row.readTable(db.intakeLogs);
+        final slotRow = row.readTable(db.regimenSlots);
+        final regimenRow = row.readTable(db.regimens);
+        final supplementRow = row.readTable(db.supplements);
+        final slot = domain.DoseSlot(
+          id: slotRow.id,
+          minutesFromMidnight: slotRow.minutesFromMidnight,
+          doseLabel: slotRow.doseLabel,
+        );
+        // The embedded regimen carries the dose's own slot as context; full
+        // slot sets come from RegimenRepository.watchAll.
+        final regimen = _toRegimen(regimenRow, [slot]);
+
+        // Schedule reconciliation (REGI-01/02, REGI-04). Materialized rows are
+        // written once, but the schedule they came from is editable: moving
+        // `startDate`, reshaping `onDays`/`offDays`, switching `kind`,
+        // shortening a course `endDate` or pausing all make previously-written
+        // rows describe days the schedule no longer covers. Re-asking
+        // `isActiveOn` here is what keeps Today and the Цикли/Рік planner —
+        // which is a pure projection through the very same predicate — from
+        // giving two different answers for one day.
+        //
+        // [isActiveOn] stays the ONE activity decision point: no cycle/course/
+        // paused logic is re-derived in SQL or in this file, and the paused
+        // case is subsumed (it is `isActiveOn`'s first clause) rather than
+        // filtered twice. Only PENDING doses are dropped — a dose the user
+        // already took or skipped is history and outlives any later edit.
+        if (log.status == domain.DoseStatus.pending &&
+            !isActiveOn(regimen, utcDay)) {
+          continue;
+        }
+
+        doses.add(DayDose(
+          logId: log.id,
+          supplement: _toSupplement(supplementRow),
+          regimen: regimen,
+          slot: slot,
+          status: log.status,
+        ));
+      }
+      return doses;
+    });
   }
 }
 

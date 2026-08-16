@@ -282,9 +282,12 @@ void main() {
     ));
     final edited = await _regimen(regs);
 
+    // The production chain, exactly as `dayDosesProvider` runs it: any regimen
+    // edit re-runs `ensureLogsForDay` (which brings NEWLY-active days in) and
+    // then `watchDay` (which filters days the edit took OUT).
     for (var d = 0; d < 21; d++) {
       final day = DateTime.utc(2026, 8, 10 + d);
-      final today = await intake.watchDay(day).first;
+      final today = await materializeAndRead(day);
       expect(today.isNotEmpty, isActiveOn(edited, day),
           reason: 'Today and Цикли/Рік must give the same answer for $day '
               '(no dose was recorded, so nothing is history)');

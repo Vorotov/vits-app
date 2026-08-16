@@ -90,8 +90,15 @@ abstract class IntakeRepository {
   /// regimen, and supplement; ordered by slot minutesFromMidnight asc with
   /// log id asc as tiebreak. Soft-deleted parents are excluded.
   ///
-  /// A paused regimen and a soft-deleted SLOT both hide only their PENDING
-  /// doses: anything the user already recorded on them stays visible history.
+  /// Only PENDING doses are ever hidden; anything the user already recorded
+  /// stays visible history. Three cases hide one: a soft-deleted SLOT, and —
+  /// via `isActiveOn`, the single activity decision point — a paused regimen
+  /// or a day the regimen's CURRENT schedule no longer covers. That last case
+  /// is what reconciles rows materialized under an older schedule after the
+  /// user edits `startDate`, `onDays`/`offDays`, `kind` or a course `endDate`,
+  /// so this stream and the planner's pure projection always agree. Hiding is
+  /// a read-time filter, never a row stamp: undoing the edit restores the day
+  /// with zero writes.
   Stream<List<DayDose>> watchDay(DateTime day);
 
   /// Idempotently materializes one pending IntakeLog per active slot for the
