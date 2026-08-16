@@ -276,6 +276,42 @@ class _DayBodyState extends ConsumerState<_DayBody> {
   DateTime? _heldDay;
 
   @override
+  void initState() {
+    super.initState();
+    // Covers a mount over an ALREADY-settled provider; every later frame goes
+    // through didUpdateWidget.
+    _captureHold();
+  }
+
+  @override
+  void didUpdateWidget(covariant _DayBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _captureHold();
+  }
+
+  /// Remembers the last SETTLED day list, outside `build` (WR-06).
+  ///
+  /// This used to run inside `build`, from the settled arm of the same
+  /// collection-`switch` that reads it back. Mutating `State` during build is
+  /// a Flutter anti-pattern that happened to work only because nothing in the
+  /// frame read the fields afterwards and `_heldRows` is reachable only from a
+  /// DIFFERENT arm of that switch — i.e. the correctness of the hold rested on
+  /// the arm ordering of a switch two authors have already reordered.
+  ///
+  /// The condition is the SAME one the settled arm matches on, and for the
+  /// same reasons: an error beats a loading state (A1 / P-9), and anything
+  /// still loading — including a re-emission that carries its previous value —
+  /// must not be captured as settled (WR-06).
+  void _captureHold() {
+    final doses = widget.doses;
+    if (doses.hasError || doses.isLoading) return;
+    if (doses case AsyncData(:final value)) {
+      _held = value;
+      _heldDay = widget.day;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // The shell keeps this screen mounted on every tab (IndexedStack), so
     // "watched" is not the same as "looked at". TickerMode carries the shell's
@@ -370,16 +406,15 @@ class _DayBodyState extends ConsumerState<_DayBody> {
     );
   }
 
-  /// The live day: [list] rendered interactively, and remembered as the hold
-  /// for the next loading window.
+  /// The live day: [list] rendered interactively.
+  ///
+  /// Pure — the hold for the next loading window was captured in
+  /// [_captureHold] before this frame began (WR-06).
   List<Widget> _resolved(
     List<DayDose> list, {
     required bool viewingToday,
-  }) {
-    _held = list;
-    _heldDay = widget.day;
-    return _blocks(list, widget.day, viewingToday: viewingToday);
-  }
+  }) =>
+      _blocks(list, widget.day, viewingToday: viewingToday);
 
   /// The previous day list, held and INERT, or nothing when there is none.
   ///
