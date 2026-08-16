@@ -67,11 +67,13 @@ void main() {
     return container;
   }
 
-  Widget app(ProviderContainer container) {
+  /// [locale] parameterizes the render matrix: an error state is a screen
+  /// state, so it has to be proven in BOTH shipped languages (L10N-01).
+  Widget app(ProviderContainer container, {String locale = 'uk'}) {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
-        locale: const Locale('uk'),
+        locale: Locale(locale),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: bqTheme(),
@@ -476,6 +478,73 @@ void main() {
 
     await tearDownTree(tester, container);
   });
+
+  // ---------------------------------------------------------------------
+  // The error surface under LIVE retry (plan 05-02, UI-SPEC A1 / P-9).
+  // ---------------------------------------------------------------------
+
+  /// The consequence of a red case, named in device terms rather than as a
+  /// restatement of the assertion.
+  const blankBodyReason =
+      'a user whose local database fails sees an EMPTY stack body for the '
+      "whole of Riverpod's ~38.2s default backoff — indistinguishable from "
+      '"you have no supplements" — instead of the error copy and the retry '
+      'control this screen already has designed and localized. The fix is the '
+      'rendering rule (skipLoadingOnReload), never a disabled retry';
+
+  for (final locale in const ['uk', 'en']) {
+    final loadError = locale == 'uk'
+        ? 'Не вдалося завантажити стек. Спробуйте ще раз.'
+        : "Couldn't load your stack. Try again.";
+    final retryLabel = locale == 'uk' ? 'Повторити' : 'Retry';
+
+    testWidgets(
+        '$locale: a failing stack stream shows the error copy plus retry on '
+        "the FIRST frame, not after Riverpod's ~38s backoff (A1 / P-9)",
+        (tester) async {
+      usePhoneSurface(tester);
+      // NOTE: this container deliberately supplies NO `retry:` override. The
+      // ABSENCE of it is the whole point: Riverpod's default backoff is LIVE
+      // here, which is the state the neighbouring CR-02 recovery test disables
+      // and therefore never exercised. Copying that test's `retry:` line into
+      // this one would silently restore the blind spot the defect lived in.
+      //
+      // The failure is seeded on the STREAM that actually fails, not on the
+      // derived `stackEntriesProvider` — the named-recovery-path rule (CR-02):
+      // a derivation has no subscription of its own, so pinning it would prove
+      // nothing about how a real Drift failure propagates.
+      final container = ProviderContainer(
+        overrides: [
+          supplementsStreamProvider.overrideWith(
+            (ref) => Stream<List<Supplement>>.error(
+              Exception('boom-from-drift'),
+              StackTrace.empty,
+            ),
+          ),
+          regimensStreamProvider.overrideWith(
+            (ref) => Stream.value(const <Regimen>[]),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(app(container, locale: locale));
+      // ONE frame. Never pumpAndSettle: with the retry timers live it would
+      // either time out or wait out the backoff and pass for the wrong
+      // reason (PF-7).
+      await tester.pump();
+
+      expect(find.text(loadError), findsOneWidget, reason: blankBodyReason);
+      expect(find.text(retryLabel), findsOneWidget,
+          reason: 'the error copy without its recovery control is a dead end');
+      expect(find.textContaining('boom-from-drift'), findsNothing,
+          reason: 'raw exception text never enters the widget tree (T-05-03)');
+      expect(find.textContaining('Exception'), findsNothing,
+          reason: 'nor does the exception type name (T-05-03)');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+  }
 }
 
 /// Pins the shared calendar clock to a fixed UTC date-only day; overriding

@@ -2685,6 +2685,104 @@ void main() {
 
       await tearDownTree(tester, container);
     });
+
+    // -------------------------------------------------------------------
+    // The error surface under LIVE retry (plan 05-02, UI-SPEC A1 / P-9).
+    // -------------------------------------------------------------------
+
+    /// The consequence of a red case, named in device terms rather than as a
+    /// restatement of the assertion.
+    const heldOverErrorReason =
+        "a user whose local database fails keeps looking at ANOTHER day's "
+        "rows — inert, and silently mislabelled with the new day's header — "
+        "for the whole of Riverpod's ~38.2s default backoff, with no copy and "
+        'no retry to act on. The hold (PF-7 / WR-01) is right for a genuine '
+        'day switch and wrong the moment the new day has actually failed';
+
+    for (final locale in const ['uk', 'en']) {
+      final dayError = locale == 'uk'
+          ? 'Не вдалося завантажити день. Спробуйте ще раз.'
+          : "Couldn't load this day. Try again.";
+      final retryLabel = locale == 'uk' ? 'Повторити' : 'Retry';
+
+      testWidgets(
+          '$locale: when the browsed day FAILS, the error surface replaces '
+          'the held rows on the very next frame — not after '
+          "Riverpod's ~38s backoff (A1 / P-9)", (tester) async {
+        usePhoneSurface(tester);
+        // NOTE: this container deliberately supplies NO `retry:` override.
+        // The ABSENCE of it is the whole point. The neighbouring T-03-16 test
+        // above fails with a `StateError`, which `defaultRetry` refuses to
+        // retry (`error is Error` => null) — so it reaches AsyncError at once
+        // and never exercised the retry window. Drift throws `Exception`
+        // subtypes, so the app's real failure mode is the retried one seeded
+        // here; adding a `retry:` line would restore the blind spot.
+        final container = ProviderContainer(overrides: [
+          dbProvider.overrideWith((ref) {
+            final database = BoostqueDb.forTesting(NativeDatabase.memory());
+            ref.onDispose(database.close);
+            db = database;
+            return database;
+          }),
+          todayProvider.overrideWith(() => _FixedToday(pinnedToday)),
+          nowMinutesProvider.overrideWith((ref) => Stream.value(600)),
+          // Seeded on the STREAM that actually fails, and on ONE day only, so
+          // today still resolves and there really ARE held rows for the error
+          // surface to have to beat.
+          intakeRepoProvider.overrideWith((ref) => _OneDayFailingIntakeRepo(
+                DriftIntakeRepository(
+                  ref.watch(dbProvider),
+                  regimens: ref.watch(regimenRepoProvider),
+                ),
+                failingDay: farPast,
+              )),
+        ]);
+        await container.read(supplementRepoProvider).upsert(supp('Магній'));
+        await container.read(regimenRepoProvider).upsert(reg());
+
+        await tester.pumpWidget(app(container, locale: Locale(locale)));
+        await pumpUntil(
+          tester,
+          () => find.text('Магній').evaluate().isNotEmpty,
+          'the dose row on today',
+        );
+
+        container.read(selectedDayProvider.notifier).select(farPast);
+        // Pump only until the failure actually EXISTS. Drift's read is
+        // genuinely asynchronous, and the claim under test is about the first
+        // frame after the provider fails — not about how long the database
+        // takes to fail. Never pumpAndSettle: with the retry timers live it
+        // would either time out or wait out the backoff and pass for the
+        // wrong reason (PF-7).
+        await pumpUntil(
+          tester,
+          () => container.read(dayDosesProvider(farPast)).hasError,
+          'the browsed day stream to fail',
+        );
+        // Exactly ONE frame after the failure.
+        await tester.pump();
+
+        expect(find.text(dayError), findsOneWidget,
+            reason: heldOverErrorReason);
+        expect(find.text('Магній'), findsNothing,
+            reason: 'the held previous-day rows are gone: an inert list from '
+                'a day the user has left is not an answer to "this day '
+                'failed"');
+        expect(find.text(retryLabel), findsOneWidget,
+            reason: 'the error copy without its recovery control is a dead '
+                'end');
+        expect(find.byType(CircularProgressIndicator), findsNothing,
+            reason: 'no spinner ever flashes on a local-DB stream');
+        expect(find.textContaining('boom-from-drift'), findsNothing,
+            reason: 'raw exception text never enters the widget tree '
+                '(T-05-03)');
+        expect(find.textContaining('Exception'), findsNothing,
+            reason: 'nor does the exception type name (T-05-03)');
+        expect(tester.takeException(), isNull);
+
+        await tearDownTree(tester, container);
+      });
+    }
   });
 
   // --- Accessibility text scaling (CR-01, IN-08) ---
@@ -2842,6 +2940,37 @@ class _ErroringIntakeRepo implements IntakeRepository {
   Stream<List<DayDose>> watchDay(DateTime day) =>
       Stream<List<DayDose>>.error(StateError('day read refused by the test '
           'repository'));
+
+  @override
+  Future<void> ensureLogsForDay(DateTime day) => inner.ensureLogsForDay(day);
+
+  @override
+  Future<void> setStatus(String logId, DoseStatus status) =>
+      inner.setStatus(logId, status);
+}
+
+/// Fails `watchDay` for ONE day, with an `Exception` rather than an `Error`.
+///
+/// The distinction is the whole point (A1 / P-9): `defaultRetry` refuses to
+/// retry an `Error` (`if (error is ProviderException || error is Error) return
+/// null`), so [_ErroringIntakeRepo]'s `StateError` reaches `AsyncError` at
+/// once and never enters the backoff window. Drift throws `Exception`
+/// subtypes, so this stub — not that one — reproduces the app's real failure
+/// mode. Every other day delegates to the real repository, so the day the
+/// user came FROM genuinely resolves and its rows are genuinely held.
+class _OneDayFailingIntakeRepo implements IntakeRepository {
+  _OneDayFailingIntakeRepo(this.inner, {required this.failingDay});
+
+  final IntakeRepository inner;
+  final DateTime failingDay;
+
+  @override
+  Stream<List<DayDose>> watchDay(DateTime day) => day == failingDay
+      ? Stream<List<DayDose>>.error(
+          Exception('boom-from-drift'),
+          StackTrace.empty,
+        )
+      : inner.watchDay(day);
 
   @override
   Future<void> ensureLogsForDay(DateTime day) => inner.ensureLogsForDay(day);

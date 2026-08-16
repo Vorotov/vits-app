@@ -928,6 +928,78 @@ void main() {
       await tearDownTree(tester, container);
     });
 
+    // -------------------------------------------------------------------
+    // The error surface under LIVE retry (plan 05-02, UI-SPEC A1 / P-9).
+    // -------------------------------------------------------------------
+
+    /// The consequence of a red case, named in device terms rather than as a
+    /// restatement of the assertion.
+    const blankBodyReason =
+        'a user whose local database fails sees an EMPTY planner body for the '
+        "whole of Riverpod's ~38.2s default backoff — no copy, no retry, "
+        'nothing to act on — because Riverpod reports a retrying failure as an '
+        'AsyncLoading that CARRIES the error and the loading surface wins. The '
+        'fix is the rendering rule at the surface, never a disabled retry';
+
+    for (final locale in const ['uk', 'en']) {
+      final errorCopy = locale == 'uk'
+          ? 'Не вдалося завантажити планувальник. Спробуйте ще раз.'
+          : "Couldn't load the planner. Try again.";
+      final retryLabel = locale == 'uk' ? 'Повторити' : 'Retry';
+
+      testWidgets(
+          '$locale: a failing stack stream shows the planner error copy plus '
+          "retry on the FIRST frame, not after Riverpod's ~38s backoff "
+          '(A1 / P-9)', (tester) async {
+        usePhoneSurface(tester);
+        // NOTE: this container deliberately supplies NO `retry:` override.
+        // The ABSENCE of it is the whole point — the neighbouring CR-02
+        // recovery test above disables retry on purpose (it is asking whether
+        // the BUTTON recovers), and that is exactly why it passed all through
+        // Phase 4 without catching this. Copying its `retry:` line down here
+        // would silently restore the blind spot.
+        //
+        // The failure is seeded on the STREAM that actually fails, not on the
+        // derived `stackEntriesProvider` (the named-recovery-path rule,
+        // CR-02): pinning the derivation to a fixed AsyncError would bypass
+        // the retry state under test entirely.
+        final container = ProviderContainer(
+          overrides: [
+            todayProvider.overrideWith(() => _FixedToday(today)),
+            nowMinutesProvider.overrideWith((ref) => Stream.value(600)),
+            supplementsStreamProvider.overrideWith(
+              (ref) => Stream<List<Supplement>>.error(
+                Exception('boom-from-drift'),
+                StackTrace.empty,
+              ),
+            ),
+            regimensStreamProvider.overrideWith(
+              (ref) => Stream.value([cyclic('r1', 's1')]),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(plannerApp(container, locale: locale));
+        // ONE frame. Never pumpAndSettle: with the retry timers live it would
+        // either time out or wait out the backoff and pass for the wrong
+        // reason (PF-7).
+        await tester.pump();
+
+        expect(find.text(errorCopy), findsOneWidget, reason: blankBodyReason);
+        expect(find.text(retryLabel), findsOneWidget,
+            reason: 'the error copy without its recovery control is a dead '
+                'end');
+        expect(find.textContaining('boom-from-drift'), findsNothing,
+            reason: 'raw exception text never enters the widget tree '
+                '(T-05-03)');
+        expect(find.textContaining('Exception'), findsNothing,
+            reason: 'nor does the exception type name (T-05-03)');
+        expect(tester.takeException(), isNull);
+
+        await tearDownTree(tester, container);
+      });
+    }
+
     testWidgets('while the stack is loading the header and segmented control '
         'render over an empty body with NO spinner (S6c)', (tester) async {
       usePhoneSurface(tester);
