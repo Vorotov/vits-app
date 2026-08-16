@@ -297,6 +297,23 @@ class _PeriodicityPanel extends StatelessWidget {
   final RegimenEditorController controller;
   final String supplementId;
 
+  /// The course end this panel renders and the summary sentence quotes.
+  ///
+  /// The draft invariant is that a COURSE always carries an end date (WR-05,
+  /// seeded once in `RegimenEditorController._courseEnd`), so the fallback is
+  /// a backstop, never the normal path — substituting the start date is what
+  /// made "no end" render as a one-day course while `isActiveOn` reported the
+  /// regimen permanently inactive and the Stack card said АКТИВНА. The assert
+  /// is what stops that from becoming the normal path again, silently.
+  DateTime get _courseEnd {
+    assert(
+      draft.kind != RegimenKind.course || draft.endDate != null,
+      'A course draft must always carry an end date (WR-05) — '
+      'RegimenEditorController seeds one in setKind and _draftFrom.',
+    );
+    return draft.endDate ?? draft.startDate;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -357,7 +374,7 @@ class _PeriodicityPanel extends StatelessWidget {
                 Expanded(
                   child: _DateField(
                     label: l10n.endLabel,
-                    date: draft.endDate ?? draft.startDate,
+                    date: _courseEnd,
                     // E-6/V-1: the end date is unpickable before the start.
                     firstDate: draft.startDate,
                     onPicked: controller.setEndDate,
@@ -390,7 +407,7 @@ class _PeriodicityPanel extends StatelessWidget {
     }
     return l10n.courseSummaryRange(
       _formatDate(context, draft.startDate),
-      _formatDate(context, draft.endDate ?? draft.startDate),
+      _formatDate(context, _courseEnd),
     );
   }
 }

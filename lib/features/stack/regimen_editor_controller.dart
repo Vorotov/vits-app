@@ -84,7 +84,14 @@ class RegimenDraft {
   /// First active day — always a UTC date-only value (PF-2).
   final DateTime startDate;
 
-  /// Inclusive course end — UTC date-only, null for cyclic drafts.
+  /// Inclusive course end — UTC date-only.
+  ///
+  /// Null ONLY on a cyclic draft: a course draft always carries an end date
+  /// (WR-05), seeded by
+  /// [RegimenEditorController.setKind]/`_draftFrom` through the one rule in
+  /// `_courseEnd`. Nullable rather than split into two draft types because
+  /// the kind toggle flips back and forth and the last course end has to
+  /// survive a round trip through cyclic.
   final DateTime? endDate;
 
   /// Consecutive active days per cycle (7..112 in steps of 7 via the UI).
@@ -154,9 +161,26 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
   /// Fallback time (21:00) when every default is taken (mockup parity).
   static const int fallbackSlotMinutes = 1260;
 
-  /// Course length seeded when switching to course mode without an end date:
+  /// Course length seeded when a course arrives without an end date:
   /// startDate + 27 days = a 28-day inclusive course.
   static const int _defaultCourseLengthDays = 27;
+
+  /// THE draft invariant for course end dates (WR-05), applied at every
+  /// boundary that can produce a course draft — [setKind] and [_draftFrom].
+  ///
+  /// A course draft ALWAYS carries an end date. There is no representation
+  /// for "this course has no end": the editor would render `endDate ??
+  /// startDate`, which is indistinguishable from a one-day course, while
+  /// `isActiveOn` reports a null-ended course as permanently INACTIVE and the
+  /// Stack card still says АКТИВНА. The null is representable in both the
+  /// model and the schema, so any non-editor writer (a sync merge, an import)
+  /// can hand one over — 02-UI-SPEC E3 is explicit that invalid regimens must
+  /// be unrepresentable in the UI, so it is seeded here rather than papered
+  /// over at the render boundary.
+  static DateTime? _courseEnd(RegimenKind kind, DateTime start, DateTime? end) {
+    if (kind != RegimenKind.course || end != null) return end;
+    return start.add(const Duration(days: _defaultCourseLengthDays));
+  }
 
   /// True when [build] had to seed defaults WITHOUT a warm `AsyncData`
   /// snapshot (WR-03). Both v1 entry points open the editor over a warm
@@ -214,7 +238,13 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
         regimenId: r.id,
         kind: r.kind,
         startDate: dateOnly(r.startDate),
-        endDate: r.endDate == null ? null : dateOnly(r.endDate!),
+        // A course that arrives without an end gets one, exactly as [setKind]
+        // seeds one — see [_courseEnd] (WR-05).
+        endDate: _courseEnd(
+          r.kind,
+          dateOnly(r.startDate),
+          r.endDate == null ? null : dateOnly(r.endDate!),
+        ),
         onDays: _clampDays(r.onDays, min: 7, max: 112),
         offDays: _clampDays(r.offDays, min: 0, max: 84),
         paused: r.paused,
@@ -250,14 +280,12 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
   bool get canRemoveSlot => state.slots.length > minSlots;
 
   /// Switches cyclic/course. Entering course mode with no end date seeds a
-  /// 28-day inclusive course (endDate = startDate + 27 days).
+  /// 28-day inclusive course (endDate = startDate + 27 days) — [_courseEnd].
   void setKind(RegimenKind kind) {
-    var endDate = state.endDate;
-    if (kind == RegimenKind.course && endDate == null) {
-      endDate =
-          state.startDate.add(const Duration(days: _defaultCourseLengthDays));
-    }
-    state = state.copyWith(kind: kind, endDate: endDate);
+    state = state.copyWith(
+      kind: kind,
+      endDate: _courseEnd(kind, state.startDate, state.endDate),
+    );
   }
 
   /// Sets the start date (normalized via [dateOnly]); an end date left

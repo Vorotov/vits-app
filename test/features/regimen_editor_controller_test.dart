@@ -337,6 +337,57 @@ void main() {
       expect(draftOf('s1').endDate, DateTime.utc(2026, 10, 1));
     });
 
+    test('a persisted COURSE with no end date is seeded with one, exactly as '
+        'setKind does (WR-05)', () async {
+      await container.read(supplementRepoProvider).upsert(supplement);
+      // Representable in both the model and the schema, and reachable from
+      // any non-editor writer (a future sync/import). `isActiveOn` reports a
+      // course with a null end as permanently INACTIVE, while the editor
+      // rendered `endDate ?? startDate` — a one-day course — and the Stack
+      // card said АКТИВНА.
+      await container.read(regimenRepoProvider).upsert(Regimen(
+            id: 'r-open-course',
+            supplementId: 's1',
+            kind: RegimenKind.course,
+            startDate: DateTime.utc(2026, 9, 1),
+            endDate: null,
+            onDays: 0,
+            offDays: 0,
+            paused: false,
+            slots: const [
+              DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+            ],
+          ));
+      await waitForRegimenEntry('s1');
+
+      editorFor('s1');
+      final draft = draftOf('s1');
+      expect(draft.kind, RegimenKind.course);
+      expect(draft.endDate, DateTime.utc(2026, 9, 28),
+          reason: 'the draft invariant is "a course ALWAYS carries an end '
+              'date"; substituting the start date in the UI instead makes '
+              '"no end" indistinguishable from a one-day course (WR-05)');
+      expect(
+        isActiveOn(
+          Regimen(
+            id: draft.regimenId!,
+            supplementId: 's1',
+            kind: draft.kind,
+            startDate: draft.startDate,
+            endDate: draft.endDate,
+            onDays: draft.onDays,
+            offDays: draft.offDays,
+            paused: draft.paused,
+            slots: const [],
+          ),
+          DateTime.utc(2026, 9, 1),
+        ),
+        isTrue,
+        reason: 'the seeded draft describes a course that is actually active '
+            'on its own start day',
+      );
+    });
+
     test('setStartDate/setEndDate normalize to UTC date-only (PF-2)', () {
       final editor = editorFor('s1');
       editor.setKind(RegimenKind.course);
