@@ -323,24 +323,58 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
   /// "Зберегти, цикл на паузі" CTA carries the pause state to disk).
   void togglePause() => state = state.copyWith(paused: !state.paused);
 
-  /// In-flight save future — see [save]'s single-flight contract (CR-01).
+  /// Tail of the save chain — see [save]'s serialization contract (WR-02).
   Future<void>? _saveInFlight;
+
+  /// Saves queued or running; the last one out clears [_saveInFlight].
+  int _queuedSaves = 0;
 
   /// Persists the draft as the supplement's ONE regimen (PF-8).
   ///
-  /// Single-flight (CR-01): concurrent callers — e.g. a double-tapped save
-  /// button — share the SAME in-flight future, so the save-time
-  /// `findForSupplement` re-check can never race itself into minting two
-  /// regimen ids (ghost rows that double-dose materialization, threat
-  /// T-02-05).
+  /// SERIALIZED, never coalesced (WR-02). Saves run strictly one at a time,
+  /// so the save-time `findForSupplement` re-check can never race itself into
+  /// minting two regimen ids (ghost rows that double-dose materialization,
+  /// threat T-02-05) — that is what the original single-flight was for
+  /// (CR-01), and chaining preserves it.
+  ///
+  /// What chaining adds is the contract callers actually rely on: `await
+  /// save()` means THE DRAFT AS IT WAS AT THE CALL is on disk. Handing a
+  /// second caller the first call's future resolved "successfully" without
+  /// ever persisting a draft that changed in between — silent data loss for
+  /// an autosave, a test, or any non-button caller (`save()` is public).
+  ///
+  /// A queued save runs even if the one before it FAILED: the earlier
+  /// failure belongs to the earlier caller, and the later draft still wants
+  /// persisting.
   ///
   /// Id resolution order: `draft.regimenId` → save-time
   /// `findForSupplement` re-check (belt-and-suspenders against ghost
   /// regimen rows, threat T-02-05) → mint a new UUID. The resolved regimen
   /// id and all slot ids are stored back into the draft so subsequent saves
   /// reuse them.
-  Future<void> save() =>
-      _saveInFlight ??= _doSave().whenComplete(() => _saveInFlight = null);
+  Future<void> save() {
+    _queuedSaves++;
+    final chained = _chainedSave(_saveInFlight);
+    _saveInFlight = chained;
+    return chained;
+  }
+
+  /// Runs [_doSave] after [previous] settles, whichever way it settled.
+  Future<void> _chainedSave(Future<void>? previous) async {
+    if (previous != null) {
+      await previous.then<void>(
+        (_) {},
+        // Swallowed HERE only: `previous` is also returned to its own caller,
+        // which is where that error is reported.
+        onError: (Object _, StackTrace _) {},
+      );
+    }
+    try {
+      await _doSave();
+    } finally {
+      if (--_queuedSaves == 0) _saveInFlight = null;
+    }
+  }
 
   Future<void> _doSave() async {
     final repo = ref.read(regimenRepoProvider);

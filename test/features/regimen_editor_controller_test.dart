@@ -393,17 +393,18 @@ void main() {
       );
     });
 
-    test('concurrent saves are single-flight: two racing save() calls share '
-        'one future and persist exactly one regimen row (CR-01)', () async {
+    test('concurrent saves are serialized: two racing save() calls both run '
+        'and persist exactly one regimen row (CR-01/WR-02)', () async {
       await container.read(supplementRepoProvider).upsert(supplement);
       final editor = editorFor('s1');
 
       // Two calls without an await in between — the double-tap race.
       final first = editor.save();
       final second = editor.save();
-      expect(identical(first, second), isTrue,
-          reason: 'save() must return the SAME in-flight future to '
-              'concurrent callers (single-flight)');
+      expect(identical(first, second), isFalse,
+          reason: 'each caller gets its OWN future: awaiting save() must mean '
+              '"the draft I had is on disk", which the first call\'s future '
+              'cannot promise for a draft that changed since (WR-02)');
       await Future.wait([first, second]);
 
       final regimens = await regimensNow();
