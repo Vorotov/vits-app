@@ -45,6 +45,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:boostque/core/domain/cycle_math.dart' show dateOnly;
 import 'package:boostque/core/domain/models.dart';
@@ -73,7 +74,17 @@ void main() {
       // ---------------------------------------------------------------
       // (a) launch -> three-tab shell, Stack tab
       // ---------------------------------------------------------------
-      await tester.pumpWidget(const ProviderScope(child: BoostqueApp()));
+      // Since plan 05-01 LocaleController seeds itself synchronously from
+      // sharedPreferencesProvider, which throws unless overridden — exactly
+      // what main() does before runApp. On device this is the REAL store, not
+      // a mock: this test runs against the user's real app state.
+      final prefs = await SharedPreferences.getInstance();
+      ProviderScope bootScope() => ProviderScope(
+            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+            child: const BoostqueApp(),
+          );
+
+      await tester.pumpWidget(bootScope());
       await _pump(tester, 20);
 
       expect(find.byType(NavigationBar), findsOneWidget, reason: 'app shell');
@@ -325,7 +336,7 @@ void main() {
       // ---------------------------------------------------------------
       await tester.pumpWidget(const SizedBox());
       await _pump(tester, 20);
-      await tester.pumpWidget(const ProviderScope(child: BoostqueApp()));
+      await tester.pumpWidget(bootScope());
       await _pump(tester, 20);
       expect(find.byType(StackScreen), findsOneWidget, reason: 'app rebooted');
 
