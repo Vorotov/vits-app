@@ -11,6 +11,8 @@
 /// Loaded through the delegate with no widget pump (01-RESEARCH Pattern 6).
 library;
 
+import 'dart:convert';
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -70,6 +72,43 @@ bool _contains(String value, String term) {
       : value.toLowerCase().contains(term.toLowerCase());
 }
 
+/// The planner's ARB surface, by key prefix — ONE list to extend.
+///
+/// The gate below reads the template ARB off disk and demands that every key
+/// matching this filter is rendered into [plannerCopy]. A hand-written map
+/// alone silently stops covering the copy a later phase adds — the exact
+/// failure mode this file's own docstring claims not to have (WR-04). The
+/// sibling gate in `planner_invariants_test.dart` globs its source files for
+/// the same reason.
+const plannerKeyPrefixes = <String>[
+  'planner',
+  'legend',
+  'loadChart',
+  'loadAxis',
+  'week',
+  'verdict',
+  'peak',
+  'year',
+  'month',
+  'emptyPlanner',
+  'gantt',
+];
+
+/// Planner-rendered keys no prefix catches, because they are SHARED with
+/// another surface and named for what they count, not for where they appear.
+const plannerKeysExact = <String>{
+  'substancesCount',
+  'cyclesCount',
+  'periodsCount',
+  'limitBadge',
+  'disclaimerEducational',
+};
+
+/// Whether [key] names copy the planner renders.
+bool isPlannerKey(String key) =>
+    plannerKeysExact.contains(key) ||
+    plannerKeyPrefixes.any((prefix) => key.startsWith(prefix));
+
 /// Every planner-facing string, keyed by its ARB key.
 ///
 /// Plural keys are sampled at 1 / 2 / 5 so a forbidden word hiding in a single
@@ -85,6 +124,8 @@ Map<String, String> plannerCopy(AppLocalizations l10n) {
   plural('monthsCount', l10n.monthsCount);
   plural('cyclesCount', l10n.cyclesCount);
   plural('periodsCount', l10n.periodsCount);
+  plural('substancesCount', l10n.substancesCount);
+  plural('weeksCount', l10n.weeksCount);
 
   return {
     ...sample,
@@ -144,6 +185,34 @@ void main() {
       setUpAll(() async {
         l10n = await AppLocalizations.delegate.load(Locale(tag));
         copy = plannerCopy(l10n);
+      });
+
+      test('reads EVERY planner key in the ARB — new copy cannot arrive '
+          'unchecked (WR-04)', () {
+        final arb = jsonDecode(
+          File('lib/core/l10n/arb/app_en.arb').readAsStringSync(),
+        ) as Map<String, dynamic>;
+        final arbKeys = arb.keys
+            .where((k) => !k.startsWith('@'))
+            .where(isPlannerKey)
+            .toSet();
+
+        // A filter that matched nothing would make every assertion below
+        // vacuously true, which is worse than no gate at all.
+        expect(arbKeys.length, greaterThanOrEqualTo(40),
+            reason: 'the prefix filter stopped resolving the planner surface');
+
+        // Plural samples are keyed "name(n)"; the ARB knows only "name".
+        final covered = copy.keys.map((k) => k.split('(').first).toSet();
+        expect(arbKeys.difference(covered), isEmpty,
+            reason: 'a planner ARB key exists that the PLAN-04 gate never '
+                'renders, so nothing scans it for forbidden vocabulary and '
+                'nothing says so. Add it to plannerCopy() — a reviewer sees '
+                'one commit, this test sees every commit after it');
+        expect(covered.difference(arbKeys), isEmpty,
+            reason: 'plannerCopy() renders a key the filter does not consider '
+                'planner copy: either the key was renamed or the prefix list '
+                'needs the new name, and a stale entry here hides the gap');
       });
 
       test('carries no forbidden vocabulary (PLAN-04)', () {
