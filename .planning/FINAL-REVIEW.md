@@ -52,6 +52,11 @@ findings:
   info: 6
   total: 15
 status: issues_found
+remediation:
+  applied: 2026-08-16
+  fixed: [CR-01, WR-01, WR-02, WR-03, WR-04, WR-05, WR-06, WR-07, WR-08, TW-1, TW-2]
+  open: [IN-01, IN-02, IN-03, IN-04, IN-05, IN-06, TW-3, TW-4]
+  suite_after: 715 tests green (from 701); flutter analyze clean
 ---
 
 # Boostque v1 — Whole-Codebase Final Review
@@ -60,6 +65,33 @@ status: issues_found
 **Depth:** deep (cross-file call chains, layered-fix archaeology, test-suite audit)
 **Files Reviewed:** 41 source files + 33 test files
 **Status:** issues_found
+
+## Remediation status (applied 2026-08-16)
+
+The Critical and all eight Warnings are fixed, plus test weaknesses TW-1 and
+TW-2. The six Info findings and TW-3/TW-4 are documented and deliberately left
+open. Suite after: **715 tests green** (from 701), `flutter analyze` clean.
+
+| ID | Status | Commit |
+|----|--------|--------|
+| CR-01 | fixed | `1ec271f` |
+| WR-01 | fixed | `594cd56` |
+| WR-02 | fixed | `37e05a3` |
+| WR-03 | fixed | `46c63e7` |
+| WR-04 | fixed | `f977688` |
+| WR-05 | fixed | `ca4fa6f` |
+| WR-06 | fixed (refactor, no behaviour change) | `7ec5c69` |
+| WR-07 | fixed — ring formatted AND the gate widened (closes TW-3's spelling) | `5ab4a63` |
+| WR-08 | fixed | `2129e09` |
+| TW-1 | fixed | `6cd1140` |
+| TW-2 | fixed | `d5c903e` |
+| IN-01 … IN-06 | open — documented, not fixed | — |
+| TW-3 | superseded by WR-07's widened gate; the analyzer-based rewrite TW-4 asks for is still open | — |
+| TW-4 | open — `stripComments` still strips line comments only | — |
+
+Every behavioural fix was confirmed RED against the pre-fix code before being
+applied; the two structural ones (WR-06, TW-2) were verified differently and
+that is recorded on their rows below.
 
 ## Summary
 
@@ -96,6 +128,8 @@ disposal test).
 ## Critical Issues
 
 ### CR-01: Materialized doses are never pruned — editing a schedule leaves live doses on days the regimen is no longer active
+
+**Status:** FIXED in `1ec271f` — `watchDay` re-asks `isActiveOn` in its map step (query-level, no writes), exactly as proposed. Editor-level regression coverage added later under TW-2 (`d5c903e`).
 
 **Files:**
 - `lib/core/db/drift_repositories.dart:276-300` (`ensureLogsForDay` — insert-only)
@@ -181,6 +215,8 @@ marked `taken` on that day still returns.
 
 ### WR-01: `RegimenEditorController._doSave` writes a stale draft back over concurrent edits
 
+**Status:** FIXED in `594cd56` — the post-await write now merges the resolved regimen id and the minted slot ids into the CURRENT state, matching slot ids back by time of day. Confirmed RED first, via a gated repository that parks `upsert` mid-flight.
+
 **File:** `lib/features/stack/regimen_editor_controller.dart:345-403`
 
 **Issue:** `_doSave` captures `final draft = state;` at line 347 and, after
@@ -211,6 +247,8 @@ or, simplest and safest for v1, disable the whole form (`AbsorbPointer`) while
 
 ### WR-02: `save()`'s single-flight can resolve successfully without persisting the current draft
 
+**Status:** FIXED in `37e05a3` — saves are SERIALIZED rather than coalesced: each caller gets its own future, the next starts when the previous settles (either way), and the PF-8/T-02-05 no-concurrent-re-check guarantee is preserved by the serialization. The existing double-tap test was retargeted from "same future" to "both run, still one row". Confirmed RED first.
+
 **File:** `lib/features/stack/regimen_editor_controller.dart:342-343`
 
 **Issue:**
@@ -234,6 +272,8 @@ or document on `save()` that the in-flight future is only equivalent for an
 unchanged draft and have the UI be the sole guarantor.
 
 ### WR-03: `_doSave` writes `state` after an await on an `autoDispose` provider that the user can dispose mid-save
+
+**Status:** FIXED in `46c63e7` — both post-await `state` writes check `ref.mounted`. The screen's catch now handles the unmounted case explicitly, reporting the error to the framework rather than swallowing it (there is no button to re-enable and no surface for the SnackBar). Confirmed RED first — `UnmountedRefException`.
 
 **Files:** `lib/features/stack/regimen_editor_controller.dart:401`,
 `lib/features/stack/regimen_editor_screen.dart:943-962`, `:221`
@@ -266,6 +306,8 @@ catching everything with `catch (_)`.
 
 ### WR-04: The Рік peak chip claims a "densest month" for a year with zero coverage
 
+**Status:** FIXED in `f977688` — "no peak" is representable (`peakIndex == -1`) and `_YearPeakChip` renders nothing for it, matching UI-SPEC S6c's "the summary/peak chip is omitted (there is nothing to summarize)". No new ARB copy needed. Model-level and screen-level tests, both confirmed RED first.
+
 **Files:** `lib/features/calendar/planner_view_model.dart:585-597`,
 `lib/features/calendar/planner_screen.dart:389-401`
 
@@ -294,6 +336,8 @@ so it needs no change.
 
 ### WR-05: A `course` regimen with a null `endDate` displays its start date as its end date
 
+**Status:** FIXED in `ca4fa6f` — the invariant "a course draft always carries an end date" now lives in one function (`_courseEnd`) applied at BOTH boundaries that can produce a course draft (`setKind`, which already seeded 28 days, and `_draftFrom`, which did not). The render sites read it through an asserted getter, per 02-UI-SPEC E3 ("invalid regimens are unrepresentable in the UI"). Confirmed RED first.
+
 **Files:** `lib/features/stack/regimen_editor_screen.dart:357-366`, `:391-394`,
 `lib/features/stack/regimen_editor_controller.dart:385-387`
 
@@ -317,6 +361,8 @@ in an unset state and disable Save, or have `_draftFrom` seed a default end for
 a course that arrives without one (mirroring `setKind`).
 
 ### WR-06: `_DayBody` mutates widget state from inside `build()`
+
+**Status:** FIXED in `7ec5c69` — the capture moved to `initState` + `didUpdateWidget` with the same settled condition; `_resolved` is now pure. Behaviour is unchanged by design, so there is NO red-first test for this one: the three existing hold-window groups in `calendar_screen_test.dart` (day switch, same-day reload, error-over-hold) are the regression net and stayed green.
 
 **File:** `lib/features/calendar/calendar_screen.dart:328-382`
 
@@ -343,6 +389,8 @@ void didUpdateWidget(_DayBody old) {
 
 ### WR-07: The "numerals are locale-formatted" rule is violated in the ring and unenforceable by its own gate
 
+**Status:** FIXED in `5ab4a63` — the ring formats both counts through `NumberFormat.decimalPattern(locale)` built inside `build`, and the gate now also flags a BARE identifier interpolation (`$name` / `${name}`). To stay sharp it inspects only a `Text()`'s POSITIONAL arguments, so `key: ValueKey<String>('month-$index-label')` is not swept up, and a braced expression carrying a call or field access (`${fmt.format(x)}`, `${l10n.key}`) is deliberately not matched. Confirmed RED: the widened gate fails on `day_progress_ring.dart:72` and on nothing else in `lib/`. This also closes TW-3.
+
 **Files:** `lib/features/calendar/day_progress_ring.dart:72`,
 `test/l10n/no_hardcoded_strings_test.dart:644-665`
 
@@ -361,6 +409,8 @@ non-`String` locals inside a `Text(` argument (or at minimum add the ring's
 counter to a named allowlist entry so the exception is visible).
 
 ### WR-08: One-regimen-per-supplement is enforced by two independent, unwritten conventions that must agree
+
+**Status:** FIXED in `2129e09` — the rule is stated once in `regimensBySupplement()` and used by all three read paths, including `ensureLogsForDay`, which previously materialized doses for EVERY regimen. Deliberately a collapse rather than an `assert` or a partial unique index: a second row is exactly what the documented sync/import future delivers, and the app must stay coherent on data it did not write rather than crash on it (and a schema migration is out of scope for a review fix). Confirmed RED first.
 
 **Files:** `lib/core/domain/repositories.dart:109-120`,
 `lib/core/db/drift_repositories.dart:150-156`, `:283-296`
@@ -497,6 +547,8 @@ all defend their own validity first (`expect(sources, isNotEmpty)` plus a file
 count plus a "does the glob still see `features/`" check), which is exactly the
 right instinct. Specific holes:
 
+**TW-1 — FIXED in `6cd1140`.** (Original finding below.)
+
 **TW-1 — a test whose stated proof is not a proof.**
 `test/features/today_provider_test.dart:91-110` is the only test of
 `TodayController` and it asserts the initial value plus, per its comment, that
@@ -510,12 +562,16 @@ app (DST, timezone change while backgrounded, resume after days) and it is
 uncovered. Rewrite with `fakeAsync` and assert the state flips at
 `nextLocalMidnight + 1s` and re-arms.
 
+**TW-2 — FIXED in `d5c903e`.** (Original finding below.)
+
 **TW-2 — the CR-01 blind spot.** No test edits a regimen in a way that *removes*
 active days after materialization. `test/providers_calendar_test.dart:117` only
 adds a slot; `:133` only re-upserts an identical regimen;
 `test/db/materialization_boundaries_test.dart` seeds once and never edits;
 `test/db/pause_filter_test.dart` covers only the pause axis. Every edit in the
 suite is additive, which is precisely why CR-01 survived five phases.
+
+**TW-3 — CLOSED by WR-07's widened gate (`5ab4a63`).** (Original finding below.)
 
 **TW-3 — a gate that only catches the less common spelling.** The
 "numerals reach the tree formatted" gate
