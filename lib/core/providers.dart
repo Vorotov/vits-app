@@ -40,7 +40,8 @@ final dbProvider = Provider<BoostqueDb>((ref) {
   return db;
 });
 
-/// The app's key-value store, resolved BEFORE the first frame.
+/// The app's key-value store, resolved BEFORE the first frame — or `null` when
+/// it could not be opened at all.
 ///
 /// App-lifetime like every other provider in this file, so it inherits the
 /// D-23 dispose stance recorded in the header. It deliberately has no default
@@ -51,7 +52,14 @@ final dbProvider = Provider<BoostqueDb>((ref) {
 /// override; every test whose tree reaches `localeControllerProvider` does the
 /// same after `SharedPreferences.setMockInitialValues`. The throw is the point:
 /// a missed harness fails loudly here instead of silently losing the override.
-final sharedPreferencesProvider = Provider<SharedPreferences>(
+///
+/// The type is NULLABLE so that "the store could not be opened" is
+/// representable rather than fatal (CR-02). This store carries exactly one
+/// cosmetic key, so a plugin-registration failure or a corrupt prefs file must
+/// cost the language override and nothing else — `main()` degrades to `null`
+/// instead of never calling `runApp`, and every reader treats `null` as "no
+/// override stored".
+final sharedPreferencesProvider = Provider<SharedPreferences?>(
   (ref) => throw UnimplementedError(
     'sharedPreferencesProvider is overridden in main() and in tests',
   ),

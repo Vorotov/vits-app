@@ -35,7 +35,11 @@ class LocaleController extends Notifier<Locale?> {
     // `BoostqueApp` watches, which parks the provider in a permanent error
     // state and bricks the launch across restarts. The type of untrusted
     // storage is as untrusted as its content, so both are checked (CR-01).
-    final stored = ref.watch(sharedPreferencesProvider).get(_prefsKey);
+    //
+    // A `null` store is a store that could not be opened at all (CR-02): there
+    // is no override to read, which is the same state an empty store leaves —
+    // follow the system.
+    final stored = ref.watch(sharedPreferencesProvider)?.get(_prefsKey);
     final code = stored is String ? stored : null;
     // Stored value is untrusted local input (threat T-01-07): SharedPreferences
     // can be edited outside the app (rooted device, backup edit). Only
@@ -59,6 +63,11 @@ class LocaleController extends Notifier<Locale?> {
     // and is deliberately not surfaced (DECIDED-8).
     state = locale;
     final prefs = ref.read(sharedPreferencesProvider);
+    // No store to write to (it could not be opened on this launch, CR-02): the
+    // language still applies for the whole session and only the NEXT launch
+    // cannot remember it — the exact cost DECIDED-8 already accepts for a
+    // write that fails.
+    if (prefs == null) return;
     if (locale == null) {
       await prefs.remove(_prefsKey);
     } else {

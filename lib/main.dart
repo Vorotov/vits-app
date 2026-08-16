@@ -13,7 +13,27 @@ Future<void> main() async {
   // seed itself synchronously — a user with a stored language override never
   // sees a system-language frame on cold start (P-4 Option A).
   WidgetsFlutterBinding.ensureInitialized();
-  final prefs = await SharedPreferences.getInstance();
+  SharedPreferences? prefs;
+  try {
+    prefs = await SharedPreferences.getInstance();
+  } catch (error, stack) {
+    // Resolving the store sits between `ensureInitialized()` and `runApp()`,
+    // so an escaping error here means runApp is NEVER called: no Flutter UI is
+    // attached, the user stares at the launch screen, and because the failure
+    // is deterministic (plugin registration, a corrupt prefs file, an OEM
+    // storage-permission denial) restarting does not help. This store carries
+    // one cosmetic language override, so it may not hold the launch hostage:
+    // degrade to "follow system" and start. Reported for the crash logger, not
+    // to the user — there is nothing they could do, and the app works (CR-02).
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stack,
+        library: 'boostque',
+        context: ErrorDescription('resolving SharedPreferences in main()'),
+      ),
+    );
+  }
   runApp(
     ProviderScope(
       overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],

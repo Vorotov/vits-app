@@ -336,6 +336,10 @@ bool _isDiagnosticMessage(Literal l) => const {
       'UnsupportedError',
       'Exception',
       'FormatException',
+      // The two crash-report constructors: a failure that is reported to the
+      // logger INSTEAD of being surfaced still has to say what it was.
+      'FlutterErrorDetails',
+      'ErrorDescription',
     }.contains(l.enclosingCall);
 
 bool _isStableDomainId(Literal l) => const {
@@ -389,10 +393,13 @@ const stringLiteralAllowlist = <({
     allows: _isBundledFontFamily,
   ),
   (
-    name: 'assertion and thrown-error messages',
+    name: 'assertion, thrown-error and crash-report messages',
     why: 'developer-facing diagnostics that must never reach the tree — the '
         'error surfaces render documented ARB copy plus retry, never exception '
-        'text (T-02-08, T-03-16)',
+        'text (T-02-08, T-03-16). FlutterErrorDetails/ErrorDescription carry '
+        'the same kind of text to the crash logger for the two failures the '
+        'app absorbs rather than shows (a prefs store that will not open, a '
+        'language write that is rejected — CR-02, DECIDED-8)',
     allows: _isDiagnosticMessage,
   ),
   (
