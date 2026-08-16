@@ -7,14 +7,21 @@
 /// in any timezone (PF-2: a fixed `Duration(hours: 24)` would break there).
 /// Ukraine's 2026 DST boundaries (2026-03-29 and 2026-10-25) are in the matrix.
 ///
-/// [TodayController] itself gets a smoke test only — the clock cannot be
-/// injected — proving it builds to the normalized current local day as a UTC
-/// date-only value and leaves no live timer behind when its container is
-/// disposed.
+/// [TodayController] is exercised through its injected clock (TW-1): the
+/// controller tests are `testWidgets`, so the automated binding's fake-async
+/// zone drives the midnight `Timer` AND fails the test if one outlives it.
+/// That pending-timer check is the disposal proof — the previous plain
+/// `test()` claimed "the test completing is the proof that nothing stayed
+/// armed", which it was not: deleting `ref.onDispose` from
+/// `today_controller.dart` left it green. It now goes red, along with the
+/// rollover, the DST-day scheduling, the re-arm and the resume-after-days
+/// path, none of which had any coverage at all.
 library;
 
 import 'package:boostque/core/domain/cycle_math.dart';
 import 'package:boostque/core/today_controller.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -88,8 +95,38 @@ void main() {
   });
 
   group('TodayController', () {
-    test('builds to the current device-local day as a UTC date-only value, '
-        'and disposing the container cancels its timer', () {
+    /// A container whose clock is [now] — a mutable local wall-clock the test
+    /// moves by hand, in step with the fake-async clock `tester.pump`
+    /// advances.
+    ///
+    /// `flutter_test`'s fake-async zone controls `Timer` but never
+    /// `DateTime.now()`, so without the injected clock the midnight timer can
+    /// be fired and the controller still reads back the same real day — which
+    /// is precisely why the rollover had no test at all (TW-1).
+    ProviderContainer clockedContainer(DateTime Function() now) =>
+        ProviderContainer(
+          overrides: [
+            todayProvider.overrideWith(() => TodayController(now: now)),
+          ],
+        );
+
+    /// Delivers a real platform lifecycle message, the way the engine does.
+    ///
+    /// `WidgetsBinding.handleAppLifecycleStateChanged` is `@protected`; the
+    /// channel is the supported test seam.
+    Future<void> sendLifecycle(
+      WidgetTester tester,
+      AppLifecycleState state,
+    ) async {
+      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+        'flutter/lifecycle',
+        const StringCodec().encodeMessage(state.toString()),
+        (_) {},
+      );
+    }
+
+    testWidgets('builds to the current device-local day as a UTC date-only '
+        'value', (tester) async {
       final container = ProviderContainer();
       // Riverpod 3 pauses unlistened providers — hold it open.
       final sub = container.listen(todayProvider, (_, _) {});
@@ -104,8 +141,116 @@ void main() {
       expect(today.second, 0);
 
       sub.close();
-      // ref.onDispose cancels the midnight Timer and the lifecycle listener;
-      // the test completing is the proof that nothing stayed armed.
+      container.dispose();
+    });
+
+    testWidgets('disposing the container leaves NO armed timer behind (TW-1)',
+        (tester) async {
+      // This is a `testWidgets`, not a `test`, deliberately: only the
+      // automated binding's fake-async zone detects a timer that outlives the
+      // test, and that detection IS the assertion here. Written as a plain
+      // `test()` — as it was — deleting `ref.onDispose` from
+      // today_controller.dart changed nothing and the test still passed, so
+      // the comment claiming "the test completing is the proof that nothing
+      // stayed armed" was claiming something the code did not establish.
+      final container = ProviderContainer();
+      final sub = container.listen(todayProvider, (_, _) {});
+      container.read(todayProvider);
+
+      sub.close();
+      container.dispose();
+
+      // The binding fails the test at teardown with "A Timer is still pending"
+      // if ref.onDispose stopped cancelling the midnight Timer.
+    });
+
+    testWidgets('the day rolls over AT local midnight and the timer re-arms '
+        'itself for the next one (TW-1)', (tester) async {
+      var now = DateTime(2026, 8, 14, 23, 59, 30);
+      final container = clockedContainer(() => now);
+      final sub = container.listen(todayProvider, (_, _) {});
+
+      expect(container.read(todayProvider), DateTime.utc(2026, 8, 14));
+
+      // 30s to midnight + the 1s of fudge the scheduler adds.
+      now = DateTime(2026, 8, 15, 0, 0, 1);
+      await tester.pump(const Duration(seconds: 31));
+      expect(container.read(todayProvider), DateTime.utc(2026, 8, 15),
+          reason: 'the tick lands AFTER the boundary and flips the day');
+
+      // Re-armed by _refresh: a second midnight rolls it again with no
+      // external nudge. A day that flipped once and then went stale is the
+      // failure this half of the test exists for.
+      now = DateTime(2026, 8, 16, 0, 0, 1);
+      await tester.pump(const Duration(hours: 24));
+      expect(container.read(todayProvider), DateTime.utc(2026, 8, 16),
+          reason: '_refresh re-arms the timer every time it fires');
+
+      // Disposed INSIDE the body, never in addTearDown: the binding checks
+      // for pending timers before tearDown callbacks run.
+      sub.close();
+      container.dispose();
+    });
+
+    testWidgets('a DST spring-forward midnight (23h day) is not missed by an '
+        'hour (TW-1, PF-2)', (tester) async {
+      // Ukraine springs forward on 2026-03-29. The day BEFORE it is 23 hours
+      // long in local time, so a fixed Duration(hours: 24) would fire an hour
+      // late — the defect nextLocalMidnight exists to prevent, now proven
+      // through the scheduler rather than only through the pure function.
+      var now = DateTime(2026, 3, 28);
+      final container = clockedContainer(() => now);
+      final sub = container.listen(todayProvider, (_, _) {});
+
+      expect(container.read(todayProvider), DateTime.utc(2026, 3, 28));
+
+      final untilMidnight =
+          nextLocalMidnight(now).difference(now) + const Duration(seconds: 1);
+      now = nextLocalMidnight(now).add(const Duration(seconds: 1));
+      await tester.pump(untilMidnight);
+
+      expect(container.read(todayProvider), DateTime.utc(2026, 3, 29),
+          reason: 'the tick is derived from the local date constructor, so a '
+              '23-hour or 25-hour day lands on its own midnight');
+
+      // Disposed INSIDE the body, never in addTearDown: the binding checks
+      // for pending timers before tearDown callbacks run.
+      sub.close();
+      container.dispose();
+    });
+
+    testWidgets('a resume after DAYS re-derives the day even though the timer '
+        'never fired (TW-1, E-12)', (tester) async {
+      var now = DateTime(2026, 8, 14, 9);
+      final container = clockedContainer(() => now);
+      final sub = container.listen(todayProvider, (_, _) {});
+
+      expect(container.read(todayProvider), DateTime.utc(2026, 8, 14));
+
+      // Backgrounded: OS timers are suspended, so nothing fires at all...
+      await sendLifecycle(tester, AppLifecycleState.inactive);
+      await sendLifecycle(tester, AppLifecycleState.hidden);
+      await sendLifecycle(tester, AppLifecycleState.paused);
+
+      // ...for three days. (A timezone change while backgrounded looks
+      // exactly the same from here.)
+      now = DateTime(2026, 8, 17, 8);
+      expect(container.read(todayProvider), DateTime.utc(2026, 8, 14),
+          reason: 'nothing has told it yet — no frame, no tick');
+
+      await sendLifecycle(tester, AppLifecycleState.hidden);
+      await sendLifecycle(tester, AppLifecycleState.inactive);
+      await sendLifecycle(tester, AppLifecycleState.resumed);
+      await tester.pump();
+
+      expect(container.read(todayProvider), DateTime.utc(2026, 8, 17),
+          reason: 'the resume RE-DERIVES the day from the clock — it never '
+              'increments the previous value (PF-2), so three suspended days '
+              'cost nothing');
+
+      // Disposed INSIDE the body, never in addTearDown: the binding checks
+      // for pending timers before tearDown callbacks run.
+      sub.close();
       container.dispose();
     });
   });

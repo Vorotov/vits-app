@@ -35,6 +35,20 @@ DateTime nextLocalMidnight(DateTime from) =>
 /// The current device-local calendar day as a UTC date-only value,
 /// self-updating at local midnight and on app resume.
 class TodayController extends Notifier<DateTime> {
+  /// [now] is the ONE wall-clock read in the app, injectable so the midnight
+  /// rollover and the resume path can be tested at all (TW-1).
+  ///
+  /// Production always takes the default. `flutter_test`'s fake-async zone
+  /// controls `Timer`, but never `DateTime.now()`, so without this seam a
+  /// test can fire the midnight timer and the controller still reads back the
+  /// same real day — the rollover, the re-arm and the resume path (the single
+  /// riskiest piece of date logic in the app: DST, a timezone change while
+  /// backgrounded, a resume after days) were untestable and untested.
+  TodayController({this.now = DateTime.now});
+
+  /// The wall-clock read — see the constructor doc.
+  final DateTime Function() now;
+
   Timer? _timer;
   AppLifecycleListener? _lifecycle;
 
@@ -51,23 +65,23 @@ class TodayController extends Notifier<DateTime> {
     // change while backgrounded).
     _lifecycle = AppLifecycleListener(onResume: _refresh);
     _schedule();
-    return dateOnly(DateTime.now());
+    return dateOnly(now());
   }
 
   /// Re-derives the day from the system clock — never increments the previous
   /// value (PF-2) — and re-arms the timer.
   void _refresh() {
-    final day = dateOnly(DateTime.now());
+    final day = dateOnly(now());
     if (day != state) state = day;
     _schedule();
   }
 
   void _schedule() {
     _timer?.cancel();
-    final now = DateTime.now();
+    final at = now();
     // One second of fudge so the tick lands after the boundary, never on it.
     _timer = Timer(
-      nextLocalMidnight(now).difference(now) + const Duration(seconds: 1),
+      nextLocalMidnight(at).difference(at) + const Duration(seconds: 1),
       _refresh,
     );
   }
