@@ -113,11 +113,11 @@ Plans:
 
 Plans:
 
-- [ ] 04-01-PLAN.md — Tracer: window math + pure planner projections + a reachable gantt, with the zero-write gate (wave 1)
-- [ ] 04-02-PLAN.md — Full Phase-4 ARB set (plurals, month case, copy-safety gate) + planner shell, empty/error, disclaimer on both segments (wave 2)
-- [ ] 04-03-PLAN.md — Цикли complete: gantt chrome, concurrent-load chart, inline week detail (wave 3)
-- [ ] 04-04-PLAN.md — Рік complete: year grid with computed extent, month detail, peak chip, footnote (wave 4)
-- [ ] 04-05-PLAN.md — Phase-close invariants: text-scale matrix, assistive-tech activation, read-only + PLAN-04 gates (wave 5)
+- [x] 04-01-PLAN.md — Tracer: window math + pure planner projections + a reachable gantt, with the zero-write gate (wave 1)
+- [x] 04-02-PLAN.md — Full Phase-4 ARB set (plurals, month case, copy-safety gate) + planner shell, empty/error, disclaimer on both segments (wave 2)
+- [x] 04-03-PLAN.md — Цикли complete: gantt chrome, concurrent-load chart, inline week detail (wave 3)
+- [x] 04-04-PLAN.md — Рік complete: year grid with computed extent, month detail, peak chip, footnote (wave 4)
+- [x] 04-05-PLAN.md — Phase-close invariants: text-scale matrix, assistive-tech activation, read-only + PLAN-04 gates (wave 5)
 
 **UI hint**: yes
 
