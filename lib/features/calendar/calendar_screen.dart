@@ -310,6 +310,15 @@ class _DayBodyState extends ConsumerState<_DayBody> {
       ),
       children: [
         ...widget.doses.when(
+          // "Has an error" beats "is loading": Riverpod 3 reports a failing
+          // provider as an AsyncLoading that CARRIES the error while it
+          // retries on its own backoff, and `when` defaults
+          // skipLoadingOnReload to false — so without this the held
+          // previous-day list below would win over the designed error surface
+          // for the whole ~38.2s backoff window (A1 / P-9, 04-REVIEW.md
+          // CR-02). The hold itself is unchanged: a genuine day switch with no
+          // error still takes the loading arm.
+          skipLoadingOnReload: true,
           data: (list) {
             _held = list;
             _heldDay = widget.day;

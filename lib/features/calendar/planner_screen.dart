@@ -594,10 +594,14 @@ class _TwoToneSwatch extends StatelessWidget {
 
 /// The three async surfaces both segments share (S6c).
 ///
-/// Data with something to draw renders [cards]; data with nothing to draw
-/// renders the empty block; an error renders fixed copy plus retry; loading
-/// renders nothing at all — no spinner, because a local-DB stream resolves
-/// within a frame and a spinner would only flash (Phase-3 precedent).
+/// A model that CARRIES an error renders fixed copy plus retry, whether or not
+/// it is also loading; data with something to draw renders [cards]; data with
+/// nothing to draw renders the empty block; loading with no error renders
+/// nothing at all — no spinner, because a local-DB stream resolves within a
+/// frame and a spinner would only flash (Phase-3 precedent).
+///
+/// "Has an error" beats "is loading" deliberately, and the arm order below is
+/// the whole of that rule — see the first arm (A1 / P-9).
 List<Widget> _surface<T>(
   BuildContext context,
   WidgetRef ref, {
@@ -606,7 +610,12 @@ List<Widget> _surface<T>(
   required List<Widget> Function(T) cards,
 }) {
   return switch (model) {
-    AsyncError() => const [_PlannerError()],
+    // Riverpod 3 reports a failing provider as an AsyncLoading that CARRIES
+    // the error while it retries on its own backoff, so matching the error
+    // SUBTYPE alone leaves this arm unreached for the whole ~38.2s backoff
+    // window and the screen renders the blank loading surface instead of the
+    // designed one (04-REVIEW.md CR-02). Match on the property, not the type.
+    AsyncValue(hasError: true) => const [_PlannerError()],
     AsyncData(:final value) when isEmpty(value) => const [_EmptyPlanner()],
     AsyncData(:final value) => cards(value),
     _ => const <Widget>[],
