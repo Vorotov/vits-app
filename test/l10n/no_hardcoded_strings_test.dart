@@ -91,6 +91,13 @@ final toStringCallPattern = RegExp(r'\.toString\s*\(\s*\)');
 /// the gate asserts none exist rather than mis-parsing one silently.
 final tripleQuotePattern = RegExp("'''" r'|"""');
 
+/// A `Text(` constructor call; the argument list is extracted by paren
+/// matching, because a regex cannot balance parentheses.
+final textConstructorPattern = RegExp(r'\bText\s*\(');
+
+/// A character Dart allows inside an identifier.
+final identifierCharPattern = RegExp(r'[A-Za-z0-9_$]');
+
 // ---------------------------------------------------------------------------
 // Source collection
 // ---------------------------------------------------------------------------
@@ -215,8 +222,7 @@ class Literal {
   return (literals: literals, masked: masked.join());
 }
 
-bool _isIdentifierChar(String c) =>
-    RegExp(r'[A-Za-z0-9_$]').hasMatch(c);
+bool _isIdentifierChar(String c) => identifierCharPattern.hasMatch(c);
 
 /// The identifier of the call whose argument list contains [offset], or null.
 String? enclosingCall(String masked, int offset) {
@@ -620,7 +626,7 @@ void main() {
       'reach the tree through an ARB key or a formatter (L10N-04)', () {
     sources.forEach((path, source) {
       if (!path.contains('features/')) return;
-      for (final match in RegExp(r'\bText\s*\(').allMatches(source)) {
+      for (final match in textConstructorPattern.allMatches(source)) {
         final args = balancedArgs(source, match.end - 1);
         expect(
           toStringCallPattern.hasMatch(args),
