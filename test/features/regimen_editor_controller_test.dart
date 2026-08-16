@@ -14,14 +14,59 @@
 /// alive (Riverpod 3 pauses unlistened providers — Phase-1 pattern).
 library;
 
+import 'dart:async';
+
 import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/domain/cycle_math.dart';
 import 'package:boostque/core/domain/models.dart';
+import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/features/stack/regimen_editor_controller.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+/// A [RegimenRepository] whose `upsert` parks on a gate until the test opens
+/// it — the save-in-flight window a real transaction leaves open, made
+/// deterministic.
+///
+/// Only the members the editor's save path touches do anything; the rest
+/// throw, so a test that starts depending on them fails loudly instead of
+/// silently exercising a stub.
+class GatedRegimenRepo implements RegimenRepository {
+  /// Every regimen handed to [upsert], in call order.
+  final List<Regimen> upserts = <Regimen>[];
+
+  Completer<void> _gate = Completer<void>();
+
+  /// Lets every parked (and every future) `upsert` through.
+  void release() {
+    if (!_gate.isCompleted) _gate.complete();
+  }
+
+  /// Re-arms the gate so the NEXT `upsert` parks again.
+  void rearm() => _gate = Completer<void>();
+
+  @override
+  Stream<List<Regimen>> watchAll() => Stream<List<Regimen>>.value(const []);
+
+  @override
+  Future<Regimen?> findForSupplement(String supplementId) async => null;
+
+  @override
+  Future<void> upsert(Regimen r) async {
+    upserts.add(r);
+    await _gate.future;
+  }
+
+  @override
+  Future<void> setPaused(String regimenId, bool paused) async =>
+      throw UnimplementedError();
+
+  @override
+  Future<void> softDelete(String regimenId) async =>
+      throw UnimplementedError();
+}
 
 void main() {
   // The draft's default start date now comes from `todayProvider` (plan
@@ -576,6 +621,123 @@ void main() {
         isEmpty,
       );
       expect(await regimensNow(), isEmpty);
+    });
+  });
+
+  group('save-in-flight window (WR-01/WR-02/WR-03)', () {
+    late GatedRegimenRepo repo;
+    late ProviderContainer gated;
+
+    /// A container whose regimen writes park on [repo]'s gate and whose stack
+    /// graph is WARM and empty (a fresh supplement, no regimen — so the seed
+    /// is not blind and `save()` takes the mint-a-new-id path).
+    setUp(() {
+      repo = GatedRegimenRepo();
+      gated = ProviderContainer(
+        overrides: [
+          regimenRepoProvider.overrideWithValue(repo),
+          stackEntriesProvider.overrideWithValue(
+            const AsyncData<List<StackEntry>>([
+              StackEntry(supplement: supplement),
+            ]),
+          ),
+        ],
+      );
+      addTearDown(gated.dispose);
+    });
+
+    RegimenEditorController openEditor() {
+      final sub = gated.listen(regimenEditorProvider('s1'), (_, _) {});
+      addTearDown(sub.close);
+      return gated.read(regimenEditorProvider('s1').notifier);
+    }
+
+    RegimenDraft gatedDraft() => gated.read(regimenEditorProvider('s1'));
+
+    test('an edit made DURING the save is not reverted by the save (WR-01)',
+        () async {
+      final editor = openEditor();
+      final saving = editor.save();
+      // Parked inside repo.upsert: the transaction is open, the form is not.
+      await pumpEventQueue();
+      expect(repo.upserts, hasLength(1), reason: 'the save is in flight');
+
+      // The user keeps typing / dragging while the write runs — only the save
+      // BUTTON is disabled during the flight, nothing else on the form is.
+      editor.setSlotDoseLabel(0, '5 г');
+      editor.setOnDays(21);
+
+      repo.release();
+      await saving;
+
+      final draft = gatedDraft();
+      expect(draft.slots.single.doseLabel, '5 г',
+          reason: 'a keystroke made during the save must survive it — the '
+              'post-await write must MERGE the resolved ids into the CURRENT '
+              'draft, never restore the pre-await snapshot (WR-01)');
+      expect(draft.onDays, 21,
+          reason: 'the same holds for the sliders (WR-01)');
+      expect(draft.regimenId, isNotNull,
+          reason: 'the resolved regimen id is still stamped into the draft');
+      expect(draft.slots.single.id, isNotNull,
+          reason: 'the resolved slot id is still stamped into the draft, so '
+              'the next save reuses it rather than minting a second one');
+    });
+
+    test('a second save() of a CHANGED draft persists that change (WR-02)',
+        () async {
+      final editor = openEditor();
+      final first = editor.save();
+      await pumpEventQueue();
+
+      // The draft changes while the first write is still open, then the user
+      // saves again (an autosave, a second tap after an edit, a test driving
+      // the public API — save() is public).
+      editor.setOnDays(21);
+      final second = editor.save();
+      expect(identical(first, second), isFalse,
+          reason: 'awaiting save() must mean "the draft I had is on disk"; '
+              'handing back the in-flight future of an OLDER draft resolves '
+              'successfully without ever persisting the newer one (WR-02)');
+
+      repo.release();
+      await Future.wait<void>([first, second]);
+
+      expect(repo.upserts, hasLength(2),
+          reason: 'the changed draft must reach the repository');
+      expect(repo.upserts.last.onDays, 21,
+          reason: 'the LAST write must carry the newest draft (WR-02)');
+      expect(repo.upserts.map((r) => r.id).toSet(), hasLength(1),
+          reason: 'serialized, not concurrent: the second save reuses the '
+              'first one\'s resolved regimen id — no ghost row (PF-8)');
+    });
+
+    test('a save that outlives its screen completes instead of throwing '
+        '(WR-03)', () async {
+      // Kept alive by ONE subscription, exactly like the screen's ref.watch.
+      final sub = gated.listen(regimenEditorProvider('s1'), (_, _) {});
+      final editor = gated.read(regimenEditorProvider('s1').notifier);
+      final saving = editor.save();
+      await pumpEventQueue();
+
+      // The user taps Save and immediately backs out: the route pops, the
+      // last listener goes, and the autoDispose editor provider is torn down
+      // while the write is still open.
+      sub.close();
+      await pumpEventQueue();
+
+      repo.release();
+      await expectLater(
+        saving,
+        completes,
+        reason: 'writing state after an await on a DISPOSED autoDispose '
+            'Notifier throws, and that throw is swallowed by the catch the '
+            'screen wrote for a FAILED WRITE — so a genuinely failed write '
+            'and a screen that went away become indistinguishable (WR-03)',
+      );
+      expect(repo.upserts, hasLength(1),
+          reason: 'the write itself still committed — only the state '
+              'write-back is skipped');
     });
   });
 }

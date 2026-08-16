@@ -398,7 +398,29 @@ class RegimenEditorController extends Notifier<RegimenDraft> {
       ],
     ));
 
-    state = draft.copyWith(regimenId: regimenId, slots: slots);
+    // MERGE the resolved ids into the CURRENT draft — never write the
+    // pre-await snapshot back (WR-01). Only the save button is disabled while
+    // a write is in flight; the sliders, the time pickers and the dose-label
+    // fields all stay live, and a `TextFormField`'s key does not change on a
+    // label edit, so an overwrite would leave the field DISPLAYING text that
+    // neither the draft nor the database holds.
+    //
+    // Slot ids are matched back by time of day, which is the slot list's own
+    // identity here (times are unique-by-construction and the list is kept
+    // sorted). A slot the user moved during the flight simply finds no match
+    // and keeps its null id — the next save mints one for it.
+    final slotIdByTime = {
+      for (final s in slots) s.minutesFromMidnight: s.id,
+    };
+    state = state.copyWith(
+      regimenId: regimenId,
+      slots: [
+        for (final s in state.slots)
+          s.id != null
+              ? s
+              : s.copyWith(id: slotIdByTime[s.minutesFromMidnight]),
+      ],
+    );
     // The draft now owns a persisted id — any earlier blind seed is moot.
     _seedWasBlind = false;
   }
