@@ -93,6 +93,51 @@ void main() {
       expect(l10n.periodsCount(21), '21 період'); // one (i%10=1)
     });
 
+    test('slotsCount declines «слот» after «з» at 1/2/5/11/21 (WR-05)', () {
+      expect(l10n.slotsCount(1), '1 слота'); // one — genitive singular
+      expect(l10n.slotsCount(2), '2 слотів'); // few
+      expect(l10n.slotsCount(5), '5 слотів'); // many
+      expect(l10n.slotsCount(11), '11 слотів'); // many (11-14 exception)
+      expect(l10n.slotsCount(21), '21 слота'); // one (i%10=1)
+    });
+
+    test('substancesLimitCount carries the ACCUSATIVE forms «межі у …» '
+        'governs, which substancesCount cannot supply (WR-05)', () {
+      expect(l10n.substancesLimitCount(1), '1 речовину'); // one, accusative
+      expect(l10n.substancesLimitCount(2), '2 речовини'); // few
+      expect(l10n.substancesLimitCount(5), '5 речовин'); // many
+      expect(l10n.substancesLimitCount(11), '11 речовин'); // many (11-14)
+      expect(l10n.substancesLimitCount(21), '21 речовину'); // one (i%10=1)
+      expect(l10n.substancesCount(1), '1 речовина',
+          reason: 'the nominative key is unchanged — the two exist precisely '
+              'because one sentence cannot borrow the other\'s case');
+    });
+
+    test('the editorial limit is a NUMBER the copy declines around, not a '
+        'value its grammar is frozen at (WR-05)', () {
+      // The claim in editorialLimit's doc comment — "moving a boundary is a
+      // one-line, test-caught edit" — is only true if the sentences stay
+      // grammatical at other values. They used to read "2 з 2 слотів" and
+      // "межі у 3 речовин", and no test failed because every test passed 5.
+      expect(l10n.weekLoadLabel(2, l10n.slotsCount(2)), '2 з 2 слотів');
+      expect(l10n.weekLoadLabel(1, l10n.slotsCount(1)), '1 з 1 слота');
+      expect(
+        l10n.yearFootnote(l10n.substancesLimitCount(3)),
+        endsWith('нашої межі у 3 речовини одночасно.'),
+      );
+      expect(
+        l10n.yearFootnote(l10n.substancesLimitCount(1)),
+        endsWith('нашої межі у 1 речовину одночасно.'),
+      );
+      // At the shipped limit the rendered copy is byte-for-byte what it was.
+      expect(l10n.weekLoadLabel(4, l10n.slotsCount(5)), '4 з 5 слотів');
+      expect(
+        l10n.yearFootnote(l10n.substancesLimitCount(5)),
+        'Рік показує, як цикли накладаються один на одний. Червоне число в '
+        'місяці означає перевищення нашої межі у 5 речовин одночасно.',
+      );
+    });
+
     test('planner sentence keys take PRE-FORMATTED counts, never a nested '
         'plural block', () {
       // The composition convention: the count is declined once, by its own
@@ -172,6 +217,21 @@ void main() {
       expect(l10n.periodsCount(1), '1 period');
       expect(l10n.periodsCount(2), '2 periods');
       expect(l10n.periodsCount(21), '21 periods');
+    });
+
+    test('slotsCount and substancesLimitCount use one/other, and the limit '
+        'sentences stay correct at any value (WR-05)', () {
+      expect(l10n.slotsCount(1), '1 slot');
+      expect(l10n.slotsCount(2), '2 slots');
+      expect(l10n.substancesLimitCount(1), '1 substance');
+      expect(l10n.substancesLimitCount(3), '3 substances');
+      expect(l10n.weekLoadLabel(1, l10n.slotsCount(1)), '1 of 1 slot');
+      expect(l10n.weekLoadLabel(4, l10n.slotsCount(5)), '4 of 5 slots');
+      expect(
+        l10n.yearFootnote(l10n.substancesLimitCount(5)),
+        'The year view shows how cycles overlap. A red number on a month '
+        'means it exceeds our limit of 5 substances at once.',
+      );
     });
   });
 }

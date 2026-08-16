@@ -528,8 +528,30 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String weekLoadLabel(int load, int max) {
-    return '$load of $max slots';
+  String slotsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count slots',
+      one: '$count slot',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String substancesLimitCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count substances',
+      one: '$count substance',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String weekLoadLabel(int load, String max) {
+    return '$load of $max';
   }
 
   @override
@@ -611,8 +633,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'The 5-substance limit is our editorial rule for easier tracking, not a medical standard. Educational material, not medical advice.';
 
   @override
-  String yearFootnote(int max) {
-    return 'The year view shows how cycles overlap. A red number on a month means it exceeds our limit of $max substances at once.';
+  String yearFootnote(String max) {
+    return 'The year view shows how cycles overlap. A red number on a month means it exceeds our limit of $max at once.';
   }
 
   @override

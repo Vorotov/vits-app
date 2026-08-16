@@ -393,7 +393,9 @@ bool _overlaps(DateRun r, DateTime a, DateTime b) =>
 /// Five is the count above which the user's own tracking gets hard: it is our
 /// editorial default for legibility, not a safety limit, not a norm and not a
 /// dose ceiling. Both numbers live here once, so moving a boundary is a
-/// one-line, test-caught edit.
+/// one-line, test-caught edit — and the copy honours that: every sentence that
+/// names either number takes it PRE-FORMATTED through a plural key, so the
+/// Ukrainian declines with the value instead of being frozen at five (WR-05).
 ///
 /// The two chips read this rule ASYMMETRICALLY, on purpose (DECIDED-6): the
 /// week summary chip warns at a load greater than OR EQUAL to

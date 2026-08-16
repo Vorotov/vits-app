@@ -288,7 +288,8 @@ class _WeekColumn extends ConsumerWidget {
       label: l10n.weekBarSemantics(
         '${range.format(week.bucket.start)} – '
         '${range.format(week.bucket.endInclusive)}',
-        l10n.weekLoadLabel(load, editorialLimit),
+        // Same pre-formatted slot count the week-detail card renders (WR-05).
+        l10n.weekLoadLabel(load, l10n.slotsCount(editorialLimit)),
       ),
       excludeSemantics: true,
       // The action lives on THIS node, not on the GestureDetector below it:

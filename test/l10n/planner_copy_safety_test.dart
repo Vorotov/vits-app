@@ -98,6 +98,8 @@ const plannerKeyPrefixes = <String>[
 /// another surface and named for what they count, not for where they appear.
 const plannerKeysExact = <String>{
   'substancesCount',
+  'substancesLimitCount',
+  'slotsCount',
   'cyclesCount',
   'periodsCount',
   'limitBadge',
@@ -125,7 +127,9 @@ Map<String, String> plannerCopy(AppLocalizations l10n) {
   plural('cyclesCount', l10n.cyclesCount);
   plural('periodsCount', l10n.periodsCount);
   plural('substancesCount', l10n.substancesCount);
+  plural('substancesLimitCount', l10n.substancesLimitCount);
   plural('weeksCount', l10n.weeksCount);
+  plural('slotsCount', l10n.slotsCount);
 
   return {
     ...sample,
@@ -145,7 +149,7 @@ Map<String, String> plannerCopy(AppLocalizations l10n) {
     'loadChartTitle': l10n.loadChartTitle,
     'loadChartMeta': l10n.loadChartMeta,
     'loadAxisLegend': l10n.loadAxisLegend(5, 3),
-    'weekLoadLabel': l10n.weekLoadLabel(4, 5),
+    'weekLoadLabel': l10n.weekLoadLabel(4, l10n.slotsCount(5)),
     'weekFreeSlots': l10n.weekFreeSlots(1),
     'weekNoFreeSlots': l10n.weekNoFreeSlots,
     'verdictComfort': l10n.verdictComfort,
@@ -167,7 +171,7 @@ Map<String, String> plannerCopy(AppLocalizations l10n) {
     'emptyPlannerBodyNoRegimen': l10n.emptyPlannerBodyNoRegimen,
     'plannerLoadError': l10n.plannerLoadError,
     'plannerDisclaimer': l10n.plannerDisclaimer,
-    'yearFootnote': l10n.yearFootnote(5),
+    'yearFootnote': l10n.yearFootnote(l10n.substancesLimitCount(5)),
     'ganttRowSemantics': l10n.ganttRowSemantics('N', 'S', 'P'),
     'ganttRowSemanticsPaused': l10n.ganttRowSemanticsPaused('N', 'S', 'P'),
     'yearLegendEntrySemantics': l10n.yearLegendEntrySemantics('N', 'P'),

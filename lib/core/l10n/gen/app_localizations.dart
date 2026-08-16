@@ -907,11 +907,23 @@ abstract class AppLocalizations {
   /// **'limit {max} · comfort {comfort}'**
   String loadAxisLegend(int max, int comfort);
 
-  /// Week-detail meta (mockup line 913), also pre-formatted into weekBarSemantics
+  /// Count of tracking slots, pre-formatted into weekLoadLabel. The uk forms are the ones the preposition «з» governs — genitive singular for one («з 1 слота»), genitive plural otherwise — the same rule ringSemantics follows for «з {n} доз». Before this key the uk sentence hardcoded the genitive plural, so moving editorialLimit off 5 produced ungrammatical copy that no test could catch (WR-05)
   ///
   /// In en, this message translates to:
-  /// **'{load} of {max} slots'**
-  String weekLoadLabel(int load, int max);
+  /// **'{count, plural, one{{count} slot} other{{count} slots}}'**
+  String slotsCount(int count);
+
+  /// Count of substances in the ACCUSATIVE case the uk phrase «межі у …» governs (one{речовину}, unlike substancesCount's nominative one{речовина}); pre-formatted into yearFootnote. English has no case distinction, so the two keys read identically here — they are separate because uk cannot compose one sentence out of the other's forms (WR-05)
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} substance} other{{count} substances}}'**
+  String substancesLimitCount(int count);
+
+  /// Week-detail meta (mockup line 913), also pre-formatted into weekBarSemantics. `max` is a pre-formatted slotsCount string — the count is declined by its own plural key and passed in finished, the cycleSummaryCyclic idiom
+  ///
+  /// In en, this message translates to:
+  /// **'{load} of {max}'**
+  String weekLoadLabel(int load, String max);
 
   /// Week-detail hint when the week is below the editorial limit (mockup line 921)
   ///
@@ -1039,11 +1051,11 @@ abstract class AppLocalizations {
   /// **'The 5-substance limit is our editorial rule for easier tracking, not a medical standard. Educational material, not medical advice.'**
   String get plannerDisclaimer;
 
-  /// Рік closing note (mockup line 454, uk verbatim), rendered directly above plannerDisclaimer with an 8px gap
+  /// Рік closing note (mockup line 454, uk verbatim), rendered directly above plannerDisclaimer with an 8px gap. `max` is a pre-formatted substancesLimitCount string, so the sentence stays grammatical in uk at any editorial limit (WR-05)
   ///
   /// In en, this message translates to:
-  /// **'The year view shows how cycles overlap. A red number on a month means it exceeds our limit of {max} substances at once.'**
-  String yearFootnote(int max);
+  /// **'The year view shows how cycles overlap. A red number on a month means it exceeds our limit of {max} at once.'**
+  String yearFootnote(String max);
 
   /// Accessibility label of a gantt row: the painted bands are invisible to assistive tech, so the run count is spoken. `schedule` is the shared schedule-summary composition (minus the daily-slot tail) and `periods` is a pre-formatted periodsCount string
   ///

@@ -706,15 +706,33 @@
       }
     }
   },
-  "weekLoadLabel": "{load} of {max} slots",
+  "slotsCount": "{count, plural, one{{count} slot} other{{count} slots}}",
+  "@slotsCount": {
+    "description": "Count of tracking slots, pre-formatted into weekLoadLabel. The uk forms are the ones the preposition «з» governs — genitive singular for one («з 1 слота»), genitive plural otherwise — the same rule ringSemantics follows for «з {n} доз». Before this key the uk sentence hardcoded the genitive plural, so moving editorialLimit off 5 produced ungrammatical copy that no test could catch (WR-05)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "substancesLimitCount": "{count, plural, one{{count} substance} other{{count} substances}}",
+  "@substancesLimitCount": {
+    "description": "Count of substances in the ACCUSATIVE case the uk phrase «межі у …» governs (one{речовину}, unlike substancesCount's nominative one{речовина}); pre-formatted into yearFootnote. English has no case distinction, so the two keys read identically here — they are separate because uk cannot compose one sentence out of the other's forms (WR-05)",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "weekLoadLabel": "{load} of {max}",
   "@weekLoadLabel": {
-    "description": "Week-detail meta (mockup line 913), also pre-formatted into weekBarSemantics",
+    "description": "Week-detail meta (mockup line 913), also pre-formatted into weekBarSemantics. `max` is a pre-formatted slotsCount string — the count is declined by its own plural key and passed in finished, the cycleSummaryCyclic idiom",
     "placeholders": {
       "load": {
         "type": "int"
       },
       "max": {
-        "type": "int"
+        "type": "String"
       }
     }
   },
@@ -830,12 +848,12 @@
   "@plannerDisclaimer": {
     "description": "PLAN-04 closure (mockup line 374, uk verbatim). Rendered as the LAST element of BOTH planner segments — Цикли and Рік — and on the empty and error surfaces too, because PLAN-04 is unconditional. It frames the 5-substance limit as THIS PRODUCT'S editorial rule and explicitly not a medical standard; that framing is the half of PLAN-04 that does the work, which is why the bare `disclaimerEducational` cannot stand in for it (DECIDED-8). On the Рік segment `yearFootnote` renders ABOVE this key, never instead of it (M9)"
   },
-  "yearFootnote": "The year view shows how cycles overlap. A red number on a month means it exceeds our limit of {max} substances at once.",
+  "yearFootnote": "The year view shows how cycles overlap. A red number on a month means it exceeds our limit of {max} at once.",
   "@yearFootnote": {
-    "description": "Рік closing note (mockup line 454, uk verbatim), rendered directly above plannerDisclaimer with an 8px gap",
+    "description": "Рік closing note (mockup line 454, uk verbatim), rendered directly above plannerDisclaimer with an 8px gap. `max` is a pre-formatted substancesLimitCount string, so the sentence stays grammatical in uk at any editorial limit (WR-05)",
     "placeholders": {
       "max": {
-        "type": "int"
+        "type": "String"
       }
     }
   },

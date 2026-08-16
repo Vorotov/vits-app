@@ -347,7 +347,11 @@ class _YearBody extends ConsumerWidget {
       // PLAN-04 needs both (M9, DECIDED-8).
       // The ONE place the editorial limit is defined is the pure model — the
       // screen never restates the number.
-      footnote: context.l10n.yearFootnote(editorialLimit),
+      // The count is PRE-FORMATTED through the plural key whose forms the uk
+      // phrase «межі у …» governs, so moving the limit cannot leave the
+      // sentence declined for a number it no longer names (WR-05).
+      footnote: context.l10n
+          .yearFootnote(context.l10n.substancesLimitCount(editorialLimit)),
       children: _surface(
         context,
         ref,

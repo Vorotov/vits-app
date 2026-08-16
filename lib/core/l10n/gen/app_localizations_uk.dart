@@ -544,8 +544,34 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
-  String weekLoadLabel(int load, int max) {
-    return '$load з $max слотів';
+  String slotsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count слотів',
+      many: '$count слотів',
+      few: '$count слотів',
+      one: '$count слота',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String substancesLimitCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count речовини',
+      many: '$count речовин',
+      few: '$count речовини',
+      one: '$count речовину',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String weekLoadLabel(int load, String max) {
+    return '$load з $max';
   }
 
   @override
@@ -628,8 +654,8 @@ class AppLocalizationsUk extends AppLocalizations {
       'Межа в 5 речовин — наше редакційне правило для зручності відстеження, а не медичний норматив. Освітній матеріал, не медична порада.';
 
   @override
-  String yearFootnote(int max) {
-    return 'Рік показує, як цикли накладаються один на одний. Червоне число в місяці означає перевищення нашої межі у $max речовин одночасно.';
+  String yearFootnote(String max) {
+    return 'Рік показує, як цикли накладаються один на одний. Червоне число в місяці означає перевищення нашої межі у $max одночасно.';
   }
 
   @override

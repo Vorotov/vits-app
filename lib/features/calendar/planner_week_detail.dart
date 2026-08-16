@@ -147,7 +147,10 @@ class PlannerWeekDetail extends ConsumerWidget {
                     Text(
                       // " · " is a separator glyph, the sanctioned literal
                       // exception — both halves are ARB copy.
-                      '${l10n.weekLoadLabel(load, editorialLimit)} · '
+                      // The slot count is PRE-FORMATTED through its own plural
+                      // key: uk declines «слот» after «з», so the sentence
+                      // stays grammatical at any editorial limit (WR-05).
+                      '${l10n.weekLoadLabel(load, l10n.slotsCount(editorialLimit))} · '
                       '${free > 0 ? l10n.weekFreeSlots(free) : l10n.weekNoFreeSlots}',
                       style: const TextStyle(
                         fontSize: 12,
