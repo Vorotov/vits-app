@@ -263,21 +263,19 @@ class _CyclesBody extends ConsumerWidget {
 /// the buckets are full Monday weeks and not the mockup's window-aligned
 /// sevens (DECIDED-3). It is deliberately NOT the selected week: the chip
 /// summarises where the user is standing, not where they are looking.
-class _CyclesSummaryChip extends ConsumerWidget {
+class _CyclesSummaryChip extends StatelessWidget {
   const _CyclesSummaryChip({required this.model});
 
   final CyclesModel model;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final today = ref.watch(todayProvider);
-    final index = model.weeks.indexWhere(
-      (w) =>
-          !w.bucket.start.isAfter(today) &&
-          !w.bucket.endInclusive.isBefore(today),
-    );
-    final load = index < 0 ? 0 : model.weeks[index].load;
+    // "This week" is resolved ONCE, in the pure model — never re-derived here
+    // beside the identical search the week-detail fallback runs. Two copies of
+    // it can silently disagree, and a chip that quietly answers 0 because it
+    // could not find today is worse than one that cannot happen (WR-02).
+    final load = model.weeks[model.currentWeekIndex].load;
 
     // AT or above the limit, deliberately — a week sitting exactly at the
     // limit is worth a nudge because the user can still move a start date.

@@ -110,11 +110,10 @@ final resolvedWeekIndexProvider = Provider.autoDispose<int>((ref) {
   final selected = ref.watch(selectedWeekProvider);
   if (selected != null) return selected.clamp(0, model.weeks.length - 1);
 
-  final today = ref.watch(todayProvider);
-  final index = model.weeks.indexWhere(
-    (w) => !w.bucket.start.isAfter(today) && !w.bucket.endInclusive.isBefore(today),
-  );
-  return index < 0 ? 0 : index;
+  // "Follow today" reads the model's own answer rather than re-running the
+  // search the summary chip also used to run: one derivation, one truth
+  // (WR-02).
+  return model.currentWeekIndex;
 });
 
 /// The month card the user picked, or `null` to follow today's month.

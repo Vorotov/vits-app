@@ -203,6 +203,17 @@ class CyclesModel {
   /// The load-chart buckets, one per full Monday week touching the window.
   final List<WeekLoad> weeks;
 
+  /// Index into [weeks] of the bucket CONTAINING today.
+  ///
+  /// The ONE place "this week" is resolved. The summary chip and the
+  /// week-detail's follow-today fallback both read it, so they cannot drift
+  /// apart or answer the question differently (WR-02) — the same way
+  /// [todayIndex] is the one place today's column lives.
+  ///
+  /// Always a valid index: today is inside the window by construction and the
+  /// buckets cover the whole window, so the search never fails.
+  final int currentWeekIndex;
+
   const CyclesModel({
     required this.windowStart,
     required this.windowEndExclusive,
@@ -211,6 +222,7 @@ class CyclesModel {
     required this.months,
     required this.rows,
     required this.weeks,
+    required this.currentWeekIndex,
   });
 }
 
@@ -271,14 +283,22 @@ CyclesModel buildCyclesModel(
     ));
   }
 
+  final t = dateOnly(today);
+  // Today is inside the window, and the buckets cover the window, so this
+  // search always finds a bucket. The `< 0` guard is the ONE place that
+  // invariant is written down; every reader takes the index as given (WR-02).
+  final currentWeek =
+      buckets.indexWhere((b) => !b.start.isAfter(t) && !b.endInclusive.isBefore(t));
+
   return CyclesModel(
     windowStart: window.start,
     windowEndExclusive: window.endExclusive,
     span: window.span,
-    todayIndex: dateOnly(today).difference(window.start).inDays,
+    todayIndex: t.difference(window.start).inDays,
     months: List.unmodifiable(months),
     rows: List.unmodifiable(rows),
     weeks: weekLoads(loadRows, buckets),
+    currentWeekIndex: currentWeek < 0 ? 0 : currentWeek,
   );
 }
 

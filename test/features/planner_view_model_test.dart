@@ -232,6 +232,46 @@ void main() {
       expect(buildCyclesModel(const [], today: today).todayIndex, 12,
           reason: '13 August is the 13th day, index 12');
     });
+
+    test('currentWeekIndex names the bucket CONTAINING today, in the model '
+        'and nowhere else (WR-02)', () {
+      final model = buildCyclesModel(const [], today: today);
+      final bucket = model.weeks[model.currentWeekIndex].bucket;
+
+      expect(bucket.start.isAfter(today), isFalse);
+      expect(bucket.endInclusive.isBefore(today), isFalse);
+      // 13 August 2026 is a Thursday; its Monday is 10 August, which is the
+      // third full Monday week of a window whose buckets open on 27 July.
+      expect(bucket.start, DateTime.utc(2026, 8, 10));
+      expect(model.currentWeekIndex, 2);
+    });
+
+    test('currentWeekIndex resolves in the bucket that spills BEFORE the '
+        'window, which is where the summary chip reads its number (WR-02, '
+        'CR-01)', () {
+      // 2 August 2026 is a Sunday: today falls in the first calendar week of
+      // the month, which starts six days before the window. This is the only
+      // half of CR-01 the summary chip itself can hit.
+      final model = buildCyclesModel(
+        [
+          StackEntry(
+            supplement: supp('s1', 'Магній'),
+            regimen: course(
+              start: DateTime.utc(2026, 7, 27),
+              end: DateTime.utc(2026, 7, 31),
+            ),
+          ),
+        ],
+        today: DateTime.utc(2026, 8, 2),
+      );
+
+      expect(model.currentWeekIndex, 0);
+      expect(model.weeks[model.currentWeekIndex].bucket.start,
+          DateTime.utc(2026, 7, 27));
+      expect(model.weeks[model.currentWeekIndex].load, 1,
+          reason: 'the chip says "Цього тижня одночасно N речовин" about the '
+              'calendar week it is standing in — all seven days of it');
+    });
   });
 
   group('weekBuckets — full Monday weeks (DECIDED-3)', () {

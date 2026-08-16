@@ -171,6 +171,24 @@ void main() {
         reason: 'not one row was added, removed or replaced');
   });
 
+  test('following today resolves to the model\'s OWN currentWeekIndex — one '
+      'derivation, not two searches (WR-02)', () async {
+    await seed();
+
+    final model = await resolve(cyclesModelProvider);
+    final sub = container.listen(resolvedWeekIndexProvider, (_, _) {});
+    addTearDown(sub.close);
+
+    expect(container.read(resolvedWeekIndexProvider), model.currentWeekIndex,
+        reason: 'the week detail follows today by reading the model, and the '
+            'summary chip reads the same field — two copies of the same '
+            'search can silently disagree, and one of them used to fall back '
+            'to a load of 0 rather than to a real bucket');
+    final bucket = model.weeks[model.currentWeekIndex].bucket;
+    expect(bucket.start.isAfter(today), isFalse);
+    expect(bucket.endInclusive.isBefore(today), isFalse);
+  });
+
   test('an entry with no regimen never reaches the model', () async {
     await container.read(supplementRepoProvider).upsert(magnesium);
 
