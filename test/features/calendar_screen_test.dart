@@ -32,6 +32,7 @@ import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/domain/repositories.dart'
     show DayDose, IntakeRepository;
 import 'package:boostque/core/l10n/l10n.dart';
+import 'package:boostque/core/l10n/locale_controller.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
@@ -49,6 +50,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../support/locale_matrix.dart';
 
 void main() {
   const supplement = Supplement(
@@ -95,16 +98,20 @@ void main() {
   /// axis CR-01 and WR-04 both broke on, and the one the suite had no coverage
   /// of at all (IN-08). [home] lets a test pump one calendar widget in
   /// isolation instead of the whole screen.
+  /// [locale] is a language CODE, not a `Locale` literal — the harness
+  /// signature every suite in this repository shares since plan 05-04
+  /// (`planner_screen_test.dart:142-163`), so the bilingual matrix at the
+  /// bottom of this file is a loop rather than sixteen copies.
   Widget app(
     ProviderContainer container, {
-    Locale locale = const Locale('uk'),
+    String locale = 'uk',
     TextScaler textScaler = TextScaler.noScaling,
     Widget home = const CalendarScreen(),
   }) {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
-        locale: locale,
+        locale: Locale(locale),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: bqTheme(),
@@ -324,8 +331,8 @@ void main() {
   // `context.l10n.ringSemantics` resolves against real uk delegates. No timer
   // is alive here, so no tearDownTree is required.
   group('DayProgressRing', () {
-    Widget ringApp(Widget child) => MaterialApp(
-          locale: const Locale('uk'),
+    Widget ringApp(Widget child, {String locale = 'uk'}) => MaterialApp(
+          locale: Locale(locale),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           theme: bqTheme(),
@@ -598,7 +605,7 @@ void main() {
         await container.read(supplementRepoProvider).upsert(supplement);
         await container.read(regimenRepoProvider).upsert(alwaysActive());
 
-        await tester.pumpWidget(app(container, locale: Locale(locale)));
+        await tester.pumpWidget(app(container, locale: locale));
         await pumpUntil(
           tester,
           () => find.byType(DayProgressRing).evaluate().isNotEmpty,
@@ -1935,7 +1942,7 @@ void main() {
       await container.read(supplementRepoProvider).upsert(supp('Magnesium'));
       await container.read(regimenRepoProvider).upsert(everyDay());
 
-      await tester.pumpWidget(app(container, locale: const Locale('en')));
+      await tester.pumpWidget(app(container, locale: 'en'));
       await pumpUntil(
         tester,
         () => cell(monday).evaluate().isNotEmpty,
@@ -2792,7 +2799,7 @@ void main() {
         await container.read(supplementRepoProvider).upsert(supp('Магній'));
         await container.read(regimenRepoProvider).upsert(reg());
 
-        await tester.pumpWidget(app(container, locale: Locale(locale)));
+        await tester.pumpWidget(app(container, locale: locale));
         await pumpUntil(
           tester,
           () => find.text('Магній').evaluate().isNotEmpty,
@@ -2936,6 +2943,368 @@ void main() {
           reason: 'design fidelity at the default scale is unchanged');
       expect(stripHeightFor(const TextScaler.linear(2.0)) > 82, isTrue,
           reason: 'the extent follows the text it has to hold');
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // The bilingual × text-scale matrix (plan 05-04, L10N-01 criterion 1,
+  // V-4 / E-14 / T-05-08 / T-05-09), then the criterion-3 propagation proofs:
+  // an OPEN modal sheet (V-6, E-10) and a LIVE error surface (E-16).
+  //
+  // This file carries 62 tests and had exactly ONE English render before this
+  // plan. Both clocks stay pinned in every case below: the day header's date
+  // strings are clock-derived, so an unpinned clock would make the English
+  // assertions depend on the day the suite happens to run on.
+  //
+  // Every `intl`-produced string asserted here is asserted INSIDE the pumped
+  // widget harness, where the global delegates have loaded that locale's date
+  // symbols. A PURE `intl` assertion added to this file would need explicit
+  // symbol initialisation or it silently asserts against English (PF-8).
+  // ---------------------------------------------------------------------
+
+  group('bilingual render matrix (L10N-01)', () {
+    const ukLocale = Locale('uk');
+    const enLocale = Locale('en');
+    final pinnedToday = DateTime.utc(2026, 8, 13);
+    final pastDay = DateTime.utc(2026, 8, 10);
+    final farPast = DateTime.utc(2026, 7, 20);
+
+    /// Seed for the matrix: a LATIN name and a Latin dose label, on purpose.
+    ///
+    /// A supplement's name and its slot's dose label are USER DATA — they
+    /// never re-localize (E-12) — so Cyrillic seeds would trip the English
+    /// Cyrillic sweep on strings that are CORRECT, and the only ways out
+    /// would be to weaken the sweep or to allowlist user data wholesale.
+    /// Neither is acceptable (A8): the chrome is what gets swept.
+    const neutralSupplement = Supplement(
+      id: 's1',
+      name: 'Magnesium 400',
+      doseText: '',
+      colorValue: 0xFF6B6FA8,
+      note: '',
+    );
+
+    Regimen everyDay() => Regimen(
+          id: 'r1',
+          supplementId: 's1',
+          kind: RegimenKind.cyclic,
+          startDate: DateTime.utc(2020, 1, 1),
+          endDate: null,
+          onDays: 1,
+          offDays: 0,
+          paused: false,
+          slots: const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: '400 mg'),
+          ],
+        );
+
+    /// The same screen with the language coming from
+    /// [localeControllerProvider] instead of from a pinned `locale:` — the
+    /// only harness that can change the language of an already-mounted tree,
+    /// which is what E-10 and E-16 both need.
+    Widget localeDrivenApp(ProviderContainer container) {
+      return UncontrolledProviderScope(
+        container: container,
+        child: Consumer(
+          builder: (context, ref, _) => MaterialApp(
+            locale: ref.watch(localeControllerProvider),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: bqTheme(),
+            home: const CalendarScreen(),
+          ),
+        ),
+      );
+    }
+
+    for (final locale in const ['uk', 'en']) {
+      final l10n = lookupAppLocalizations(Locale(locale));
+
+      for (final scale in const <double>[1.0, 1.6]) {
+        final scaler = TextScaler.linear(scale);
+
+        testWidgets(
+            '$locale: a POPULATED day renders in the active language with no '
+            'layout exception at textScaler $scale', (tester) async {
+          usePhoneSurface(tester);
+          final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+          await container.read(supplementRepoProvider).upsert(neutralSupplement);
+          await container.read(regimenRepoProvider).upsert(everyDay());
+
+          await tester.pumpWidget(
+            app(container, locale: locale, textScaler: scaler),
+          );
+          await pumpUntil(
+            tester,
+            () => find.text('Magnesium 400').evaluate().isNotEmpty,
+            'the dose row in $locale at textScaler $scale',
+          );
+
+          // In the RIGHT language, not merely rendered: both of these differ
+          // between uk and en, so a day view that fell back to the other
+          // language fails here rather than passing on a bare render.
+          expect(find.text(l10n.calendarTitleToday), findsWidgets);
+          expect(find.text(l10n.blockMorning), findsOneWidget,
+              reason: 'the 08:00 slot lands in the morning block, whose '
+                  'header is ARB copy');
+
+          if (locale == 'en') {
+            expectNoCyrillicWhileEn(tester);
+          }
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await tearDownTree(tester, container);
+        });
+
+        testWidgets(
+            '$locale: an EMPTY day renders in the active language with no '
+            'layout exception at textScaler $scale', (tester) async {
+          usePhoneSurface(tester);
+          // Nothing seeded at all: the day resolves empty AND the stack is
+          // empty, which is the empty surface's no-stack variant.
+          final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+
+          await tester.pumpWidget(
+            app(container, locale: locale, textScaler: scaler),
+          );
+          // Wait for the NO-STACK body specifically: until the stack stream
+          // resolves the screen deliberately assumes a non-empty stack, so
+          // waiting on the title alone would assert against the neutral copy
+          // one frame too early.
+          await pumpUntil(
+            tester,
+            () => find.text(l10n.emptyDayBodyNoStack).evaluate().isNotEmpty,
+            'the empty-day surface in $locale at textScaler $scale',
+          );
+
+          expect(find.text(l10n.emptyDayTitle), findsOneWidget);
+          expect(find.text(l10n.emptyDayBodyNoStack), findsOneWidget,
+              reason: 'with nothing in the stack the body points at the Stack '
+                  'tab — the longest empty-state string on this screen');
+
+          if (locale == 'en') {
+            expectNoCyrillicWhileEn(tester);
+          }
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await tearDownTree(tester, container);
+        });
+
+        testWidgets(
+            '$locale: a PAST day with unmarked doses renders in the active '
+            'language with no layout exception at textScaler $scale',
+            (tester) async {
+          usePhoneSurface(tester);
+          final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+          await container.read(supplementRepoProvider).upsert(neutralSupplement);
+          await container.read(regimenRepoProvider).upsert(everyDay());
+
+          await tester.pumpWidget(
+            app(container, locale: locale, textScaler: scaler),
+          );
+          await pumpUntil(
+            tester,
+            () => find.text('Magnesium 400').evaluate().isNotEmpty,
+            'the dose row on today',
+          );
+
+          container.read(selectedDayProvider.notifier).select(pastDay);
+          await pumpUntil(
+            tester,
+            () => find.text(l10n.notMarkedLabel).evaluate().isNotEmpty,
+            'the missed-dose chip in $locale at textScaler $scale',
+          );
+
+          // The header on a non-today day is an intl-formatted weekday plus
+          // month name — asserted here, inside the harness, where the global
+          // delegates have loaded the locale's date symbols (PF-8).
+          expect(find.text(l10n.notMarkedLabel), findsOneWidget);
+          expect(find.text(l10n.backToToday), findsWidgets,
+              reason: 'browsing away from today reveals the return control');
+
+          if (locale == 'en') {
+            expectNoCyrillicWhileEn(tester);
+          }
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await tearDownTree(tester, container);
+        });
+
+        testWidgets(
+            '$locale: the DOSE ACTION SHEET renders in the active language '
+            'with no layout exception at textScaler $scale', (tester) async {
+          usePhoneSurface(tester);
+          final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+          await container.read(supplementRepoProvider).upsert(neutralSupplement);
+          await container.read(regimenRepoProvider).upsert(everyDay());
+
+          await tester.pumpWidget(
+            app(container, locale: locale, textScaler: scaler),
+          );
+          final row = find.text('Magnesium 400');
+          await pumpUntil(
+            tester,
+            () => row.evaluate().isNotEmpty,
+            'the dose row in $locale at textScaler $scale',
+          );
+
+          await tester.longPress(row);
+          await pumpUntil(
+            tester,
+            () => find.text(l10n.markTaken).evaluate().isNotEmpty,
+            'the dose action sheet in $locale at textScaler $scale',
+          );
+
+          expect(find.text(l10n.markTaken), findsOneWidget);
+          expect(find.text(l10n.markSkipped), findsOneWidget);
+          expect(find.byType(BottomSheet), findsOneWidget);
+
+          if (locale == 'en') {
+            expectNoCyrillicWhileEn(tester);
+          }
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await tearDownTree(tester, container);
+        });
+      }
+    }
+
+    // -----------------------------------------------------------------
+    // Propagation: criterion-3 work, not criterion-1 work.
+    // -----------------------------------------------------------------
+
+    testWidgets(
+        'a locale change re-localizes an OPEN dose action sheet IN PLACE, '
+        'within a single pump (V-6, E-10, Interaction Contract 8)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final uk = lookupAppLocalizations(ukLocale);
+      final en = lookupAppLocalizations(enLocale);
+
+      SharedPreferences.setMockInitialValues({'app_locale': 'uk'});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(overrides: [
+        dbProvider.overrideWith((ref) {
+          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          ref.onDispose(database.close);
+          db = database;
+          return database;
+        }),
+        todayProvider.overrideWith(() => _FixedToday(pinnedToday)),
+        nowMinutesProvider.overrideWith((ref) => Stream.value(400)),
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ]);
+      await container.read(supplementRepoProvider).upsert(neutralSupplement);
+      await container.read(regimenRepoProvider).upsert(everyDay());
+
+      await tester.pumpWidget(localeDrivenApp(container));
+      final row = find.text('Magnesium 400');
+      await pumpUntil(tester, () => row.evaluate().isNotEmpty, 'the dose row');
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(uk.markTaken).evaluate().isNotEmpty,
+        'the dose action sheet',
+      );
+
+      container.read(localeControllerProvider.notifier).setLocale(enLocale);
+      // EXACTLY one frame. Needing more would itself prove the switch is not
+      // instant (PF-3), and `pumpAndSettle` against the live clocks in this
+      // file would either hang or pass for the wrong reason (PF-7).
+      await tester.pump();
+
+      expect(find.text(en.markTaken), findsOneWidget,
+          reason: 'a sheet route sits in the same Navigator overlay, BELOW '
+              "MaterialApp's Localizations — if it lagged, the user would be "
+              'reading two languages at once mid-gesture');
+      expect(find.text(uk.markTaken), findsNothing,
+          reason: 'the old-language string must be GONE, not merely joined by '
+              'its counterpart');
+      expect(find.text(en.markSkipped), findsOneWidget,
+          reason: 'the whole sheet followed, not just its first action');
+      expect(find.byType(BottomSheet), findsOneWidget,
+          reason: 'IN PLACE: the sheet is still open — it re-localized rather '
+              'than being dismissed and rebuilt, so the gesture the user was '
+              'mid-way through is not lost');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets(
+        'a locale change while the browsed day is FAILING keeps the error '
+        'surface up and re-renders it in the new language (E-16)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final uk = lookupAppLocalizations(ukLocale);
+      final en = lookupAppLocalizations(enLocale);
+
+      SharedPreferences.setMockInitialValues({'app_locale': 'uk'});
+      final prefs = await SharedPreferences.getInstance();
+      // NOTE: no `retry:` override anywhere in this container. The ABSENCE of
+      // it is the point: Riverpod's default backoff is LIVE across the flip,
+      // which is exactly the state plan 05-02's rendering rule
+      // (skipLoadingOnReload) exists for. This is the single case where the
+      // two amendments have to compose — an error surface that wins over
+      // loading, AND an error surface localized like any other screen state.
+      final container = ProviderContainer(overrides: [
+        dbProvider.overrideWith((ref) {
+          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          ref.onDispose(database.close);
+          db = database;
+          return database;
+        }),
+        todayProvider.overrideWith(() => _FixedToday(pinnedToday)),
+        nowMinutesProvider.overrideWith((ref) => Stream.value(600)),
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        intakeRepoProvider.overrideWith((ref) => _OneDayFailingIntakeRepo(
+              DriftIntakeRepository(
+                ref.watch(dbProvider),
+                regimens: ref.watch(regimenRepoProvider),
+              ),
+              failingDay: farPast,
+            )),
+      ]);
+      await container.read(supplementRepoProvider).upsert(neutralSupplement);
+      await container.read(regimenRepoProvider).upsert(everyDay());
+
+      await tester.pumpWidget(localeDrivenApp(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Magnesium 400').evaluate().isNotEmpty,
+        'the dose row on today',
+      );
+
+      container.read(selectedDayProvider.notifier).select(farPast);
+      await pumpUntil(
+        tester,
+        () => container.read(dayDosesProvider(farPast)).hasError,
+        'the browsed day stream to fail',
+      );
+      await tester.pump();
+      expect(find.text(uk.dayLoadError), findsOneWidget,
+          reason: 'the error surface must be up BEFORE the flip, or this test '
+              'would prove nothing about localizing one');
+
+      container.read(localeControllerProvider.notifier).setLocale(enLocale);
+      await tester.pump(); // exactly one frame
+
+      expect(find.text(en.dayLoadError), findsOneWidget,
+          reason: 'an error surface is a screen state like any other: a user '
+              'who switches language while their database is failing must '
+              'not be left reading the previous language for the whole of '
+              "Riverpod's ~38.2s backoff");
+      expect(find.text(uk.dayLoadError), findsNothing);
+      expect(find.text(en.retry), findsOneWidget,
+          reason: 'the recovery control survived the flip — an error surface '
+              'without it is a dead end');
+      expect(find.textContaining('Exception'), findsNothing,
+          reason: 'raw exception text never enters the tree, in either '
+              'language (T-05-03)');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
     });
   });
 }
