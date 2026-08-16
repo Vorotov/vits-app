@@ -207,14 +207,55 @@ void main() {
   });
 
   test(
-      'the allowlist equals the generated supportedLocales language codes — '
-      'derived, never enumerated (L10N-04, criterion 4)', () {
+      'the allowlist equals the generated supportedLocales tags — derived, '
+      'never enumerated (L10N-04, criterion 4)', () {
     expect(
-      LocaleController.supportedLanguageCodes,
-      AppLocalizations.supportedLocales.map((l) => l.languageCode).toSet(),
+      LocaleController.supportedLocaleTags,
+      AppLocalizations.supportedLocales.map((l) => l.toLanguageTag()).toSet(),
       reason: 'the file that owns sanitization must follow the ARB files: a '
           'hand-kept set would reject a newly added language, so "one new ARB '
           'file, no code changes" would silently stop being true',
+    );
+    expect(
+      LocaleController.supportedLocaleTags,
+      hasLength(AppLocalizations.supportedLocales.length),
+      reason: 'ONE entry per shipped locale (WR-05): keyed on languageCode '
+          'instead, app_pt.arb and app_pt_BR.arb would collapse into a single '
+          '"pt" and the second language would be unreachable',
+    );
+  });
+
+  test(
+      'a region-qualified choice is persisted whole, not downgraded to its '
+      'language subtag (WR-05)', () async {
+    final container = await makeContainer({});
+
+    await container
+        .read(localeControllerProvider.notifier)
+        .setLocale(const Locale('pt', 'BR'));
+
+    final prefs = await SharedPreferences.getInstance();
+    expect(
+      prefs.getString('app_locale'),
+      'pt-BR',
+      reason: 'persisting the subtag alone would restore European Portuguese '
+          'for a user who picked the Brazilian one — a silent downgrade of a '
+          'choice they made explicitly',
+    );
+  });
+
+  test('the state is the GENERATED locale instance, not a rebuilt one', () async {
+    final container = await makeContainer({'app_locale': 'uk'});
+
+    expect(
+      container.read(localeControllerProvider),
+      same(
+        AppLocalizations.supportedLocales
+            .firstWhere((l) => l.languageCode == 'uk'),
+      ),
+      reason: 'the picker checks a row by comparing whole locales against '
+          'supportedLocales, so the state has to BE one of them — rebuilding '
+          'a Locale from a subtag is how a region qualifier gets lost',
     );
   });
 }

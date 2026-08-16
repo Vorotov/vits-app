@@ -64,9 +64,12 @@ class LanguagePicker extends ConsumerWidget {
             label: locale == null
                 ? l10n.languageSystem
                 : lookupAppLocalizations(locale).languageName,
-            // Compared by languageCode so a sanitized-to-null stored value
-            // checks the System row and exactly one row is ever checked.
-            selected: locale?.languageCode == current?.languageCode,
+            // Compared as WHOLE locales, never by languageCode: two
+            // region-qualified rows of one language would both match a
+            // subtag comparison, and "exactly one row is checked" is this
+            // widget's core contract (WR-05). A sanitized-to-null stored
+            // value leaves `current` null, which checks the System row.
+            selected: locale == current,
             // Idempotent on the already-selected row (Interaction Contract 2):
             // not a toggle-off, no failure state.
             //

@@ -17,13 +17,24 @@ import 'package:boostque/core/providers.dart';
 class LocaleController extends Notifier<Locale?> {
   static const _prefsKey = 'app_locale';
 
-  /// Language codes the app ships translations for — DERIVED from the ARB
-  /// files via the generated list, never enumerated here. Adding
-  /// `app_pl.arb` regenerates `supportedLocales` and this set follows with no
-  /// edit in this file (L10N-04, criterion 4).
-  static final Set<String> supportedLanguageCodes = {
-    for (final locale in AppLocalizations.supportedLocales) locale.languageCode,
+  /// The shipped locales, indexed by the BCP-47 tag they are persisted as —
+  /// DERIVED from the ARB files via the generated list, never enumerated here.
+  /// Adding `app_pl.arb` regenerates `supportedLocales` and this map follows
+  /// with no edit in this file (L10N-04, criterion 4).
+  ///
+  /// Keyed on the FULL locale, never on the language subtag: the ARB file
+  /// pattern both gates accept admits region-qualified files, and collapsing
+  /// `app_pt.arb` + `app_pt_BR.arb` to `'pt'` would silently downgrade a user
+  /// who picked Brazilian Portuguese on the next launch, and check TWO rows in
+  /// a picker whose whole contract is that exactly one is checked (WR-05).
+  static final Map<String, Locale> _localesByTag = {
+    for (final locale in AppLocalizations.supportedLocales)
+      locale.toLanguageTag(): locale,
   };
+
+  /// The tags a stored override may hold — the sanitization allowlist, and
+  /// exactly what [setLocale] writes.
+  static Set<String> get supportedLocaleTags => _localesByTag.keys.toSet();
 
   @override
   Locale? build() {
@@ -41,18 +52,20 @@ class LocaleController extends Notifier<Locale?> {
     // is no override to read, which is the same state an empty store leaves —
     // follow the system.
     final stored = ref.watch(sharedPreferencesProvider)?.get(_prefsKey);
-    final code = stored is String ? stored : null;
+    final tag = stored is String ? stored : null;
     // Stored value is untrusted local input (threat T-01-07): SharedPreferences
-    // can be edited outside the app (rooted device, backup edit). Only
-    // supported language codes are accepted; anything else means follow
-    // system — never crash locale resolution on bad storage. Because the
-    // allowlist follows the ARB files, a code whose ARB was removed in a later
-    // build degrades to "follow system" rather than reaching the generated
+    // can be edited outside the app (rooted device, backup edit). Only tags
+    // that name a SHIPPED locale are accepted; anything else means follow
+    // system — never crash locale resolution on bad storage. Because the map
+    // follows the ARB files, a tag whose ARB was removed in a later build
+    // degrades to "follow system" rather than reaching the generated
     // `lookupAppLocalizations` throw, which would be an unrecoverable launch
     // crash (T-05-01, T-05-02). Do not weaken this to a passthrough.
-    return (code != null && supportedLanguageCodes.contains(code))
-        ? Locale(code)
-        : null;
+    //
+    // The value returned is the generated locale ITSELF, so the state can
+    // never be a locale the app does not ship, and comparisons against
+    // `supportedLocales` (the picker's checked row) hold by identity.
+    return tag == null ? null : _localesByTag[tag];
   }
 
   /// Sets the manual override. `null` clears the override (follow system).
@@ -80,7 +93,9 @@ class LocaleController extends Notifier<Locale?> {
     try {
       final persisted = locale == null
           ? await prefs.remove(_prefsKey)
-          : await prefs.setString(_prefsKey, locale.languageCode);
+          // The FULL tag, never `languageCode`: persisting the subtag alone
+          // would restore `pt` for a user who chose `pt-BR` (WR-05).
+          : await prefs.setString(_prefsKey, locale.toLanguageTag());
       if (!persisted) {
         throw StateError('the language store rejected the write');
       }

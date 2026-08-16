@@ -159,8 +159,13 @@ void main() {
         'LocaleController derives its sanitization allowlist from the ARB '
         'files; it does not enumerate them (T-05-01)', () {
       expect(
-        LocaleController.supportedLanguageCodes,
-        arbCodes.toSet(),
+        LocaleController.supportedLocaleTags,
+        // `app_pt_BR.arb` yields the ARB code `pt_BR` and the BCP-47 tag
+        // `pt-BR` — the same locale spelled with the two separators the two
+        // representations use. The allowlist keys on the TAG, so a
+        // region-qualified language is one entry here, not a collapsed
+        // language subtag (WR-05).
+        arbCodes.map((code) => code.replaceAll('_', '-')).toSet(),
         reason: 'a hand-kept set in the controller would reject a newly added '
             'language: the picker could persist it and the next launch would '
             'sanitize it back to follow-system, so "one new ARB file, no code '
@@ -317,7 +322,7 @@ void main() {
 
     test("it is absent from the controller's derived allowlist", () {
       expect(
-        LocaleController.supportedLanguageCodes,
+        LocaleController.supportedLocaleTags,
         isNot(contains(syntheticCode)),
         reason: 'the allowlist is the sanitization boundary for untrusted '
             'stored input; a code in it with no ARB behind it would reach '
