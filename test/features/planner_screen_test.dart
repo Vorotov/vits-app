@@ -25,6 +25,7 @@ import 'package:boostque/core/widgets/bq_segmented.dart';
 import 'package:boostque/features/calendar/planner_gantt.dart';
 import 'package:boostque/features/calendar/planner_providers.dart';
 import 'package:boostque/features/calendar/planner_screen.dart';
+import 'package:boostque/features/calendar/planner_year_grid.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -111,7 +112,15 @@ void main() {
   /// path from the Calendar header is proven once, by the tests above, and
   /// every shell assertion below is about the planner itself. It also keeps
   /// the Today page — and its bounded materialization — out of these tests.
-  Widget plannerApp(ProviderContainer container, {String locale = 'uk'}) {
+  ///
+  /// [textScaler] pins the accessibility text scale for the whole subtree —
+  /// the year grid's computed extent is only meaningful against a scale it
+  /// did not choose (PF-7).
+  Widget plannerApp(
+    ProviderContainer container, {
+    String locale = 'uk',
+    TextScaler? textScaler,
+  }) {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
@@ -119,6 +128,12 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: bqTheme(),
+        builder: (context, child) => textScaler == null
+            ? child!
+            : MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+                child: child!,
+              ),
         home: const PlannerScreen(),
       ),
     );
@@ -414,8 +429,11 @@ void main() {
     WidgetTester tester,
     ProviderContainer container, {
     String locale = 'uk',
+    TextScaler? textScaler,
   }) async {
-    await tester.pumpWidget(plannerApp(container, locale: locale));
+    await tester.pumpWidget(
+      plannerApp(container, locale: locale, textScaler: textScaler),
+    );
     // The Цикли body is now four cards deep, so anything below the chart
     // lives outside the viewport until the body is scrolled.
     await pumpUntil(
@@ -512,6 +530,9 @@ void main() {
 
       await tester.tap(find.text('Рік'));
       await tester.pump();
+      // Рік is five elements deep too — chip, grid, legend, detail, footnote —
+      // so its closing line also sits below the fold.
+      await scrollBody(tester, 500);
 
       expect(disclaimer, findsOneWidget, reason: 'Рік closes with it too');
       expect(
@@ -1365,6 +1386,737 @@ void main() {
       }
     });
   });
+
+  // ---------------------------------------------------------------------
+  // The year grid (plan 04-04 task 1, UI-SPEC S6b item 2, P-10, P-11,
+  // DECIDED-5, DECIDED-9, Interaction Contracts 4 and 11).
+  // ---------------------------------------------------------------------
+
+  /// Seeds one course-regimen supplement per `(id, start, endInclusive)`.
+  ///
+  /// Ids are zero-padded by every caller on purpose: the stack order is
+  /// `createdAt asc, id asc`, and two inserts landing in the same millisecond
+  /// would otherwise fall back to a STRING sort where 'y10' sorts before 'y2'.
+  Future<void> seedCourses(
+    ProviderContainer container,
+    List<(String, DateTime, DateTime)> courses,
+  ) async {
+    final supplements = container.read(supplementRepoProvider);
+    final regimens = container.read(regimenRepoProvider);
+    for (var i = 0; i < courses.length; i++) {
+      final (id, start, end) = courses[i];
+      await supplements.upsert(
+        Supplement(
+          id: id,
+          name: 'Добавка $id',
+          doseText: '1 капс.',
+          // A distinct colour per entry, so a bar painted from the WRONG
+          // supplement's colour is a visible failure rather than a coincidence.
+          colorValue: 0xFF6B6FA8 + i,
+          note: '',
+        ),
+      );
+      await regimens.upsert(
+        Regimen(
+          id: 'r-$id',
+          supplementId: id,
+          kind: RegimenKind.course,
+          startDate: start,
+          endDate: end,
+          onDays: 0,
+          offDays: 0,
+          paused: false,
+          slots: const [
+            DoseSlot(id: 'sl', minutesFromMidnight: 480, doseLabel: '1 капс.'),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> openYear(
+    WidgetTester tester,
+    ProviderContainer container, {
+    String locale = 'uk',
+    TextScaler? textScaler,
+  }) async {
+    await openPlanner(tester, container, locale: locale, textScaler: textScaler);
+    await tester.tap(find.text(locale == 'uk' ? 'Рік' : 'Year'));
+    await tester.pump();
+    await pumpUntil(
+      tester,
+      () => byKeyPrefix('month-card-').evaluate().isNotEmpty,
+      'the year grid',
+    );
+  }
+
+  Material cardAt(WidgetTester tester, int index) =>
+      tester.widget<Material>(find.byKey(ValueKey<String>('month-card-$index')));
+
+  group('year grid', () {
+    /// Two days of March for `y00`, the whole of June for `y01`..`y06`.
+    ///
+    /// June therefore carries a load of SIX — one above the editorial limit,
+    /// which is exactly the boundary the month-count colour turns on — while
+    /// March carries one.
+    Future<void> seedYear(ProviderContainer container) => seedCourses(
+          container,
+          [
+            ('y00', DateTime.utc(2026, 3, 1), DateTime.utc(2026, 3, 2)),
+            for (var i = 1; i <= 6; i++)
+              (
+                'y0$i',
+                DateTime.utc(2026, 6, 1),
+                DateTime.utc(2026, 6, 30),
+              ),
+          ],
+        );
+
+    test('monthCardExtentFor grows with the text scale and with the stack, '
+        'and is capped by neither (DECIDED-5, PF-7)', () {
+      const plain = TextScaler.noScaling;
+      const doubled = TextScaler.linear(2.0);
+
+      expect(monthCardExtentFor(doubled, 3),
+          greaterThan(monthCardExtentFor(plain, 3)),
+          reason: 'the text-bearing header line follows the scaler');
+      expect(monthCardExtentFor(plain, 12),
+          greaterThan(monthCardExtentFor(plain, 3)));
+      expect(
+        monthCardExtentFor(plain, 12) - monthCardExtentFor(plain, 3),
+        // Nine more bars: nine 4px tracks and nine 3px gaps.
+        9 * 4 + 9 * 3,
+        reason: 'the bar extent is exactly N×4 + (N−1)×3 — no cap, no rounding',
+      );
+      expect(monthCardExtentFor(plain, 0), monthCardExtentFor(plain, 0),
+          reason: 'a zero-row extent is well defined, never negative');
+      expect(monthCardExtentFor(plain, 0), greaterThan(0));
+    });
+
+    testWidgets('renders twelve month cards for today\'s year, labelled with '
+        'the uppercased uk standalone abbreviations (DECIDED-9, PF-4)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedYear(container);
+      await openYear(tester, container);
+
+      expect(byKeyPrefix('month-card-'), findsNWidgets(12));
+
+      final abbr = DateFormat('LLL', 'uk');
+      for (var m = 0; m < 12; m++) {
+        expect(
+          tester
+              .widget<Text>(find.byKey(ValueKey<String>('month-$m-label')))
+              .data,
+          abbr.format(DateTime.utc(2026, m + 1, 1)).toUpperCase(),
+          reason: 'standalone (nominative) abbreviations, uppercased in the '
+              'active locale — never a hardcoded month table (PF-4, M6)',
+        );
+      }
+
+      // One track per gantt-eligible supplement on EVERY card, whether or not
+      // that supplement covers that month — otherwise cards in one row would
+      // not be the same height.
+      for (final m in const [0, 2, 5, 11]) {
+        expect(byKeyPrefix('month-$m-track-'), findsNWidgets(7));
+      }
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('two days of coverage still paint a visible bar and a full '
+        'month paints a full-width one (P-10, the 22% floor)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedYear(container);
+      await openYear(tester, container);
+
+      final track =
+          tester.getSize(find.byKey(const ValueKey('month-2-track-0'))).width;
+      final floored =
+          tester.getSize(find.byKey(const ValueKey('month-2-bar-0'))).width;
+      final full =
+          tester.getSize(find.byKey(const ValueKey('month-5-bar-1'))).width;
+
+      expect(floored, closeTo(track * 0.22, 0.5),
+          reason: 'the mockup\'s max(round(frac × 100), 22)% floor ships');
+      expect(floored, greaterThan(track * 2 / 31),
+          reason: '2/31 of a track is a hairline — the floor is the whole '
+              'point of the rule');
+      expect(full, closeTo(track, 0.5),
+          reason: 'frac ≥ 0.85 reads as a full month');
+      expect(full, greaterThan(floored));
+      expect(
+        tester.getSize(find.byKey(const ValueKey('month-2-bar-1'))).width,
+        0,
+        reason: 'no coverage paints no bar — but the TRACK still renders',
+      );
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a month above the editorial limit counts in risk; every '
+        'other month counts faint (UI-SPEC banding, strictly above)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedYear(container);
+      await openYear(tester, container);
+
+      Color? countColor(int m) => tester
+          .widget<Text>(find.byKey(ValueKey<String>('month-$m-count')))
+          .style
+          ?.color;
+
+      expect(countColor(5), BqColors.risk,
+          reason: 'June carries six concurrent cycles — one above the limit, '
+              'which is what the year footnote explains');
+      expect(countColor(2), BqColors.textFaint,
+          reason: 'March carries one');
+      expect(countColor(0), BqColors.textFaint,
+          reason: 'an empty month is faint, never red');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('exactly one card is selected, and tapping another moves the '
+        'selection — changing only the fill and the border width '
+        '(Interaction Contract 4)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedYear(container);
+      await openYear(tester, container);
+
+      List<int> selectedIndices() => [
+            for (var m = 0; m < 12; m++)
+              if (cardAt(tester, m).color == BqColors.monthSelectedBg) m,
+          ];
+
+      // Follows today by default: the pinned clock is 13 August 2026.
+      expect(selectedIndices(), const [7]);
+      expect(
+        (cardAt(tester, 7).shape! as RoundedRectangleBorder).side.width,
+        1.6,
+      );
+      expect(
+        (cardAt(tester, 2).shape! as RoundedRectangleBorder).side.width,
+        1.0,
+      );
+      final labelColorBefore = tester
+          .widget<Text>(find.byKey(const ValueKey('month-2-label')))
+          .style
+          ?.color;
+
+      await tester.tap(find.byKey(const ValueKey('month-card-2')));
+      await tester.pump();
+
+      expect(selectedIndices(), const [2],
+          reason: 'exactly one month card is selected at any time');
+      expect(
+        (cardAt(tester, 2).shape! as RoundedRectangleBorder).side.width,
+        1.6,
+      );
+      expect(cardAt(tester, 2).color, BqColors.monthSelectedBg);
+      expect(cardAt(tester, 7).color, BqColors.surfaceAlt);
+      expect(
+        tester
+            .widget<Text>(find.byKey(const ValueKey('month-2-label')))
+            .style
+            ?.color,
+        labelColorBefore,
+        reason: 'selection changes the fill and the border width and nothing '
+            'else — the label never restyles',
+      );
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('twelve supplements at a text scaler of 2.0 grow the cards '
+        'instead of clipping them, and drop no bar (DECIDED-5, PF-7)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedCourses(container, [
+        for (var i = 0; i < 12; i++)
+          (
+            'y${i.toString().padLeft(2, '0')}',
+            DateTime.utc(2026, 1, 1),
+            DateTime.utc(2026, 12, 31),
+          ),
+      ]);
+      await openPlanner(
+        tester,
+        container,
+        textScaler: const TextScaler.linear(2.0),
+      );
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+      // At scale 2.0 the peak chip's sentence is many lines tall — which is
+      // the "no fixed-size text container" rule working, not a defect — so
+      // the grid starts below the viewport and its cards build only once the
+      // body is scrolled.
+      await pumpUntil(
+        tester,
+        () => find.byKey(const ValueKey('year-peak-chip')).evaluate().isNotEmpty,
+        'the Рік body',
+      );
+      await scrollBody(tester, 700);
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('month-card-').evaluate().isNotEmpty,
+        'the year grid at a text scaler of 2.0',
+      );
+
+      expect(byKeyPrefix('month-card-'), findsNWidgets(12));
+      expect(byKeyPrefix('month-0-track-'), findsNWidgets(12),
+          reason: 'no bar is dropped and no card is capped (DECIDED-5)');
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'a constant card extent — or a fixed child aspect ratio — is '
+            'the CR-01/WR-04 defect class this phase exists not to repeat: '
+            'seven bottom overflows at accessibility text scales',
+      );
+
+      await tearDownTree(tester, container);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // The month detail and the year chrome (plan 04-04 task 2, UI-SPEC S6b
+  // items 1, 3, 4 and 5, P-10, DECIDED-6, DECIDED-8, M9, PF-12).
+  // ---------------------------------------------------------------------
+
+  group('month detail and year chrome', () {
+    /// August 2026 carries all three coverage states at once, and December
+    /// carries a supplement that August must NOT list.
+    Future<void> seedAugust(ProviderContainer container) => seedCourses(
+          container,
+          [
+            // The whole month, already started → приймаю.
+            ('m00', DateTime.utc(2026, 8, 1), DateTime.utc(2026, 8, 31)),
+            // Starts after the pinned 13 August clock → заплановано.
+            ('m01', DateTime.utc(2026, 8, 20), DateTime.utc(2026, 8, 31)),
+            // Ten days, already started → частина місяця.
+            ('m02', DateTime.utc(2026, 8, 1), DateTime.utc(2026, 8, 10)),
+            // No August coverage at all → no row.
+            ('m03', DateTime.utc(2026, 12, 1), DateTime.utc(2026, 12, 31)),
+          ],
+        );
+
+    Color? fillOfKey(WidgetTester tester, String key) {
+      final box = tester.widget<Container>(find.byKey(ValueKey<String>(key)));
+      return (box.decoration! as BoxDecoration).color;
+    }
+
+    /// Built lazily inside each test body: intl's locale data is only
+    /// initialized once the localizations delegates have loaded.
+    String nominative(int month) =>
+        DateFormat('LLLL', 'uk').format(DateTime.utc(2026, month, 1));
+
+    testWidgets('the detail lists only supplements with coverage, in stack '
+        'order, each with its state — inline, never a modal (UI-SPEC S6b '
+        'item 4, P-13)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedAugust(container);
+      await openYear(tester, container);
+
+      expect(find.byKey(const ValueKey('month-detail-card')), findsOneWidget);
+      expect(
+        find.text(nominative(8).toUpperCase()),
+        findsOneWidget,
+        reason: 'the standalone FULL month name, uppercased in the locale',
+      );
+      expect(find.text('3 речовини · межа 5'), findsOneWidget,
+          reason: 'a pre-formatted substancesCount inside monthMeta');
+
+      expect(byKeyPrefix('month-detail-row-'), findsNWidgets(3));
+      expect(find.text('приймаю'), findsOneWidget);
+      expect(find.text('заплановано'), findsOneWidget);
+      expect(find.text('частина місяця'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('month-detail-card')),
+          matching: find.text('Добавка m03'),
+        ),
+        findsNothing,
+        reason: 'a supplement with no coverage in the month has no row — it '
+            'still earns a legend entry, which is a different surface',
+      );
+
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.byType(Dialog), findsNothing);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a month with no coverage renders the empty-month sentence '
+        'INSIDE the same card, and the tap re-renders it in place '
+        '(Interaction Contract 4)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedAugust(container);
+      await openYear(tester, container);
+
+      // February: nothing seeded touches it.
+      await tester.tap(find.byKey(const ValueKey('month-card-1')));
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('month-detail-card')), findsOneWidget,
+          reason: 'the card never collapses to an empty box');
+      expect(
+        find.text(nominative(2).toUpperCase()),
+        findsOneWidget,
+      );
+      expect(find.text('Цього місяця жоден цикл не активний.'), findsOneWidget);
+      expect(find.text('0 речовин · межа 5'), findsOneWidget);
+      expect(byKeyPrefix('month-detail-row-'), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.byType(Dialog), findsNothing);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the peak chip names the densest month in the calm band, and '
+        'the legend names every supplement (S6b items 1 and 3)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedAugust(container);
+      await openYear(tester, container);
+
+      expect(
+        find.text('Найщільніший місяць — '
+            '${nominative(8)}'),
+        findsOneWidget,
+      );
+      expect(fillOfKey(tester, 'year-peak-chip'), BqColors.calmBg);
+
+      expect(byKeyPrefix('year-legend-entry-'), findsNWidgets(4),
+          reason: 'one two-tone swatch per gantt-eligible supplement');
+      expect(find.text('світліше = заплановано'), findsOneWidget);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a tied year reads the tie label, broken toward the month '
+        'nearest today (P-10)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedCourses(container, [
+        ('t00', DateTime.utc(2026, 3, 1), DateTime.utc(2026, 3, 31)),
+        ('t01', DateTime.utc(2026, 9, 1), DateTime.utc(2026, 9, 30)),
+      ]);
+      await openYear(tester, container);
+
+      expect(
+        find.text('Найщільніші місяці, зокрема '
+            '${nominative(9)}'),
+        findsOneWidget,
+        reason: 'March and September tie at one; September is nearer the '
+            'pinned August clock',
+      );
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the peak chip warns STRICTLY above the editorial limit — a '
+        'peak sitting exactly at it stays calm (DECIDED-6)', (tester) async {
+      usePhoneSurface(tester);
+
+      final atLimit = makeContainer();
+      await seedCourses(atLimit, [
+        for (var i = 0; i < 5; i++)
+          (
+            'p0$i',
+            DateTime.utc(2026, 6, 1),
+            DateTime.utc(2026, 6, 30),
+          ),
+      ]);
+      await openYear(tester, atLimit);
+
+      expect(find.text('5 речовин'), findsOneWidget);
+      expect(fillOfKey(tester, 'year-peak-chip'), BqColors.calmBg,
+          reason: 'a month that merely TOUCHES the limit is not flagged — the '
+              'Цикли summary chip warns at or above it instead, and that '
+              'asymmetry is deliberate (DECIDED-6)');
+      await tearDownTree(tester, atLimit);
+
+      final over = makeContainer();
+      await seedCourses(over, [
+        for (var i = 0; i < 6; i++)
+          (
+            'p0$i',
+            DateTime.utc(2026, 6, 1),
+            DateTime.utc(2026, 6, 30),
+          ),
+      ]);
+      await openYear(tester, over);
+
+      expect(find.text('6 речовин'), findsOneWidget);
+      expect(fillOfKey(tester, 'year-peak-chip'), BqColors.warnBg);
+      await tearDownTree(tester, over);
+    });
+
+    testWidgets('the year footnote renders ABOVE the disclaimer, proven by '
+        'rendered position, not by presence (DECIDED-8, M9, PLAN-04)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedAugust(container);
+      await openYear(tester, container);
+      // The Рік body is five elements deep now; its closing lines sit below
+      // the fold.
+      await scrollBody(tester, 400);
+
+      final footnote = find.text(
+        'Рік показує, як цикли накладаються один на одний. Червоне число в '
+        'місяці означає перевищення нашої межі у 5 речовин одночасно.',
+      );
+      expect(footnote, findsOneWidget);
+      expect(disclaimer, findsOneWidget);
+      expect(
+        tester.getTopLeft(footnote).dy,
+        lessThan(tester.getTopLeft(disclaimer).dy),
+        reason: 'the footnote explains the red counts; the disclaimer frames '
+            'the limit as OURS — Рік carries both, in that order, and the '
+            'footnote never replaces it',
+      );
+
+      await tearDownTree(tester, container);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // Cross-segment integration (plan 04-04 task 3, Interaction Contracts 2,
+  // 6, 7, 8 and 9, E-14, E-15, T-04-01).
+  // ---------------------------------------------------------------------
+
+  group('cross-segment integration', () {
+    /// Two supplements covering the whole of August, so a pause or a delete
+    /// moves a number the test can name.
+    Future<void> seedPair(ProviderContainer container) => seedCourses(
+          container,
+          [
+            ('q00', DateTime.utc(2026, 8, 1), DateTime.utc(2026, 8, 31)),
+            ('q01', DateTime.utc(2026, 8, 1), DateTime.utc(2026, 8, 31)),
+          ],
+        );
+
+    String? countAt(WidgetTester tester, int month) => tester
+        .widget<Text>(find.byKey(ValueKey<String>('month-$month-count')))
+        .data;
+
+    GanttRowBar rowFor(WidgetTester tester, String supplementId) =>
+        tester.widgetList<GanttRowBar>(find.byType(GanttRowBar)).firstWhere(
+              (bar) => bar.row.entry.supplement.id == supplementId,
+            );
+
+    testWidgets('a week selected on Цикли and a month selected on Рік are '
+        'independent — two round trips through the segmented control leave '
+        'both intact (Interaction Contract 2)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedBands(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('load-week-').evaluate().isNotEmpty,
+        'the load chart columns',
+      );
+      await scrollBody(tester, 300);
+      await tester.tap(find.byKey(const ValueKey('load-week-3')));
+      await tester.pump();
+      expect(container.read(resolvedWeekIndexProvider), 3);
+
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('month-card-').evaluate().isNotEmpty,
+        'the year grid',
+      );
+      await tester.tap(find.byKey(const ValueKey('month-card-2')));
+      await tester.pump();
+      expect(container.read(resolvedMonthIndexProvider), 2);
+
+      for (var i = 0; i < 2; i++) {
+        await tester.tap(find.text('Цикли'));
+        await tester.pump();
+        await tester.tap(find.text('Рік'));
+        await tester.pump();
+      }
+
+      expect(container.read(resolvedMonthIndexProvider), 2,
+          reason: 'the segment index chooses which body builds and nothing '
+              'else — neither selection is screen-body state');
+      expect(container.read(resolvedWeekIndexProvider), 3);
+      expect(cardAt(tester, 2).color, BqColors.monthSelectedBg,
+          reason: 'and the surviving selection is the one actually drawn');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('pausing a regimen through the repositories re-renders BOTH '
+        'segments with no coverage for it, and no manual refresh (E-15, '
+        'DECIDED-7)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedPair(container);
+      await openYear(tester, container);
+
+      // August is index 7 — the month the pinned clock sits in.
+      expect(countAt(tester, 7), '2');
+
+      await container.read(regimenRepoProvider).setPaused('r-q01', true);
+      await pumpUntil(
+        tester,
+        () => countAt(tester, 7) == '1',
+        'the year grid to follow the pause',
+      );
+
+      expect(
+        tester.getSize(find.byKey(const ValueKey('month-7-bar-1'))).width,
+        0,
+        reason: 'a paused regimen contributes no coverage to any month cell',
+      );
+      expect(byKeyPrefix('month-7-track-'), findsNWidgets(2),
+          reason: 'its TRACK stays — the row is not hidden (DECIDED-7)');
+
+      await tester.tap(find.text('Цикли'));
+      await tester.pump();
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      expect(find.byType(GanttRowBar), findsNWidgets(2));
+      expect(rowFor(tester, 'q01').row.segments, isEmpty,
+          reason: 'a paused row is a bare track, which is the design\'s own '
+              'way of saying "paused"');
+      expect(rowFor(tester, 'q00').row.segments, isNotEmpty);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('deleting a supplement while the planner is mounted removes '
+        'its gantt row, its legend entry and its coverage tracks (E-15)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedPair(container);
+      await openYear(tester, container);
+
+      expect(byKeyPrefix('year-legend-entry-'), findsNWidgets(2));
+      expect(byKeyPrefix('month-7-track-'), findsNWidgets(2));
+
+      await container
+          .read(supplementRepoProvider)
+          .softDeleteCascade('q01', fromDay: today);
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('year-legend-entry-').evaluate().length == 1,
+        'the year legend to follow the delete',
+      );
+
+      expect(byKeyPrefix('month-7-track-'), findsNWidgets(1),
+          reason: 'the soft-delete filter one layer down reaches the grid');
+      expect(find.byKey(const ValueKey('year-legend-entry-q01')), findsNothing);
+      expect(countAt(tester, 7), '1');
+
+      await tester.tap(find.text('Цикли'));
+      await tester.pump();
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+      expect(find.byType(GanttRowBar), findsNWidgets(1));
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('advancing the pinned clock past midnight moves the today '
+        'marker and flips a run starting that day from planned to active '
+        '(E-14, DECIDED-4)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedCourses(container, [
+        ('n00', DateTime.utc(2026, 8, 14), DateTime.utc(2026, 8, 31)),
+      ]);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      final marker = find.byKey(const ValueKey('gantt-today-marker'));
+      final before = tester.getTopLeft(marker).dx;
+      expect(rowFor(tester, 'n00').row.segments.single.planned, isTrue,
+          reason: 'the run starts tomorrow, so it is hatched today');
+
+      (container.read(todayProvider.notifier) as _FixedToday)
+          .advanceTo(DateTime.utc(2026, 8, 14));
+      await pumpUntil(
+        tester,
+        () => !rowFor(tester, 'n00').row.segments.single.planned,
+        'the run to become active at the rollover',
+      );
+
+      expect(tester.getTopLeft(marker).dx, greaterThan(before),
+          reason: 'the today marker moved one day into the window');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a full pass of segment switching, a week selection and a '
+        'month selection writes NOT ONE IntakeLog row (T-04-01, PF-2/WR-06)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedBands(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('load-week-').evaluate().isNotEmpty,
+        'the load chart columns',
+      );
+
+      final before = (await db.select(db.intakeLogs).get()).length;
+      expect(before, 0,
+          reason: 'the planner alone materializes nothing at all');
+
+      await scrollBody(tester, 300);
+      await tester.tap(find.byKey(const ValueKey('load-week-3')));
+      await tester.pump();
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('month-card-').evaluate().isNotEmpty,
+        'the year grid',
+      );
+      await tester.tap(find.byKey(const ValueKey('month-card-2')));
+      await tester.pump();
+      await tester.tap(find.text('Цикли'));
+      await tester.pump();
+      // Give any stray materialization a generous chance to land.
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+
+      expect((await db.select(db.intakeLogs).get()).length, before,
+          reason: 'both planner segments are read-only projections — this is '
+              'the phase\'s headline guarantee, proven against the finished '
+              'screen and not only against the tracer');
+
+      await tearDownTree(tester, container);
+    });
+  });
 }
 
 /// Pins `todayProvider` to a fixed calendar day.
@@ -1375,4 +2127,9 @@ class _FixedToday extends TodayController {
 
   @override
   DateTime build() => day;
+
+  /// Moves the pinned clock — the automatable half of the midnight-rollover
+  /// backstop (E-14). The real controller re-derives the day from the system
+  /// clock at local midnight; this stands in for that tick.
+  void advanceTo(DateTime next) => state = next;
 }
