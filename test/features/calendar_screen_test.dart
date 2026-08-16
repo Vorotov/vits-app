@@ -572,6 +572,58 @@ void main() {
 
       await tearDownTree(tester, container);
     });
+
+    // -----------------------------------------------------------------
+    // The weekday title's sentence casing, pinned byte-for-byte before and
+    // after the intl swap (plan 05-02, UI-SPEC A3 / PF-6).
+    // -----------------------------------------------------------------
+
+    /// The consequence of a red case, named in device terms.
+    const casingReason =
+        'the day header is the first line of the screen: a weekday that '
+        'renders lowercase (or mis-cased) there is a visible regression in a '
+        'SHIPPED language. This pair pins the exact strings so swapping the '
+        'casing implementation is provably a no-op for uk and en — the A7 '
+        'fallback is to keep the old helper, never to relax this assertion';
+
+    for (final locale in const ['uk', 'en']) {
+      final weekdayTitle = locale == 'uk' ? 'Вівторок' : 'Tuesday';
+      final subtitleOffToday = locale == 'uk' ? '11 серпня' : '11 August';
+
+      testWidgets(
+          '$locale: a non-today day titles the SENTENCE-CASED weekday, pinned '
+          'byte-for-byte (A3)', (tester) async {
+        usePhoneSurface(tester);
+        final container = makeContainer(today: pinnedToday);
+        await container.read(supplementRepoProvider).upsert(supplement);
+        await container.read(regimenRepoProvider).upsert(alwaysActive());
+
+        await tester.pumpWidget(app(container, locale: Locale(locale)));
+        await pumpUntil(
+          tester,
+          () => find.byType(DayProgressRing).evaluate().isNotEmpty,
+          'the header to settle on today',
+        );
+
+        container.read(selectedDayProvider.notifier).select(twoDaysEarlier);
+        await pumpUntil(
+          tester,
+          () => find.text(weekdayTitle).evaluate().isNotEmpty,
+          'the title to become the sentence-cased weekday',
+        );
+
+        expect(find.text(weekdayTitle), findsOneWidget, reason: casingReason);
+        expect(find.text(subtitleOffToday), findsOneWidget,
+            reason: 'the subtitle drops the weekday already in the title, and '
+                'is locale-formatted rather than assembled in Dart');
+        expect(find.text(weekdayTitle.toLowerCase()), findsNothing,
+            reason: 'intl returns uk weekdays lowercase — an uncased title is '
+                'exactly the regression this pins');
+        expect(tester.takeException(), isNull);
+
+        await tearDownTree(tester, container);
+      });
+    }
   });
 
   // --- Time blocks (plan 03-04, Task 1; UI-SPEC S4 "Scroll body",
