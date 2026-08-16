@@ -483,15 +483,23 @@ class _YearLegend extends StatelessWidget {
               children: [
                 _TwoToneSwatch(color: Color(entry.supplement.colorValue)),
                 const SizedBox(width: _swatchLabelGap),
-                Text(
-                  // The domain model carries no short name, so the legend
-                  // names the supplement the way every other surface does —
-                  // and the `Wrap` absorbs the extra width.
-                  entry.supplement.name,
-                  style: const TextStyle(
-                    fontSize: _legendLabelSize,
-                    fontWeight: FontWeight.w400,
-                    color: BqColors.textSecondary,
+                // FLEXIBLE, never rigid. The `Wrap` bounds each entry at the
+                // full body width and no further: a single long uk name
+                // ("Омега-3 риб'ячий жир концентрат") is wider than that on
+                // its own, so a rigid `Text` here overflowed the entry row by
+                // tens of pixels at EVERY text scale — the WR-04 defect class,
+                // caught by the 04-05 text-scale matrix. Flexible lets the
+                // name soft-wrap inside its own entry instead.
+                Flexible(
+                  child: Text(
+                    // The domain model carries no short name, so the legend
+                    // names the supplement the way every other surface does.
+                    entry.supplement.name,
+                    style: const TextStyle(
+                      fontSize: _legendLabelSize,
+                      fontWeight: FontWeight.w400,
+                      color: BqColors.textSecondary,
+                    ),
                   ),
                 ),
               ],
