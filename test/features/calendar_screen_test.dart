@@ -2844,6 +2844,90 @@ void main() {
     }
   });
 
+  // --- The hold window is INERT on a same-day reload too (WR-06) ---
+  //
+  // `dayDosesProvider` re-runs on every regimen add/edit/pause/resume/delete,
+  // not only on a day switch, and that rebuild carries the previous value. The
+  // Phase-4 WR-01 guard exists because a tap in that window writes through a
+  // `logId` the list no longer describes — a dose from a regimen that may have
+  // just been deleted or paused. A rendering rule that recognised only "loading
+  // with nothing to show" would hand the user live, tappable stale rows on the
+  // most common reload path in the app.
+  group('a reload of the SAME day holds its rows inert (WR-06)', () {
+    testWidgets(
+        'uk: rows stay on screen while the day re-materializes, refuse taps '
+        'until it resolves, and accept them again afterwards', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(alwaysActive());
+
+      await tester.pumpWidget(app(container));
+      final row = find.text('Магній бісглицинат');
+      await pumpUntil(tester, () => row.evaluate().isNotEmpty, 'the dose row');
+
+      final today = container.read(todayProvider);
+      var raw = <IntakeLog>[];
+      final rawSub = rawLogsFor(today).listen((v) => raw = v);
+      await pumpUntil(
+        tester,
+        () => raw.length == 1,
+        'the materialized log row',
+      );
+      expect(raw.single.status, DoseStatus.pending);
+
+      // A regimen change, which is what the day's stream actually watches.
+      container.invalidate(regimensStreamProvider);
+      await tester.pump();
+
+      expect(
+        container.read(dayDosesProvider(today)).isLoading,
+        isTrue,
+        reason: 'the premise: a regimen change puts the BROWSED day back into '
+            'loading while it keeps its previous value — not a day switch, '
+            'and the case a subtype-only rule misses',
+      );
+      expect(
+        row,
+        findsOneWidget,
+        reason: 'the rows are held, never blanked: a list that vanishes for a '
+            'frame reads as "this day is empty" (PF-7)',
+      );
+
+      // `warnIfMissed: false` is the assertion's twin, not a workaround: the
+      // gesture is EXPECTED to miss, because the held rows sit behind an
+      // IgnorePointer. The status check below is what proves it.
+      await tester.tap(row, warnIfMissed: false);
+      await tester.pump();
+      expect(
+        raw.single.status,
+        DoseStatus.pending,
+        reason: 'the held frame is INERT: this row describes a regimen that '
+            'may have just been deleted or paused, so its logId must not be '
+            'written through until the day has re-resolved (WR-01/WR-06)',
+      );
+
+      await pumpUntil(
+        tester,
+        () => !container.read(dayDosesProvider(today)).isLoading,
+        'the day to re-resolve',
+      );
+      await tester.tap(row);
+      await pumpUntil(
+        tester,
+        () => raw.single.status == DoseStatus.taken,
+        'the tap to land once the day is live again',
+      );
+
+      expect(tester.takeException(), isNull);
+      // Deliberately not awaited (the file's pattern): Drift's stream close
+      // schedules a zero-duration timer that only fires on a later pump, so
+      // awaiting the cancel would deadlock the test zone.
+      rawSub.cancel();
+      await tearDownTree(tester, container);
+    });
+  });
+
   // --- Accessibility text scaling (CR-01, IN-08) ---
   //
   // 1.6 is inside the normal iOS "Larger Text" and Android font-size ranges,

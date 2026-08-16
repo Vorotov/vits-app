@@ -307,82 +307,98 @@ class _DayBodyState extends ConsumerState<_DayBody> {
         bottom: 84,
       ),
       children: [
-        ...widget.doses.when(
-          // "Has an error" beats "is loading": Riverpod 3 reports a failing
-          // provider as an AsyncLoading that CARRIES the error while it
-          // retries on its own backoff, and `when` defaults
-          // skipLoadingOnReload to false — so without this the held
-          // previous-day list below would win over the designed error surface
-          // for the whole ~38.2s backoff window (A1 / P-9, 04-REVIEW.md
-          // CR-02). The hold itself is unchanged: a genuine day switch with no
-          // error still takes the loading arm.
-          skipLoadingOnReload: true,
-          data: (list) {
-            _held = list;
-            _heldDay = widget.day;
-            return _blocks(list, widget.day, viewingToday: viewingToday);
-          },
-          // Loading: hold the last rendered list when there is one, otherwise
-          // an empty list area — and NO spinner either way, because the
-          // local-DB stream resolves within a frame and a spinner would only
-          // flash.
-          //
-          // The held rows are rendered with THEIR OWN day (WR-01) and wrapped
-          // in an IgnorePointer: a gesture in this window would otherwise
-          // write to the day the user just left, with the header, ring and
-          // strip all showing a different one.
-          loading: () {
-            final held = _held;
-            final heldDay = _heldDay;
-            if (held == null || heldDay == null) return const <Widget>[];
-            return <Widget>[
-              IgnorePointer(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: _blocks(
-                    held,
-                    heldDay,
-                    viewingToday: heldDay == today,
-                  ),
-                ),
-              ),
-            ];
-          },
+        // Two rules, both matched on PROPERTIES so neither depends on which
+        // arm a `when` happens to evaluate first:
+        //
+        // 1. "Has an error" beats "is loading" (A1 / P-9, 04-REVIEW.md CR-02).
+        //    Riverpod 3 reports a failing provider as a value that carries the
+        //    error while it retries on its own backoff, so an arm keyed on the
+        //    error SUBTYPE alone leaves the designed error surface unreachable
+        //    for the whole ~38.2s window and the held list wins instead.
+        //
+        // 2. Anything that is still LOADING renders held-and-inert, whatever
+        //    shape it takes. `dayDosesProvider` re-runs on every regimen
+        //    add/edit/pause/resume/delete as well as on a day switch
+        //    (`providers.dart`), and that rebuild carries the previous value —
+        //    so a rule that only recognised "loading with no value at all"
+        //    would hand the user live, tappable rows built from a regimen that
+        //    may have just been deleted (WR-06). The IgnorePointer window is
+        //    exactly the one the Phase-4 WR-01 guard exists for, and it covers
+        //    a same-day reload as well as a day switch.
+        ...switch (widget.doses) {
           // Error: the documented copy plus a retry that re-subscribes.
           // A raw exception or stack trace is NEVER placed in the tree
           // (T-03-16).
-          error: (_, _) => <Widget>[
-            Text(
-              l10n.dayLoadError,
-              style: const TextStyle(
-                fontSize: 13,
-                height: 1.4,
-                color: BqColors.textSecondary,
+          AsyncValue(hasError: true) => <Widget>[
+              Text(
+                l10n.dayLoadError,
+                style: const TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  color: BqColors.textSecondary,
+                ),
               ),
-            ),
-            const SizedBox(height: BqSpace.sm),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: TextButton(
-                onPressed: () =>
-                    ref.invalidate(dayDosesProvider(widget.day)),
-                child: Text(
-                  l10n.retry,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: BqColors.accent,
+              const SizedBox(height: BqSpace.sm),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton(
+                  onPressed: () => ref.invalidate(dayDosesProvider(widget.day)),
+                  child: Text(
+                    l10n.retry,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                      color: BqColors.accent,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          // Resolved and settled: the live, interactive day.
+          AsyncData(:final value) when !widget.doses.isLoading =>
+            _resolved(value, viewingToday: viewingToday),
+          // Loading in any shape: hold the last rendered list when there is
+          // one, otherwise an empty list area — and NO spinner either way,
+          // because the local-DB stream resolves within a frame and a spinner
+          // would only flash.
+          _ => _heldRows(today),
+        },
         // Closes the body on EVERY day, including empty and error ones
         // (UI-SPEC S4, M9).
         const _Disclaimer(),
       ],
     );
+  }
+
+  /// The live day: [list] rendered interactively, and remembered as the hold
+  /// for the next loading window.
+  List<Widget> _resolved(
+    List<DayDose> list, {
+    required bool viewingToday,
+  }) {
+    _held = list;
+    _heldDay = widget.day;
+    return _blocks(list, widget.day, viewingToday: viewingToday);
+  }
+
+  /// The previous day list, held and INERT, or nothing when there is none.
+  ///
+  /// The held rows are rendered with THEIR OWN day (WR-01) and wrapped in an
+  /// `IgnorePointer`: a gesture in this window would otherwise write through a
+  /// `logId` the list no longer describes — the day the user just left, or a
+  /// regimen that was just deleted or paused (WR-06).
+  List<Widget> _heldRows(DateTime today) {
+    final held = _held;
+    final heldDay = _heldDay;
+    if (held == null || heldDay == null) return const <Widget>[];
+    return <Widget>[
+      IgnorePointer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: _blocks(held, heldDay, viewingToday: heldDay == today),
+        ),
+      ),
+    ];
   }
 
   /// The day's time blocks, or the empty-day block when it has no doses.
