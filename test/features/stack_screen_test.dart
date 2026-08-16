@@ -20,7 +20,12 @@
 /// - plan 05-04: a locale × textScaler matrix over three screen states
 ///   (populated, empty, add-supplement sheet open) in BOTH shipped languages,
 ///   plus the E-12 copy-on-add assertion
+/// - plan 05-05: the catalog add affordance's accessibility label read off the
+///   semantics tree in BOTH languages (A2 / PF-5), and the LOCKED-FONT
+///   source gates over pubspec.yaml + lib/core/theme/ (T-05-11)
 library;
+
+import 'dart:io';
 
 import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/domain/models.dart';
@@ -734,6 +739,125 @@ void main() {
         });
       }
     }
+  });
+
+  // ---------------------------------------------------------------------
+  // Amendment A2 / PF-5: the catalog row's add affordance carries an
+  // accessibility label built from ONE ARB key with two placeholders, so the
+  // word order and the separator between "the action" and "the name" are a
+  // translator's decision rather than a Dart string literal.
+  //
+  // The label is invisible: it is never rendered text, so no text finder and
+  // no render-matrix case can see it, and the bilingual matrix above would
+  // stay green with the two fragments glued together in the wrong order for
+  // Ukrainian. It is read off the semantics tree here, in BOTH languages,
+  // because "uk and en happen to share this word order" is an assumption and
+  // not a fact about any future language (T-05-04).
+  // ---------------------------------------------------------------------
+
+  group('catalog add affordance: a11y label comes from the ARB (A2, PF-5)', () {
+    /// The expected label per language, written out as a LITERAL.
+    ///
+    /// Deliberately NOT rebuilt by calling
+    /// `l10n.addSupplementCatalogSemantics(l10n.addSupplement, name)` — that
+    /// is the exact expression the widget evaluates, so an assertion against
+    /// it would pass for any word order, any separator and any placeholder
+    /// ordering, i.e. it would pin nothing at all. Spelling the sentence out
+    /// is what makes a reordered uk translation a red test rather than a
+    /// silent change to what a screen-reader user hears.
+    const expectedLabel = <String, String>{
+      'uk': 'Додати добавку: Креатин моногідрат',
+      'en': 'Add supplement: Creatine monohydrate',
+    };
+
+    for (final locale in const ['uk', 'en']) {
+      final l10n = lookupAppLocalizations(Locale(locale));
+      final other = locale == 'uk' ? 'en' : 'uk';
+
+      testWidgets(
+          '$locale: the trailing "+" announces "${expectedLabel[locale]}" — '
+          'one ARB key, two placeholders, no Dart-side concatenation',
+          (tester) async {
+        usePhoneSurface(tester);
+        final handle = tester.ensureSemantics();
+        final container = makeContainer(today: DateTime.utc(2026, 8, 10));
+        await tester.pumpWidget(app(container, locale: locale));
+        await pumpUntilFound(tester, find.text(l10n.addSupplement));
+
+        await tester.tap(find.text(l10n.addSupplement));
+        await tester.pumpAndSettle();
+        await pumpUntilFound(tester, find.text(l10n.catalogCreatineName));
+
+        // Scope to ONE catalog row: every row carries a "+", so an unscoped
+        // finder would be ambiguous and `getSemantics` would throw.
+        final row = find
+            .ancestor(
+              of: find.text(l10n.catalogCreatineName),
+              matching: find.byType(Row),
+            )
+            .first;
+        final plus = find.descendant(of: row, matching: find.text('+'));
+        expect(plus, findsOneWidget,
+            reason: 'the icon-only affordance is the thing being labelled; if '
+                'this stops matching, the assertion below is measuring some '
+                'other node');
+
+        // `excludeSemantics: true` drops the bare "+" glyph, and the whole
+        // row is one tap target, so the "+"'s annotation is MERGED into the
+        // row's node alongside the name and dose Texts: the published label
+        // is "name\ndose\n<the sentence>", not the sentence alone. Assert on
+        // the segment rather than on the whole node — that keeps the check
+        // exact about the part this task owns (the ARB sentence) without
+        // freezing what else the row happens to announce.
+        final node = tester.getSemantics(plus);
+        final segments = node.label.split('\n');
+        expect(segments, contains(expectedLabel[locale]),
+            reason: 'an icon-only control with a wrong-language or '
+                'wrong-order label is unusable with a screen reader, and it '
+                'is invisible to every rendered assertion in this file — the '
+                'sentence belongs to the ARB (PF-5, T-05-04)');
+        expect(node, isSemantics(isButton: true),
+            reason: 'the label only helps if the node is announced as a '
+                'control the user can activate');
+        expect(node.label, isNot(contains('+')),
+            reason: 'excludeSemantics keeps the decorative glyph out of the '
+                'announcement');
+
+        // The OTHER language's sentence must not be reachable — proof the
+        // label followed the active locale rather than a captured default.
+        // Asserted against this node's own label, not through a tree-wide
+        // finder: `bySemanticsLabel` matches a node label WHOLE, and this
+        // node's label is the merged multi-line string above, so a tree-wide
+        // finder would report "not found" in both locales and prove nothing.
+        expect(node.label, isNot(contains(expectedLabel[other]!)),
+            reason: 'the label is resolved per-locale like every other ARB '
+                'value, not baked in at first build');
+
+        expect(tester.takeException(), isNull, reason: overflowReason);
+
+        handle.dispose();
+        await tearDownTree(tester, container);
+      });
+    }
+
+    test(
+        'add_supplement_sheet.dart concatenates no localized fragments — the '
+        'PF-5 source gate', () {
+      final source = File('lib/features/stack/add_supplement_sheet.dart')
+          .readAsStringSync()
+          .split('\n')
+          .where((line) => !line.trimLeft().startsWith('//'))
+          .join('\n');
+
+      expect(source, isNot(contains(r'${l10n.')),
+          reason: 'gluing two localized fragments together inside a Dart '
+              'string hardcodes this language pair\'s word order and its '
+              'separator into the binary, where no translator can reach them '
+              'and no ARB-parity gate can see them: the resulting string is '
+              'not a literal, so the no-hardcoded-strings gate passes it. The '
+              'fix is always a new ARB key with placeholders (the '
+              'weekLoadLabel idiom), never an allowlist entry (PF-5, A2)');
+    });
   });
 
   testWidgets(
