@@ -17,11 +17,15 @@
 ///   per-build clock read: the same seeded regimen renders ЗАПЛАНОВАНО before
 ///   its start date and АКТИВНА inside its window (plan 03-01, IN-06)
 /// - takeException null in uk locale throughout
+/// - plan 05-04: a locale × textScaler matrix over three screen states
+///   (populated, empty, add-supplement sheet open) in BOTH shipped languages,
+///   plus the E-12 copy-on-add assertion
 library;
 
 import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/l10n/l10n.dart';
+import 'package:boostque/core/l10n/locale_controller.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/today_controller.dart';
@@ -32,6 +36,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../support/locale_matrix.dart';
 
 void main() {
   const supplement = Supplement(
@@ -50,7 +56,12 @@ void main() {
   /// Provider container over an in-memory database; callers seed through
   /// the repositories before pumping. Passing [today] pins the shared calendar
   /// clock so card statuses are asserted against a fixed day (IN-06).
-  ProviderContainer makeContainer({DateTime? today}) {
+  /// [prefs] is only needed by the one test that drives the language through
+  /// [localeControllerProvider] — the controller reads its stored override
+  /// synchronously through [sharedPreferencesProvider], which throws unless
+  /// overridden (plan 05-01, P-4 Option A). The Stack screen itself never
+  /// reaches it, which is why every other container below omits it.
+  ProviderContainer makeContainer({DateTime? today, SharedPreferences? prefs}) {
     final container = ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
@@ -59,6 +70,7 @@ void main() {
           return db;
         }),
         if (today != null) todayProvider.overrideWith(() => _FixedToday(today)),
+        if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs),
       ],
     );
     // Keep the stack graph warm (Riverpod 3 pauses unlistened providers).
@@ -69,7 +81,16 @@ void main() {
 
   /// [locale] parameterizes the render matrix: an error state is a screen
   /// state, so it has to be proven in BOTH shipped languages (L10N-01).
-  Widget app(ProviderContainer container, {String locale = 'uk'}) {
+  /// [textScaler] pins the accessibility text scale for the whole subtree —
+  /// the axis longer translated strings break on, and the one this screen had
+  /// no coverage of at all before plan 05-04 (E-14). Same signature as
+  /// `plannerApp` (`planner_screen_test.dart:142-163`), so the matrix below is
+  /// a loop rather than a dozen copies.
+  Widget app(
+    ProviderContainer container, {
+    String locale = 'uk',
+    TextScaler? textScaler,
+  }) {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
@@ -77,7 +98,31 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: bqTheme(),
+        builder: (context, child) => textScaler == null
+            ? child!
+            : MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+                child: child!,
+              ),
         home: const StackScreen(),
+      ),
+    );
+  }
+
+  /// The same screen with the language coming from [localeControllerProvider]
+  /// instead of from a pinned `locale:` — the only harness that can flip the
+  /// language of an already-mounted tree, which is what E-12 needs.
+  Widget localeDrivenApp(ProviderContainer container) {
+    return UncontrolledProviderScope(
+      container: container,
+      child: Consumer(
+        builder: (context, ref, _) => MaterialApp(
+          locale: ref.watch(localeControllerProvider),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: bqTheme(),
+          home: const StackScreen(),
+        ),
       ),
     );
   }
@@ -545,6 +590,205 @@ void main() {
       await tearDownTree(tester, container);
     });
   }
+
+  // ---------------------------------------------------------------------
+  // The bilingual × text-scale matrix (plan 05-04, L10N-01 criterion 1,
+  // V-4 / E-14 / T-05-08 / T-05-09).
+  //
+  // Before this plan the Stack screen and its add-supplement sheet had been
+  // rendered in English exactly zero times by any test: criterion 1 is a claim
+  // about SCREENS, and an ARB audit cannot make it.
+  // ---------------------------------------------------------------------
+
+  /// Seed for the matrix cases: a LATIN supplement name, on purpose.
+  ///
+  /// A supplement's name is user data — typed by the user, or copied off the
+  /// catalog in whichever language was active at add-time — and it never
+  /// re-localizes (E-12, asserted at the bottom of this file). Seeding a
+  /// Cyrillic name here would therefore trip the English Cyrillic sweep on a
+  /// string that is CORRECT, and the only ways out would be to weaken the
+  /// sweep or to allowlist user data wholesale. Neither is acceptable (A8), so
+  /// the chrome is what gets swept and the seeded data is kept neutral.
+  const matrixSupplement = Supplement(
+    id: 'm1',
+    name: 'Magnesium 400',
+    doseText: '400 mg',
+    colorValue: 0xFF6B6FA8,
+    note: '',
+  );
+
+  Regimen matrixRegimen() => Regimen(
+        id: 'mr1',
+        supplementId: 'm1',
+        kind: RegimenKind.cyclic,
+        startDate: DateTime.utc(2026, 8, 1),
+        endDate: null,
+        onDays: 56,
+        offDays: 28,
+        paused: false,
+        slots: const [
+          DoseSlot(id: 'ms1', minutesFromMidnight: 480, doseLabel: ''),
+          DoseSlot(id: 'ms2', minutesFromMidnight: 1140, doseLabel: ''),
+        ],
+      );
+
+  group('bilingual render matrix (L10N-01)', () {
+    for (final locale in const ['uk', 'en']) {
+      final l10n = lookupAppLocalizations(Locale(locale));
+
+      for (final scale in const <double>[1.0, 1.6]) {
+        final scaler = TextScaler.linear(scale);
+
+        testWidgets(
+            '$locale: a POPULATED stack renders in the active language with '
+            'no layout exception at textScaler $scale', (tester) async {
+          usePhoneSurface(tester);
+          // The clock is pinned inside the regimen's window so the card's
+          // status is the same string on any machine, on any day (IN-06).
+          final container = makeContainer(today: DateTime.utc(2026, 8, 10));
+          await container.read(supplementRepoProvider).upsert(matrixSupplement);
+          await container.read(regimenRepoProvider).upsert(matrixRegimen());
+          await tester.pumpWidget(
+            app(container, locale: locale, textScaler: scaler),
+          );
+          await pumpUntilFound(tester, find.text(l10n.statusActive));
+
+          // In the RIGHT language, not merely rendered: all three of these
+          // differ between uk and en, so a screen that fell back to the other
+          // language fails here instead of passing on a bare render.
+          expect(find.text(l10n.stackTitle), findsOneWidget);
+          expect(find.text(l10n.supplementsLabel), findsOneWidget);
+          expect(find.text(l10n.statusActive), findsOneWidget);
+          expect(find.text('Magnesium 400'), findsOneWidget,
+              reason: 'the card is populated — a matrix case over an empty '
+                  'body would prove nothing about the card layout');
+
+          if (locale == 'en') {
+            expectNoCyrillicWhileEn(tester);
+          }
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await tearDownTree(tester, container);
+        });
+
+        testWidgets(
+            '$locale: an EMPTY stack renders in the active language with no '
+            'layout exception at textScaler $scale', (tester) async {
+          usePhoneSurface(tester);
+          final container = makeContainer(today: DateTime.utc(2026, 8, 10));
+          await tester.pumpWidget(
+            app(container, locale: locale, textScaler: scaler),
+          );
+          await pumpUntilFound(tester, find.text(l10n.emptyStackTitle));
+
+          expect(find.text(l10n.emptyStackTitle), findsOneWidget);
+          expect(find.text(l10n.emptyStackBody), findsOneWidget);
+          expect(find.text(l10n.addSupplement), findsOneWidget,
+              reason: 'the CTA stays visible above the empty state (#1)');
+
+          if (locale == 'en') {
+            expectNoCyrillicWhileEn(tester);
+          }
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await tearDownTree(tester, container);
+        });
+
+        testWidgets(
+            '$locale: the ADD-SUPPLEMENT SHEET renders BOTH tabs in the '
+            'active language with no layout exception at textScaler $scale',
+            (tester) async {
+          usePhoneSurface(tester);
+          final container = makeContainer(today: DateTime.utc(2026, 8, 10));
+          await tester.pumpWidget(
+            app(container, locale: locale, textScaler: scaler),
+          );
+          await pumpUntilFound(tester, find.text(l10n.addSupplement));
+
+          await tester.tap(find.text(l10n.addSupplement));
+          await tester.pumpAndSettle();
+
+          // Search tab (the default): hint + the catalog resolved in the
+          // ACTIVE language — the catalog is ARB-backed, so an en render that
+          // still listed Ukrainian names would be a leak, not user data.
+          expect(find.text(l10n.searchCatalogHint), findsOneWidget);
+          expect(find.text(l10n.catalogCreatineName), findsOneWidget);
+          if (locale == 'en') {
+            expectNoCyrillicWhileEn(tester);
+          }
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          // Manual tab: the form swaps in place.
+          await tester.tap(find.text(l10n.manualTab));
+          await tester.pump();
+          expect(find.text(l10n.nameLabel), findsOneWidget);
+          expect(find.text(l10n.doseLabel), findsOneWidget);
+          expect(find.text(l10n.searchCatalogHint), findsNothing);
+
+          if (locale == 'en') {
+            expectNoCyrillicWhileEn(tester);
+          }
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await tearDownTree(tester, container);
+        });
+      }
+    }
+  });
+
+  testWidgets(
+      'a catalog-added supplement keeps its add-time NAME after the language '
+      'changes — copy-on-add is intended behaviour, not a bug (E-12)',
+      (tester) async {
+    usePhoneSurface(tester);
+    final uk = lookupAppLocalizations(const Locale('uk'));
+    final en = lookupAppLocalizations(const Locale('en'));
+
+    SharedPreferences.setMockInitialValues({'app_locale': 'uk'});
+    final prefs = await SharedPreferences.getInstance();
+    final container = makeContainer(
+      today: DateTime.utc(2026, 8, 10),
+      prefs: prefs,
+    );
+    await tester.pumpWidget(localeDrivenApp(container));
+    await tester.pump();
+
+    // Add the catalog entry while UKRAINIAN is active: the row copies the
+    // active locale's name onto the Supplement (catalog.dart:11-15).
+    await tester.tap(find.text(uk.addSupplement));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(uk.catalogCreatineName));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new));
+    await tester.pumpAndSettle();
+    await pumpUntilFound(tester, find.text(uk.catalogCreatineName));
+
+    // Flip the language on the mounted tree. ONE frame: more than one would
+    // itself say the switch is not instant (PF-3).
+    container.read(localeControllerProvider.notifier).setLocale(
+          const Locale('en'),
+        );
+    await tester.pump();
+
+    // The chrome DID change — without this the assertion below would pass
+    // trivially on a flip that never happened.
+    expect(find.text(en.supplementsLabel), findsOneWidget,
+        reason: 'the eyebrow is ARB copy, so it must follow the language');
+    expect(find.text(uk.supplementsLabel), findsNothing);
+
+    // The stored name did NOT. From the moment of the add it is user data:
+    // renaming a user's supplements out from under them because they changed
+    // the app language would be the actual bug. State this at UAT so it is
+    // not filed as one (E-12).
+    expect(find.text(uk.catalogCreatineName), findsOneWidget,
+        reason: 'copy-on-add: the row holds the name captured at add-time');
+    expect(find.text(en.catalogCreatineName), findsNothing,
+        reason: 'the stack row is not a live view of the catalog — it is a '
+            'copy, and a copy does not re-translate');
+    expect(tester.takeException(), isNull);
+
+    await tearDownTree(tester, container);
+  });
 }
 
 /// Pins the shared calendar clock to a fixed UTC date-only day; overriding
