@@ -110,16 +110,47 @@ abstract class IntakeRepository {
   Future<void> setStatus(String logId, DoseStatus status);
 }
 
+/// THE one-regimen-per-supplement rule (PF-8), stated once (WR-08).
+///
+/// The rule: given [regimens] in the repositories' canonical order
+/// (`createdAt` asc, `id` asc — see the library doc above), the FIRST regimen
+/// for a supplement wins and every later one is ignored.
+///
+/// Before this existed, three code paths answered "which regimen belongs to
+/// this supplement" three different ways: [combineStackEntries] built a map
+/// literal over `regimens.reversed` (last-write-wins over a reversed list —
+/// first-by-`createdAt`, but only if you reason about duplicate-key semantics
+/// AND the reversal), `findForSupplement` took `.first`, and
+/// `ensureLogsForDay` iterated ALL of them and materialized doses for every
+/// one. The first two agreed only by coincidence of a shared SQL sort; the
+/// third did not agree at all, so a second regimen row for one supplement
+/// meant the Stack card and the editor showed regimen A while the Today
+/// screen materialized doses for A **and** B.
+///
+/// A second row is not reachable through the editor (`save()` resolves and
+/// reuses one id) but it IS representable in the schema, and the documented
+/// sync/import future is exactly where one arrives. Deliberately a COLLAPSE
+/// rather than an `assert`: the app must stay coherent on data it did not
+/// write, not crash on it.
+Map<String, Regimen> regimensBySupplement(List<Regimen> regimens) {
+  final bySupplement = <String, Regimen>{};
+  for (final r in regimens) {
+    bySupplement.putIfAbsent(r.supplementId, () => r);
+  }
+  return bySupplement;
+}
+
 /// Pairs each supplement with its regimen by `supplementId`, preserving the
 /// supplement order. Pure function — consumed by the combined stack provider
 /// (RESEARCH Pattern 5 provider composition).
+///
+/// Which regimen, when a supplement has more than one, is decided by
+/// [regimensBySupplement] and nowhere else (PF-8/WR-08).
 List<StackEntry> combineStackEntries(
   List<Supplement> supplements,
   List<Regimen> regimens,
 ) {
-  final bySupplement = <String, Regimen>{
-    for (final r in regimens.reversed) r.supplementId: r,
-  };
+  final bySupplement = regimensBySupplement(regimens);
   return [
     for (final s in supplements)
       StackEntry(supplement: s, regimen: bySupplement[s.id]),

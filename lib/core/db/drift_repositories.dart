@@ -151,8 +151,9 @@ class DriftRegimenRepository implements RegimenRepository {
     final rows = await (_joined()
           ..where(db.regimens.supplementId.equals(supplementId)))
         .get();
-    final regimens = _groupRows(rows);
-    return regimens.isEmpty ? null : regimens.first;
+    // Which regimen wins when a supplement has more than one is decided in
+    // ONE place (PF-8/WR-08) — never by an implicit `.first` here.
+    return regimensBySupplement(_groupRows(rows))[supplementId];
   }
 
   @override
@@ -277,8 +278,13 @@ class DriftIntakeRepository implements IntakeRepository {
     final utcDay = dateOnly(day);
     final now = DateTime.now().toUtc();
     // Active regimens with their active slots, via the regimen repository's
-    // canonical soft-delete-aware query.
-    final regimens = await _firstEvent(_regimens.watchAll());
+    // canonical soft-delete-aware query, collapsed to ONE regimen per
+    // supplement (PF-8/WR-08). Without the collapse this was the only read
+    // path that disagreed with the other two: the Stack card and the editor
+    // would show regimen A while this materialized doses for A *and* B —
+    // double doses no screen could explain.
+    final regimens =
+        regimensBySupplement(await _firstEvent(_regimens.watchAll())).values;
 
     final entries = <IntakeLogsCompanion>[
       for (final r in regimens)

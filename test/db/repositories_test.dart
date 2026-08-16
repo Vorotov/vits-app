@@ -8,6 +8,8 @@ library;
 import 'package:boostque/core/db/database.dart' show BoostqueDb, SupplementsCompanion;
 import 'package:boostque/core/db/drift_repositories.dart';
 import 'package:boostque/core/domain/models.dart';
+import 'package:boostque/core/domain/repositories.dart'
+    show combineStackEntries;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -286,6 +288,61 @@ void main() {
       expect(doses.map((d) => d.slot.minutesFromMidnight).toList(),
           [8 * 60, 22 * 60],
           reason: 'minutesFromMidnight asc, log id as tiebreak');
+    });
+  });
+
+  group('one regimen per supplement (PF-8, WR-08)', () {
+    /// TWO active regimen rows for one supplement.
+    ///
+    /// Not reachable through the editor — `save()` resolves and reuses a
+    /// single id — but representable in the schema and exactly what a sync
+    /// merge, an import, or a blind-seed failure mode produces. The point of
+    /// the invariant is that the app stays coherent when it happens.
+    Future<void> seedTwo() async {
+      await supps.upsert(s1);
+      await regs.upsert(r1());
+      await regs.upsert(Regimen(
+        id: 'r2',
+        supplementId: 's1',
+        kind: RegimenKind.cyclic,
+        startDate: DateTime.utc(2026, 8, 1),
+        endDate: null,
+        onDays: 56,
+        offDays: 28,
+        paused: false,
+        slots: const [
+          DoseSlot(id: 'sl2', minutesFromMidnight: 8 * 60, doseLabel: '400 мг'),
+        ],
+      ));
+    }
+
+    test('every read path names the SAME regimen — including the one that '
+        'materializes doses', () async {
+      await seedTwo();
+      final all = await regs.watchAll().first;
+      expect(all, hasLength(2), reason: 'both rows really are active');
+
+      final found = await regs.findForSupplement('s1');
+      final paired = combineStackEntries([s1], all).single.regimen;
+
+      expect(found, isNotNull);
+      expect(found!.id, 'r1',
+          reason: 'first by the canonical order (createdAt asc, id asc)');
+      expect(paired?.id, found.id,
+          reason: 'the Stack card and the editor must not disagree');
+
+      // The path that did NOT follow the rule: ensureLogsForDay iterated
+      // every regimen from watchAll and materialized doses for all of them.
+      final day = DateTime.utc(2026, 8, 14);
+      await intake.ensureLogsForDay(day);
+      final doses = await intake.watchDay(day).first;
+
+      expect(doses.map((d) => d.regimen.id).toSet(), {found.id},
+          reason: 'the Stack card and the editor show regimen r1 while Today '
+              'materializes doses for r1 AND r2 — double doses no screen can '
+              'explain and no other test would catch (WR-08)');
+      expect(doses, hasLength(1),
+          reason: 'one slot on the winning regimen, one dose');
     });
   });
 }
