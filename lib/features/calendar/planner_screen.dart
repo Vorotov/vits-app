@@ -34,6 +34,7 @@ import 'package:boostque/core/widgets/bq_segmented.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/planner_gantt.dart';
 import 'package:boostque/features/calendar/planner_load_chart.dart';
+import 'package:boostque/features/calendar/planner_month_detail.dart';
 import 'package:boostque/features/calendar/planner_providers.dart';
 import 'package:boostque/features/calendar/planner_view_model.dart';
 import 'package:boostque/features/calendar/planner_week_detail.dart';
@@ -46,6 +47,22 @@ const double _screenPadding = 20;
 /// Vertical gap between two Цикли cards (mockup lines 333, 352). Рік uses 14;
 /// the two are mockup-exact per segment and deliberately not unified.
 const double _cyclesCardGap = 12;
+const double _yearCardGap = 14;
+
+/// Year legend geometry (mockup lines 430-436).
+const double _legendTopMargin = 14;
+const double _legendInset = 2;
+const double _legendRowGap = 10;
+const double _legendColumnGap = 14;
+const double _swatchHalfWidth = 9;
+const double _swatchHeight = 7;
+const double _swatchRadius = 4;
+const double _swatchLabelGap = 6;
+const double _legendLabelSize = 11.5;
+
+/// The alpha the legend's light half carries — the same `4D` the planned
+/// coverage bars use, which is the whole point of a two-tone swatch.
+const double _plannedAlpha = 0.30;
 
 /// Summary-chip geometry (mockup line 295).
 const double _chipPadVertical = 12;
@@ -309,10 +326,8 @@ class _CyclesSummaryChip extends ConsumerWidget {
   }
 }
 
-/// Рік scroll body: the year footnote above the disclaimer.
-///
-/// A seam — plan 04-04 inserts the peak chip, the year grid, the legend and
-/// the month detail above the footnote.
+/// Рік scroll body: the peak chip, the grid, the legend and the month detail,
+/// closed by the year footnote ABOVE the disclaimer.
 class _YearBody extends ConsumerWidget {
   const _YearBody();
 
@@ -332,9 +347,181 @@ class _YearBody extends ConsumerWidget {
         // `entries` is already the regimen-bearing subset, the same filter
         // the gantt rows carry (DECIDED-7).
         isEmpty: (model) => model.entries.isEmpty,
+        // Body order, exactly: peak chip, grid card, legend, month-detail
+        // card — and then, from `_BodyScroll`, the footnote above the
+        // disclaimer (DECIDED-8, M9).
         cards: (model) => [
+          _YearPeakChip(model: model),
           PlannerYearGrid(model: model),
+          _YearLegend(model: model),
+          const SizedBox(height: _yearCardGap),
+          // Inline, directly under the grid it is read against — never a
+          // sheet, never a dialog (P-13).
+          PlannerMonthDetail(model: model),
         ],
+      ),
+    );
+  }
+}
+
+/// The Рік peak chip: the densest month of the year against the limit.
+///
+/// Same geometry as the Цикли summary chip, deliberately NOT the same
+/// comparison — see the banding comment below (DECIDED-6).
+class _YearPeakChip extends StatelessWidget {
+  const _YearPeakChip({required this.model});
+
+  final YearModel model;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    // The locale ALWAYS comes from the widget tree, never a literal tag.
+    final locale = Localizations.localeOf(context).toString();
+    final peak = model.months[model.peakIndex];
+    final load = peak.load;
+
+    // STRICTLY above the limit, deliberately — a month that merely touches
+    // the limit for a few days is not worth flagging, while the Цикли summary
+    // chip warns AT or above it because a week's start date can still be
+    // moved. The asymmetry is transcribed on purpose (DECIDED-6). Do not
+    // reconcile them.
+    final over = load > editorialLimit;
+    final Color fg = over ? BqColors.warn : BqColors.calm;
+    final Color bg = over ? BqColors.warnBg : BqColors.calmBg;
+
+    // A STANDALONE full month name: it stands here without a day number,
+    // which in Ukrainian means the nominative case (PF-4).
+    final month = DateFormat('LLLL', locale).format(peak.month);
+
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(bottom: _chipBottomMargin),
+      child: Container(
+        key: const ValueKey<String>('year-peak-chip'),
+        padding: const EdgeInsetsDirectional.symmetric(
+          vertical: _chipPadVertical,
+          horizontal: _chipPadHorizontal,
+        ),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius:
+              const BorderRadius.all(Radius.circular(BqRadii.button)),
+        ),
+        child: Row(
+          children: [
+            // A flexible sentence against a rigid trailing count — never two
+            // rigid children (WR-04).
+            Expanded(
+              child: Text(
+                model.peakTied ? l10n.peakMonthsTie(month) : l10n.peakMonth(month),
+                style: TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                  height: 1.35,
+                  color: fg,
+                ),
+              ),
+            ),
+            const SizedBox(width: _chipInnerGap),
+            Text(
+              l10n.substancesCount(load),
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w400,
+                color: fg,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One two-tone swatch and name per supplement, closing with the
+/// lighter-means-planned hint.
+///
+/// A `Wrap`, never a `Row`: a stack of a dozen supplements at a large text
+/// scale must flow onto more lines, not overflow (PF-7).
+class _YearLegend extends StatelessWidget {
+  const _YearLegend({required this.model});
+
+  final YearModel model;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(
+        top: _legendTopMargin,
+        start: _legendInset,
+        end: _legendInset,
+      ),
+      child: Wrap(
+        key: const ValueKey<String>('year-legend'),
+        spacing: _legendColumnGap,
+        runSpacing: _legendRowGap,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          for (final entry in model.entries)
+            Row(
+              key: ValueKey<String>('year-legend-entry-${entry.supplement.id}'),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _TwoToneSwatch(color: Color(entry.supplement.colorValue)),
+                const SizedBox(width: _swatchLabelGap),
+                Text(
+                  // The domain model carries no short name, so the legend
+                  // names the supplement the way every other surface does —
+                  // and the `Wrap` absorbs the extra width.
+                  entry.supplement.name,
+                  style: const TextStyle(
+                    fontSize: _legendLabelSize,
+                    fontWeight: FontWeight.w400,
+                    color: BqColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          Text(
+            l10n.yearLegendHint,
+            style: const TextStyle(
+              fontSize: _legendLabelSize,
+              fontWeight: FontWeight.w400,
+              color: BqColors.textFaint,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A supplement's colour beside its planned tint — the legend's whole claim,
+/// drawn rather than described.
+class _TwoToneSwatch extends StatelessWidget {
+  const _TwoToneSwatch({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.all(Radius.circular(_swatchRadius)),
+      child: SizedBox(
+        width: _swatchHalfWidth * 2,
+        height: _swatchHeight,
+        child: Row(
+          children: [
+            Expanded(child: ColoredBox(color: color)),
+            Expanded(
+              child: ColoredBox(color: color.withValues(alpha: _plannedAlpha)),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -530,6 +530,9 @@ void main() {
 
       await tester.tap(find.text('Рік'));
       await tester.pump();
+      // Рік is five elements deep too — chip, grid, legend, detail, footnote —
+      // so its closing line also sits below the fold.
+      await scrollBody(tester, 500);
 
       expect(disclaimer, findsOneWidget, reason: 'Рік closes with it too');
       expect(
@@ -1642,10 +1645,27 @@ void main() {
             DateTime.utc(2026, 12, 31),
           ),
       ]);
-      await openYear(
+      await openPlanner(
         tester,
         container,
         textScaler: const TextScaler.linear(2.0),
+      );
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+      // At scale 2.0 the peak chip's sentence is many lines tall — which is
+      // the "no fixed-size text container" rule working, not a defect — so
+      // the grid starts below the viewport and its cards build only once the
+      // body is scrolled.
+      await pumpUntil(
+        tester,
+        () => find.byKey(const ValueKey('year-peak-chip')).evaluate().isNotEmpty,
+        'the Рік body',
+      );
+      await scrollBody(tester, 700);
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('month-card-').evaluate().isNotEmpty,
+        'the year grid at a text scaler of 2.0',
       );
 
       expect(byKeyPrefix('month-card-'), findsNWidgets(12));
@@ -1716,8 +1736,15 @@ void main() {
       expect(find.text('приймаю'), findsOneWidget);
       expect(find.text('заплановано'), findsOneWidget);
       expect(find.text('частина місяця'), findsOneWidget);
-      expect(find.text('Добавка m03'), findsNothing,
-          reason: 'a supplement with no coverage in the month has no row');
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('month-detail-card')),
+          matching: find.text('Добавка m03'),
+        ),
+        findsNothing,
+        reason: 'a supplement with no coverage in the month has no row — it '
+            'still earns a legend entry, which is a different surface',
+      );
 
       expect(find.byType(BottomSheet), findsNothing);
       expect(find.byType(Dialog), findsNothing);
