@@ -22,7 +22,12 @@ same `_apply`) → Drift row update → `watchDay` stream re-emits → row repai
 Persistence is a real row update, not local state. In-flight `_busy` guard
 prevents double-write oscillation.
 
-### Flow 2 — Cycle correctness across Today / Цикли / Рік: BROKEN (one seam)
+### Flow 2 — Cycle correctness across Today / Цикли / Рік: FIXED (was BROKEN)
+
+> Resolved by commit `1ec271f` (tests `f3dcfe9`). See "Fix applied — flow 2"
+> at the end of this document. The BLOCKER text below is kept as the record of
+> what was wrong.
+
 Single activity decision point holds by design: `isActiveOn`
 (`core/domain/cycle_math.dart:26`) is the only implementation, called from
 exactly two places — `drift_repositories.dart:285` (materialization) and
@@ -160,3 +165,59 @@ activity predicate, one status write site, one delete path). The single real
 break is that a schedule EDIT does not reconcile already-materialized doses,
 so Phase 3's Today and Phase 4's planner can show different answers for the
 same day. Fix that (plus the two warnings) and the milestone is coherent.
+
+## Fix applied — flow 2 (RESOLVED)
+
+**Commits:** `f3dcfe9` (regression tests, RED) → `1ec271f` (fix).
+**Gates:** `flutter analyze` 0 issues; `flutter test` 701 passed
+(693 baseline + 8 new). `integration_test/` not run here — device required.
+
+**Approach chosen: extend the `watchDay` filter** (the integration check's
+second option), not a `deletedAt` stamp inside `upsert`. `watchDay` now
+re-asks `isActiveOn` for every PENDING dose it reads and drops the ones the
+CURRENT schedule no longer covers. Three reasons:
+
+1. **One policy.** Pause and slot removal already hide pending doses at read
+   time. A stamp in `upsert` would have made schedule edits the one mutation
+   that rewrites rows, so "why is this dose gone?" would have had two
+   different answers depending on which field the user touched.
+2. **The Phase-3 revival trap (PF-1).** A stamped log row is permanently
+   unrecoverable: `ensureLogsForDay` inserts with `insertOrIgnore` against the
+   unique `(slotId, date)` key, so the stamped row blocks its own
+   re-materialization forever. Editing the schedule back would leave a
+   permanent hole. The filter restores the day with zero writes — pinned by
+   the "editing the schedule BACK" test, which asserts the SAME `logId`
+   returns.
+3. **Scope.** A stamp would have to guess which days to reconcile (`upsert`
+   knows the new schedule but not which days were ever materialized). The
+   filter answers per-day, at read time, for free.
+
+`isActiveOn` remains the single activity decision point: no cycle math is
+re-derived in SQL or in the repository — the filter calls the predicate on the
+regimen the query already read. The SQL `paused`-and-pending clause was
+**removed** as redundant (pause is `isActiveOn`'s first clause), so the paused
+bit is no longer decided in two places. `ensureLogsForDay` needed **no change**
+— it was already gated on `isActiveOn`, and it is what brings newly-active days
+IN after an edit, while the new filter takes now-inactive days OUT. Together
+they are exactly the chain `dayDosesProvider` runs on every regimen change.
+
+**Regression tests** — `test/db/schedule_edit_reconcile_test.dart`, raw-row
+assertion style copied from `pause_filter_test.dart`. Six of eight confirmed
+RED against the pre-fix code:
+
+| Test | Pre-fix |
+|---|---|
+| move `startDate` → the pending dose disappears; raw row survives unstamped | RED |
+| a TAKEN dose on a now-inactive day survives as history | green (over-fix guard) |
+| a SKIPPED dose on a now-inactive day survives as history | green (over-fix guard) |
+| shorten a course `endDate` → pending doses past the new end disappear | RED |
+| edit back → the day re-materializes, same `logId`, no duplicate row | RED |
+| unaffected days keep their doses (widened on-block) | RED |
+| switch `kind` cyclic → course reconciles days outside the window | RED |
+| Today and the planner agree day-by-day across 21 days after an edit | RED |
+
+**Do the two views agree now?** Yes. The last test walks 21 days after a phase
++ shape edit and asserts `watchDay(day).isNotEmpty == isActiveOn(regimen, day)`
+for every one of them, running the production chain (`ensureLogsForDay` then
+`watchDay`). Requirements REGI-01/02 and PLAN-01..04 move from PARTIAL to
+WIRED. Seam 1 is closed; seams 2 and 3 (both WARNINGs) are untouched.
