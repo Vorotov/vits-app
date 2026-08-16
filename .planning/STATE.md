@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 4
-current_phase_name: Planner Views
+current_phase: 5
+current_phase_name: Localization & Settings
 status: planning
 stopped_at: Completed 01-07-PLAN.md (SUMMARY committed ce4e2ca)
-last_updated: "2026-08-15T20:53:06.507Z"
-last_activity: 2026-08-15
-last_activity_desc: Phase 2 complete, transitioned to Phase 3
+last_updated: "2026-08-16T01:19:34.549Z"
+last_activity: 2026-08-16
+last_activity_desc: Phase 4 complete, transitioned to Phase 5
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 17
-  completed_plans: 17
+  total_phases: 4
+  completed_phases: 4
+  total_plans: 22
+  completed_plans: 22
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-08-14)
 
 ## Current Position
 
-Phase: 4 — Planner Views
+Phase: 5 — Localization & Settings
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-08-15 — Phase 3 complete, transitioned to Phase 4
+Last activity: 2026-08-16 — Phase 4 complete, transitioned to Phase 5
 
 Progress: [██████████] 100%
 
@@ -38,7 +38,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 17
+- Total plans completed: 22
 - Average duration: ~40 min active (2h 14m wall incl. interruption)
 - Total execution time: ~0.7 hours active
 
@@ -50,6 +50,7 @@ Progress: [██████████] 100%
 | 1 | 7 | - | - |
 | 2 | 5 | - | - |
 | 3 | 5 | - | - |
+| 4 | 5 | - | - |
 
 **Recent Trend:**
 
@@ -76,6 +77,8 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 - Instrument Sans has no Cyrillic glyphs — uk text falls back to Roboto/SF on device (matches browser-mockup behavior). Decide in Phase 5: keep fallback or swap to a Cyrillic-capable primary font (candidates: Inter, Manrope). Found 2026-08-15 during Phase 2 evidence harness (cmap-verified).
+- Riverpod 3 auto-retries a failed provider and surfaces the interim state as loading, so a failing local DB shows the planner's blank surface instead of the designed error surface until backoff ends. Found 2026-08-16 during the Phase-4 CR-02 fix; documented in 04-REVIEW.md. Decide in Phase 5: either disable retry on these providers or render the error surface for loading-with-error.
+- Gantt label column truncates 2 of 9 long uk names at scale 1.0 (measured), and load-chart week columns are 14px wide horizontally (full 53px height is tappable). Both accepted for v1 in 04-UAT.md; revisit if UAT feedback asks.
 
 ### Blockers/Concerns
 

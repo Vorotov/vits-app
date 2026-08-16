@@ -30,10 +30,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Planner Views
 
-- [ ] **PLAN-01**: User can view a Cycles gantt (~4-month window): one row per supplement, solid segments for active periods, hatched/lighter for planned, with a today marker
-- [ ] **PLAN-02**: User can view a weekly concurrent-load chart with the editorial 5-substance limit, tap a week for details (load, verdict, active supplements)
-- [ ] **PLAN-03**: User can view a Year matrix: 12 month cards with per-supplement coverage bars (lighter = planned), tap a month for details
-- [ ] **PLAN-04**: Planner screens carry the educational disclaimer and frame the 5-substance limit as editorial, not medical
+- [x] **PLAN-01**: User can view a Cycles gantt (~4-month window): one row per supplement, solid segments for active periods, hatched/lighter for planned, with a today marker
+- [x] **PLAN-02**: User can view a weekly concurrent-load chart with the editorial 5-substance limit, tap a week for details (load, verdict, active supplements)
+- [x] **PLAN-03**: User can view a Year matrix: 12 month cards with per-supplement coverage bars (lighter = planned), tap a month for details
+- [x] **PLAN-04**: Planner screens carry the educational disclaimer and frame the 5-substance limit as editorial, not medical
 
 ### Localization
 
@@ -109,10 +109,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TRACK-03 | Phase 3 | Complete |
 | TRACK-04 | Phase 3 | Complete |
 | DATA-03 | Phase 3 | Complete |
-| PLAN-01 | Phase 4 | Pending |
-| PLAN-02 | Phase 4 | Pending |
-| PLAN-03 | Phase 4 | Pending |
-| PLAN-04 | Phase 4 | Pending |
+| PLAN-01 | Phase 4 | Complete |
+| PLAN-02 | Phase 4 | Complete |
+| PLAN-03 | Phase 4 | Complete |
+| PLAN-04 | Phase 4 | Complete |
 | L10N-01 | Phase 5 | Pending |
 | L10N-02 | Phase 5 | Pending |
 | L10N-03 | Phase 5 | Pending |
