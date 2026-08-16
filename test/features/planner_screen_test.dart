@@ -17,6 +17,7 @@ import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/domain/repositories.dart' show StackEntry;
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
+import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/calendar_screen.dart';
@@ -110,11 +111,11 @@ void main() {
   /// path from the Calendar header is proven once, by the tests above, and
   /// every shell assertion below is about the planner itself. It also keeps
   /// the Today page — and its bounded materialization — out of these tests.
-  Widget plannerApp(ProviderContainer container) {
+  Widget plannerApp(ProviderContainer container, {String locale = 'uk'}) {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
-        locale: const Locale('uk'),
+        locale: Locale(locale),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: bqTheme(),
@@ -122,6 +123,16 @@ void main() {
       ),
     );
   }
+
+  /// Finds every widget carrying a `ValueKey<String>` under [prefix].
+  ///
+  /// Painted primitives — gridlines, the today marker, bars, pips — have no
+  /// distinguishing type of their own, so this codebase gives each a keyed
+  /// container and finds it by key (the `week-dot` idiom).
+  Finder byKeyPrefix(String prefix) => find.byWidgetPredicate((w) {
+        final key = w.key;
+        return key is ValueKey<String> && key.value.startsWith(prefix);
+      });
 
   void usePhoneSurface(WidgetTester tester) {
     tester.view.physicalSize = const Size(1170, 2532);
@@ -186,6 +197,52 @@ void main() {
     ],
   );
 
+  /// Seeds one course per start date so the load chart lands a week in every
+  /// band at a KNOWN bucket index.
+  ///
+  /// The window for the pinned 13 August clock runs 1 Aug – 30 Nov, and the
+  /// Monday buckets covering it start on 27 July (DECIDED-3). So:
+  /// bucket 0 = 27 Jul–2 Aug (nothing has started: load 0),
+  /// bucket 1 = 3–9 Aug (load 3), bucket 2 = 10–16 Aug (load 4, and it
+  /// contains today), bucket 3 = 17–23 Aug (load 7).
+  Future<void> seedBands(
+    ProviderContainer container, {
+    List<int> startsOnAugust = const [5, 5, 5, 10, 17, 17, 17],
+  }) async {
+    final supplements = container.read(supplementRepoProvider);
+    final regimens = container.read(regimenRepoProvider);
+    for (var i = 0; i < startsOnAugust.length; i++) {
+      await supplements.upsert(
+        Supplement(
+          id: 'b$i',
+          name: 'Добавка $i',
+          doseText: '1 капс.',
+          colorValue: 0xFF6B6FA8,
+          note: '',
+        ),
+      );
+      await regimens.upsert(
+        Regimen(
+          id: 'br$i',
+          supplementId: 'b$i',
+          kind: RegimenKind.course,
+          startDate: DateTime.utc(2026, 8, startsOnAugust[i]),
+          endDate: DateTime.utc(2026, 11, 30),
+          onDays: 0,
+          offDays: 0,
+          paused: false,
+          slots: const [
+            DoseSlot(
+              id: 'bs',
+              minutesFromMidnight: 480,
+              doseLabel: '1 капс.',
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
   Future<void> seed(
     ProviderContainer container, {
     bool courseForVitaminD = false,
@@ -244,8 +301,14 @@ void main() {
     expect(find.byType(GanttRowBar), findsNWidgets(2),
         reason: 'two regimens: one active, one paused — the supplement with '
             'no regimen at all draws no row (DECIDED-7)');
-    expect(find.text('Магній бісглицинат'), findsOneWidget);
-    expect(find.text('Креатин моногідрат'), findsOneWidget,
+    // Scoped to the gantt: an active supplement's name also appears as a
+    // week-detail name chip further down the same scroll body.
+    Finder inGantt(String name) => find.descendant(
+          of: find.byType(PlannerGantt),
+          matching: find.text(name),
+        );
+    expect(inGantt('Магній бісглицинат'), findsOneWidget);
+    expect(inGantt('Креатин моногідрат'), findsOneWidget,
         reason: 'a paused regimen keeps its row and shows a bare track');
     expect(find.text('Вітамін D3'), findsNothing);
 
@@ -349,14 +412,27 @@ void main() {
 
   Future<void> openPlanner(
     WidgetTester tester,
-    ProviderContainer container,
-  ) async {
-    await tester.pumpWidget(plannerApp(container));
+    ProviderContainer container, {
+    String locale = 'uk',
+  }) async {
+    await tester.pumpWidget(plannerApp(container, locale: locale));
+    // The Цикли body is now four cards deep, so anything below the chart
+    // lives outside the viewport until the body is scrolled.
     await pumpUntil(
       tester,
       () => find.byType(BqSegmented).evaluate().isNotEmpty,
       'the planner header',
     );
+  }
+
+  /// Drags the planner's scroll body up by [dy] logical pixels.
+  ///
+  /// A `ListView` only builds what its viewport (plus cache extent) covers, so
+  /// the closing disclaimer and the week-detail card have to be scrolled into
+  /// range before a finder can see them.
+  Future<void> scrollBody(WidgetTester tester, double dy) async {
+    await tester.drag(find.byType(ListView), Offset(0, -dy));
+    await tester.pump();
   }
 
   group('planner shell', () {
@@ -429,6 +505,8 @@ void main() {
         () => find.byType(GanttRowBar).evaluate().isNotEmpty,
         'the gantt rows',
       );
+      // Цикли is four cards deep now; its closing line sits below the fold.
+      await scrollBody(tester, 500);
 
       expect(disclaimer, findsOneWidget, reason: 'Цикли closes with it');
 
@@ -660,6 +738,631 @@ void main() {
 
       handle.dispose();
       await tearDownTree(tester, container);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // The gantt chrome (plan 04-03 task 1, UI-SPEC S6a item 2, P-4/P-8,
+  // PF-3, M1, Interaction Contract 12).
+  // ---------------------------------------------------------------------
+
+  group('gantt chrome', () {
+    testWidgets('four standalone uk month abbreviations render in window '
+        'order, uppercased (PF-4)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      // The Aug-Nov window around the pinned clock, in the STANDALONE
+      // (nominative) abbreviated forms — `LLL`, never `MMM` and never a table.
+      expect(find.text('СЕРП.'), findsOneWidget);
+      expect(find.text('ВЕР.'), findsOneWidget);
+      expect(find.text('ЖОВТ.'), findsOneWidget);
+      expect(find.text('ЛИСТ.'), findsOneWidget);
+      expect(byKeyPrefix('gantt-month-'), findsNWidgets(4));
+
+      // Window order, read off the keyed slots rather than the tree order.
+      for (final (index, label) in <(int, String)>[
+        (0, 'СЕРП.'),
+        (1, 'ВЕР.'),
+        (2, 'ЖОВТ.'),
+        (3, 'ЛИСТ.'),
+      ]) {
+        expect(
+          tester.widget<Text>(find.byKey(ValueKey('gantt-month-$index'))).data,
+          label,
+        );
+      }
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('month columns are sized to REAL day counts — a 31-day month '
+        'is wider than a 30-day one (PF-3, T-04-11)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      final august =
+          tester.getSize(find.byKey(const ValueKey('gantt-month-0'))).width;
+      final september =
+          tester.getSize(find.byKey(const ValueKey('gantt-month-1'))).width;
+      final october =
+          tester.getSize(find.byKey(const ValueKey('gantt-month-2'))).width;
+
+      expect(august, greaterThan(september),
+          reason: 'August has 31 days and September 30 — fixed quarter '
+              'columns would make these equal');
+      expect(october, closeTo(august, 0.01),
+          reason: 'October is also 31 days');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('three gridlines sit at the interior month boundaries and '
+        'exactly one today marker renders (P-4)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      expect(byKeyPrefix('gantt-gridline-'), findsNWidgets(3),
+          reason: 'a four-month window has three interior boundaries');
+      expect(find.byKey(const ValueKey('gantt-today-marker')), findsOneWidget,
+          reason: 'today is inside the window by construction, so the marker '
+              'always renders — there is no absent branch');
+
+      // The boundaries sit at the cumulative REAL day fractions of a 122-day
+      // window — 31/122, 61/122, 92/122 — never at 0.25 / 0.50 / 0.75.
+      final track = tester.getRect(find.byType(GanttRowBar).first);
+      double fractionOf(int i) =>
+          (tester.getRect(byKeyPrefix('gantt-gridline-').at(i)).left -
+              track.left) /
+          track.width;
+      expect(fractionOf(0), closeTo(31 / 122, 0.002));
+      expect(fractionOf(1), closeTo(61 / 122, 0.002));
+      expect(fractionOf(2), closeTo(92 / 122, 0.002));
+      // 31/122 is 0.2541, not 0.25 — the middle boundary happens to land on
+      // 0.5 for THIS window (31 + 30 = 61 of 122), which is exactly why the
+      // outer two are the ones that prove the columns are not quarters.
+      expect(fractionOf(0), isNot(closeTo(0.25, 0.002)));
+      expect(fractionOf(2), isNot(closeTo(0.75, 0.002)));
+
+      // (todayIndex + 0.5) / span for the pinned 13 August clock.
+      final marker = tester.getRect(find.byKey(const ValueKey(
+        'gantt-today-marker',
+      )));
+      expect((marker.left - track.left) / track.width,
+          closeTo(12.5 / 122, 0.002));
+      expect(marker.height, greaterThan(0),
+          reason: 'the rules span the full height of the row stack');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the legend renders exactly three entries in BOTH locales — '
+        'the mockup\'s interaction entry does not ship (M1)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      expect(byKeyPrefix('gantt-legend-'), findsNWidgets(3));
+      expect(find.text('приймаю'), findsOneWidget);
+      expect(find.text('заплановано'), findsOneWidget);
+      expect(find.text('пауза'), findsOneWidget);
+      expect(find.text('є взаємодія'), findsNothing,
+          reason: 'an interaction claim this product does not make');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the legend still renders exactly three entries in en',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container, locale: 'en');
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      expect(byKeyPrefix('gantt-legend-'), findsNWidgets(3));
+      expect(find.text('taking'), findsOneWidget);
+      expect(find.text('planned'), findsOneWidget);
+      expect(find.text('paused'), findsOneWidget);
+      expect(find.textContaining('interaction'), findsNothing);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('changing the selected week does not rebuild the gantt '
+        '(Interaction Contract 12)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      final sub = container.listen(resolvedWeekIndexProvider, (_, _) {});
+      addTearDown(sub.close);
+
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      Finder painted() => find.descendant(
+            of: find.byType(GanttRowBar).first,
+            matching: find.byType(CustomPaint),
+          );
+      final before = tester.widget<CustomPaint>(painted());
+      expect(
+        find.descendant(
+          of: find.byType(PlannerGantt),
+          matching: find.byType(RepaintBoundary),
+        ),
+        findsWidgets,
+        reason: 'the card is isolated behind its own boundary',
+      );
+
+      container.read(selectedWeekProvider.notifier).select(4);
+      await tester.pump();
+      expect(container.read(resolvedWeekIndexProvider), 4);
+
+      expect(identical(tester.widget<CustomPaint>(painted()), before), isTrue,
+          reason: 'the gantt subtree did not even rebuild, so it cannot have '
+              'repainted — selection lives in a provider the gantt never '
+              'watches');
+
+      await tearDownTree(tester, container);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // The concurrent-load chart (plan 04-03 task 2, UI-SPEC S6a item 3,
+  // P-9, DECIDED-2/3/10, Interaction Contracts 3, 5, 11).
+  // ---------------------------------------------------------------------
+
+  group('load chart', () {
+    Future<void> openBands(
+      WidgetTester tester,
+      ProviderContainer container, {
+      List<int> startsOnAugust = const [5, 5, 5, 10, 17, 17, 17],
+    }) async {
+      await seedBands(container, startsOnAugust: startsOnAugust);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('load-week-').evaluate().isNotEmpty,
+        'the load chart columns',
+      );
+    }
+
+    Color? fillOf(WidgetTester tester, String key) {
+      final box = tester.widget<Container>(find.byKey(ValueKey<String>(key)));
+      return (box.decoration! as BoxDecoration).color;
+    }
+
+    testWidgets('one column per Monday week of the window — 18 or 19 of them '
+        '(DECIDED-3)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      final model = container.read(cyclesModelProvider).value!;
+      expect(byKeyPrefix('load-week-'), findsNWidgets(model.weeks.length));
+      expect(model.weeks.length, anyOf(18, 19),
+          reason: 'full Monday weeks covering a 120-123 day window');
+
+      // The axis carries the ACTUAL bucket bounds, never the mockup's
+      // hardcoded "1 серп" / "30 лис" (M6).
+      expect(find.text('ОДНОЧАСНЕ НАВАНТАЖЕННЯ'), findsOneWidget);
+      expect(find.text('по тижнях'), findsOneWidget);
+      expect(find.text('межа 5 · комфорт 3'), findsOneWidget);
+      final axis = DateFormat.MMMd('uk');
+      expect(find.text(axis.format(model.weeks.first.bucket.start)),
+          findsOneWidget);
+      expect(find.text(axis.format(model.weeks.last.bucket.endInclusive)),
+          findsOneWidget);
+      expect(find.text('1 серп.'), findsNothing);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('every band draws its own bar: comfort, at the limit, and a '
+        'capped main bar with a proportional over-bar (UI-SPEC banding)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      // Bucket 1 — load 3: the quiet comfort tone, round(3/5*38) = 23.
+      expect(fillOf(tester, 'load-main-1'), BqColors.loadBar);
+      expect(tester.getSize(find.byKey(const ValueKey('load-main-1'))).height,
+          23);
+      expect(find.byKey(const ValueKey('load-over-1')), findsNothing);
+
+      // Bucket 2 — load 4: at our editorial limit, round(4/5*38) = 30.
+      expect(fillOf(tester, 'load-main-2'), BqColors.warn);
+      expect(tester.getSize(find.byKey(const ValueKey('load-main-2'))).height,
+          30);
+
+      // Bucket 3 — load 7: the main bar caps at 38 and the excess becomes a
+      // proportional over-bar, round(2/5*38) = 15.
+      expect(fillOf(tester, 'load-main-3'), BqColors.risk);
+      expect(tester.getSize(find.byKey(const ValueKey('load-main-3'))).height,
+          38);
+      expect(fillOf(tester, 'load-over-3'), BqColors.risk);
+      expect(tester.getSize(find.byKey(const ValueKey('load-over-3'))).height,
+          15);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a zero-load week draws the 2px stub and stays selectable '
+        '(DECIDED-3, M8)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      expect(fillOf(tester, 'load-stub-0'), BqColors.field);
+      expect(tester.getSize(find.byKey(const ValueKey('load-stub-0'))).height,
+          2);
+      expect(find.byKey(const ValueKey('load-main-0')), findsNothing,
+          reason: 'the stub stands IN PLACE of a zero-height bar');
+
+      expect(container.read(resolvedWeekIndexProvider), 2,
+          reason: 'the default follows the bucket containing today');
+      await tester.tap(find.byKey(const ValueKey('load-week-0')));
+      await tester.pump();
+      expect(container.read(resolvedWeekIndexProvider), 0);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the WHOLE column is the tap target — a hit well above a '
+        'short bar still selects the week (DECIDED-10)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      final column = tester.getRect(find.byKey(const ValueKey('load-week-5')));
+      expect(column.height, greaterThanOrEqualTo(53),
+          reason: 'a ~15px wide column earns its target from its HEIGHT');
+
+      // Two pixels below the column's top edge is empty space above every bar
+      // in this chart — the bar itself is at most 38px of a 53px column.
+      await tester.tapAt(Offset(column.center.dx, column.top + 2));
+      await tester.pump();
+
+      expect(container.read(resolvedWeekIndexProvider), 5);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the selected column is opaque and every other is half '
+        '(Interaction Contract 3)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      double opacityOf(int i) => tester
+          .widget<Opacity>(
+            find
+                .ancestor(
+                  of: find.byKey(ValueKey<String>('load-week-$i')),
+                  matching: find.byType(Opacity),
+                )
+                .first,
+          )
+          .opacity;
+
+      expect(opacityOf(2), 1.0, reason: 'today\'s week is the default');
+      expect(opacityOf(3), 0.5);
+
+      await tester.tap(find.byKey(const ValueKey('load-week-3')));
+      await tester.pump();
+
+      expect(opacityOf(3), 1.0);
+      expect(opacityOf(2), 0.5);
+      // Selection is the feedback; no ripple (Interaction Contract 11).
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('load-week-3')),
+          matching: find.byType(InkWell),
+        ),
+        findsNothing,
+      );
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('each column carries its own button, selected state and tap '
+        'action, labelled with the week and its load (WR-02)', (tester) async {
+      usePhoneSurface(tester);
+      final handle = tester.ensureSemantics();
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      final node = tester.getSemantics(
+        find.byKey(const ValueKey('load-week-2')),
+      );
+      expect(node.label, contains('4 з 5 слотів'),
+          reason: 'a pre-formatted weekLoadLabel inside weekBarSemantics');
+      expect(node.label, contains('серп.'), reason: 'the week range');
+      // The action must sit on THIS node — `excludeSemantics` drops every
+      // descendant action, which is the WR-02 bug shape.
+      expect(
+        node,
+        isSemantics(isButton: true, isSelected: true, hasTapAction: true),
+      );
+      expect(
+        tester.getSemantics(find.byKey(const ValueKey('load-week-4'))),
+        isSemantics(isButton: true, isSelected: false, hasTapAction: true),
+      );
+
+      handle.dispose();
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('exactly one dashed reference line renders, at the comfort '
+        'height (DECIDED-2)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      expect(find.byKey(const ValueKey('load-threshold')), findsOneWidget,
+          reason: 'the 5 limit is drawn structurally, as the cap of the main '
+              'bar — a second line there would be redundant chrome');
+
+      // 22.8px above the chart baseline, which is the bottom of a column —
+      // 0.6 x 38px, the height of a load-3 bar (DECIDED-2).
+      final line = tester.getRect(find.byKey(const ValueKey('load-threshold')));
+      final column = tester.getRect(find.byKey(const ValueKey('load-week-0')));
+      expect(column.bottom - line.bottom, closeTo(22.8, 0.1));
+      expect(line.height, 1);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('selecting a week writes nothing (Interaction Contract 5, '
+        'T-04-01)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      final before = (await db.select(db.intakeLogs).get()).length;
+      await tester.tap(find.byKey(const ValueKey('load-week-7')));
+      await tester.pump();
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+
+      expect(container.read(resolvedWeekIndexProvider), 7);
+      expect((await db.select(db.intakeLogs).get()).length, before,
+          reason: 'the one gesture this screen has materializes no row');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the summary chip names this week\'s load and bands at OR '
+        'above the limit (DECIDED-6)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      expect(find.text('Цього тижня одночасно 4 речовини'), findsOneWidget);
+      expect(find.text('межа 5'), findsOneWidget);
+      expect(fillOf(tester, 'cycles-summary-chip'), BqColors.calmBg,
+          reason: 'a load of 4 is still below the limit');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a this-week load AT the limit turns the summary chip amber '
+        '(DECIDED-6)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container, startsOnAugust: const [1, 1, 1, 1, 1]);
+
+      expect(find.text('Цього тижня одночасно 5 речовин'), findsOneWidget);
+      expect(fillOf(tester, 'cycles-summary-chip'), BqColors.warnBg,
+          reason: 'the WEEK chip nudges AT the limit — the year peak chip '
+              'deliberately does not (DECIDED-6)');
+
+      await tearDownTree(tester, container);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // The inline week detail (plan 04-03 task 3, UI-SPEC S6a item 4, P-7,
+  // P-13, DECIDED-8, Interaction Contracts 3 and 5).
+  // ---------------------------------------------------------------------
+
+  group('week detail', () {
+    Future<void> openBands(
+      WidgetTester tester,
+      ProviderContainer container, {
+      String locale = 'uk',
+    }) async {
+      await seedBands(container);
+      await openPlanner(tester, container, locale: locale);
+      await pumpUntil(
+        tester,
+        () => byKeyPrefix('load-week-').evaluate().isNotEmpty,
+        'the load chart columns',
+      );
+      // Brings the chart and the card below it into one screenful, which is
+      // the exact reading posture the inline detail exists for (P-13).
+      await scrollBody(tester, 300);
+      await pumpUntil(
+        tester,
+        () => find.byKey(const ValueKey('week-detail-card'))
+            .evaluate()
+            .isNotEmpty,
+        'the week detail card',
+      );
+    }
+
+    Color? fillOf(WidgetTester tester, String key) {
+      final box = tester.widget<Container>(find.byKey(ValueKey<String>(key)));
+      return (box.decoration! as BoxDecoration).color;
+    }
+
+    testWidgets('at load 0 it reads comfort, five empty pips and five free '
+        'slots — an empty chip row, never an empty state (UI-SPEC truth #11)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      await tester.tap(find.byKey(const ValueKey('load-week-0')));
+      await tester.pump();
+
+      expect(find.text('КОМФОРТНО'), findsOneWidget);
+      expect(fillOf(tester, 'week-verdict-chip'), BqColors.calmBg);
+      expect(byKeyPrefix('week-pip-'), findsNWidgets(5));
+      for (var i = 0; i < 5; i++) {
+        expect(fillOf(tester, 'week-pip-$i'), BqColors.surface,
+            reason: 'no slot is used in a week with no cycles');
+      }
+      expect(
+        find.textContaining('0 з 5 слотів · Вільно 5 — можна планувати старт'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<Wrap>(find.byKey(const ValueKey('week-name-chips')))
+            .children,
+        isEmpty,
+        reason: 'zero names is a normal state of a real week — an empty Wrap, '
+            'never an empty-state block',
+      );
+      expect(find.text('Планувати ще нічого'), findsNothing);
+      expect(find.text(
+        'До трьох речовин одночасно легко відстежувати: якщо щось піде не '
+        'так, зрозуміло, що саме прибрати.',
+      ), findsOneWidget);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('at load 4 it reads МЕЖА in the warn band with four filled '
+        'pips and one empty (P-7)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      // The default selection is the bucket containing today — load 4.
+      final range = DateFormat.MMMd('uk');
+      expect(
+        find.text('${range.format(DateTime.utc(2026, 8, 10))} – '
+            '${range.format(DateTime.utc(2026, 8, 16))}'),
+        findsOneWidget,
+      );
+      expect(find.text('МЕЖА'), findsOneWidget);
+      expect(fillOf(tester, 'week-verdict-chip'), BqColors.warnBg);
+      expect(byKeyPrefix('week-pip-'), findsNWidgets(5));
+      for (var i = 0; i < 4; i++) {
+        expect(fillOf(tester, 'week-pip-$i'), BqColors.accent);
+      }
+      expect(fillOf(tester, 'week-pip-4'), BqColors.surface);
+      expect(
+        find.textContaining('4 з 5 слотів · Вільно 1 — можна планувати старт'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<Wrap>(find.byKey(const ValueKey('week-name-chips')))
+            .children
+            .length,
+        4,
+      );
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('tapping an over-limit week re-renders the card IN PLACE: '
+        'seven pips, the last two in risk, and the truncated note (P-13, '
+        'DECIDED-8)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      await tester.tap(find.byKey(const ValueKey('load-week-3')));
+      await tester.pump();
+
+      expect(find.text('ПОНАД МЕЖУ'), findsOneWidget);
+      expect(fillOf(tester, 'week-verdict-chip'), BqColors.riskBg);
+      expect(byKeyPrefix('week-pip-'), findsNWidgets(7),
+          reason: 'the excess runs PAST the row — the visual half of what the '
+              'note says in words');
+      expect(fillOf(tester, 'week-pip-4'), BqColors.accent);
+      expect(fillOf(tester, 'week-pip-5'), BqColors.risk);
+      expect(fillOf(tester, 'week-pip-6'), BqColors.risk);
+      expect(find.textContaining('7 з 5 слотів · Вільних слотів немає'),
+          findsOneWidget);
+      expect(
+        find.text('Цього тижня перетинаються 7 циклів. Варто зсунути старт '
+            'частини з них або обговорити такий обсяг із лікарем.'),
+        findsOneWidget,
+        reason: 'a pre-formatted cyclesCount inside the note key',
+      );
+
+      // Inline, always — the user is comparing this against the chart
+      // directly above it (P-13).
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.byType(Dialog), findsNothing);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the excluded pharmacological clause is nowhere in the tree, '
+        'in either locale (M2, PF-5)', (tester) async {
+      usePhoneSurface(tester);
+      for (final locale in const ['uk', 'en']) {
+        final container = makeContainer();
+        await openBands(tester, container, locale: locale);
+        await tester.tap(find.byKey(const ValueKey('load-week-3')));
+        await tester.pump();
+
+        for (final excluded in const [
+          'жиророзчин',
+          'сумарне навантаження',
+          'fat-soluble',
+          'cumulative load',
+        ]) {
+          expect(find.textContaining(excluded), findsNothing,
+              reason: '"$excluded" is a pharmacological claim inside the '
+                  'never-ship interaction-advice exclusion');
+        }
+
+        await tearDownTree(tester, container);
+      }
     });
   });
 }
