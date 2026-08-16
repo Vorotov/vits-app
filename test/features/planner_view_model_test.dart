@@ -365,6 +365,113 @@ void main() {
     });
   });
 
+  group('week buckets that spill past the window count their OWN days '
+      '(DECIDED-3, CR-01)', () {
+    final magnesium = supp('s1', 'Магній');
+
+    // 1 August 2026 is a Saturday, so bucket 0 runs 27 лип – 2 серп — six days
+    // of it lie BEFORE the window — and the last bucket runs 30 лис – 6 груд,
+    // six days of it AFTER. DECIDED-3 accepts those bounds and mandates that
+    // the axis label shows the ACTUAL bucket dates, which makes the load a
+    // claim about those dates. Scanning activity over the window alone answers
+    // a different question than the label asks.
+    final earlyAugust = DateTime.utc(2026, 8, 2);
+
+    test('a course active only on the PRE-window days of bucket 0 counts', () {
+      final model = buildCyclesModel(
+        [
+          StackEntry(
+            supplement: magnesium,
+            regimen: course(
+              start: DateTime.utc(2026, 7, 27),
+              end: DateTime.utc(2026, 7, 31),
+            ),
+          ),
+        ],
+        today: earlyAugust,
+      );
+
+      final first = model.weeks.first;
+      expect(first.bucket.start, DateTime.utc(2026, 7, 27));
+      expect(first.bucket.endInclusive, DateTime.utc(2026, 8, 2));
+      expect(first.load, 1,
+          reason: 'the bucket is LABELLED 27 лип – 2 серп, so its load is a '
+              'claim about those seven days — the supplement is genuinely '
+              'active on five of them');
+      expect(first.entries.single.supplement.id, 's1',
+          reason: 'the week detail lists the names behind the number, so an '
+              'absent entry is a supplement the card silently denies');
+    });
+
+    test('a course active only on the POST-window days of the last bucket '
+        'counts', () {
+      final model = buildCyclesModel(
+        [
+          StackEntry(
+            supplement: magnesium,
+            regimen: course(
+              start: DateTime.utc(2026, 12, 1),
+              end: DateTime.utc(2026, 12, 20),
+            ),
+          ),
+        ],
+        today: earlyAugust,
+      );
+
+      final last = model.weeks.last;
+      expect(last.bucket.start, DateTime.utc(2026, 11, 30));
+      expect(last.bucket.endInclusive, DateTime.utc(2026, 12, 6));
+      expect(last.load, 1,
+          reason: 'the course overlaps six of that bucket\'s seven days');
+    });
+
+    test('the PAINTED geometry stays window-scoped — a run lying entirely '
+        'outside the window paints nothing', () {
+      final model = buildCyclesModel(
+        [
+          StackEntry(
+            supplement: magnesium,
+            regimen: course(
+              start: DateTime.utc(2026, 7, 27),
+              end: DateTime.utc(2026, 7, 31),
+            ),
+          ),
+        ],
+        today: earlyAugust,
+      );
+
+      expect(model.rows, hasLength(1), reason: 'the row itself is never hidden');
+      expect(model.rows.single.runs, isEmpty,
+          reason: 'widening the gantt row\'s own runs would collapse a '
+              'before-the-window run to startFraction == endFraction == 0 and '
+              'the painter would still draw it at its 2px floor, at the very '
+              'left edge — a band the user does not have');
+      expect(model.rows.single.segments, isEmpty);
+    });
+
+    test('a bucket fully inside the window is unchanged by the wider scan', () {
+      final model = buildCyclesModel(
+        [
+          StackEntry(
+            supplement: magnesium,
+            regimen: course(
+              start: DateTime.utc(2026, 9, 2),
+              end: DateTime.utc(2026, 9, 2),
+            ),
+          ),
+        ],
+        today: earlyAugust,
+      );
+
+      final hit = model.weeks.firstWhere((w) =>
+          !w.bucket.start.isAfter(DateTime.utc(2026, 9, 2)) &&
+          !w.bucket.endInclusive.isBefore(DateTime.utc(2026, 9, 2)));
+      expect(hit.load, 1);
+      expect(model.weeks.where((w) => w.load > 0), hasLength(1),
+          reason: 'one active day still touches exactly one bucket');
+    });
+  });
+
   group('verdictOf — three editorial bands, both sides of each boundary', () {
     test('the boundaries live in exactly one place', () {
       expect(comfortLoad, 3);

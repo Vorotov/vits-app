@@ -229,19 +229,38 @@ CyclesModel buildCyclesModel(
     ));
   }
 
+  final buckets = weekBuckets(window.start, window.endExclusive);
+
+  // The buckets are full Monday weeks, so bucket 0 may begin up to six days
+  // BEFORE the window and the last may end up to six days AFTER it (DECIDED-3)
+  // — and the axis labels name those actual dates. A load scanned over the
+  // window alone would therefore answer a different question than the label
+  // asks, and the first/last column would under-report (CR-01). Concurrency is
+  // scanned over the buckets' own span; the PAINTED geometry stays
+  // window-scoped, because a run lying entirely before the window collapses to
+  // startFraction == endFraction == 0 and the painter would still draw it at
+  // its 2px floor.
+  final scanFrom = buckets.isEmpty ? window.start : buckets.first.start;
+  final scanTo = buckets.isEmpty ? lastDay : buckets.last.endInclusive;
+
   final rows = <GanttRow>[];
+  final loadRows = <GanttRow>[];
   for (final entry in entries) {
     final regimen = entry.regimen;
     if (regimen == null) continue;
-    final runs = activeRuns(regimen, window.start, lastDay);
+    final windowRuns = activeRuns(regimen, window.start, lastDay);
     rows.add(GanttRow(
       entry: entry,
-      runs: runs,
-      segments: ganttSegments(runs, window.start, window.span, today),
+      runs: windowRuns,
+      segments: ganttSegments(windowRuns, window.start, window.span, today),
+    ));
+    loadRows.add(GanttRow(
+      entry: entry,
+      runs: activeRuns(regimen, scanFrom, scanTo),
+      // Never painted: this row exists only to answer the bucket question.
+      segments: const [],
     ));
   }
-
-  final buckets = weekBuckets(window.start, window.endExclusive);
 
   return CyclesModel(
     windowStart: window.start,
@@ -250,7 +269,7 @@ CyclesModel buildCyclesModel(
     todayIndex: dateOnly(today).difference(window.start).inDays,
     months: List.unmodifiable(months),
     rows: List.unmodifiable(rows),
-    weeks: weekLoads(rows, buckets),
+    weeks: weekLoads(loadRows, buckets),
   );
 }
 
@@ -315,6 +334,11 @@ class WeekLoad {
 /// A supplement counts ONCE per bucket if it is active on ANY day of it —
 /// never once per active day. That is what makes the number "how many things
 /// am I taking at the same time" rather than "how many doses".
+///
+/// [rows] must carry runs scanned over AT LEAST the span [buckets] covers,
+/// which is wider than the planner window at both ends (DECIDED-3). Passing
+/// window-scoped rows silently zeroes the days the first and last bucket hold
+/// outside it — the CR-01 defect.
 List<WeekLoad> weekLoads(List<GanttRow> rows, List<WeekBucket> buckets) {
   return List.unmodifiable([
     for (final bucket in buckets)
