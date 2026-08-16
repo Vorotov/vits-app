@@ -16,6 +16,7 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/theme/theme.dart';
@@ -53,6 +54,15 @@ class DayProgressRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The locale ALWAYS comes from the widget tree, never a literal tag, and
+    // the formatter is built INSIDE build so a locale change re-derives it
+    // (PF-4). `planner_year_grid.dart` already formats its month load exactly
+    // this way; the ring interpolated raw ASCII digits instead, so the
+    // codebase disagreed with its own "numerals are locale-formatted" rule
+    // (WR-07).
+    final locale = Localizations.localeOf(context).toString();
+    final number = NumberFormat.decimalPattern(locale);
+
     return Semantics(
       // A bare canvas is invisible to screen readers, so the counts are
       // restated as a localized label (UI-SPEC Layout & i18n Rules).
@@ -69,7 +79,7 @@ class DayProgressRing extends StatelessWidget {
             // "/" is a separator glyph, the sanctioned string-literal
             // exception — it is not translatable copy.
             child: Text(
-              '$taken/$total',
+              '${number.format(taken)}/${number.format(total)}',
               style: BqText.mono(size: 12, color: BqColors.calm),
             ),
           ),

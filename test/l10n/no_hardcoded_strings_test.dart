@@ -87,6 +87,22 @@ final localeDependentReadPattern =
 /// reached the tree in ASCII digits with no locale grouping applied.
 final toStringCallPattern = RegExp(r'\.toString\s*\(\s*\)');
 
+/// A BARE identifier interpolation — `$name` or `${name}` — inside a string.
+///
+/// This is the OTHER, far more common way to write the `.toString()` defect:
+/// `Text('$taken/$total')` stringifies exactly as `taken.toString()` does, and
+/// the gate that only matched the `.toString()` token let it through for five
+/// phases (WR-07 / TW-3).
+///
+/// Deliberately does NOT match `${expr.method(...)}` or `${obj.field}`: a
+/// braced expression with a `.` in it has been through something — a
+/// `NumberFormat`, a `DateFormat`, an ARB key — and that is the sanctioned
+/// shape. Dart's simple `$name` form can only ever be a bare identifier, so
+/// the first alternative needs no such carve-out.
+final bareInterpolationPattern = RegExp(
+  r'\$[A-Za-z_][A-Za-z0-9_]*|\$\{\s*[A-Za-z_][A-Za-z0-9_]*\s*\}',
+);
+
 /// A Dart triple-quoted string. This scanner reads single-line literals only;
 /// the gate asserts none exist rather than mis-parsing one silently.
 final tripleQuotePattern = RegExp("'''" r'|"""');
@@ -462,6 +478,47 @@ String balancedBody(String source, int openBrace) {
   return source.substring(openBrace);
 }
 
+/// The POSITIONAL arguments of the balanced `(...)` text [args].
+///
+/// Only these become the string a user reads. `key:`, `style:`, `semanticsLabel:`
+/// and friends are NAMED, and at least one of them legitimately interpolates an
+/// identifier — `key: ValueKey<String>('month-$index-label')` is a widget key,
+/// not copy. Splitting on named-ness keeps the numeral gate below sharp instead
+/// of forcing an allowlist entry per keyed widget.
+///
+/// Top-level commas are located in a copy with every string literal's CONTENT
+/// blanked (the same masking `scanLiterals` already does), so a comma inside a
+/// literal cannot split an argument; the slices are then taken from the RAW
+/// text so the literal content is still there to inspect.
+List<String> positionalArgs(String args) {
+  if (args.length < 2) return const [];
+  final inner = args.substring(1, args.length - 1);
+  final masked = scanLiterals(inner).masked;
+
+  final cuts = <int>[];
+  var depth = 0;
+  for (var i = 0; i < masked.length; i++) {
+    final c = masked[i];
+    if (c == '(' || c == '[' || c == '{') depth++;
+    if (c == ')' || c == ']' || c == '}') depth--;
+    if (c == ',' && depth == 0) cuts.add(i);
+  }
+
+  final segments = <String>[];
+  var start = 0;
+  for (final cut in [...cuts, inner.length]) {
+    segments.add(inner.substring(start, cut));
+    start = cut + 1;
+  }
+  return [
+    for (final segment in segments)
+      if (!namedArgumentPattern.hasMatch(segment)) segment,
+  ];
+}
+
+/// An argument that opens with `name:` — a named parameter.
+final namedArgumentPattern = RegExp(r'^\s*[A-Za-z_][A-Za-z0-9_]*\s*:');
+
 /// The balanced `(...)` argument text starting at [openParen].
 String balancedArgs(String source, int openParen) {
   var depth = 0;
@@ -642,24 +699,39 @@ void main() {
   // -------------------------------------------------------------------
 
   test(
-      'no Text() argument stringifies a value with .toString() — numerals '
-      'reach the tree through an ARB key or a formatter (L10N-04)', () {
+      'no Text() argument stringifies a value — neither .toString() nor a '
+      'bare interpolation (L10N-04, WR-07)', () {
     sources.forEach((path, source) {
       if (!path.contains('features/')) return;
       for (final match in textConstructorPattern.allMatches(source)) {
         final args = balancedArgs(source, match.end - 1);
-        expect(
-          toStringCallPattern.hasMatch(args),
-          isFalse,
-          reason: '$path renders a .toString() inside a Text(). A stringified '
-              'number is ASCII digits with no locale grouping and no plural '
-              'agreement around it; the count must go through its own ARB '
-              'plural key, a NumberFormat, or BqText.mono for a tabular '
-              'figure. (A locale TAG is not a numeral — the codebase already '
-              'hoists Localizations.localeOf(context).toString() into a local '
-              'above the widget at every one of its call sites, and it should '
-              'stay hoisted.)',
-        );
+        for (final arg in positionalArgs(args)) {
+          expect(
+            toStringCallPattern.hasMatch(arg),
+            isFalse,
+            reason: '$path renders a .toString() inside a Text(). A '
+                'stringified number is ASCII digits with no locale grouping '
+                'and no plural agreement around it; the count must go through '
+                'its own ARB plural key, a NumberFormat, or BqText.mono for a '
+                'tabular figure. (A locale TAG is not a numeral — the codebase '
+                'already hoists Localizations.localeOf(context).toString() '
+                'into a local above the widget at every one of its call sites, '
+                'and it should stay hoisted.)',
+          );
+          final bare = bareInterpolationPattern.firstMatch(arg);
+          expect(
+            bare,
+            isNull,
+            reason: '$path interpolates "${bare?.group(0)}" straight into a '
+                'Text(). That is the SAME defect as .toString() written the '
+                'way people actually write it, which is why the gate that '
+                'matched only the .toString() token missed a live violation '
+                'for five phases (WR-07/TW-3). Route the value through a '
+                'NumberFormat, a DateFormat or an ARB key — '
+                '"\${format.format(x)}" is what this gate is asking for, and '
+                'is deliberately not matched.',
+          );
+        }
       }
     });
   });
