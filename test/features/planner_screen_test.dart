@@ -1662,6 +1662,205 @@ void main() {
       await tearDownTree(tester, container);
     });
   });
+
+  // ---------------------------------------------------------------------
+  // The month detail and the year chrome (plan 04-04 task 2, UI-SPEC S6b
+  // items 1, 3, 4 and 5, P-10, DECIDED-6, DECIDED-8, M9, PF-12).
+  // ---------------------------------------------------------------------
+
+  group('month detail and year chrome', () {
+    /// August 2026 carries all three coverage states at once, and December
+    /// carries a supplement that August must NOT list.
+    Future<void> seedAugust(ProviderContainer container) => seedCourses(
+          container,
+          [
+            // The whole month, already started → приймаю.
+            ('m00', DateTime.utc(2026, 8, 1), DateTime.utc(2026, 8, 31)),
+            // Starts after the pinned 13 August clock → заплановано.
+            ('m01', DateTime.utc(2026, 8, 20), DateTime.utc(2026, 8, 31)),
+            // Ten days, already started → частина місяця.
+            ('m02', DateTime.utc(2026, 8, 1), DateTime.utc(2026, 8, 10)),
+            // No August coverage at all → no row.
+            ('m03', DateTime.utc(2026, 12, 1), DateTime.utc(2026, 12, 31)),
+          ],
+        );
+
+    Color? fillOfKey(WidgetTester tester, String key) {
+      final box = tester.widget<Container>(find.byKey(ValueKey<String>(key)));
+      return (box.decoration! as BoxDecoration).color;
+    }
+
+    /// Built lazily inside each test body: intl's locale data is only
+    /// initialized once the localizations delegates have loaded.
+    String nominative(int month) =>
+        DateFormat('LLLL', 'uk').format(DateTime.utc(2026, month, 1));
+
+    testWidgets('the detail lists only supplements with coverage, in stack '
+        'order, each with its state — inline, never a modal (UI-SPEC S6b '
+        'item 4, P-13)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedAugust(container);
+      await openYear(tester, container);
+
+      expect(find.byKey(const ValueKey('month-detail-card')), findsOneWidget);
+      expect(
+        find.text(nominative(8).toUpperCase()),
+        findsOneWidget,
+        reason: 'the standalone FULL month name, uppercased in the locale',
+      );
+      expect(find.text('3 речовини · межа 5'), findsOneWidget,
+          reason: 'a pre-formatted substancesCount inside monthMeta');
+
+      expect(byKeyPrefix('month-detail-row-'), findsNWidgets(3));
+      expect(find.text('приймаю'), findsOneWidget);
+      expect(find.text('заплановано'), findsOneWidget);
+      expect(find.text('частина місяця'), findsOneWidget);
+      expect(find.text('Добавка m03'), findsNothing,
+          reason: 'a supplement with no coverage in the month has no row');
+
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.byType(Dialog), findsNothing);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a month with no coverage renders the empty-month sentence '
+        'INSIDE the same card, and the tap re-renders it in place '
+        '(Interaction Contract 4)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedAugust(container);
+      await openYear(tester, container);
+
+      // February: nothing seeded touches it.
+      await tester.tap(find.byKey(const ValueKey('month-card-1')));
+      await tester.pump();
+
+      expect(find.byKey(const ValueKey('month-detail-card')), findsOneWidget,
+          reason: 'the card never collapses to an empty box');
+      expect(
+        find.text(nominative(2).toUpperCase()),
+        findsOneWidget,
+      );
+      expect(find.text('Цього місяця жоден цикл не активний.'), findsOneWidget);
+      expect(find.text('0 речовин · межа 5'), findsOneWidget);
+      expect(byKeyPrefix('month-detail-row-'), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.byType(Dialog), findsNothing);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the peak chip names the densest month in the calm band, and '
+        'the legend names every supplement (S6b items 1 and 3)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedAugust(container);
+      await openYear(tester, container);
+
+      expect(
+        find.text('Найщільніший місяць — '
+            '${nominative(8)}'),
+        findsOneWidget,
+      );
+      expect(fillOfKey(tester, 'year-peak-chip'), BqColors.calmBg);
+
+      expect(byKeyPrefix('year-legend-entry-'), findsNWidgets(4),
+          reason: 'one two-tone swatch per gantt-eligible supplement');
+      expect(find.text('світліше = заплановано'), findsOneWidget);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a tied year reads the tie label, broken toward the month '
+        'nearest today (P-10)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedCourses(container, [
+        ('t00', DateTime.utc(2026, 3, 1), DateTime.utc(2026, 3, 31)),
+        ('t01', DateTime.utc(2026, 9, 1), DateTime.utc(2026, 9, 30)),
+      ]);
+      await openYear(tester, container);
+
+      expect(
+        find.text('Найщільніші місяці, зокрема '
+            '${nominative(9)}'),
+        findsOneWidget,
+        reason: 'March and September tie at one; September is nearer the '
+            'pinned August clock',
+      );
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the peak chip warns STRICTLY above the editorial limit — a '
+        'peak sitting exactly at it stays calm (DECIDED-6)', (tester) async {
+      usePhoneSurface(tester);
+
+      final atLimit = makeContainer();
+      await seedCourses(atLimit, [
+        for (var i = 0; i < 5; i++)
+          (
+            'p0$i',
+            DateTime.utc(2026, 6, 1),
+            DateTime.utc(2026, 6, 30),
+          ),
+      ]);
+      await openYear(tester, atLimit);
+
+      expect(find.text('5 речовин'), findsOneWidget);
+      expect(fillOfKey(tester, 'year-peak-chip'), BqColors.calmBg,
+          reason: 'a month that merely TOUCHES the limit is not flagged — the '
+              'Цикли summary chip warns at or above it instead, and that '
+              'asymmetry is deliberate (DECIDED-6)');
+      await tearDownTree(tester, atLimit);
+
+      final over = makeContainer();
+      await seedCourses(over, [
+        for (var i = 0; i < 6; i++)
+          (
+            'p0$i',
+            DateTime.utc(2026, 6, 1),
+            DateTime.utc(2026, 6, 30),
+          ),
+      ]);
+      await openYear(tester, over);
+
+      expect(find.text('6 речовин'), findsOneWidget);
+      expect(fillOfKey(tester, 'year-peak-chip'), BqColors.warnBg);
+      await tearDownTree(tester, over);
+    });
+
+    testWidgets('the year footnote renders ABOVE the disclaimer, proven by '
+        'rendered position, not by presence (DECIDED-8, M9, PLAN-04)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seedAugust(container);
+      await openYear(tester, container);
+      // The Рік body is five elements deep now; its closing lines sit below
+      // the fold.
+      await scrollBody(tester, 400);
+
+      final footnote = find.text(
+        'Рік показує, як цикли накладаються один на одний. Червоне число в '
+        'місяці означає перевищення нашої межі у 5 речовин одночасно.',
+      );
+      expect(footnote, findsOneWidget);
+      expect(disclaimer, findsOneWidget);
+      expect(
+        tester.getTopLeft(footnote).dy,
+        lessThan(tester.getTopLeft(disclaimer).dy),
+        reason: 'the footnote explains the red counts; the disclaimer frames '
+            'the limit as OURS — Рік carries both, in that order, and the '
+            'footnote never replaces it',
+      );
+
+      await tearDownTree(tester, container);
+    });
+  });
 }
 
 /// Pins `todayProvider` to a fixed calendar day.
