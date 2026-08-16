@@ -37,6 +37,7 @@ import 'package:boostque/features/calendar/planner_load_chart.dart';
 import 'package:boostque/features/calendar/planner_providers.dart';
 import 'package:boostque/features/calendar/planner_view_model.dart';
 import 'package:boostque/features/calendar/planner_week_detail.dart';
+import 'package:boostque/features/calendar/planner_year_grid.dart';
 
 /// Screen horizontal padding — the same edge the Calendar screen runs down
 /// (mockup lines 286, 294).
@@ -331,7 +332,9 @@ class _YearBody extends ConsumerWidget {
         // `entries` is already the regimen-bearing subset, the same filter
         // the gantt rows carry (DECIDED-7).
         isEmpty: (model) => model.entries.isEmpty,
-        cards: (model) => const <Widget>[],
+        cards: (model) => [
+          PlannerYearGrid(model: model),
+        ],
       ),
     );
   }
