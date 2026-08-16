@@ -860,6 +860,112 @@ void main() {
     });
   });
 
+  // ---------------------------------------------------------------------
+  // LOCKED-FONT (05-UI-SPEC, P-10, threat T-05-11): the app keeps the
+  // PLATFORM Cyrillic fallback. Instrument Sans carries no Cyrillic glyphs —
+  // cmap-verified twice, and upstream declares latin subsets only — so
+  // Ukrainian letters render from SF (iOS) / Roboto (Android) while Latin
+  // letters and digits on the same line render from Instrument Sans. The
+  // approved HTML mockup was itself rendered in a browser where that font
+  // has no Cyrillic, so the Ukrainian screens the user signed off on ARE
+  // this fallback rendering. Mixed-family lines are an ACCEPTED consequence,
+  // not a defect (see the locked-decisions section of 05-05-SUMMARY.md).
+  //
+  // These gates exist because that decision is a "change nothing" decision,
+  // and a "change nothing" decision is the kind a later reader silently
+  // reverses after seeing the symptom without the reasoning. They read
+  // SOURCE off disk rather than the running theme, because two of the three
+  // things being protected (the pubspec declaration, the absence of a
+  // fallback family) are not observable from a widget tree at all.
+  // ---------------------------------------------------------------------
+
+  group('LOCKED-FONT gates (T-05-11)', () {
+    /// Named once: every assertion below has the same consequence, and a
+    /// `reason:` that drifts between them stops naming one defect class.
+    const fontChangeReason =
+        'the bundled font families are a LOCKED v1 decision (05-UI-SPEC '
+        'LOCKED-FONT). Changing the primary family, or adding a fallback '
+        'family, changes glyph metrics app-wide: it invalidates the Phase-4 '
+        'gantt truncation measurements (156.0px allotted / 183.1px intrinsic) '
+        'and requires a full re-run of the bilingual text-scale matrix. That '
+        'is a deliberate decision with that work budgeted — never a quiet '
+        'edit, and never a red test relaxed to green';
+
+    const sansFamily = 'Instrument Sans';
+    const monoFamily = 'JetBrains Mono';
+
+    test('pubspec.yaml declares exactly two font families, unchanged', () {
+      final pubspec = File('pubspec.yaml').readAsLinesSync();
+
+      final families = pubspec
+          .map((line) => RegExp(r'^\s*-\s*family:\s*(.+?)\s*$').firstMatch(line))
+          .nonNulls
+          .map((m) => m.group(1)!)
+          .toList();
+      expect(families, <String>[sansFamily, monoFamily],
+          reason: 'a THIRD family — a Cyrillic-capable primary, or a family '
+              'added to be used as a fallback — is the forbidden remediation: '
+              '$fontChangeReason');
+
+      final assets = pubspec
+          .map((line) => RegExp(r'^\s*-\s*asset:\s*(.+?)\s*$').firstMatch(line))
+          .nonNulls
+          .map((m) => m.group(1)!)
+          .toList();
+      expect(
+          assets,
+          <String>[
+            'assets/fonts/InstrumentSans[wdth,wght].ttf',
+            'assets/fonts/JetBrainsMono[wght].ttf',
+          ],
+          reason: 'swapping the FILE behind an unchanged family name is the '
+              'same change wearing a disguise: $fontChangeReason');
+    });
+
+    test('no fontFamilyFallback anywhere under lib/', () {
+      final offenders = <String>[];
+      for (final entity in Directory('lib').listSync(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) continue;
+        if (entity.path.contains('/l10n/gen/')) continue;
+        final source = entity
+            .readAsLinesSync()
+            .where((line) => !line.trimLeft().startsWith('//'))
+            .join('\n');
+        if (source.contains('fontFamilyFallback')) offenders.add(entity.path);
+      }
+      // The glob must have resolved something — an empty scan passing
+      // silently is the way a source gate stops gating.
+      expect(Directory('lib').listSync(recursive: true).whereType<File>(),
+          isNotEmpty);
+      expect(offenders, isEmpty,
+          reason: 'a fallback family is the WORST of the rejected options — '
+              'it still mixes two families inside a single line (digits from '
+              'the primary, Cyrillic from the fallback) AND pays the bundle '
+              'cost, so it buys nothing over the platform fallback the app '
+              'already gets for free. $fontChangeReason');
+    });
+
+    test('the theme uses the bundled families and nothing else', () {
+      final theme = File('lib/core/theme/theme.dart').readAsStringSync();
+
+      final declared = RegExp(r"fontFamily:\s*'([^']+)'")
+          .allMatches(theme)
+          .map((m) => m.group(1)!)
+          .toList();
+      expect(declared, isNotEmpty,
+          reason: 'if the regex stops matching, this gate has silently '
+              'stopped reading the thing it protects');
+      expect(declared.first, sansFamily,
+          reason: 'ThemeData.fontFamily is the app-wide primary: every '
+              'non-mono string in both languages renders through it. '
+              '$fontChangeReason');
+      expect(declared.toSet(), <String>{sansFamily, monoFamily},
+          reason: 'the theme may name only families pubspec actually '
+              'bundles; anything else resolves to a platform default at '
+              'runtime with no build-time error. $fontChangeReason');
+    });
+  });
+
   testWidgets(
       'a catalog-added supplement keeps its add-time NAME after the language '
       'changes — copy-on-add is intended behaviour, not a bug (E-12)',
