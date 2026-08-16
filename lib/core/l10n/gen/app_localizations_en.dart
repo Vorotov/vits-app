@@ -661,4 +661,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String monthCardSemantics(String month, String count) {
     return '$month, $count';
   }
+
+  @override
+  String addSupplementCatalogSemantics(String action, String name) {
+    return '$action: $name';
+  }
+
+  @override
+  String get languageName => 'English';
+
+  @override
+  String get languageSystem => 'System default';
+
+  @override
+  String get settingsLanguageTitle => 'LANGUAGE';
 }

@@ -163,5 +163,9 @@
   "ganttRowSemanticsPaused": "{name}, {schedule}, {state}",
   "yearLegendEntrySemantics": "{name}, {state}",
   "weekBarSemantics": "{range}, {load}",
-  "monthCardSemantics": "{month}, {count}"
+  "monthCardSemantics": "{month}, {count}",
+  "addSupplementCatalogSemantics": "{action}: {name}",
+  "languageName": "Українська",
+  "languageSystem": "Системна",
+  "settingsLanguageTitle": "МОВА"
 }

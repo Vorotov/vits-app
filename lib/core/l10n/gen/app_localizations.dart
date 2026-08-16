@@ -1086,6 +1086,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{month}, {count}'**
   String monthCardSemantics(String month, String count);
+
+  /// Accessibility label of a catalog row's add affordance. The whole sentence — including its separator — lives here rather than being concatenated in Dart, because word order and punctuation between the two fragments are a per-language decision (PF-5); both parts are passed in finished, the weekLoadLabel idiom
+  ///
+  /// In en, this message translates to:
+  /// **'{action}: {name}'**
+  String addSupplementCatalogSemantics(String action, String name);
+
+  /// This language's OWN name, written in this language (its endonym). EVERY app_*.arb declares its own value under this same key; the picker resolves it via lookupAppLocalizations(locale), so adding a new ARB file needs no code change (L10N-04, criterion 4). NEVER translate this key
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get languageName;
+
+  /// Language-picker option meaning 'follow the device language'. Rendered in the ACTIVE locale via context.l10n, unlike languageName
+  ///
+  /// In en, this message translates to:
+  /// **'System default'**
+  String get languageSystem;
+
+  /// Mono eyebrow above the language list on the Settings screen, in the supplementsLabel style. Stored uppercase; never toUpperCase()'d at runtime
+  ///
+  /// In en, this message translates to:
+  /// **'LANGUAGE'**
+  String get settingsLanguageTitle;
 }
 
 class _AppLocalizationsDelegate

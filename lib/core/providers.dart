@@ -22,6 +22,7 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'db/database.dart' show BoostqueDb;
 import 'db/drift_repositories.dart';
@@ -38,6 +39,23 @@ final dbProvider = Provider<BoostqueDb>((ref) {
   ref.onDispose(db.close);
   return db;
 });
+
+/// The app's key-value store, resolved BEFORE the first frame.
+///
+/// App-lifetime like every other provider in this file, so it inherits the
+/// D-23 dispose stance recorded in the header. It deliberately has no default
+/// implementation: `LocaleController.build()` reads the stored language
+/// override synchronously through it, and an async read there would render one
+/// system-language frame before flipping — the cold-start flash P-4 exists to
+/// remove. The instance is awaited once in `main()` and handed in as an
+/// override; every test whose tree reaches `localeControllerProvider` does the
+/// same after `SharedPreferences.setMockInitialValues`. The throw is the point:
+/// a missed harness fails loudly here instead of silently losing the override.
+final sharedPreferencesProvider = Provider<SharedPreferences>(
+  (ref) => throw UnimplementedError(
+    'sharedPreferencesProvider is overridden in main() and in tests',
+  ),
+);
 
 /// Supplement persistence, typed against the domain interface (D-22).
 final supplementRepoProvider = Provider<SupplementRepository>(

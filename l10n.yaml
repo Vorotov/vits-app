@@ -5,3 +5,12 @@ output-localization-file: app_localizations.dart
 output-class: AppLocalizations
 synthetic-package: false
 nullable-getter: false
+# Without this the generated locale list is alphabetical, so English is the
+# MaterialApp fallback (supportedLocales.first) only by luck — adding
+# app_de.arb would silently make German the fallback (PF-1, L10N-02).
+preferred-supported-locales:
+  - en
+# gen-l10n does not fail on a key missing from a non-template ARB; it falls
+# back to the template message and only warns. Writing the warning to a file
+# makes the gap assertable instead of invisible (PF-2).
+untranslated-messages-file: l10n-untranslated.json
