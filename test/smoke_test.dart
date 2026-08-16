@@ -11,10 +11,15 @@ void main() {
   testWidgets('app boots inside ProviderScope and renders a MaterialApp',
       (tester) async {
     SharedPreferences.setMockInitialValues({});
+    // Since plan 05-01 LocaleController seeds itself synchronously from
+    // sharedPreferencesProvider, which throws unless overridden — every scope
+    // that pumps BoostqueApp must hand it a resolved instance (P-4 Option A).
+    final prefs = await SharedPreferences.getInstance();
     // Since plan 02-01 the Stack tab watches stackEntriesProvider, so the
     // boot test must override dbProvider with an in-memory database (D-19).
     await tester.pumpWidget(ProviderScope(
       overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
         dbProvider.overrideWith((ref) {
           final db = BoostqueDb.forTesting(NativeDatabase.memory());
           ref.onDispose(db.close);

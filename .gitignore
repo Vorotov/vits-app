@@ -26,6 +26,9 @@ migrate_working_dir/
 #.vscode/
 
 # Flutter/Dart/Pub related
+# gen-l10n diagnostic output (untranslated-messages-file in l10n.yaml) — a
+# build artifact, regenerated on every run, never a committed source file.
+l10n-untranslated.json
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/

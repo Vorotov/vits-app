@@ -682,4 +682,18 @@ class AppLocalizationsUk extends AppLocalizations {
   String monthCardSemantics(String month, String count) {
     return '$month, $count';
   }
+
+  @override
+  String addSupplementCatalogSemantics(String action, String name) {
+    return '$action: $name';
+  }
+
+  @override
+  String get languageName => 'Українська';
+
+  @override
+  String get languageSystem => 'Системна';
+
+  @override
+  String get settingsLanguageTitle => 'МОВА';
 }

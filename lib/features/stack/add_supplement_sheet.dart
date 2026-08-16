@@ -353,7 +353,15 @@ class _CatalogResultRow extends StatelessWidget {
             // The trailing "+" keeps intrinsic size — it never wraps away
             // (#10); icon-only affordance carries a Semantics label (S2).
             Semantics(
-              label: '${l10n.addSupplement}: ${entry.name(l10n)}',
+              // The whole sentence — separator included — lives in the ARB
+              // (PF-5). Concatenating two localized fragments in Dart
+              // hardcodes word order and punctuation across every language,
+              // which the "one new ARB file" contract cannot survive; both
+              // parts are passed in finished, the weekLoadLabel idiom.
+              label: l10n.addSupplementCatalogSemantics(
+                l10n.addSupplement,
+                entry.name(l10n),
+              ),
               button: true,
               excludeSemantics: true,
               child: const Text(

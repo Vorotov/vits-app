@@ -19,15 +19,22 @@ import 'package:boostque/main.dart';
 /// shell test overrides [dbProvider] with an in-memory database (D-19) and
 /// flushes Drift's stream-close timers before the test ends.
 void main() {
-  setUp(() {
-    // LocaleController loads its persisted override from SharedPreferences;
+  late SharedPreferences prefs;
+
+  setUp(() async {
+    // LocaleController reads its persisted override from SharedPreferences;
     // an empty store means "follow system" (English in the test environment).
+    // Since plan 05-01 that read is SYNCHRONOUS, through
+    // sharedPreferencesProvider — which throws unless overridden — so the
+    // instance is resolved here and handed to every scope below.
     SharedPreferences.setMockInitialValues({});
+    prefs = await SharedPreferences.getInstance();
   });
 
   ProviderScope scoped(Widget child) {
     return ProviderScope(
       overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
         dbProvider.overrideWith((ref) {
           final db = BoostqueDb.forTesting(NativeDatabase.memory());
           ref.onDispose(db.close);
@@ -102,6 +109,10 @@ void main() {
   testWidgets('uk: the minute ticker runs only while the Calendar tab is the '
       'visible one (WR-05)', (tester) async {
     final container = ProviderContainer(overrides: [
+      // AppShell mounts the Settings tab even while the Stack tab is visible
+      // (IndexedStack), and its language picker reaches LocaleController —
+      // so this container needs the prefs seed too (P-4 Option A).
+      sharedPreferencesProvider.overrideWithValue(prefs),
       dbProvider.overrideWith((ref) {
         final db = BoostqueDb.forTesting(NativeDatabase.memory());
         ref.onDispose(db.close);

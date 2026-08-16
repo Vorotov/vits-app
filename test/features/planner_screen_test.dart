@@ -63,9 +63,16 @@ void main() {
   final today = DateTime.utc(2026, 8, 13);
 
   late BoostqueDb db;
+  late SharedPreferences prefs;
 
-  setUp(() {
+  setUp(() async {
     SharedPreferences.setMockInitialValues({});
+    // Since plan 05-01 LocaleController seeds itself SYNCHRONOUSLY from
+    // sharedPreferencesProvider, which throws unless overridden. Only the
+    // `system back` group mounts the real AppShell (and with it the Settings
+    // tab's language picker), but the seed goes in the shared container so a
+    // later test that mounts the shell is covered the day it lands.
+    prefs = await SharedPreferences.getInstance();
   });
 
   /// [stackState] pins `stackEntriesProvider` to a fixed AsyncValue so the
@@ -81,6 +88,7 @@ void main() {
   }) {
     return ProviderContainer(
       overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
         dbProvider.overrideWith((ref) {
           final database = BoostqueDb.forTesting(NativeDatabase.memory());
           ref.onDispose(database.close);
