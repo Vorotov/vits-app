@@ -345,31 +345,56 @@ class _LegendEntry extends StatelessWidget {
   }
 }
 
-/// The planned swatch's 4px-on/4px-off diagonal hatch — the same ink the
-/// planned segments carry, at swatch scale.
+/// The planned hatch: 4px on, 4px off (mockup line 647).
+///
+/// The only two bare numbers this file used to carry, written out twice — in
+/// the legend swatch and in the painted segment.
+const double _hatchStroke = 4;
+const double _hatchPeriod = _hatchStroke * 2;
+
+/// Fills [rrect] with the planned ink: the weak wash under 4px-on/4px-off
+/// diagonals, clipped so the hatch never bleeds past the shape.
+///
+/// ONE definition, two callers. The legend's whole job is to say "this ink
+/// means planned", so the swatch and the segment are a correctness pair rather
+/// than a duplication: written twice, changing the stroke in one leaves the
+/// legend describing something the chart no longer draws (WR-06).
+void _paintHatch(Canvas canvas, RRect rrect) {
+  final bounds = rrect.outerRect;
+  canvas.save();
+  canvas.clipRRect(rrect);
+  canvas.drawRRect(rrect, Paint()..color = BqColors.plannedHatchWeak);
+  final hatch = Paint()
+    ..color = BqColors.plannedHatchStrong
+    ..strokeWidth = _hatchStroke;
+  // The diagonals start one height to the left and end one height past the
+  // right edge, so the clipped shape is covered corner to corner.
+  for (var x = bounds.left - bounds.height;
+      x < bounds.right + bounds.height;
+      x += _hatchPeriod) {
+    canvas.drawLine(
+      Offset(x, bounds.bottom),
+      Offset(x + bounds.height, bounds.top),
+      hatch,
+    );
+  }
+  canvas.restore();
+}
+
+/// The planned swatch's hatch — the same ink the planned segments carry, at
+/// swatch scale, from the same helper.
 class _HatchSwatchPainter extends CustomPainter {
   const _HatchSwatchPainter();
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rrect = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      const Radius.circular(_swatchRadius),
+    _paintHatch(
+      canvas,
+      RRect.fromRectAndRadius(
+        Offset.zero & size,
+        const Radius.circular(_swatchRadius),
+      ),
     );
-    canvas.save();
-    canvas.clipRRect(rrect);
-    canvas.drawRRect(rrect, Paint()..color = BqColors.plannedHatchWeak);
-    final hatch = Paint()
-      ..color = BqColors.plannedHatchStrong
-      ..strokeWidth = 4;
-    for (var x = -size.height; x < size.width + size.height; x += 8) {
-      canvas.drawLine(
-        Offset(x, size.height),
-        Offset(x + size.height, 0),
-        hatch,
-      );
-    }
-    canvas.restore();
   }
 
   @override
@@ -504,24 +529,9 @@ class _GanttRowPainter extends CustomPainter {
         continue;
       }
 
-      canvas.save();
-      canvas.clipRRect(rrect);
-      canvas.drawRRect(rrect, Paint()..color = BqColors.plannedHatchWeak);
-      final hatch = Paint()
-        ..color = BqColors.plannedHatchStrong
-        ..strokeWidth = 4;
-      // 4px on / 4px off diagonal strokes (mockup line 647), clipped to the
-      // segment so the hatch never bleeds onto the track.
-      for (var x = left - size.height;
-          x < left + width + size.height;
-          x += 8) {
-        canvas.drawLine(
-          Offset(x, size.height),
-          Offset(x + size.height, 0),
-          hatch,
-        );
-      }
-      canvas.restore();
+      // The same ink, from the same helper, as the legend's planned swatch —
+      // the legend cannot describe a hatch the chart does not draw (WR-06).
+      _paintHatch(canvas, rrect);
 
       canvas.drawRRect(
         rrect.deflate(0.5),
