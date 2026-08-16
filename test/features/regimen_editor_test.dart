@@ -19,6 +19,18 @@
 /// - paused renders all four pause signals together (UI-SPEC #13)
 /// - Видалити opens the confirmation dialog; cancel changes nothing;
 ///   confirm cascades the soft delete and pops the route (UI-SPEC #19)
+///
+/// Plan 05-04 coverage — the bilingual matrix:
+/// - the harness no longer hardcodes a language: it takes the
+///   `String locale = 'uk'` + `TextScaler?` shape shared with every other
+///   suite (`planner_screen_test.dart:142-163`)
+/// - cyclic / course / paused rendered in BOTH languages at textScaler 1.0
+///   and 1.6 — this is the screen with the most controls per pixel in the app,
+///   and it had zero English render coverage (V-4, E-14)
+/// - a locale change re-localizes the editor IN PLACE while it is a pushed
+///   route, in one frame (V-6, E-11)
+/// - the date and time picker chrome — `GlobalMaterialLocalizations`, not this
+///   app's ARB — renders in the active language (Interaction Contract 8)
 library;
 
 import 'dart:async' show unawaited;
@@ -27,6 +39,7 @@ import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/core/l10n/l10n.dart';
+import 'package:boostque/core/l10n/locale_controller.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
@@ -34,9 +47,12 @@ import 'package:boostque/features/stack/regimen_editor_controller.dart';
 import 'package:boostque/features/stack/regimen_editor_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../support/locale_matrix.dart';
 
 /// A regimen repository whose writes always fail — drives the WR-04 error
 /// surface without touching Drift.
@@ -70,9 +86,33 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
+  /// A supplement whose name carries no Cyrillic, for the matrix cases only.
+  ///
+  /// The header name is USER DATA — it never re-localizes (E-12) — so a
+  /// Cyrillic-named seed would trip the English Cyrillic sweep on a string
+  /// that is correct, and the only ways out would be to weaken the sweep or to
+  /// allowlist user data wholesale. Neither is acceptable (A8): the chrome is
+  /// what gets swept, so the seed is kept neutral.
+  const neutralSupplement = Supplement(
+    id: 's1',
+    name: 'Magnesium 400',
+    doseText: '400 mg',
+    colorValue: 0xFF6B6FA8,
+    note: '',
+  );
+
   /// Creates the provider container over an in-memory database and seeds
   /// the supplement through the repository BEFORE the screen pumps.
-  Future<ProviderContainer> makeContainer(WidgetTester tester) async {
+  ///
+  /// [prefs] is only needed by the propagation test, which drives the language
+  /// through [localeControllerProvider]; the controller reads its stored
+  /// override synchronously through [sharedPreferencesProvider], which throws
+  /// unless overridden (plan 05-01, P-4 Option A).
+  Future<ProviderContainer> makeContainer(
+    WidgetTester tester, {
+    Supplement seed = supplement,
+    SharedPreferences? prefs,
+  }) async {
     final container = ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
@@ -80,24 +120,64 @@ void main() {
           ref.onDispose(db.close);
           return db;
         }),
+        if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs),
       ],
     );
     // Keep the stack graph warm (Riverpod 3 pauses unlistened providers).
     final sub = container.listen(stackEntriesProvider, (_, _) {});
     addTearDown(sub.close);
-    await container.read(supplementRepoProvider).upsert(supplement);
+    await container.read(supplementRepoProvider).upsert(seed);
     return container;
   }
 
-  Widget app(ProviderContainer container) {
+  /// [locale] and [textScaler] are pinned from OUTSIDE — the `plannerApp`
+  /// harness signature (05-PATTERNS), so the matrix below is a loop rather
+  /// than twelve copies. [home] lets a test pump a base route and push the
+  /// editor onto it instead of making it the root.
+  Widget app(
+    ProviderContainer container, {
+    String locale = 'uk',
+    TextScaler? textScaler,
+    GlobalKey<NavigatorState>? navigatorKey,
+    Widget home = const RegimenEditorScreen(supplementId: 's1'),
+  }) {
     return UncontrolledProviderScope(
       container: container,
       child: MaterialApp(
-        locale: const Locale('uk'),
+        navigatorKey: navigatorKey,
+        locale: Locale(locale),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         theme: bqTheme(),
-        home: const RegimenEditorScreen(supplementId: 's1'),
+        builder: (context, child) => textScaler == null
+            ? child!
+            : MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+                child: child!,
+              ),
+        home: home,
+      ),
+    );
+  }
+
+  /// The same tree with the language coming from [localeControllerProvider]
+  /// instead of from a pinned `locale:` — the only harness that can change the
+  /// language of an ALREADY-MOUNTED route, which is what E-11 needs.
+  Widget localeDrivenApp(
+    ProviderContainer container,
+    GlobalKey<NavigatorState> navigatorKey,
+  ) {
+    return UncontrolledProviderScope(
+      container: container,
+      child: Consumer(
+        builder: (context, ref, _) => MaterialApp(
+          navigatorKey: navigatorKey,
+          locale: ref.watch(localeControllerProvider),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: bqTheme(),
+          home: const Scaffold(body: SizedBox(key: Key('base-route'))),
+        ),
       ),
     );
   }
@@ -353,16 +433,10 @@ void main() {
       final container = await makeContainer(tester);
       final navKey = GlobalKey<NavigatorState>();
       await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            navigatorKey: navKey,
-            locale: const Locale('uk'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            theme: bqTheme(),
-            home: const Scaffold(body: SizedBox(key: Key('base-route'))),
-          ),
+        app(
+          container,
+          navigatorKey: navKey,
+          home: const Scaffold(body: SizedBox(key: Key('base-route'))),
         ),
       );
       unawaited(
@@ -497,16 +571,10 @@ void main() {
       final container = await makeContainer(tester);
       final navKey = GlobalKey<NavigatorState>();
       await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp(
-            navigatorKey: navKey,
-            locale: const Locale('uk'),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            theme: bqTheme(),
-            home: const Scaffold(body: SizedBox()),
-          ),
+        app(
+          container,
+          navigatorKey: navKey,
+          home: const Scaffold(body: SizedBox()),
         ),
       );
       // Push the editor so the confirmed delete has a route to pop.
@@ -581,4 +649,267 @@ void main() {
       await tearDownTree(tester, container);
     });
   });
+
+  // -------------------------------------------------------------------
+  // The bilingual × text-scale matrix (plan 05-04, L10N-01 criterion 1,
+  // V-4 / E-14 / T-05-08 / T-05-09).
+  //
+  // This is the screen with the most controls per pixel in the app, and it
+  // had ZERO English render coverage before this plan. 1.6 is the case most
+  // likely to go red; if it does, the fix is a computed extent or a flexible
+  // child, never a relaxed assertion.
+  // -------------------------------------------------------------------
+
+  /// Bounded frame pumping. `pumpAndSettle` is not used anywhere in this file:
+  /// the graph kept warm by [makeContainer] reaches the shared clock, and
+  /// settling against a live timer either hangs or passes for a reason the
+  /// test did not intend (PF-7).
+  Future<void> pumpFrames(WidgetTester tester, [int frames = 20]) async {
+    for (var i = 0; i < frames; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+  }
+
+  group('bilingual render matrix (L10N-01)', () {
+    for (final locale in const ['uk', 'en']) {
+      final l10n = lookupAppLocalizations(Locale(locale));
+
+      for (final scale in const <double>[1.0, 1.6]) {
+        final scaler = TextScaler.linear(scale);
+
+        Future<ProviderContainer> pumpEditor(WidgetTester tester) async {
+          usePhoneSurface(tester);
+          final container =
+              await makeContainer(tester, seed: neutralSupplement);
+          await tester.pumpWidget(
+            app(container, locale: locale, textScaler: scaler),
+          );
+          await tester.pump();
+          return container;
+        }
+
+        testWidgets(
+            '$locale: the CYCLIC editor renders in the active language with '
+            'no layout exception at textScaler $scale', (tester) async {
+          final container = await pumpEditor(tester);
+
+          // In the RIGHT language, not merely rendered: every one of these
+          // differs between uk and en, so an editor that fell back to the
+          // other language fails here rather than passing on a bare render.
+          expect(find.text(l10n.scheduleTitle), findsOneWidget);
+          expect(find.text(l10n.periodicityLabel), findsOneWidget);
+          expect(find.text(l10n.cycleLength), findsOneWidget);
+          expect(find.text(l10n.timeSlotsLabel), findsOneWidget);
+          expect(find.text(l10n.saveAndStart), findsOneWidget);
+          expect(find.byType(Slider), findsNWidgets(2),
+              reason: 'cyclic mode is the default — the two sliders are the '
+                  'densest control pair on the screen');
+
+          if (locale == 'en') {
+            expectNoCyrillicWhileEn(tester);
+          }
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await tearDownTree(tester, container);
+        });
+
+        testWidgets(
+            '$locale: the COURSE editor renders in the active language with '
+            'no layout exception at textScaler $scale', (tester) async {
+          final container = await pumpEditor(tester);
+
+          await tester.tap(find.text(l10n.courseTab));
+          await tester.pump();
+
+          expect(find.text(l10n.startLabel), findsOneWidget);
+          expect(find.text(l10n.endLabel), findsOneWidget,
+              reason: 'course mode puts two date fields side by side — the '
+                  'row that has the least horizontal slack on this screen');
+          expect(find.byType(Slider), findsNothing);
+          expect(find.text(l10n.saveAndStart), findsOneWidget);
+
+          if (locale == 'en') {
+            expectNoCyrillicWhileEn(tester);
+          }
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await tearDownTree(tester, container);
+        });
+
+        testWidgets(
+            '$locale: the PAUSED editor renders in the active language with '
+            'no layout exception at textScaler $scale', (tester) async {
+          final container = await pumpEditor(tester);
+
+          await tester.tap(find.text(l10n.pause));
+          await tester.pump();
+
+          // The paused state renders the most simultaneous chrome — badge,
+          // resume label, paused save label and the long paused save hint —
+          // which is why it is the third matrix state (UI-SPEC #13).
+          expect(find.text(l10n.pausedBadge), findsOneWidget);
+          expect(find.text(l10n.resume), findsOneWidget);
+          expect(find.text(l10n.saveWhilePaused), findsOneWidget);
+          expect(find.text(l10n.saveHintPaused), findsOneWidget);
+
+          if (locale == 'en') {
+            expectNoCyrillicWhileEn(tester);
+          }
+          expect(tester.takeException(), isNull, reason: overflowReason);
+
+          await tearDownTree(tester, container);
+        });
+      }
+    }
+  });
+
+  // -------------------------------------------------------------------
+  // Propagation: criterion-3 work, not criterion-1 work (V-6, E-11).
+  // -------------------------------------------------------------------
+
+  testWidgets(
+      'a locale change re-localizes the PUSHED editor IN PLACE, within a '
+      'single pump (V-6, E-11, Interaction Contract 8)', (tester) async {
+    usePhoneSurface(tester);
+    // Locales as named data rather than literals buried in the body: nothing
+    // in this file hardcodes a rendering language any more (plan 05-04).
+    const ukLocale = Locale('uk');
+    const enLocale = Locale('en');
+    final uk = lookupAppLocalizations(ukLocale);
+    final en = lookupAppLocalizations(enLocale);
+
+    SharedPreferences.setMockInitialValues({'app_locale': 'uk'});
+    final prefs = await SharedPreferences.getInstance();
+    final container = await makeContainer(
+      tester,
+      seed: neutralSupplement,
+      prefs: prefs,
+    );
+    final navKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(localeDrivenApp(container, navKey));
+    unawaited(
+      navKey.currentState!.push(
+        MaterialPageRoute<void>(
+          builder: (_) => const RegimenEditorScreen(supplementId: 's1'),
+        ),
+      ),
+    );
+    await pumpFrames(tester);
+
+    expect(find.text(uk.scheduleTitle), findsOneWidget,
+        reason: 'the editor must be the pushed route under test');
+    expect(find.text(en.scheduleTitle), findsNothing);
+
+    container.read(localeControllerProvider.notifier).setLocale(enLocale);
+    // EXACTLY one frame. Needing more would itself prove the switch is not
+    // instant (PF-3); and against a live retry timer `pumpAndSettle` would
+    // also pass for the wrong reason (PF-7).
+    await tester.pump();
+
+    expect(find.text(en.scheduleTitle), findsOneWidget,
+        reason: 'a pushed route sits in the Navigator BELOW MaterialApp\'s '
+            'Localizations, so it must re-localize with everything else — a '
+            'user who changed the language and kept reading the old one on '
+            'the screen they are actually looking at reads that as broken');
+    expect(find.text(uk.scheduleTitle), findsNothing,
+        reason: 'the old-language string must be GONE, not merely joined by '
+            'its counterpart — two languages on one screen is the defect');
+    expect(find.text(en.saveWhilePaused), findsNothing);
+    expect(find.text(en.saveAndStart), findsOneWidget,
+        reason: 'the pinned footer follows too, not just the header');
+    expect(find.byType(RegimenEditorScreen), findsOneWidget,
+        reason: 'IN PLACE: the route was never popped and re-pushed — this is '
+            'a rebuild of the mounted route, not a fresh one');
+    expect(tester.takeException(), isNull);
+
+    await tearDownTree(tester, container);
+  });
+
+  // -------------------------------------------------------------------
+  // Picker chrome: GlobalMaterialLocalizations, not this app's ARB — the
+  // half of "every screen displays correctly" no ARB gate can ever cover.
+  // -------------------------------------------------------------------
+
+  // The two pickers get a test each, on a freshly pumped editor: a dismissed
+  // picker route leaves the page it was opened from unresponsive to further
+  // synthetic taps in this harness, so chaining both into one body would only
+  // prove the second picker never opened.
+  for (final locale in const ['uk', 'en']) {
+    testWidgets(
+        '$locale: the DATE picker chrome renders in the active language '
+        '(Interaction Contract 8, E-11)', (tester) async {
+      usePhoneSurface(tester);
+      final l10n = lookupAppLocalizations(Locale(locale));
+      // The Material chrome's own strings, read from the SAME delegate the
+      // app installs — hardcoding them here would test this test's spelling
+      // rather than the delegate the app actually resolves.
+      final material =
+          await GlobalMaterialLocalizations.delegate.load(Locale(locale));
+      final container = await makeContainer(tester, seed: neutralSupplement);
+      await tester.pumpWidget(app(container, locale: locale));
+      await tester.pump();
+
+      // The start-date field: label + tappable value box (_DateField).
+      final startField = find
+          .ancestor(
+            of: find.text(l10n.startLabel),
+            matching: find.byType(Column),
+          )
+          .first;
+      await tester.tap(
+        find
+            .descendant(of: startField, matching: find.byType(GestureDetector))
+            .first,
+      );
+      await pumpFrames(tester);
+
+      expect(find.text(material.datePickerHelpText), findsOneWidget,
+          reason: 'the date picker header comes from '
+              'GlobalMaterialLocalizations, not from this app\'s ARB — if it '
+              'lagged the app language a user would be picking a date out of '
+              'a dialog in a language they did not choose, and no ARB gate '
+              'would ever see it');
+      expect(find.text(material.cancelButtonLabel), findsOneWidget,
+          reason: 'the dialog actions come from the same delegate');
+      expect(tester.takeException(), isNull, reason: overflowReason);
+
+      await tester.tap(find.text(material.cancelButtonLabel));
+      await pumpFrames(tester);
+      expect(find.text(material.datePickerHelpText), findsNothing,
+          reason: 'cancel dismissed the picker without picking a date');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets(
+        '$locale: the TIME picker chrome renders in the active language '
+        '(Interaction Contract 8, E-11)', (tester) async {
+      usePhoneSurface(tester);
+      final material =
+          await GlobalMaterialLocalizations.delegate.load(Locale(locale));
+      final container = await makeContainer(tester, seed: neutralSupplement);
+      await tester.pumpWidget(app(container, locale: locale));
+      await tester.pump();
+
+      // The slot row's time box opens the time picker. "08:00" is the same
+      // string in both languages by design — one 24-h convention on picker
+      // and display alike (PF-3) — so it is a safe finder here.
+      await tester.tap(find.text('08:00'));
+      await pumpFrames(tester);
+
+      expect(find.text(material.timePickerDialHelpText), findsOneWidget,
+          reason: 'the time picker header follows the same Material delegate '
+              'as the date picker, and is the other half of "every screen '
+              'displays correctly" that no ARB gate can cover');
+      expect(find.text(material.cancelButtonLabel), findsOneWidget);
+      expect(tester.takeException(), isNull, reason: overflowReason);
+
+      await tester.tap(find.text(material.cancelButtonLabel));
+      await pumpFrames(tester);
+      expect(find.text(material.timePickerDialHelpText), findsNothing,
+          reason: 'cancel dismissed the picker without changing the slot');
+
+      await tearDownTree(tester, container);
+    });
+  }
 }
