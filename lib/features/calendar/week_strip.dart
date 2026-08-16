@@ -44,6 +44,7 @@ import 'package:intl/intl.dart';
 
 import 'package:boostque/core/domain/cycle_math.dart';
 import 'package:boostque/core/domain/models.dart';
+import 'package:boostque/core/l10n/casing.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
@@ -275,7 +276,9 @@ class _WeekCell extends ConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  DateFormat.E(locale).format(day).toUpperCase(),
+                  // intl formats the weekday abbreviation, `bqUpperCase` cases
+                  // it: Dart's `toUpperCase()` is locale-independent (WR-03).
+                  bqUpperCase(DateFormat.E(locale).format(day), locale),
                   textAlign: TextAlign.center,
                   // A 2-3 character weekday abbreviation and a day number are
                   // single-line by nature: wrapping one at a large text scale

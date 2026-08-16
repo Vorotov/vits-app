@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:boostque/core/domain/repositories.dart' show StackEntry;
+import 'package:boostque/core/l10n/casing.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
@@ -113,11 +114,15 @@ class PlannerMonthDetail extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      // Locale-aware uppercasing of intl output — never a
-                      // hardcoded uppercase string (M6).
-                      DateFormat('LLLL', locale)
-                          .format(month.month)
-                          .toUpperCase(),
+                      // The month name is locale-FORMATTED by intl; the
+                      // uppercasing is a separate step with its own single
+                      // definition, because Dart's `toUpperCase()` is
+                      // locale-independent and gets the Turkish/Azeri dotted i
+                      // wrong (WR-03). Never a hardcoded uppercase string (M6).
+                      bqUpperCase(
+                        DateFormat('LLLL', locale).format(month.month),
+                        locale,
+                      ),
                       style: BqText.mono(
                         size: _titleSize,
                         weight: FontWeight.w600,

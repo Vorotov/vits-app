@@ -353,6 +353,9 @@ bool _isPreferencesKey(Literal l) => l.value == 'app_locale';
 
 bool _isLocaleTag(Literal l) => l.enclosingCall == 'Locale';
 
+bool _isCasingLanguageSubtag(Literal l) =>
+    l.path.endsWith('core/l10n/casing.dart');
+
 /// Literal categories that are NOT user-visible copy, each with the reason it
 /// is not. Extend HERE, never by loosening a pattern.
 const stringLiteralAllowlist = <({
@@ -423,6 +426,16 @@ const stringLiteralAllowlist = <({
         'a shipped language list — adding an ARB file requires no edit there, '
         'so it is not the per-language code path criterion 4 forbids',
     allows: _isLocaleTag,
+  ),
+  (
+    name: 'the dotted-i language subtags in core/l10n/casing.dart',
+    why: "'tr' / 'az' name the ONE language pair whose uppercase mapping Dart's "
+        'locale-independent toUpperCase() gets wrong (i -> İ, ı -> I). They '
+        'are a Unicode casing rule, not copy, and they live in the single '
+        'function every uppercased label in the app goes through — scoped to '
+        'that one file so the entry cannot bless a language code anywhere '
+        'else (WR-03)',
+    allows: _isCasingLanguageSubtag,
   ),
 ];
 

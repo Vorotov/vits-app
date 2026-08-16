@@ -29,6 +29,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:boostque/core/domain/repositories.dart' show StackEntry;
+import 'package:boostque/core/l10n/casing.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
@@ -160,7 +161,9 @@ class PlannerYearGrid extends ConsumerWidget {
           index: index,
           month: model.months[index],
           entries: model.entries,
-          label: label.format(model.months[index].month).toUpperCase(),
+          // intl formats the name, `bqUpperCase` cases it: Dart's
+          // `toUpperCase()` is locale-independent (WR-03).
+          label: bqUpperCase(label.format(model.months[index].month), locale),
           locale: locale,
           selected: index == selected,
         ),

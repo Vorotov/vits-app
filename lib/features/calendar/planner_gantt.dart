@@ -22,6 +22,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import 'package:boostque/core/l10n/casing.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
@@ -150,9 +151,12 @@ class _MonthScale extends StatelessWidget {
           Expanded(
             flex: months[i].days,
             child: Text(
-              // Locale-aware uppercasing of intl output — never a hardcoded
+              // The month name is locale-FORMATTED by intl; the uppercasing
+              // is a separate step with its own single definition, because
+              // Dart's `toUpperCase()` is locale-independent and gets the
+              // Turkish/Azeri dotted i wrong (WR-03). Never a hardcoded
               // uppercase string and never a month table (M6).
-              format.format(months[i].month).toUpperCase(),
+              bqUpperCase(format.format(months[i].month), locale),
               key: ValueKey<String>('gantt-month-$i'),
               // A two-to-five character abbreviation is single-line by nature;
               // wrapping one at a large text scale would grow the header by a
