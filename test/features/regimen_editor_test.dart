@@ -40,6 +40,7 @@ import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/l10n/locale_controller.dart';
+import 'package:boostque/core/notifications/notification_providers.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
@@ -52,7 +53,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../notifications/recording_scheduler.dart';
 import '../support/locale_matrix.dart';
+
+/// Records the moment the editor route actually leaves the navigator, so the
+/// ORDER of the pop and the permission request can be ASSERTED rather than
+/// assumed.
+///
+/// The alternative — looking for the editor widget at the moment the request is
+/// recorded — cannot carry the claim: `maybePop` resolves while the exit
+/// transition is still running, so the editor is still in the tree either way
+/// and the test would pass with the ask issued before the pop.
+class _PopRecorder extends NavigatorObserver {
+  _PopRecorder(this.events);
+
+  final List<String> events;
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    events.add(popEvent);
+    super.didPop(route, previousRoute);
+  }
+}
+
+/// The two things the ordering test compares, named so neither is a bare
+/// literal twice.
+const popEvent = 'pop';
+const requestEvent = 'request';
 
 /// A regimen repository whose writes always fail — drives the WR-04 error
 /// surface without touching Drift.
@@ -912,4 +939,301 @@ void main() {
       await tearDownTree(tester, container);
     });
   }
+
+  // -------------------------------------------------------------------
+  // The permission ask at the save call site (NOTIF-03, plan 07-05).
+  //
+  // Everything below is ADDITIVE. The save's own behaviour — the pop, the
+  // saveFailed SnackBar, the button re-enable, the delete-confirmation gate —
+  // is proven by the groups above, unedited, and that is the point: the ask
+  // hangs off the end of a method whose behaviour did not change.
+  // -------------------------------------------------------------------
+
+  group('the permission ask (NOTIF-03)', () {
+    late RecordingScheduler scheduler;
+    late List<String> events;
+
+    setUp(() {
+      scheduler = RecordingScheduler();
+      events = <String>[];
+      scheduler.onRequestPermission = () => events.add(requestEvent);
+    });
+
+    /// A container carrying the two overrides the ask needs: the mocked seam
+    /// and a real (mock-backed) key-value store for the asked-once flag.
+    Future<ProviderContainer> permissionContainer(
+      WidgetTester tester, {
+      RegimenRepository? regimenRepo,
+    }) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+      final container = ProviderContainer(
+        overrides: [
+          dbProvider.overrideWith((ref) {
+            final db = BoostqueDb.forTesting(NativeDatabase.memory());
+            ref.onDispose(db.close);
+            return db;
+          }),
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          notificationSchedulerProvider.overrideWithValue(scheduler),
+          if (regimenRepo != null)
+            regimenRepoProvider.overrideWithValue(regimenRepo),
+        ],
+      );
+      final sub = container.listen(stackEntriesProvider, (_, _) {});
+      addTearDown(sub.close);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      return container;
+    }
+
+    Widget permissionApp(
+      ProviderContainer container,
+      GlobalKey<NavigatorState> navKey,
+    ) {
+      return UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          navigatorKey: navKey,
+          navigatorObservers: [_PopRecorder(events)],
+          locale: const Locale('uk'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: bqTheme(),
+          home: const Scaffold(body: SizedBox(key: Key('base-route'))),
+        ),
+      );
+    }
+
+    Future<void> pushEditor(
+      WidgetTester tester,
+      GlobalKey<NavigatorState> navKey, [
+      String supplementId = 's1',
+    ]) async {
+      unawaited(
+        navKey.currentState!.push(
+          MaterialPageRoute<void>(
+            builder: (_) => RegimenEditorScreen(supplementId: supplementId),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    /// Flushes the save, the pop's exit transition and the fire-and-forget ask.
+    Future<void> settle(WidgetTester tester) async {
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    Future<void> tapSave(WidgetTester tester) =>
+        tester.tap(find.text('Додати й запустити цикл'));
+
+    int requests() => scheduler.calls
+        .where((c) => c.method == requestPermissionCall)
+        .length;
+
+    /// Everything the tree is rendering, with every string it is rendering —
+    /// the comparison behind "the permission answer changes nothing on screen".
+    List<String> snapshot(WidgetTester tester) => [
+          for (final widget in tester.allWidgets)
+            if (widget is Text)
+              'Text:${widget.data}'
+            else
+              widget.runtimeType.toString(),
+        ];
+
+    testWidgets(
+        'the FIRST save issues exactly one request, and issues it AFTER the '
+        'editor route has popped', (tester) async {
+      usePhoneSurface(tester);
+      final container = await permissionContainer(tester);
+      final navKey = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(permissionApp(container, navKey));
+      await pushEditor(tester, navKey);
+
+      await tapSave(tester);
+      await settle(tester);
+
+      expect(
+        await container.read(regimenRepoProvider).findForSupplement('s1'),
+        isNotNull,
+        reason: 'the write completed — the ask hangs off a save that worked',
+      );
+      expect(requests(), 1);
+      expect(
+        events,
+        <String>[popEvent, requestEvent],
+        reason: 'ordering is a CONTRACT, not an implementation detail: a system '
+            'dialog raised over a route that is mid-exit-transition is '
+            'disorienting on both platforms and, on iOS, lands over a view '
+            'being torn down. Issuing the ask before the await would produce '
+            'the same two events in the opposite order.',
+      );
+      expect(find.byType(RegimenEditorScreen), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('saving a SECOND regimen issues no further request',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = await permissionContainer(tester);
+      await container.read(supplementRepoProvider).upsert(
+            const Supplement(
+              id: 's2',
+              name: 'Цинк',
+              doseText: '25 мг',
+              colorValue: 0xFF6B6FA8,
+              note: '',
+            ),
+          );
+      final navKey = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(permissionApp(container, navKey));
+
+      await pushEditor(tester, navKey);
+      await tapSave(tester);
+      await settle(tester);
+
+      await pushEditor(tester, navKey, 's2');
+      await tapSave(tester);
+      await settle(tester);
+
+      expect(
+        await container.read(regimenRepoProvider).findForSupplement('s2'),
+        isNotNull,
+        reason: 'the second save really did happen — otherwise "no second '
+            'request" would be true for the wrong reason',
+      );
+      expect(requests(), 1,
+          reason: 'without the persisted flag Android re-shows its rationale '
+              'dialog on every single save until the user has denied twice.');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets(
+        'a FAILED save issues no request at all — no pop, the saveFailed '
+        'SnackBar, and the button re-enabled', (tester) async {
+      usePhoneSurface(tester);
+      final container = await permissionContainer(
+        tester,
+        regimenRepo: _FailingRegimenRepo(),
+      );
+      final navKey = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(permissionApp(container, navKey));
+      await pushEditor(tester, navKey);
+
+      await tapSave(tester);
+      await settle(tester);
+
+      expect(scheduler.calls, isEmpty,
+          reason: 'a user whose write just failed is being asked about '
+              'reminders for a schedule that does not exist.');
+      expect(events, isEmpty, reason: 'and nothing popped either');
+      expect(find.text('Не вдалося зберегти. Спробуйте ще раз.'), findsOneWidget);
+      expect(find.byType(RegimenEditorScreen), findsOneWidget);
+      final saveButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Додати й запустити цикл'),
+      );
+      expect(saveButton.onPressed, isNotNull);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    for (final answer in const <bool>[true, false]) {
+      testWidgets(
+          'the permission answer $answer changes NOTHING on screen',
+          (tester) async {
+        usePhoneSurface(tester);
+        scheduler.enabled = answer;
+        final container = await permissionContainer(tester);
+        final navKey = GlobalKey<NavigatorState>();
+        await tester.pumpWidget(permissionApp(container, navKey));
+        // The tree BEFORE the editor was ever pushed. Comparing against this
+        // rather than against a pinned literal is what makes the claim the
+        // contract actually states — "whatever the user answers, the app looks
+        // identical afterwards" — instead of "two runs agree with each other".
+        final before = snapshot(tester);
+        await pushEditor(tester, navKey);
+
+        await tapSave(tester);
+        await settle(tester);
+
+        expect(requests(), 1);
+        expect(find.byType(SnackBar), findsNothing);
+        expect(find.byType(AlertDialog), findsNothing);
+        expect(find.byType(MaterialBanner), findsNothing);
+        expect(find.byKey(const Key('base-route')), findsOneWidget);
+        expect(snapshot(tester), before,
+            reason: 'granted and denied must be indistinguishable from inside '
+                'the app: the same widgets and the same strings the user was '
+                'looking at before they opened the editor at all.');
+
+        await tearDownTree(tester, container);
+      });
+    }
+
+    testWidgets('a request that THROWS leaves the app exactly as a successful '
+        'save leaves it', (tester) async {
+      usePhoneSurface(tester);
+      scheduler.requestFailure = Exception('no notification plugin here');
+      final container = await permissionContainer(tester);
+      final navKey = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(permissionApp(container, navKey));
+      final before = snapshot(tester);
+      await pushEditor(tester, navKey);
+
+      await tapSave(tester);
+      await settle(tester);
+
+      expect(
+        await container.read(regimenRepoProvider).findForSupplement('s1'),
+        isNotNull,
+      );
+      expect(find.byType(RegimenEditorScreen), findsNothing);
+      expect(find.byType(SnackBar), findsNothing);
+      expect(snapshot(tester), before,
+          reason: 'the failure is absorbed and reported, never surfaced — the '
+              'same requirement as the no-primer decision, seen from the '
+              'failure side.');
+      expect(tester.takeException(), isNotNull,
+          reason: 'absorbed means REPORTED to the crash logger.');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the delete-confirmation gate and the cascade behind it issue '
+        'no request', (tester) async {
+      usePhoneSurface(tester);
+      final container = await permissionContainer(tester);
+      final navKey = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(permissionApp(container, navKey));
+      await pushEditor(tester, navKey);
+
+      // The footer's destructive button, then the dialog's confirm — both
+      // labelled `delete`, so the second is scoped to the dialog.
+      await tester.tap(find.text('Видалити'));
+      await settle(tester);
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Видалити'),
+        ),
+      );
+      await settle(tester);
+
+      expect(find.byType(RegimenEditorScreen), findsNothing,
+          reason: 'the cascade ran and the editor popped — otherwise "no '
+              'request" would be true because nothing happened');
+      expect(scheduler.calls, isEmpty,
+          reason: 'deleting a supplement is not the moment to ask a user for '
+              'permission to remind them about it.');
+
+      await tearDownTree(tester, container);
+    });
+  });
 }

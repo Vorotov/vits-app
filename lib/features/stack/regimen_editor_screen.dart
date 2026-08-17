@@ -21,6 +21,8 @@
 ///   pixel values are the mockup-exact overrides enumerated in 02-UI-SPEC.
 library;
 
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -29,6 +31,7 @@ import 'package:boostque/core/domain/cycle_math.dart';
 import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/core/l10n/l10n.dart';
+import 'package:boostque/core/notifications/notification_permission.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
@@ -816,7 +819,12 @@ class _DashedBorderPainter extends CustomPainter {
 /// never deletes directly — its only direct effect is opening the
 /// confirmation dialog; the cascade call lives solely in the dialog's
 /// confirm handler (UI-SPEC #19, threat T-02-04).
-class _EditorFooter extends StatefulWidget {
+///
+/// A CONSUMER stateful widget since plan 07-05, for one reason: the first
+/// successful save is where the app asks the operating system for permission to
+/// post reminders, and the notifier that owns that ask is app-lifetime while
+/// this widget is not.
+class _EditorFooter extends ConsumerStatefulWidget {
   const _EditorFooter({
     required this.draft,
     required this.controller,
@@ -828,10 +836,10 @@ class _EditorFooter extends StatefulWidget {
   final String supplementName;
 
   @override
-  State<_EditorFooter> createState() => _EditorFooterState();
+  ConsumerState<_EditorFooter> createState() => _EditorFooterState();
 }
 
-class _EditorFooterState extends State<_EditorFooter> {
+class _EditorFooterState extends ConsumerState<_EditorFooter> {
   /// In-flight save guard (CR-01): while a save runs, the button is
   /// disabled AND [_save] short-circuits re-entry, so a double tap can
   /// neither race two `save()` calls (PF-8 ghost-regimen threat T-02-05)
@@ -960,6 +968,11 @@ class _EditorFooterState extends State<_EditorFooter> {
   Future<void> _save(BuildContext context) async {
     if (_saving) return;
     setState(() => _saving = true);
+    // Read BEFORE the save begins and held across the await and the pop. This
+    // widget is unmounted by the time the ask is issued; the notifier is not,
+    // because it is app-lifetime. Reaching for it afterwards, from a dead
+    // widget's `ref`, is the mistake this ordering avoids.
+    final permission = ref.read(notificationPermissionProvider.notifier);
     try {
       await widget.controller.save();
     } catch (error, stackTrace) {
@@ -995,6 +1008,24 @@ class _EditorFooterState extends State<_EditorFooter> {
     // Success: _saving stays true through the pop so a late tap can never
     // trigger a second maybePop underneath the exit transition.
     if (context.mounted) await Navigator.of(context).maybePop();
+    // NOTIF-03, and the ONE moment the app asks: after the write, after the
+    // pop, on the success branch only, and at most once per install. Fired and
+    // forgotten — the result gates nothing, so whatever the user answers the
+    // app looks identical afterwards.
+    //
+    // The operating system's dialog is shown BARE, with nothing of the app's
+    // own before it (DECIDED-7). The priming shape rejected there is the one
+    // offering a "Not now": its only value is deferral, and there is nothing to
+    // defer to while the re-ask path is deferred. A CONTINUE-ONLY primer is a
+    // different shape — it defers nothing and might well raise the grant rate —
+    // and it is declined on other grounds: the sequencing already supplies the
+    // strongest context available, since the dialog lands the instant after the
+    // user saved a schedule full of times, and a modal here would be the app's
+    // first interruption of a save confirmation in a phase that otherwise adds
+    // no interface. The residual cost — a refusal that cannot be re-asked
+    // inside the app — is addressed by the Settings row rather than by
+    // persuasion.
+    unawaited(permission.askOnce());
   }
 
   /// The REQUIRED confirmation gate in front of the soft-delete cascade

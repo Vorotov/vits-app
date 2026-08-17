@@ -21,6 +21,7 @@ import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/notifications/notification_constants.dart';
 import 'package:boostque/core/notifications/notification_copy.dart';
 import 'package:boostque/core/notifications/notification_locale.dart';
+import 'package:boostque/core/notifications/notification_permission.dart';
 import 'package:boostque/core/notifications/notification_plan.dart';
 import 'package:boostque/core/notifications/notification_providers.dart';
 import 'package:boostque/core/notifications/tz_conversion.dart';
@@ -57,8 +58,8 @@ class NotificationSync extends Notifier<int> {
       _lifecycle = null;
     });
 
-    // The sixth trigger, and the one that cannot arrive through the provider
-    // graph. `TodayController` carries the same listener for the same reason,
+    // The one trigger that cannot arrive through the provider graph at all.
+    // `TodayController` carries the same listener for the same reason,
     // recorded there: timers are suspended while the app is backgrounded, so a
     // resume may arrive days after the last scheduled tick.
     _lifecycle = AppLifecycleListener(onResume: () => unawaited(_onResume()));
@@ -69,7 +70,7 @@ class NotificationSync extends Notifier<int> {
     // down and rebuilt on every emission, and the application count would have
     // to survive a rebuild to mean anything.
     //
-    // These four cover every trigger but one. A regimen created, edited,
+    // These four cover every trigger but two. A regimen created, edited,
     // paused, resumed or deleted all reach the regimens stream, because the
     // supplement delete cascade soft-deletes the regimen too. The day rolling
     // over reaches the calendar clock. A language change reaches the resolved
@@ -77,12 +78,23 @@ class NotificationSync extends Notifier<int> {
     // a user who switches language keeps the old language's reminders for as
     // long as the horizon, silently. The bootstrap flag is here because it is
     // the precondition: the first application must happen when it flips, not
-    // before. Resume is the sixth, and it arrives through the lifecycle
-    // listener rather than through the graph.
+    // before. The two left over are a resume, which cannot arrive through the
+    // graph at all and comes in on the lifecycle listener above, and the
+    // permission answer, listened just below.
     ref.listen(notificationBootstrapProvider, (_, _) => _request());
     ref.listen(regimensStreamProvider, (_, _) => _request());
     ref.listen(todayProvider, (_, _) => _request());
     ref.listen(notificationLocaleProvider, (_, _) => _request());
+    // Added with the ask itself (plan 07-05). The permission
+    // answer is a TRIGGER here and never the GATE, and the two look
+    // interchangeable while being nothing of the sort: the gate is the fresh
+    // `isEnabled()` in `_apply` below, because permission can be revoked in the
+    // operating system's settings while this app is backgrounded and only a
+    // read taken at application time can see that. This listen exists so a
+    // GRANT re-derives the set immediately — without it a user who has just
+    // allowed reminders would get none until the next save, day rollover,
+    // resume or language change.
+    ref.listen(notificationPermissionProvider, (_, _) => _request());
 
     _request();
     return _applications;

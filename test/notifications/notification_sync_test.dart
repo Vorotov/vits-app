@@ -20,6 +20,7 @@ import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/l10n/gen/app_localizations.dart';
 import 'package:boostque/core/notifications/notification_copy.dart';
 import 'package:boostque/core/notifications/notification_locale.dart';
+import 'package:boostque/core/notifications/notification_permission.dart';
 import 'package:boostque/core/notifications/notification_plan.dart';
 import 'package:boostque/core/notifications/notification_providers.dart';
 import 'package:boostque/core/notifications/notification_scheduler.dart';
@@ -606,6 +607,45 @@ void main() {
         scheduler.mutations.last.title,
         notificationTitle(en),
       );
+    });
+  });
+
+  group('a permission answer as a trigger (plan 07-05)', () {
+    testWidgets('a grant re-derives the scheduled set with no further user '
+        'action', (tester) async {
+      regimens = [
+        course(slots: [slot(600)])
+      ];
+      await start(tester);
+      final before = applications();
+
+      // The answer arrives — from the ask at the first save, or from a resume
+      // after the user switched reminders on in the operating system's own
+      // settings. Either way it is a TRIGGER: the sync still makes its own
+      // fresh check as the GATE, because permission can be revoked while the
+      // app is backgrounded and only a fresh read can see that.
+      await container.read(notificationPermissionProvider.notifier).refresh();
+      await settle(tester);
+
+      expect(applications(), before + 1,
+          reason: 'without this trigger a granted permission would schedule '
+              'nothing until the next save, day rollover, resume or language '
+              'change — the feature would look broken for as long as the user '
+              'left the app alone.');
+    });
+
+    testWidgets('building the sync costs no permission read of its own',
+        (tester) async {
+      regimens = [
+        course(slots: [slot(600)])
+      ];
+      await start(tester, ready: false);
+
+      expect(scheduler.calls, isEmpty,
+          reason: 'the sync watches the permission notifier for its CHANGES, '
+              'not for its value — so merely building it may not put a '
+              'platform round trip in front of a precondition that has not '
+              'even been met.');
     });
   });
 
