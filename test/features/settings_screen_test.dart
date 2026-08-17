@@ -214,16 +214,26 @@ void main() {
     fail('timed out waiting for $finder');
   }
 
-  /// Taps the Settings destination in the nav bar, in whatever language the
-  /// app is currently reading.
-  Future<void> openSettings(WidgetTester tester, AppLocalizations l10n) async {
-    await tester.tap(
-      find.descendant(
-        of: find.byType(BqNavBar),
-        matching: find.text(l10n.tabSettings),
-      ),
-    );
-    await tester.pump();
+  /// Pushes the Settings route from the gear on the visible tab.
+  ///
+  /// Settings stopped being a destination in plan 06-03 (NAV-03), so this taps
+  /// the gear — which is language-independent by construction, an icon with no
+  /// painted text, hence the icon finder rather than a label one. Only the
+  /// visible tab's gear is onstage, so the finder resolves to exactly one.
+  Future<void> openSettings(WidgetTester tester) async {
+    await tester.tap(find.byIcon(Icons.settings_outlined));
+    // A PUSH animates, unlike the destination switch this replaced, so the
+    // route needs frames to arrive. Bounded frames, never `pumpAndSettle`:
+    // the shell's midnight timer and minute ticker never settle. The
+    // one-frame language claim below is measured AFTER this, from the row
+    // tap — pumping the transition in does not weaken it.
+    for (var i = 0; i < 40; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+      if (find.byType(SettingsScreen).evaluate().isNotEmpty &&
+          find.byType(LanguagePicker).evaluate().isNotEmpty) {
+        break;
+      }
+    }
   }
 
   Finder rows() => find.descendant(
@@ -270,7 +280,7 @@ void main() {
     // The test environment resolves to English with no stored override, so
     // the tracer proves the switch in both directions rather than tapping the
     // language that happens to be active already.
-    await openSettings(tester, en);
+    await openSettings(tester);
     expect(find.text(en.settingsLanguageTitle), findsOneWidget);
 
     await tester.tap(find.text(uk.languageName));
@@ -287,8 +297,8 @@ void main() {
       reason: 'the nav bar sits outside the Settings screen — if it lags a '
           'frame the user sees two languages on screen at once',
     );
-    expect(find.text(uk.tabSettings), findsWidgets,
-        reason: 'the screen title and the nav destination share tabSettings, '
+    expect(find.text(uk.settingsTitle), findsWidgets,
+        reason: 'the screen title and the gear label share settingsTitle, '
             'so both must be Ukrainian on the same frame');
 
     await tester.tap(find.text(en.languageName));
@@ -315,7 +325,7 @@ void main() {
     final prefs = await seedPrefs({});
     await tester.pumpWidget(appScope(prefs));
     await tester.pump();
-    await openSettings(tester, en);
+    await openSettings(tester);
 
     await tester.tap(find.text(uk.languageName));
     await tester.pump();
@@ -352,7 +362,7 @@ void main() {
     final prefs = await seedPrefs({'app_locale': 'uk'});
     await tester.pumpWidget(appScope(prefs));
     await tester.pump();
-    await openSettings(tester, uk);
+    await openSettings(tester);
 
     expect(find.text(uk.settingsLanguageTitle), findsOneWidget,
         reason: 'the stored override must already be live on frame 1');
@@ -378,7 +388,7 @@ void main() {
     final prefs = await seedPrefs({});
     await tester.pumpWidget(appScope(prefs));
     await tester.pump();
-    await openSettings(tester, en);
+    await openSettings(tester);
 
     expect(
       rows(),
@@ -474,7 +484,7 @@ void main() {
       await tester.pumpWidget(settingsApp(prefs, locale: 'uk'));
       await tester.pump();
 
-      expect(find.text(uk.tabSettings), findsOneWidget);
+      expect(find.text(uk.settingsTitle), findsOneWidget);
       expect(
         tester.getSemantics(find.text(uk.settingsLanguageTitle)),
         isSemantics(isHeader: true),
@@ -706,7 +716,7 @@ void main() {
 
       await tester.tap(find.text(pushHostLabel));
       await tester.pumpAndSettle();
-      expect(find.text(uk.tabSettings), findsOneWidget,
+      expect(find.text(uk.settingsTitle), findsOneWidget,
           reason: 'the pushed Settings route must be on screen before the '
               'pop is exercised');
 
@@ -717,7 +727,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text(uk.tabSettings), findsNothing, reason: strandedReason);
+      expect(find.text(uk.settingsTitle), findsNothing, reason: strandedReason);
       expect(find.text(pushHostLabel), findsOneWidget,
           reason: 'popping returns to the route underneath, unchanged');
     });
@@ -741,7 +751,7 @@ void main() {
               'route pops nothing and, with a system-back handler behind it, '
               'is the shape that closes the whole app — `maybePop` is why '
               'this is a no-op instead');
-      expect(find.text(uk.tabSettings), findsOneWidget,
+      expect(find.text(uk.settingsTitle), findsOneWidget,
           reason: 'a no-op leaves the screen exactly where it was');
     });
   });

@@ -53,7 +53,7 @@ import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/core/widgets/bq_nav_bar.dart';
-import 'package:boostque/features/calendar/calendar_screen.dart';
+import 'package:boostque/features/calendar/today_screen.dart';
 import 'package:boostque/features/calendar/day_progress_ring.dart';
 import 'package:boostque/features/calendar/dose_row.dart';
 import 'package:boostque/features/stack/regimen_editor_screen.dart';
@@ -91,8 +91,11 @@ void main() {
       expect(find.byType(BqNavBar), findsOneWidget, reason: 'app shell');
       expect(find.byType(StackScreen), findsOneWidget);
       expect(find.text('Стек'), findsOneWidget);
+      expect(find.text('Сьогодні'), findsOneWidget);
       expect(find.text('Календар'), findsOneWidget);
-      expect(find.text('Налаштування'), findsOneWidget);
+      expect(find.text('Налаштування'), findsNothing,
+          reason: 'Settings is a pushed route behind the gear (NAV-03), so '
+              'its title is nowhere in the bar');
       expect(find.text('Мій стек'), findsOneWidget, reason: 'Stack tab shown');
 
       final container = ProviderScope.containerOf(
@@ -226,13 +229,13 @@ void main() {
       await _screenshot(tester, 'p3-ios-02-stack');
 
       // ---------------------------------------------------------------
-      // (e) Calendar tab -> today's doses in time blocks, ring at 0 of N
+      // (e) Сьогодні tab -> today's doses in time blocks, ring at 0 of N
       // ---------------------------------------------------------------
-      await _tap(tester, find.text('Календар'));
+      await _tap(tester, find.text('Сьогодні'));
       await _pumpUntil(
         tester,
-        () => find.byType(CalendarScreen).evaluate().isNotEmpty,
-        'the Calendar tab to show',
+        () => find.byType(TodayScreen).evaluate().isNotEmpty,
+        'the Сьогодні tab to show',
       );
 
       Finder rowAt(int minutes) => find.byWidgetPredicate(
@@ -352,7 +355,7 @@ void main() {
         reason: 'the supplement survived the restart',
       );
 
-      await _tap(tester, find.text('Календар'));
+      await _tap(tester, find.text('Сьогодні'));
       await _pumpUntil(
         tester,
         () =>
@@ -440,11 +443,11 @@ void main() {
         'the editor to pop after the start-date change',
       );
 
-      await _tap(tester, find.text('Календар'));
+      await _tap(tester, find.text('Сьогодні'));
       await _pumpUntil(
         tester,
-        () => find.byType(CalendarScreen).evaluate().isNotEmpty,
-        'the Calendar tab',
+        () => find.byType(TodayScreen).evaluate().isNotEmpty,
+        'the Сьогодні tab',
       );
 
       // A past day inside the currently displayed week (the strip's last page

@@ -1,13 +1,13 @@
-/// Widget tests for the planner page and its Calendar-tab seam
-/// (plan 04-01, DECIDED-1, UI-SPEC S4-amendment / S6a).
+/// Widget tests for the planner screen — the shell's Календар destination
+/// since plan 06-03 (plans 04-01/04-02, UI-SPEC S6a / S9).
 ///
-/// Harness pieces come from `calendar_screen_test.dart`: real in-memory Drift
+/// Harness pieces come from `today_screen_test.dart`: real in-memory Drift
 /// database behind the repository providers, a PINNED clock so the window is
 /// the same on any machine on any day, locale uk, a 390x844 logical surface,
 /// `pumpUntil` instead of `pumpAndSettle` (the midnight timer and the minute
 /// ticker are both permanently pending), and an in-body `tearDownTree`.
 ///
-/// The navigation test is driven from the Calendar screen, not by pumping
+/// The navigation tests are driven from the real [AppShell], not by pumping
 /// `PlannerScreen` directly, so the tap path under test is the real one.
 library;
 
@@ -21,19 +21,17 @@ import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
-import 'package:boostque/features/calendar/calendar_screen.dart';
+import 'package:boostque/features/calendar/today_screen.dart';
 import 'package:boostque/core/widgets/bq_nav_bar.dart';
 import 'package:boostque/core/widgets/bq_segmented.dart';
 import 'package:boostque/features/calendar/planner_gantt.dart';
 import 'package:boostque/features/calendar/planner_providers.dart';
 import 'package:boostque/features/calendar/planner_screen.dart';
 import 'package:boostque/features/calendar/planner_year_grid.dart';
-import 'package:boostque/features/calendar/week_strip.dart';
 import 'package:boostque/features/settings/settings_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
@@ -133,7 +131,25 @@ void main() {
                 data: MediaQuery.of(context).copyWith(textScaler: textScaler),
                 child: child!,
               ),
-        home: const CalendarScreen(),
+        home: const TodayScreen(),
+      ),
+    );
+  }
+
+  /// The real three-tab shell — nav bar, `IndexedStack` and all.
+  ///
+  /// The planner is a DESTINATION now (plan 06-03), not a page swapped in over
+  /// Today, so any test about reaching it has to go through the shell: there
+  /// is no in-tab entry action left to tap.
+  Widget shellApp(ProviderContainer container) {
+    return UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(
+        locale: const Locale('uk'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: bqTheme(),
+        home: const AppShell(),
       ),
     );
   }
@@ -332,37 +348,35 @@ void main() {
   }
 
   testWidgets(
-      'tapping the Calendar header\'s planner action opens the planner and '
-      'draws one gantt row per regimen-bearing entry (DECIDED-1, DECIDED-7)',
-      (tester) async {
+      'the Календар destination shows the planner and draws one gantt row per '
+      'regimen-bearing entry (NAV-02, DECIDED-7)', (tester) async {
     usePhoneSurface(tester);
     final container = makeContainer();
     await seed(container);
 
-    await tester.pumpWidget(app(container));
+    await tester.pumpWidget(shellApp(container));
     await pumpUntil(
       tester,
-      () => find.text('Планувальник').evaluate().isNotEmpty,
-      'the Calendar header entry action',
+      () => find.text('Календар').evaluate().isNotEmpty,
+      'the shell nav bar',
     );
 
-    // Today's header is what is on screen before the tap.
-    expect(find.text('Сьогодні'), findsOneWidget);
-
-    await tester.tap(find.text('Планувальник'));
+    await tester.tap(find.text('Календар'));
     await pumpUntil(
       tester,
       () => find.byType(GanttRowBar).evaluate().isNotEmpty,
       'the planner gantt rows',
     );
 
-    expect(find.text('Планувальник'), findsOneWidget,
-        reason: 'the planner titles itself with the same key the button used');
+    expect(find.byType(PlannerScreen), findsOneWidget,
+        reason: 'the Календар destination IS the planner — no page swap, no '
+            'entry action, nothing between the tap and the screen (NAV-02)');
     expect(find.byType(GanttRowBar), findsNWidgets(2),
         reason: 'two regimens: one active, one paused — the supplement with '
             'no regimen at all draws no row (DECIDED-7)');
     // Scoped to the gantt: an active supplement's name also appears as a
-    // week-detail name chip further down the same scroll body.
+    // week-detail name chip further down the same scroll body, and — since
+    // the shell keeps every destination mounted — on the Стек tab as well.
     Finder inGantt(String name) => find.descendant(
           of: find.byType(PlannerGantt),
           matching: find.text(name),
@@ -370,56 +384,23 @@ void main() {
     expect(inGantt('Магній бісглицинат'), findsOneWidget);
     expect(inGantt('Креатин моногідрат'), findsOneWidget,
         reason: 'a paused regimen keeps its row and shows a bare track');
-    expect(find.text('Вітамін D3'), findsNothing);
+    expect(inGantt('Вітамін D3'), findsNothing,
+        reason: 'a supplement with no regimen draws no gantt row at all');
 
     await tearDownTree(tester, container);
   });
 
-  testWidgets('the planner\'s back control restores the Today header',
-      (tester) async {
-    usePhoneSurface(tester);
-    final container = makeContainer();
-    await seed(container);
-
-    await tester.pumpWidget(app(container));
-    await pumpUntil(
-      tester,
-      () => find.text('Планувальник').evaluate().isNotEmpty,
-      'the Calendar header entry action',
-    );
-    await tester.tap(find.text('Планувальник'));
-    await pumpUntil(
-      tester,
-      () => find.byType(GanttRowBar).evaluate().isNotEmpty,
-      'the planner gantt rows',
-    );
-
-    // The back control carries the reused `backToToday` copy behind a "‹".
-    await tester.tap(find.text('‹ Сьогодні'));
-    await pumpUntil(
-      tester,
-      () => find.byType(GanttRowBar).evaluate().isEmpty,
-      'the Today page to come back',
-    );
-
-    expect(find.text('Сьогодні'), findsWidgets,
-        reason: 'the Today header is back');
-    expect(find.byType(GanttRowBar), findsNothing);
-
-    await tearDownTree(tester, container);
-  });
-
-  testWidgets('opening the planner writes no IntakeLog row through the UI '
+  testWidgets('reaching the planner writes no IntakeLog row through the UI '
       '(PF-2 / WR-06)', (tester) async {
     usePhoneSurface(tester);
     final container = makeContainer();
     await seed(container);
 
-    await tester.pumpWidget(app(container));
+    await tester.pumpWidget(shellApp(container));
     await pumpUntil(
       tester,
-      () => find.text('Планувальник').evaluate().isNotEmpty,
-      'the Calendar header entry action',
+      () => find.text('Календар').evaluate().isNotEmpty,
+      'the shell nav bar',
     );
 
     // The Today page materializes its own day and the current week — that is
@@ -435,7 +416,7 @@ void main() {
     await pumpUntil(tester, () => before > 0, 'the Today page to materialize');
     final baseline = before;
 
-    await tester.tap(find.text('Планувальник'));
+    await tester.tap(find.text('Календар'));
     await pumpUntil(
       tester,
       () => find.byType(GanttRowBar).evaluate().isNotEmpty,
@@ -497,208 +478,6 @@ void main() {
     await tester.drag(find.byType(ListView), Offset(0, -dy));
     await tester.pump();
   }
-
-  // ---------------------------------------------------------------------
-  // System back (UI-SPEC S6 truth #18: "system back from the planner returns
-  // to Today rather than leaving the tab").
-  //
-  // These are the only tests in the suite that mount the REAL [AppShell]:
-  // truth #18 is a claim about the nav bar and the route stack, and neither
-  // exists when `CalendarScreen` is pumped as a bare `home`. The back itself
-  // is driven down the actual platform channel a hardware/gesture back
-  // arrives on, so the assertion covers the whole path — engine message ->
-  // `WidgetsBinding.handlePopRoute` -> `WidgetsApp.didPopRoute` ->
-  // `Navigator.maybePop` -> the screen's `PopScope` — rather than calling
-  // the callback by hand, which would prove nothing about who invokes it.
-  // ---------------------------------------------------------------------
-
-  group('system back', () {
-    /// The real three-tab shell — nav bar, `IndexedStack` and all.
-    Widget shellApp(ProviderContainer container) {
-      return UncontrolledProviderScope(
-        container: container,
-        child: MaterialApp(
-          locale: const Locale('uk'),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          theme: bqTheme(),
-          home: const AppShell(),
-        ),
-      );
-    }
-
-    /// Every method call the app makes on `SystemChannels.platform`.
-    ///
-    /// `SystemNavigator.pop()` — "close the app" — travels this channel, and
-    /// it is the ONLY observable difference between a back the screen
-    /// consumed and a back that fell through to the platform. Asserting on
-    /// the widget tree alone cannot tell those apart, because a real app
-    /// exit leaves the tree exactly as it was.
-    List<MethodCall> recordPlatformCalls(WidgetTester tester) {
-      final calls = <MethodCall>[];
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        (call) async {
-          calls.add(call);
-          return null;
-        },
-      );
-      addTearDown(
-        () => tester.binding.defaultBinaryMessenger
-            .setMockMethodCallHandler(SystemChannels.platform, null),
-      );
-      return calls;
-    }
-
-    /// Delivers the engine's `popRoute` notification on
-    /// `SystemChannels.navigation` — an Android hardware/gesture back, or an
-    /// iOS back, as the framework actually receives it.
-    Future<void> systemBack(WidgetTester tester) async {
-      final message = const JSONMethodCodec().encodeMethodCall(
-        const MethodCall('popRoute'),
-      );
-      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
-        SystemChannels.navigation.name,
-        message,
-        (_) {},
-      );
-      await tester.pump();
-    }
-
-    /// Opens the Calendar tab of the real shell and waits for the Today page.
-    Future<void> openCalendarTab(
-      WidgetTester tester,
-      ProviderContainer container,
-    ) async {
-      await tester.pumpWidget(shellApp(container));
-      await pumpUntil(
-        tester,
-        () => find.text('Календар').evaluate().isNotEmpty,
-        'the shell nav bar',
-      );
-      await tester.tap(find.text('Календар'));
-      await pumpUntil(
-        tester,
-        () => find.text('Планувальник').evaluate().isNotEmpty,
-        'the Calendar header entry action',
-      );
-    }
-
-    // Plan 06-01: the shell's bar is the hand-built [BqNavBar]; the claim
-    // this reads is unchanged — WHICH TAB the shell reports as selected.
-    int selectedTab(WidgetTester tester) =>
-        tester.widget<BqNavBar>(find.byType(BqNavBar)).selectedIndex;
-
-    testWidgets('a system back with the planner open returns to Today and '
-        'never leaves the Calendar tab (UI-SPEC truth #18)', (tester) async {
-      usePhoneSurface(tester);
-      final container = makeContainer();
-      await seed(container);
-      final platformCalls = recordPlatformCalls(tester);
-
-      await openCalendarTab(tester, container);
-      await tester.tap(find.text('Планувальник'));
-      await pumpUntil(
-        tester,
-        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
-        'the planner gantt rows',
-      );
-      expect(find.byType(PlannerScreen), findsOneWidget);
-      expect(selectedTab(tester), 1,
-          reason: 'the planner lives UNDER Calendar — opening it never moves '
-              'the nav bar selection');
-
-      // Cleared here so the assertion below is about the back gesture only,
-      // not about anything the app said to the platform while starting up.
-      platformCalls.clear();
-      await systemBack(tester);
-      await pumpUntil(
-        tester,
-        () => find.byType(PlannerScreen).evaluate().isEmpty,
-        'the Today page to come back',
-      );
-
-      // 1. Back on Today: a Today-only element is present, and every
-      //    planner-only element is gone from the tree rather than covered.
-      expect(find.text('Сьогодні'), findsWidgets,
-          reason: 'the Today header is back');
-      expect(find.byType(WeekStrip), findsOneWidget,
-          reason: 'the week strip belongs to the Today page alone');
-      expect(find.byType(GanttRowBar), findsNothing);
-      expect(find.byType(BqSegmented), findsNothing,
-          reason: 'the Цикли/Рік control is a planner-only affordance');
-
-      // 2. Still inside the tab, and the app was never asked to close: the
-      //    PopScope consumed the back instead of letting it bubble.
-      expect(selectedTab(tester), 1,
-          reason: 'system back returned to Today WITHIN the Calendar tab — it '
-              'did not fall back to another destination');
-      expect(find.text('Мій стек'), findsNothing,
-          reason: 'nor did it surface the Stack tab underneath');
-      expect(
-        platformCalls.where((call) => call.method == 'SystemNavigator.pop'),
-        isEmpty,
-        reason: 'a back the screen did NOT consume ends in '
-            'SystemNavigator.pop — closing the app. The PopScope must swallow '
-            'this one, which is exactly the half of truth #18 ("rather than '
-            'leaving the tab") that a widget-tree assertion cannot see: an '
-            'app exit leaves the tree looking identical.',
-      );
-      expect(tester.takeException(), isNull);
-
-      await tearDownTree(tester, container);
-    });
-
-    testWidgets('a second system back, now on Today, is NOT swallowed — it '
-        'bubbles to the platform, so the interception is scoped to the '
-        'planner and never traps the user', (tester) async {
-      usePhoneSurface(tester);
-      final container = makeContainer();
-      await seed(container);
-      final platformCalls = recordPlatformCalls(tester);
-
-      await openCalendarTab(tester, container);
-      await tester.tap(find.text('Планувальник'));
-      await pumpUntil(
-        tester,
-        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
-        'the planner gantt rows',
-      );
-      await systemBack(tester);
-      await pumpUntil(
-        tester,
-        () => find.byType(PlannerScreen).evaluate().isEmpty,
-        'the Today page to come back',
-      );
-
-      platformCalls.clear();
-      await systemBack(tester);
-      await pumpUntil(
-        tester,
-        () => platformCalls.any((c) => c.method == 'SystemNavigator.pop'),
-        'the back on Today to reach the platform',
-      );
-
-      // The Today page mounts no PopScope, so back leaves the app exactly as
-      // it does from any single-screen Android app. That is the correct
-      // contract: `canPop: false` is conditional on the planner being open,
-      // so consuming a back the app has nowhere to spend would strand the
-      // user on Today with a dead back button.
-      expect(
-        platformCalls.map((call) => call.method),
-        contains('SystemNavigator.pop'),
-        reason: 'back from the app\'s root page is an exit, not a no-op',
-      );
-      expect(selectedTab(tester), 1,
-          reason: 'and the tab selection is untouched by a back the app '
-              'declined to handle');
-      expect(find.byType(PlannerScreen), findsNothing,
-          reason: 'back on Today never re-opens the planner');
-      expect(tester.takeException(), isNull);
-
-      await tearDownTree(tester, container);
-    });
-  });
 
   group('planner shell', () {
     testWidgets('Цикли is the default segment; the subtitle and the body '
@@ -2927,9 +2706,9 @@ void main() {
       await tearDownTree(tester, container);
     });
 
-    testWidgets('the Calendar header\'s two text actions flow onto a SECOND '
-        'LINE at textScaler 2.0 rather than overflowing (S4-amendment, WR-04)',
-        (tester) async {
+    testWidgets(
+        'the Today header\'s action area stays a Wrap and does not overflow '
+        'at textScaler 2.0 (WR-04)', (tester) async {
       usePhoneSurface(tester);
       final container = makeContainer();
       await seed(container);
@@ -2939,11 +2718,12 @@ void main() {
       );
       await pumpUntil(
         tester,
-        () => find.text('Планувальник').evaluate().isNotEmpty,
-        'the Calendar header actions',
+        () => find.byType(TodayScreen).evaluate().isNotEmpty,
+        'the Today header',
       );
-      // A resolved day that is NOT today, so the second action renders too —
-      // which is the only configuration where the pair can overflow.
+      // A resolved day that is NOT today, so the `backToToday` action renders
+      // at all — it is the only action left in the area since plan 06-03
+      // deleted the planner-entry action with the page swap.
       container
           .read(selectedDayProvider.notifier)
           .select(DateTime.utc(2026, 8, 10));
@@ -2956,26 +2736,28 @@ void main() {
         await tester.pump(const Duration(milliseconds: 20));
       }
 
+      // The pair-wrapping geometry this test used to assert died with the
+      // second action, so the assertion is retargeted rather than weakened:
+      // what still has to hold is that the container is a Wrap — a Row here
+      // would re-arm WR-04 the moment anyone adds a second action back — and
+      // that nothing in the header overflows at 2.0.
       final actions = find
           .ancestor(
-            of: find.text('Планувальник'),
+            of: find.text('Сьогодні'),
             matching: find.byType(Wrap),
           )
           .first;
-      final buttons =
-          find.descendant(of: actions, matching: find.byType(TextButton));
-      expect(buttons, findsNWidgets(2));
-
-      final first = tester.getRect(buttons.at(0));
-      final second = tester.getRect(buttons.at(1));
-      expect(second.top, greaterThanOrEqualTo(first.bottom),
-          reason: 'a Wrap, not a Row: at textScaler 2.0 the two uk labels do '
-              'not fit one line, and a Row would clip the second action off '
-              'the screen exactly as the Phase-3 header did (WR-04)');
+      expect(actions, findsOneWidget,
+          reason: 'the action area is still a Wrap, not a Row');
+      expect(
+        find.descendant(of: actions, matching: find.byType(TextButton)),
+        findsOneWidget,
+        reason: 'exactly one action survives: `backToToday`. A second one '
+            'here would mean the deleted planner-entry action came back',
+      );
       expect(tester.takeException(), isNull,
-          reason: 'the app\'s most-used screen gained this action pair in '
-              'this phase — an overflow here reaches every user, not only '
-              'planner users');
+          reason: 'the app\'s most-used screen — an overflow here reaches '
+              'every user, not only planner users');
 
       await tearDownTree(tester, container);
     });
@@ -3011,7 +2793,7 @@ void main() {
           expect(find.byIcon(Icons.settings), findsNothing,
               reason: 'the FILLED glyph expresses a selected state, and the '
                   'gear has none — it is a control, not a destination');
-          expect(find.bySemanticsLabel(l10n.tabSettings), findsOneWidget,
+          expect(find.bySemanticsLabel(l10n.settingsTitle), findsOneWidget,
               reason: 'the gear is icon-only, so the ARB label is the only '
                   'thing a screen-reader user has — and it follows the active '
                   'language like every other string');
@@ -3042,7 +2824,7 @@ void main() {
 
       expect(
         tester
-            .getSemantics(find.bySemanticsLabel(l10n.tabSettings))
+            .getSemantics(find.bySemanticsLabel(l10n.settingsTitle))
             .getSemanticsData()
             .hasAction(SemanticsAction.tap),
         isTrue,
@@ -3054,7 +2836,7 @@ void main() {
 
       // Assistive technology does not tap widgets. It activates actions.
       tester.semantics.performAction(
-        find.semantics.byLabel(l10n.tabSettings),
+        find.semantics.byLabel(l10n.settingsTitle),
         SemanticsAction.tap,
       );
       for (var i = 0; i < 20; i++) {
@@ -3154,7 +2936,13 @@ void main() {
 
     // Two starting destinations, so the assertion is about PRESERVING the
     // selection and not about the default index happening to be right.
-    for (final start in const <int>[0, 1]) {
+    // Plan 06-03: three destinations, and the case runs from every one of
+    // them — Стек, Сьогодні and Календар all carry the gear.
+    const destinationLabels = <int, String>{
+      1: 'Сьогодні',
+      2: 'Календар',
+    };
+    for (final start in const <int>[0, 1, 2]) {
       testWidgets(
           'from destination $start: the gear pushes Settings over the bar and '
           'popping returns to the SAME destination', (tester) async {
@@ -3174,7 +2962,7 @@ void main() {
           await tester.tap(
             find.descendant(
               of: find.byType(BqNavBar),
-              matching: find.text(uk.tabCalendar),
+              matching: find.text(destinationLabels[start]!),
             ),
           );
           for (var i = 0; i < 10; i++) {
@@ -3188,10 +2976,10 @@ void main() {
         expect(visibleGear(), findsOneWidget,
             reason: 'exactly one gear is pressable at a time — the one on the '
                 'tab the user is looking at');
-        // Settings is STILL a destination in this plan, so one SettingsScreen
-        // is already mounted inside the IndexedStack. The push is asserted as
-        // a DELTA rather than as a count, so this case keeps working when
-        // plan 06-03 removes the destination.
+        // Settings is no longer a destination (plan 06-03), so nothing is
+        // mounted inside the IndexedStack any more. The push is still
+        // asserted as a DELTA rather than as a count — the claim is about
+        // what the gear ADDS, which is true either way.
         final mounted = find.byType(SettingsScreen).evaluate().length;
         await tester.tap(visibleGear());
         await pumpUntil(

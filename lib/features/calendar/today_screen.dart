@@ -160,7 +160,7 @@ class _Header extends ConsumerWidget {
                 button: true,
                 // One key, two placements: this label and the Settings screen
                 // title, so the control and its destination can never disagree.
-                label: l10n.tabSettings,
+                label: l10n.settingsTitle,
                 excludeSemantics: true,
                 // The action lives on THIS node, not only on the IconButton
                 // below it: `excludeSemantics: true` drops every descendant
@@ -210,32 +210,19 @@ class _Header extends ConsumerWidget {
                           ?.copyWith(color: BqColors.textMuted),
                     ),
                     const SizedBox(height: BqSpace.sm),
-                    // A Wrap, NOT a Row: at textScaler 2.0 the two uk labels
-                    // ("Планувальник", "Сьогодні") do not fit one line, and a
-                    // Row would overflow exactly as the header did in WR-04.
-                    // The header's title ROW above is left structurally
+                    // A Wrap, NOT a Row: it holds text actions whose uk labels
+                    // do not fit one line at textScaler 2.0, and a Row would
+                    // overflow exactly as the header did in WR-04. It stays a
+                    // Wrap after the planner-entry action was deleted with the
+                    // page swap: `backToToday` alone is one label today, but a
+                    // Row here is a trap re-armed by the next action anyone
+                    // adds. The header's title ROW above is left structurally
                     // untouched for the same reason — it never gains a third
                     // non-flexible child.
                     Wrap(
                       spacing: BqSpace.sm,
                       runSpacing: BqSpace.sm,
                       children: [
-                        // Named for its destination, not its effect — the same
-                        // key labels the planner's own title, so the button
-                        // always names where it goes (UI-SPEC Copywriting
-                        // Contract).
-                        TextButton(
-                          onPressed: () => ref
-                              .read(calendarPageProvider.notifier)
-                              .showPlanner(),
-                          child: Text(
-                            l10n.plannerTitle,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: BqColors.accent,
-                            ),
-                          ),
-                        ),
                         // Named for its destination, not its effect — same
                         // word as the title by design (UI-SPEC Copywriting
                         // Contract).

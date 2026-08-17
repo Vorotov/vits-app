@@ -38,12 +38,15 @@ class SettingsScreen extends StatelessWidget {
       body: SafeArea(
         child: ListView(
           // 20px horizontal padding is the screen-body value every other
-          // screen uses; bottom >= 84px clears the nav bar (locked Phase 2).
+          // screen uses. The bottom is ORDINARY body padding, not the >= 84px
+          // nav-bar clearance the three bar-reachable screens carry: Settings
+          // is a pushed route that covers the bar (UI-SPEC S12), so there is
+          // nothing under it to clear and 84 would only be dead space.
           padding: const EdgeInsetsDirectional.only(
             start: 20,
             end: 20,
             top: BqSpace.lg,
-            bottom: 84,
+            bottom: BqSpace.lg,
           ),
           children: [
             // The pushed route's way out (UI-SPEC S12). It exists because a
@@ -92,10 +95,11 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ],
             ),
-            // One key, two placements: the nav destination and this title, so
-            // the tab and its screen can never disagree.
+            // One key, two placements: the gear's semantics label on every
+            // bar-reachable screen and this title, so the control and its
+            // destination can never disagree.
             Text(
-              l10n.tabSettings,
+              l10n.settingsTitle,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 18),

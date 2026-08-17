@@ -89,6 +89,7 @@ import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/l10n/locale_controller.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/widgets/bq_nav_bar.dart';
+import 'package:boostque/features/calendar/week_strip.dart';
 import 'package:boostque/features/settings/language_picker.dart';
 import 'package:boostque/features/settings/settings_screen.dart';
 import 'package:boostque/features/stack/regimen_editor_screen.dart';
@@ -173,14 +174,16 @@ void main() {
       expect(_locale(tester).languageCode, 'uk');
 
       // Ukrainian chrome, both in the nav bar and on the screen. Scoped
-      // finders, not bare ones: `tabSettings` is deliberately reused for the
-      // nav destination AND the screen title, so both placements are checked
-      // where they live instead of by counting matches app-wide.
+      // finders, not bare ones: `settingsTitle` is deliberately reused for the
+      // gear's semantics label AND the screen title, so both placements are
+      // checked where they live instead of by counting matches app-wide.
       expect(_inNav('Стек'), findsWidgets);
+      expect(_inNav('Сьогодні'), findsWidgets);
       expect(_inNav('Календар'), findsWidgets);
-      expect(_inNav('Налаштування'), findsWidgets);
+      expect(_inNav('Налаштування'), findsNothing,
+          reason: 'Settings left the bar in plan 06-03 (NAV-03)');
       expect(_inSettings('Налаштування'), findsOneWidget,
-          reason: 'nav destination + screen title share one ARB key');
+          reason: 'gear label + screen title share one ARB key');
       expect(find.text('МОВА'), findsOneWidget);
 
       // The picker contract: System default FIRST, then one row per shipped
@@ -288,8 +291,9 @@ void main() {
           reason: 'MaterialApp took the new locale on the very next frame');
       expect(find.text('LANGUAGE'), findsOneWidget);
       expect(_inSettings('Settings'), findsOneWidget, reason: 'screen title');
-      expect(_inNav('Settings'), findsWidgets, reason: 'nav destination');
+      expect(_inNav('Settings'), findsNothing, reason: 'not a destination');
       expect(_inNav('Stack'), findsWidgets);
+      expect(_inNav('Today'), findsWidgets);
       expect(_inNav('Calendar'), findsWidgets);
       expect(find.text('System default'), findsOneWidget);
       expect(find.text('МОВА'), findsNothing);
@@ -427,45 +431,50 @@ void main() {
       );
 
       // =================================================================
-      // (g) the Calendar + Planner surfaces follow too
+      // (g) the Сьогодні + Календар surfaces follow too
       // =================================================================
-      await _tap(tester, find.byIcon(Icons.calendar_today_outlined));
+      await _tap(tester, find.byIcon(Icons.today_outlined));
       await _pumpUntil(
         tester,
-        () => find.text('Планувальник').evaluate().isNotEmpty,
-        'the Calendar tab in Ukrainian',
+        () => find.byType(WeekStrip).evaluate().isNotEmpty,
+        'the Сьогодні tab in Ukrainian',
       );
       expect(find.text('Сьогодні'), findsWidgets);
-      await _tap(tester, find.text('Планувальник'));
+      await _tap(tester, find.byIcon(Icons.calendar_month_outlined));
       await _pumpUntil(
         tester,
         () => find.text('Рік').evaluate().isNotEmpty,
-        'the Planner in Ukrainian',
+        'the planner in Ukrainian',
       );
       expect(find.text('Цикли'), findsOneWidget);
+      expect(find.text('Планувальник'), findsOneWidget,
+          reason: 'the Календар destination IS the planner (NAV-02) — there '
+              'is no in-tab entry action to tap any more');
 
       // Switch to English from Settings and come back: the planner, which was
-      // built while Ukrainian was live, must have followed.
+      // built while Ukrainian was live, must have followed. Settings is a
+      // PUSHED route now, so coming back is a pop — and it must land on the
+      // same destination it was opened from.
       await _tap(tester, find.byIcon(Icons.settings_outlined));
       await _pumpUntil(
         tester,
         () => find.byType(SettingsScreen).evaluate().isNotEmpty,
-        'the Settings tab',
+        'the pushed Settings route',
       );
       await tester.tap(find.text('English'));
       await tester.pump();
       expect(_inSettings('Settings'), findsOneWidget);
-      await _tap(tester, find.byIcon(Icons.calendar_today_outlined));
+      await _tap(tester, find.byIcon(Icons.arrow_back_ios_new));
       await _pumpUntil(
         tester,
         () => find.text('Year').evaluate().isNotEmpty,
-        'the Planner in English',
+        'the planner in English',
       );
       expect(find.text('Cycles'), findsOneWidget);
       expect(find.text('Рік'), findsNothing);
       expect(find.text('Цикли'), findsNothing);
       expect(tester.takeException(), isNull);
-      debugPrint('L10N (g): Calendar + Planner followed the switch');
+      debugPrint('L10N (g): Сьогодні + Календар followed the switch');
 
       // =================================================================
       // (h) back to Ukrainian, then System default
@@ -536,7 +545,7 @@ void main() {
         painted = find.text('Stack').evaluate().isNotEmpty;
       }
       expect(painted, isTrue, reason: 'the shell repainted after main()');
-      expect(_inNav('Settings'), findsWidgets);
+      expect(_inNav('Today'), findsWidgets);
       expect(_inNav('Calendar'), findsWidgets);
       expect(tester.takeException(), isNull);
       debugPrint(

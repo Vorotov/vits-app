@@ -2,7 +2,7 @@
 /// S6b / S6c).
 ///
 /// Structure, and who owns each region:
-/// - fixed header (this file): the `‹ Сьогодні` back control, the title, the
+/// - fixed header (this file): the settings gear row, the title, the
 ///   segment-dependent subtitle and the Рік/Цикли `BqSegmented`.
 /// - scroll body: two seams. `_CyclesBody` holds the gantt card today; plan
 ///   04-03 inserts the summary chip, load chart and week detail above it.
@@ -14,10 +14,11 @@
 /// `cyclesModelProvider` / `yearModelProvider`.
 ///
 /// **Navigation-agnostic by design.** This screen does not know how it was
-/// reached — no route, no page-index, no callback into the Calendar tab. The
-/// DECIDED-1 page swap lives entirely in `calendar_screen.dart` +
-/// `calendar_providers.dart`, so replacing it with a nested `Navigator` later
-/// touches neither this file nor the model.
+/// reached — no route, no page-index, no callback into a host. It is the
+/// Календар destination of the app shell's `IndexedStack` (plan 06-03), which
+/// replaced the DECIDED-1 page swap that used to render it inside the Calendar
+/// tab; nothing in this file changed when that happened, and nothing here
+/// would change if the shell changed again.
 library;
 
 import 'package:flutter/material.dart';
@@ -31,7 +32,6 @@ import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/core/widgets/bq_segmented.dart';
-import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/planner_gantt.dart';
 import 'package:boostque/features/calendar/planner_load_chart.dart';
 import 'package:boostque/features/calendar/planner_month_detail.dart';
@@ -85,7 +85,7 @@ const double _chipBottomMargin = 16;
 const int _segYear = 0;
 const int _segCycles = 1;
 
-/// The planner page, rendered inside the Calendar tab (DECIDED-1).
+/// The planner screen — the shell's Календар destination (plan 06-03, NAV-02).
 class PlannerScreen extends ConsumerWidget {
   const PlannerScreen({super.key});
 
@@ -161,7 +161,7 @@ class _Header extends ConsumerWidget {
                 button: true,
                 // One key, two placements: this label and the Settings screen
                 // title, so the control and its destination can never disagree.
-                label: l10n.tabSettings,
+                label: l10n.settingsTitle,
                 excludeSemantics: true,
                 // The action lives on THIS node, not only on the IconButton
                 // below it: `excludeSemantics: true` drops every descendant
@@ -188,21 +188,6 @@ class _Header extends ConsumerWidget {
                 ),
               ),
             ],
-          ),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: TextButton(
-              onPressed: () =>
-                  ref.read(calendarPageProvider.notifier).showToday(),
-              // "‹" is a separator/navigation glyph, the sanctioned
-              // string-literal exception — it is not translatable copy, and it
-              // keeps this screen free of the icon font the Phase-3 contract
-              // deliberately never introduced.
-              child: Text(
-                '‹ ${l10n.backToToday}',
-                style: const TextStyle(fontSize: 13, color: BqColors.accent),
-              ),
-            ),
           ),
           Text(
             l10n.plannerTitle,

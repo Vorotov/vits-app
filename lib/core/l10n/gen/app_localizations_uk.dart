@@ -16,10 +16,13 @@ class AppLocalizationsUk extends AppLocalizations {
   String get tabStack => 'Стек';
 
   @override
+  String get tabToday => 'Сьогодні';
+
+  @override
   String get tabCalendar => 'Календар';
 
   @override
-  String get tabSettings => 'Налаштування';
+  String get settingsTitle => 'Налаштування';
 
   @override
   String get navBack => 'Назад';

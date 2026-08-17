@@ -1128,7 +1128,7 @@ void main() {
           expect(find.byIcon(Icons.settings), findsNothing,
               reason: 'the FILLED glyph expresses a selected state, and the '
                   'gear has none — it is a control, not a destination');
-          expect(find.bySemanticsLabel(l10n.tabSettings), findsOneWidget,
+          expect(find.bySemanticsLabel(l10n.settingsTitle), findsOneWidget,
               reason: 'the gear is icon-only, so the ARB label is the only '
                   'thing a screen-reader user has — and it follows the active '
                   'language like every other string');
@@ -1161,7 +1161,7 @@ void main() {
 
       expect(
         tester
-            .getSemantics(find.bySemanticsLabel(l10n.tabSettings))
+            .getSemantics(find.bySemanticsLabel(l10n.settingsTitle))
             .getSemanticsData()
             .hasAction(SemanticsAction.tap),
         isTrue,
@@ -1173,7 +1173,7 @@ void main() {
 
       // Assistive technology does not tap widgets. It activates actions.
       tester.semantics.performAction(
-        find.semantics.byLabel(l10n.tabSettings),
+        find.semantics.byLabel(l10n.settingsTitle),
         SemanticsAction.tap,
       );
       for (var i = 0; i < 20; i++) {
