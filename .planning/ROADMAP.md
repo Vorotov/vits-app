@@ -184,12 +184,12 @@ Spec: `docs/superpowers/specs/2026-08-17-boostque-v1.1-design.md`
 **Plans**: 6 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — BqNavBar live in the shell: a 56dp hand-built bar whose height is a function of the text scaler (NAV-01)
-- [ ] 06-02-PLAN.md — Settings gear on every bar-reachable screen, pushed route with a working back control (NAV-03)
-- [ ] 06-03-PLAN.md — Three destinations: Today promoted, Calendar screen and the in-tab page swap deleted (NAV-02, NAV-03)
-- [ ] 06-04-PLAN.md — One floating add button on the shell; the Stack screen's full-width CTA removed (UX-01)
-- [ ] 06-05-PLAN.md — Load chart rescaled against the scheduled-supplement ceiling; threshold and over-bar deleted (PLAN-05)
-- [ ] 06-06-PLAN.md — Verdicts, limit constants and 16 copy keys deleted; the vocabulary gate tightened (PLAN-05)
+- [x] 06-01-PLAN.md — BqNavBar live in the shell: a 56dp hand-built bar whose height is a function of the text scaler (NAV-01)
+- [x] 06-02-PLAN.md — Settings gear on every bar-reachable screen, pushed route with a working back control (NAV-03)
+- [x] 06-03-PLAN.md — Three destinations: Today promoted, Calendar screen and the in-tab page swap deleted (NAV-02, NAV-03)
+- [x] 06-04-PLAN.md — One floating add button on the shell; the Stack screen's full-width CTA removed (UX-01)
+- [x] 06-05-PLAN.md — Load chart rescaled against the scheduled-supplement ceiling; threshold and over-bar deleted (PLAN-05)
+- [x] 06-06-PLAN.md — Verdicts, limit constants and 16 copy keys deleted; the vocabulary gate tightened (PLAN-05)
 
 **UI hint**: yes
 
