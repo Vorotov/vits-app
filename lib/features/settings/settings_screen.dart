@@ -1,10 +1,21 @@
-/// Settings tab — full S7 contract (plan 05-01), replacing the Phase-1 stub.
+/// The Settings screen — full S7 contract (plan 05-01), replacing the Phase-1
+/// stub.
+///
+/// NOT a tab. Since plan 06-03 this is a pushed `MaterialPageRoute` entered
+/// from the gear row on Стек / Сьогодні / Календар, and it covers the nav bar
+/// rather than being a destination on it (NAV-03, 06-UI-SPEC S12). That is why
+/// it carries its own back control and ordinary body padding — both documented
+/// where they are built, below.
 ///
 /// v1 content is exactly: title, mono eyebrow, language card (DECIDED-1). No
 /// version/About line (it would need a package, or a hardcoded string that
 /// drifts from pubspec — a lie on the one screen whose whole job is to be
-/// truthful about configuration) and no educational disclaimer (PLAN-04 binds
-/// it to planner screens, where an editorial limit is actually asserted).
+/// truthful about configuration) and no educational disclaimer: PLAN-04 binds
+/// the disclaimer to the PLANNER surfaces, and Settings is not one of them.
+/// (It is deliberately not bound to "screens that assert an editorial limit" —
+/// PLAN-05 deleted that entire layer and the rewritten `plannerDisclaimer`
+/// asserts no limit at all, so a rationale resting on one would be a lie
+/// about a screen this file does not even own.)
 ///
 /// The screen has NO async surface and NO error surface, and none may be added
 /// (DECIDED-8): `AppLocalizations.supportedLocales` is a compile-time const and
@@ -17,7 +28,11 @@
 ///
 /// `ListView`, never a `Column`: at textScaler 2.0 with several languages the
 /// content exceeds the viewport and a `Column` would overflow. No `AppBar` —
-/// the title lives in the body, matching Stack, Calendar and Planner.
+/// the title lives in the body, matching the app's three bar-reachable
+/// screens: Стек, Сьогодні and Календар. (The third peer this doc used to name
+/// was the old combined calendar screen, deleted in plan 06-03 when the Today
+/// page was promoted out of it — its symbol is deliberately not written here,
+/// because `shell_invariants_test.dart` greps lib/ for it, comments included.)
 library;
 
 import 'package:flutter/material.dart';
