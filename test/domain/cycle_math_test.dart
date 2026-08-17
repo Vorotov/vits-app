@@ -316,6 +316,7 @@ const _propertyWalkDays = 400;
 const _boundedMaxOnDays = 30;
 const _boundedMaxOffDays = 14;
 const _boundedMaxCourseLengthDays = 120;
+const _boundedMaxStartOffsetDays = 400;
 
 /// The POSITIVE generator's (deliberately wide) ranges.
 const _wideMaxOnDays = 500;
@@ -338,7 +339,8 @@ const _wideMaxCourseLengthDays = 500;
 /// predicate's `<= 0` guard (which mirrors `isActiveOn`'s) is exercised at 0.
 Regimen _generateRegimen(Random rnd, DateTime today, {required bool bounded}) {
   final kind = rnd.nextBool() ? RegimenKind.cyclic : RegimenKind.course;
-  final maxStartOffset = bounded ? 400 : _wideMaxStartOffsetDays;
+  final maxStartOffset =
+      bounded ? _boundedMaxStartOffsetDays : _wideMaxStartOffsetDays;
   final startOffset = rnd.nextInt(maxStartOffset * 2 + 1) - maxStartOffset;
   final start = today.add(Duration(days: startOffset));
   final on = bounded
@@ -373,10 +375,10 @@ Regimen _generateRegimen(Random rnd, DateTime today, {required bool bounded}) {
 /// exact input rather than only the seed.
 String _describe(Regimen r, DateTime today) => '${r.kind.name}('
     'start: ${r.startDate.toIso8601String().substring(0, 10)}'
-    '${startOffsetLabel(r, today)}, '
+    '${_startOffsetLabel(r, today)}, '
     'end: ${r.endDate?.toIso8601String().substring(0, 10) ?? 'null'}, '
     'on: ${r.onDays}, off: ${r.offDays}, paused: ${r.paused})';
 
-String startOffsetLabel(Regimen r, DateTime today) =>
+String _startOffsetLabel(Regimen r, DateTime today) =>
     ' [today${r.startDate.difference(today).inDays >= 0 ? '+' : ''}'
     '${r.startDate.difference(today).inDays}]';
