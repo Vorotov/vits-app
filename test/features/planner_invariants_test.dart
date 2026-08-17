@@ -264,6 +264,12 @@ void main() {
         'editorialLimit': 'the limit constant, deleted',
         'comfortLoad': 'the comfort constant, deleted',
         'verdictOf': 'the band resolver, deleted',
+        // The resolver's RETURN TYPE, which was missing while the resolver
+        // itself was listed. A gate that forbids the function but permits the
+        // enum it returned is half a gate: the enum is the thing that made a
+        // verdict expressible, and `verdictOf` is only one of the names that
+        // could produce one.
+        'LoadVerdict': 'the verdict enum itself, deleted',
       };
 
       final hits = <String>[];
