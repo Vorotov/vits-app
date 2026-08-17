@@ -901,7 +901,7 @@ abstract class AppLocalizations {
   /// **'by week'**
   String get loadChartMeta;
 
-  /// Centre label of the load chart's axis row (plan 06-05) — the chart's scale caption. It states what a full bar MEANS (every scheduled supplement in the stack overlaps that week) and asserts nothing about whether that is good or bad; it replaces loadAxisLegend, which named an editorial limit
+  /// The load chart's scale caption (plan 06-05), on its own full-width row under the axis bounds. It states what a full bar MEANS (every scheduled supplement in the stack overlaps that week) and asserts nothing about whether that is good or bad; it replaces loadAxisLegend, which named an editorial limit. It occupied the axis row's centre slot until CR-02, where a third of the card's width proved too narrow to render it without truncation in either locale
   ///
   /// In en, this message translates to:
   /// **'full bar = your whole stack'**
