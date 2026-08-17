@@ -531,6 +531,89 @@ void main() {
       await tearDownTree(tester, container);
     });
 
+    /// The nearest [Column] ancestor of [of], as a global rect.
+    ///
+    /// Deliberately not `find.ancestor(...).first`: that finder matches in the
+    /// tree's own traversal order, so `.first` is the OUTERMOST Column — the
+    /// opposite of "the block this text sits in".
+    Rect nearestColumnRect(WidgetTester tester, Finder of) {
+      Element? column;
+      tester.element(of).visitAncestorElements((element) {
+        if (element.widget is Column) {
+          column = element;
+          return false;
+        }
+        return true;
+      });
+      final RenderBox box = column!.renderObject! as RenderBox;
+      return box.localToGlobal(Offset.zero) & box.size;
+    }
+
+    testWidgets('uk: the header does NOT end in dead space on today — the gap '
+        'above the action Wrap is bound to the action (WR-06)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(alwaysActive());
+
+      await tester.pumpWidget(app(container));
+      final Finder subtitle = find.text('четвер, 13 серпня');
+      await pumpUntil(
+        tester,
+        () => subtitle.evaluate().isNotEmpty,
+        'the header to settle on today',
+      );
+
+      // The title block ends AT the subtitle. `backToToday` is the Wrap's only
+      // child and it is conditional, so on today the Wrap is empty — and an
+      // unconditional gap above an empty Wrap is exactly the "card must not
+      // end in dead space" pattern 06-UI-SPEC S13 forbids one card lower, on
+      // the app's most-used screen.
+      expect(
+        nearestColumnRect(tester, subtitle).bottom -
+            tester.getRect(subtitle).bottom,
+        0.0,
+        reason: 'every logical pixel below the subtitle on today is dead '
+            'space: the planner-entry action that used to keep the Wrap '
+            'non-empty was deleted by this phase, and its gap was not',
+      );
+
+      // And off today the control AND its gap both come back — the fix must
+      // not delete the separation, only bind it to the thing it separates.
+      container.read(selectedDayProvider.notifier).select(twoDaysEarlier);
+      final Finder backToToday = find.widgetWithText(TextButton, 'Сьогодні');
+      await pumpUntil(
+        tester,
+        () => backToToday.evaluate().isNotEmpty,
+        'backToToday to appear on a non-today day',
+      );
+
+      final Finder pastSubtitle = find.text('11 серпня');
+      final double gap = tester.getRect(backToToday).top -
+          tester.getRect(pastSubtitle).bottom;
+      expect(gap, greaterThanOrEqualTo(BqSpace.sm),
+          reason: 'the 8px separation between the subtitle and the control is '
+              'still there when there IS a control to separate');
+      expect(
+        nearestColumnRect(tester, pastSubtitle).bottom -
+            tester.getRect(pastSubtitle).bottom,
+        greaterThan(BqSpace.sm),
+        reason: 'the block now extends past the subtitle because it holds '
+            'something — that is content, not dead space');
+
+      // Still a Wrap, never a Row (the WR-04 trap): the rationale survives
+      // the gap moving inside the condition.
+      expect(
+        find.ancestor(of: backToToday, matching: find.byType(Wrap)),
+        findsOneWidget,
+        reason: 'backToToday alone is one label today, but a Row here is a '
+            'trap re-armed by the next action anyone adds',
+      );
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
     testWidgets('uk: the header sits OUTSIDE the scroll view and survives a '
         'scroll of the body', (tester) async {
       usePhoneSurface(tester);

@@ -209,24 +209,35 @@ class _Header extends ConsumerWidget {
                           .bodyMedium
                           ?.copyWith(color: BqColors.textMuted),
                     ),
-                    const SizedBox(height: BqSpace.sm),
+                    // The gap AND the Wrap are bound to the same condition
+                    // (WR-06). `backToToday` is now the Wrap's only child, so
+                    // an unconditional gap left the header ending in 8px of
+                    // dead space in the default state of the app's most-used
+                    // screen — the exact pattern UI-SPEC S13 forbids one card
+                    // lower ("the card must not end in dead space"). The
+                    // planner-entry action that used to keep this Wrap
+                    // unconditionally non-empty was deleted by this phase
+                    // (deletion inventory A); its gap was not. The key's name
+                    // is deliberately not written here — one of the shell
+                    // invariants greps for it under lib/.
+                    //
                     // A Wrap, NOT a Row: it holds text actions whose uk labels
                     // do not fit one line at textScaler 2.0, and a Row would
                     // overflow exactly as the header did in WR-04. It stays a
-                    // Wrap after the planner-entry action was deleted with the
-                    // page swap: `backToToday` alone is one label today, but a
-                    // Row here is a trap re-armed by the next action anyone
-                    // adds. The header's title ROW above is left structurally
-                    // untouched for the same reason — it never gains a third
-                    // non-flexible child.
-                    Wrap(
-                      spacing: BqSpace.sm,
-                      runSpacing: BqSpace.sm,
-                      children: [
-                        // Named for its destination, not its effect — same
-                        // word as the title by design (UI-SPEC Copywriting
-                        // Contract).
-                        if (!isToday)
+                    // Wrap even with one child — `backToToday` alone is one
+                    // label today, but a Row here is a trap re-armed by the
+                    // next action anyone adds. The header's title ROW above is
+                    // left structurally untouched for the same reason: it
+                    // never gains a third non-flexible child.
+                    if (!isToday) ...[
+                      const SizedBox(height: BqSpace.sm),
+                      Wrap(
+                        spacing: BqSpace.sm,
+                        runSpacing: BqSpace.sm,
+                        children: [
+                          // Named for its destination, not its effect — same
+                          // word as the title by design (UI-SPEC Copywriting
+                          // Contract).
                           TextButton(
                             onPressed: () => ref
                                 .read(selectedDayProvider.notifier)
@@ -239,8 +250,9 @@ class _Header extends ConsumerWidget {
                               ),
                             ),
                           ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
