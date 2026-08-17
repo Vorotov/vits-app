@@ -141,13 +141,14 @@ void main() {
       // =================================================================
       // (b) Settings, normalized to System default, read in Ukrainian
       // =================================================================
-      // The tab is found by ICON, never by label: the label is the very thing
-      // under test and changes language mid-run.
+      // The gear is found by ICON, never by label: the label is the very
+      // thing under test and changes language mid-run. (Settings is a pushed
+      // route, not a destination — there is no tab to find.)
       await _tap(tester, find.byIcon(Icons.settings_outlined));
       await _pumpUntil(
         tester,
         () => find.byType(SettingsScreen).evaluate().isNotEmpty,
-        'the Settings tab',
+        'the pushed Settings route',
       );
       expect(find.byType(LanguagePicker), findsOneWidget);
 
@@ -282,7 +283,7 @@ void main() {
       await _pumpUntil(
         tester,
         () => find.byType(SettingsScreen).evaluate().isNotEmpty,
-        'the Settings tab',
+        'the pushed Settings route',
       );
 
       // ONE frame between the tap and the assertions: criterion 3 says the
@@ -497,7 +498,7 @@ void main() {
       await _pumpUntil(
         tester,
         () => find.byType(SettingsScreen).evaluate().isNotEmpty,
-        'the Settings tab',
+        'the pushed Settings route',
       );
       await tester.tap(find.text('Українська'));
       await tester.pump();
