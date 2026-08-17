@@ -138,9 +138,9 @@ Requested after the first hands-on session with the shipped v1 build.
 
 ## Navigation (NAV)
 
-- [ ] **NAV-01** — Bottom navigation is a slim custom bar (56dp base height, down from Material's fixed 80dp) whose height scales with the text scaler and never clips at 1.0/1.6/2.0
-- [ ] **NAV-02** — Three tabs: Стек, Сьогодні (today's doses plus week-strip browsing of recent days), Календар (the Цикли/Рік planner)
-- [ ] **NAV-03** — Settings is reachable from a top-right control on all three tabs and is no longer a tab; the v1 in-tab planner page-swap mechanism is removed
+- [x] **NAV-01** — Bottom navigation is a slim custom bar (56dp base height, down from Material's fixed 80dp) whose height scales with the text scaler and never clips at 1.0/1.6/2.0
+- [x] **NAV-02** — Three tabs: Стек, Сьогодні (today's doses plus week-strip browsing of recent days), Календар (the Цикли/Рік planner)
+- [x] **NAV-03** — Settings is reachable from a top-right control on all three tabs and is no longer a tab; the v1 in-tab planner page-swap mechanism is removed
 
 ## Notifications (NOTIF)
 
@@ -151,11 +151,11 @@ Requested after the first hands-on session with the shipped v1 build.
 
 ## Experience (UX)
 
-- [ ] **UX-01** — A floating add-supplement button appears on all three tabs and nowhere else; the Stack screen's full-width add button is removed and its empty state repointed
+- [x] **UX-01** — A floating add-supplement button appears on all three tabs and nowhere else; the Stack screen's full-width add button is removed and its empty state repointed
 
 ## Planner (PLAN, continued)
 
-- [ ] **PLAN-05** — The planner presents concurrent weekly load without any limit, threshold, reference line, verdict or warning colour; the educational disclaimer remains
+- [x] **PLAN-05** — The planner presents concurrent weekly load without any limit, threshold, reference line, verdict or warning colour; the educational disclaimer remains
 
 **Coverage:**
 

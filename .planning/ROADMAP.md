@@ -165,7 +165,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 Spec: `docs/superpowers/specs/2026-08-17-boostque-v1.1-design.md`
 
-- [ ] **Phase 6: Shell & Simplification** - Slim three-tab navigation with settings moved out, a floating add button everywhere, and the editorial substance limit removed
+- [x] **Phase 6: Shell & Simplification** - Slim three-tab navigation with settings moved out, a floating add button everywhere, and the editorial substance limit removed
 - [ ] **Phase 7: Dose Reminders** - Local notifications on iOS and Android, grouped per time-of-day, correct across cycles, DST and platform limits
 
 ### Phase 6: Shell & Simplification
@@ -213,5 +213,5 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. Shell & Simplification | 0/6 | Planned | - |
-| 7. Dose Reminders | 0/? | Not started | - |
+| 6. Shell & Simplification | 6/6 | Complete — verified 5/5, 13/13 review findings fixed | 2026-08-17 |
+| 7. Dose Reminders | 0/? | UI contract approved (3 FLAGs) — planning next | - |
