@@ -598,6 +598,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLanguageTitle => 'LANGUAGE';
 
   @override
+  String get settingsRemindersTitle => 'REMINDERS';
+
+  @override
+  String get settingsRemindersAllowed => 'Reminders are allowed';
+
+  @override
+  String get settingsRemindersBlocked => 'Reminders are not allowed';
+
+  @override
+  String get settingsRemindersOpenSystem => 'Open system settings';
+
+  @override
   String get doseReminderTitle => 'Time for your doses';
 
   @override

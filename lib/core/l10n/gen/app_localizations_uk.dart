@@ -614,6 +614,18 @@ class AppLocalizationsUk extends AppLocalizations {
   String get settingsLanguageTitle => 'МОВА';
 
   @override
+  String get settingsRemindersTitle => 'НАГАДУВАННЯ';
+
+  @override
+  String get settingsRemindersAllowed => 'Нагадування дозволено';
+
+  @override
+  String get settingsRemindersBlocked => 'Нагадування не дозволено';
+
+  @override
+  String get settingsRemindersOpenSystem => 'Відкрити налаштування системи';
+
+  @override
   String get doseReminderTitle => 'Час прийому';
 
   @override
