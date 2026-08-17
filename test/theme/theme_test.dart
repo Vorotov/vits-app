@@ -235,6 +235,35 @@ void main() {
               'bq_nav_bar.dart alongside the 22dp icon box');
     });
 
+    // ------------------------------------------------------------------
+    // Plan 06-04: the FAB's colours live HERE and nowhere else (UI-SPEC
+    // "bqTheme() changes"). `bq_add_fab.dart` carries `Icons.add` and not a
+    // single `BqColors.` reference, so these four cases are the only gate on
+    // what the app's one accent disc looks like.
+    // ------------------------------------------------------------------
+
+    test('floatingActionButtonTheme — accent fill, surface glyph (06-04)', () {
+      final FloatingActionButtonThemeData fab = t.floatingActionButtonTheme;
+      expect(fab.backgroundColor, BqColors.accent,
+          reason: 'the FAB is the app\'s single accent-filled block after the '
+              'Stack screen\'s full-width button was deleted');
+      expect(fab.foregroundColor, BqColors.surface);
+      expect(fab.splashColor, BqColors.accentPressed);
+    });
+
+    test('floatingActionButtonTheme — elevation 0 in EVERY state (06-04)', () {
+      final FloatingActionButtonThemeData fab = t.floatingActionButtonTheme;
+      // Not "0 at rest": the SDK raises a FAB on focus, hover and press, and
+      // a shadow appearing only under the finger would still be the app's
+      // first shadow. This app has no elevation language at all (04-UI-SPEC:
+      // no Material elevation anywhere on the planner screens), and a flat
+      // accent disc on the paper background has ample contrast without one.
+      expect(fab.elevation, 0);
+      expect(fab.focusElevation, 0);
+      expect(fab.hoverElevation, 0);
+      expect(fab.highlightElevation, 0);
+    });
+
     test('inputDecorationTheme — surface fill, input radius, inputBorder side',
         () {
       final InputDecorationThemeData input = t.inputDecorationTheme;
