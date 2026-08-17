@@ -197,7 +197,7 @@ Plans:
 
 **Goal**: The app reminds the user at the right times on the right days, on both platforms, without asking for privileged permissions and without lying about what it can guarantee.
 **Depends on**: Phase 6
-**Requirements**: NOTIF-01, NOTIF-02, NOTIF-03, NOTIF-04
+**Requirements**: NOTIF-01, NOTIF-02, NOTIF-03, NOTIF-04, NOTIF-05
 **Success Criteria** (what must be TRUE):
 
   1. At a scheduled dose time on an active day, one notification arrives naming how many doses are due — not one per supplement — and tapping it opens Сьогодні
@@ -205,8 +205,18 @@ Plans:
   3. The Android release manifest declares no exact-alarm permission, and scheduling never exceeds the iOS pending-request budget regardless of stack size
   4. Permission is requested at first regimen save; when denied the app works normally and schedules nothing
   5. The scheduled set re-derives correctly after a regimen is created, edited, paused or deleted, after app resume, and across a DST transition — proven by tests over the pure plan, and observed once on each platform
+  6. Settings states whether reminders are allowed and offers a control that opens the OS notification settings; the state row carries no numeral, no toggle and no schedule detail (NOTIF-05 / DECIDED-9a)
 
-**Plans**: TBD
+**Plans**: 6 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Tracer: both platforms build with the three packages, the pure plan and the timezone boundary, the plugin behind a mockable seam, one real notification on the wire (wave 1)
+- [ ] 07-02-PLAN.md — The pure plan complete: the daily-repeat tier, a budget that cannot drop a repeat, and reconcile (wave 2)
+- [ ] 07-03-PLAN.md — Tab index lifted into Riverpod; a tapped reminder opens Сьогодні, warm and on frame 1 from cold (wave 2)
+- [ ] 07-04-PLAN.md — Localized copy with its plural forms and length budgets, and one debounced sync over six triggers (wave 3)
+- [ ] 07-05-PLAN.md — Permission asked once at first save, and the Settings state row with its route to the OS settings (wave 4)
+- [ ] 07-06-PLAN.md — Phase-close absence gates, the behavioural privacy and budget proofs, the device pass (wave 5)
+
 **UI hint**: yes
 
 ## v1.1 Progress
@@ -214,4 +224,4 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 6. Shell & Simplification | 6/6 | Complete — verified 5/5, 13/13 review findings fixed | 2026-08-17 |
-| 7. Dose Reminders | 0/? | UI contract approved (3 FLAGs) — planning next | - |
+| 7. Dose Reminders | 0/6 | Planned — 6 plans across 5 waves | - |
