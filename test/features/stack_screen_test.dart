@@ -488,6 +488,71 @@ void main() {
   });
 
   testWidgets(
+      'uk: the LAST card of a full stack is still reachable by scrolling with '
+      'the FAB present at textScaler 2.0 (T-06-11, UX-01)', (tester) async {
+    usePhoneSurface(tester);
+    final container = makeContainer();
+    // Enough entries that the list must scroll at any scale.
+    for (var i = 0; i < 12; i++) {
+      await container.read(supplementRepoProvider).upsert(
+            Supplement(
+              id: 's$i',
+              name: 'Добавка $i',
+              doseText: '${100 + i} мг · капсули',
+              colorValue: 0xFF6B6FA8,
+              note: '',
+            ),
+          );
+    }
+    await tester.pumpWidget(
+      app(container, textScaler: const TextScaler.linear(2.0)),
+    );
+    await pumpUntilFound(tester, find.text('Добавка 0'));
+
+    // What `bottom: 84` is FOR: the FAB occupies 16 + 56 = 72px above the
+    // viewport bottom, so the last card must come to rest clear of it. This
+    // is asserted rather than re-derived — a padding someone "tidied" to 56
+    // would put the last card under the disc, where it cannot be tapped.
+    await tester.dragUntilVisible(
+      find.text('Добавка 11'),
+      find.byType(ListView),
+      const Offset(0, -300),
+    );
+    // Then all the way to the END of the extent, which is where the last card
+    // comes to rest and the only position `bottom: 84` has to protect.
+    // `dragUntilVisible` stops as soon as the target is on screen, which is
+    // not the same place.
+    await tester.drag(find.byType(ListView), const Offset(0, -2000));
+    await tester.pumpAndSettle();
+    final ScrollPosition position =
+        tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+    expect(position.pixels, position.maxScrollExtent,
+        reason: 'the assertion below is only about the RESTING position of '
+            'the last card; if the list is not at its end, it measures '
+            'nothing');
+
+    // The WHOLE card, not just its name line: the name sits at the card's top
+    // and would clear the FAB even with the bottom padding removed, which is
+    // precisely the assertion that would measure nothing. The card's own tap
+    // target is the box that must stay clear.
+    final Rect card = tester.getRect(
+      find
+          .ancestor(
+            of: find.text('Добавка 11'),
+            matching: find.byType(GestureDetector),
+          )
+          .first,
+    );
+    final Rect fab = tester.getRect(find.byType(BqAddFab));
+    expect(card.bottom, lessThanOrEqualTo(fab.top),
+        reason: 'the last card scrolled to a position the FAB covers — the '
+            'user cannot read or tap the entry they scrolled to');
+    expect(tester.takeException(), isNull);
+
+    await tearDownTree(tester, container);
+  });
+
+  testWidgets(
       'uk: a paused entry shows ПАУЗА and keeps its schedule-summary chip',
       (tester) async {
     usePhoneSurface(tester);
