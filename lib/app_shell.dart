@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:boostque/core/l10n/l10n.dart';
+import 'package:boostque/core/selected_tab_controller.dart';
 import 'package:boostque/core/widgets/bq_add_fab.dart';
 import 'package:boostque/core/widgets/bq_nav_bar.dart';
 import 'package:boostque/features/calendar/planner_screen.dart';
@@ -16,21 +18,19 @@ import 'package:boostque/features/stack/stack_screen.dart';
 ///
 /// All of the bar's chrome, styling and — critically — its text-scale-aware
 /// height now live in `bq_nav_bar.dart`, which documents why the SDK bar was
-/// replaced (NAV-01, D-1). This widget owns only the selected index and the
-/// index-to-screen mapping.
-class AppShell extends StatefulWidget {
+/// replaced (NAV-01, D-1). This widget owns only the index-to-screen mapping;
+/// the index itself moved to `core/selected_tab_controller.dart` in plan 07-03
+/// and the reason is worth stating, because "why is this in Riverpod when only
+/// the shell uses it?" is a question a future reader will otherwise answer
+/// wrongly and revert: a DELIVERED NOTIFICATION has to be able to select a
+/// destination, and widget state is unreachable from outside the widget.
+class AppShell extends ConsumerWidget {
   const AppShell({super.key});
 
   @override
-  State<AppShell> createState() => _AppShellState();
-}
-
-class _AppShellState extends State<AppShell> {
-  int _selectedIndex = 0;
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final selectedIndex = ref.watch(selectedTabProvider);
     return Scaffold(
       // [IndexedStack] builds and KEEPS every child mounted — only painting is
       // suppressed — so all three screens are alive from app launch on every
@@ -46,14 +46,14 @@ class _AppShellState extends State<AppShell> {
       // autoDispose providers that, under the deleted page swap, died every
       // time the user returned to Today.
       body: IndexedStack(
-        index: _selectedIndex,
+        index: selectedIndex,
         children: [
           for (final (index, screen) in const <Widget>[
             StackScreen(),
             TodayScreen(),
             PlannerScreen(),
           ].indexed)
-            TickerMode(enabled: index == _selectedIndex, child: screen),
+            TickerMode(enabled: index == selectedIndex, child: screen),
         ],
       ),
       // The app's single add affordance, mounted ONCE (UX-01, plan 06-04).
@@ -70,10 +70,14 @@ class _AppShellState extends State<AppShell> {
       // phase removes.
       floatingActionButton: const BqAddFab(),
       bottomNavigationBar: BqNavBar(
-        selectedIndex: _selectedIndex,
-        onSelected: (index) {
-          setState(() => _selectedIndex = index);
-        },
+        selectedIndex: selectedIndex,
+        // The bar is one of exactly two writers of the destination; the other
+        // is the tapped-reminder handler. Both go through the same notifier,
+        // which ignores a write of the index it already holds — so a press on
+        // the selected destination stays the no-op the accessibility contract
+        // requires (WR-02).
+        onSelected: (index) =>
+            ref.read(selectedTabProvider.notifier).select(index),
         destinations: [
           BqNavDestination(
             icon: Icons.inventory_2_outlined,
