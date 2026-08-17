@@ -52,7 +52,24 @@ class _BqAddFabState extends State<BqAddFab> {
   void _open() {
     if (_sheetOpen) return;
     _sheetOpen = true;
-    showAddSupplementSheet(context).whenComplete(() => _sheetOpen = false);
+    try {
+      showAddSupplementSheet(context).whenComplete(() => _sheetOpen = false);
+    } catch (_) {
+      // The flag is raised BEFORE the call and is lowered only by the
+      // `whenComplete` that same expression registers — so a synchronous
+      // throw out of the opener skips the registration and latches the guard
+      // FOREVER (WR-01). `showModalBottomSheet` throws exactly like that when
+      // this context has no navigator, which happens during a route swap.
+      //
+      // A guard that can latch is worse than no guard at all: this FAB lives
+      // on the shell's root Scaffold and is never disposed, so the app's ONLY
+      // add affordance would be silently dead until relaunch, with no state
+      // change a user or a test could observe. Reset on the failure edge and
+      // rethrow — the failure itself is still a bug worth surfacing, it just
+      // must not be a permanent one.
+      _sheetOpen = false;
+      rethrow;
+    }
   }
 
   @override

@@ -201,5 +201,84 @@ void main() {
       handle.dispose();
       await flushTearDown(tester);
     });
+
+    // -----------------------------------------------------------------
+    // The guard's FAILURE edge (WR-01).
+    //
+    // The happy path above proves the guard blocks a second sheet. What it
+    // cannot see is what happens when the opener throws SYNCHRONOUSLY,
+    // before `whenComplete` is ever registered — the only thing that ever
+    // lowers the flag. `showModalBottomSheet` does exactly that when the
+    // FAB's context has no navigator (`Navigator.of` throws), which is a
+    // real state during a route swap.
+    //
+    // The FAB is mounted here WITHOUT a Navigator rather than behind an
+    // injected opener: a test seam in the widget would prove the guard's
+    // arithmetic, not that the app's only add affordance survives the
+    // failure the SDK actually produces. `BqAddFab` lives on the root
+    // Scaffold and is never disposed, so a latched flag kills adding
+    // supplements until relaunch, with no state a user or a test could
+    // otherwise observe.
+    // -----------------------------------------------------------------
+    testWidgets('a synchronous throw out of the opener does not LATCH the '
+        'guard — the next activation still attempts to open (WR-01)',
+        (tester) async {
+      final handle = tester.ensureSemantics();
+
+      // Everything `showModalBottomSheet` asserts on is present EXCEPT the
+      // navigator, so the throw is `Navigator.of`'s and not an unrelated
+      // debug assertion.
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: MediaQuery(
+            data: const MediaQueryData(),
+            child: Localizations(
+              locale: const Locale('uk'),
+              delegates: AppLocalizations.localizationsDelegates,
+              child: Theme(
+                data: bqTheme(),
+                child: const Material(child: BqAddFab()),
+              ),
+            ),
+          ),
+        ),
+      );
+      await pumpFrames(tester, 3);
+      expect(find.byType(BqAddFab), findsOneWidget,
+          reason: 'the FAB has to be mounted for the guard to be reachable');
+
+      // The throw comes back up through `performAction` on this very stack,
+      // so it never reaches the framework's exception collector — catching it
+      // here is what makes "did the opener run at all?" observable, and it is
+      // the ONLY observable difference between a latched guard and a healthy
+      // one.
+      Object? attemptToOpen() {
+        try {
+          activateFab(tester);
+          return null;
+        } catch (error) {
+          return error;
+        }
+      }
+
+      expect(attemptToOpen(), isNotNull,
+          reason: 'the premise of this test: with no navigator above it, the '
+              'opener throws SYNCHRONOUSLY, so the `whenComplete` that is '
+              'the flag\'s only reset never gets registered');
+      await tester.pump();
+
+      // The claim under test. A latched guard returns null here — silently,
+      // for the rest of the app's life.
+      expect(attemptToOpen(), isNotNull,
+          reason: 'the SECOND activation must still ATTEMPT to open — a guard '
+              'that can latch is worse than no guard, because the FAB is the '
+              'app\'s only add affordance and nothing would ever lower the '
+              'flag again');
+      await tester.pump();
+
+      handle.dispose();
+      await flushTearDown(tester);
+    });
   });
 }
