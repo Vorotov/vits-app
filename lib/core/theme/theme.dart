@@ -51,6 +51,27 @@ ThemeData bqTheme() {
     // from here. A sub-theme no widget reads is a trap: the next reader edits
     // it expecting the bar to change (T-06-01).
     //
+    // The FAB (plan 06-04, UX-01): the ONLY place its colours may be written.
+    // `bq_add_fab.dart` carries `Icons.add` and nothing else — no BqColors
+    // reference exists in that file (D-07).
+    //
+    // Elevation is 0 in every state, deliberately. The design brief asks for
+    // "the app's existing elevation language" and this app HAS none: the v1
+    // bar was flat and 04-UI-SPEC states there is no Material elevation
+    // anywhere on the planner screens. A flat accent disc on the paper
+    // background has ample contrast without a shadow, and a shadow here —
+    // including one that appears only on focus, hover or press — would be the
+    // first one in the app.
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: BqColors.accent,
+      foregroundColor: BqColors.surface,
+      splashColor: BqColors.accentPressed,
+      elevation: 0,
+      focusElevation: 0,
+      hoverElevation: 0,
+      highlightElevation: 0,
+    ),
+    //
     // Phase-2 sub-themes (02-UI-SPEC "bqTheme() extensions this phase").
     // Every value below references tokens only (D-07).
     //

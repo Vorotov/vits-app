@@ -68,6 +68,26 @@ void main() {
     }
   }
 
+  /// Activates the FAB the way assistive technology does — by dispatching
+  /// [SemanticsAction.tap] at **the FAB's own semantics node**.
+  ///
+  /// Resolved through `find.byType(BqAddFab)` rather than
+  /// `find.semantics.byLabel(l10n.addSupplement)` on purpose: a label finder
+  /// matches "some node carrying this string", and while the Stack screen's
+  /// full-width button still carried the same key that was two nodes, not
+  /// one. Naming the widget is what makes a pass mean *the FAB* rather than a
+  /// coincidence (T-06-10).
+  void activateFab(WidgetTester tester) {
+    final int id = tester.getSemantics(find.byType(BqAddFab)).id;
+    tester.semantics.performAction(
+      find.semantics.byPredicate(
+        (node) => node.id == id,
+        describeMatch: (_) => 'the BqAddFab\'s own semantics node',
+      ),
+      SemanticsAction.tap,
+    );
+  }
+
   Future<void> flushTearDown(WidgetTester tester) async {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(milliseconds: 10));
@@ -146,10 +166,7 @@ void main() {
       final l10n = lookupAppLocalizations(const Locale('uk'));
       expect(find.byType(BottomSheet), findsNothing);
 
-      tester.semantics.performAction(
-        find.semantics.byLabel(l10n.addSupplement),
-        SemanticsAction.tap,
-      );
+      activateFab(tester);
       await pumpFrames(tester);
 
       expect(find.byType(BottomSheet), findsOneWidget);
@@ -167,16 +184,13 @@ void main() {
       await tester.pumpWidget(shellApp());
       await pumpFrames(tester);
 
-      final l10n = lookupAppLocalizations(const Locale('uk'));
-
       // Both activations are dispatched against the SAME semantics tree, with
       // no frame between them — the double-activation an impatient user (or a
       // switch-control repeat) actually produces. `showAddSupplementSheet`
       // has no guard of its own (its `_busy` flag guards the two ADD paths
       // inside the sheet, not a second sheet), so the guard lives in the FAB.
-      final node = find.semantics.byLabel(l10n.addSupplement);
-      tester.semantics.performAction(node, SemanticsAction.tap);
-      tester.semantics.performAction(node, SemanticsAction.tap);
+      activateFab(tester);
+      activateFab(tester);
       await pumpFrames(tester);
 
       expect(find.byType(BottomSheet), findsOneWidget,
