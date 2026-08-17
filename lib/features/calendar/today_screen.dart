@@ -40,20 +40,12 @@ import 'package:boostque/features/calendar/day_block_section.dart';
 import 'package:boostque/features/calendar/day_progress_ring.dart';
 import 'package:boostque/features/calendar/day_view_model.dart';
 import 'package:boostque/features/calendar/week_strip.dart';
-import 'package:boostque/features/settings/settings_screen.dart';
+import 'package:boostque/core/widgets/bq_settings_gear_row.dart';
 
 /// Screen horizontal padding — the mockup-exact override used by both the
 /// header and the scroll body, so one edge runs down the whole screen
 /// (mockup lines 203, 225).
 const double _screenPadding = 20;
-
-/// Pushes Settings as a full-screen route, covering the nav bar (UI-SPEC S12).
-///
-/// Same call shape as every other push in this app
-/// (`stack_screen.dart`'s card tap).
-void _openSettings(BuildContext context) => Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
-    );
 
 /// The Today screen ("Сьогодні", mockup screen 02, UI-SPEC S4).
 class TodayScreen extends ConsumerWidget {
@@ -153,41 +145,7 @@ class _Header extends ConsumerWidget {
           // it makes the header's overflow safety depend on a reader correctly
           // re-deriving "these two are not text" on every future edit; the
           // dedicated row makes it depend on nothing.
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Semantics(
-                button: true,
-                // One key, two placements: this label and the Settings screen
-                // title, so the control and its destination can never disagree.
-                label: l10n.settingsTitle,
-                excludeSemantics: true,
-                // The action lives on THIS node, not only on the IconButton
-                // below it: `excludeSemantics: true` drops every descendant
-                // action, so without this the gear announces itself as a button
-                // VoiceOver / TalkBack cannot press, while passing every
-                // coordinate-tap test (WR-02).
-                onTap: () => _openSettings(context),
-                child: IconButton(
-                  onPressed: () => _openSettings(context),
-                  // A bounded, text-free box: >= 44pt guidance, and it cannot
-                  // grow with the text scaler.
-                  constraints: const BoxConstraints.tightFor(
-                    width: 44,
-                    height: 44,
-                  ),
-                  padding: EdgeInsets.zero,
-                  icon: const Icon(
-                    // Outlined only: the gear is never "selected", so the
-                    // filled variant has no state to express.
-                    Icons.settings_outlined,
-                    size: 20,
-                    color: BqColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-          ),
+          const BqSettingsGearRow(),
           Row(
             // The mockup's `align-items:flex-end` (line 204).
             crossAxisAlignment: CrossAxisAlignment.end,
