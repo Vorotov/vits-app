@@ -33,6 +33,11 @@ import 'package:boostque/features/calendar/week_strip.dart';
 import 'package:boostque/features/settings/settings_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+// `RenderParagraph` — the only thing that can prove a Text is not ellipsized
+// (CR-02). `didExceedMaxLines` lives on the render object, not the widget.
+// Narrowed with `show`: a bare import re-exports all of semantics.dart and
+// would make the deliberate import below look redundant.
+import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1629,6 +1634,68 @@ void main() {
 
       await tearDownTree(tester, container);
     });
+
+    // -------------------------------------------------------------------
+    // The scale caption must be READABLE, not merely present (CR-02).
+    //
+    // D-4 makes `loadScaleCaption` load-bearing: it is the only thing that
+    // tells the reader what a full bar means on a chart that scales to the
+    // user's own stack. A caption that ellipsizes leaves the ceiling exactly
+    // as invisible as deleting it would, plus a dangling ellipsis — and every
+    // render-matrix test passes anyway, precisely BECAUSE `overflow:
+    // ellipsis` suppresses the layout exception. So the assertion has to be
+    // measured, on the RenderParagraph, not "the widget builds".
+    // -------------------------------------------------------------------
+    for (final locale in const ['uk', 'en']) {
+      final caption = locale == 'uk'
+          ? 'повний стовпчик — увесь стек'
+          : 'full bar = your whole stack';
+
+      for (final scale in const <double>[1.0, 1.6]) {
+        testWidgets(
+            '$locale: loadScaleCaption is NOT truncated on a 390pt phone at '
+            'textScaler $scale (CR-02, D-4)', (tester) async {
+          usePhoneSurface(tester);
+          final container = makeContainer();
+          await seedBands(container);
+          await openPlanner(
+            tester,
+            container,
+            locale: locale,
+            textScaler: TextScaler.linear(scale),
+          );
+          // At 1.6 the taller header pushes the chart past the fold, and a
+          // `ListView` does not lay out what it has not built — so the chart
+          // has to be scrolled into range before its paragraph exists.
+          for (var i = 0;
+              i < 10 && find.byType(PlannerLoadChart).evaluate().isEmpty;
+              i++) {
+            await scrollBody(tester, 120);
+            for (var f = 0; f < 4; f++) {
+              await tester.pump(const Duration(milliseconds: 10));
+            }
+          }
+          expect(find.byType(PlannerLoadChart), findsOneWidget,
+              reason: 'the chart itself has to be on screen before its '
+                  'caption can be measured');
+
+          final RenderParagraph paragraph =
+              tester.renderObject<RenderParagraph>(find.text(caption));
+          expect(
+            paragraph.didExceedMaxLines,
+            isFalse,
+            reason: 'the caption is the chart\'s only statement of its own '
+                'ceiling (06-UI-SPEC D-4, consideration #21). Ellipsized, it '
+                'says "повний стовпчик …" / "full bar = your…" and the reader '
+                'is left to invent a denominator — most likely a limit, which '
+                'is the exact state PLAN-05 deleted the limit layer to avoid',
+          );
+          expect(tester.takeException(), isNull);
+
+          await tearDownTree(tester, container);
+        });
+      }
+    }
   });
 
   // ---------------------------------------------------------------------

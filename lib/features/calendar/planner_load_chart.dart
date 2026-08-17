@@ -15,9 +15,10 @@
 /// decide what to make of it.
 ///
 /// The scale is the user's own stack: a bar's height is its week's load over
-/// [CyclesModel.scheduledCount]. The axis row's centre slot says so in words
-/// (`loadScaleCaption`), because a self-scaling chart whose denominator is
-/// invisible invites the reader to invent one — most likely a limit.
+/// [CyclesModel.scheduledCount]. A full-width caption under the axis bounds
+/// says so in words (`loadScaleCaption`), because a self-scaling chart whose
+/// denominator is invisible invites the reader to invent one — most likely a
+/// limit.
 library;
 
 import 'package:flutter/material.dart';
@@ -53,6 +54,11 @@ const double _chartHeadroom = 7;
 /// Gap between the chart and the axis-label row (mockup line 347
 /// `margin-top:7px`).
 const double _axisGap = 7;
+
+/// Gap between the axis bounds and the scale caption on its own row (CR-02).
+/// Hairline by intent: the caption reads as a continuation of the axis, not as
+/// a fourth block in the card.
+const double _captionGap = 2;
 
 /// Gap between two week columns (mockup line 338 `gap:3px`).
 const double _columnGap = 3;
@@ -186,14 +192,6 @@ class PlannerLoadChart extends ConsumerWidget {
                 align: TextAlign.start,
               ),
               _AxisLabel(
-                // REPLACED, never removed: the bars scale against the user's
-                // own scheduled stack, and a scale the reader cannot see is a
-                // scale the reader will guess at. The caption states what a
-                // full bar means and judges nothing.
-                text: l10n.loadScaleCaption,
-                align: TextAlign.center,
-              ),
-              _AxisLabel(
                 text: weeks.isEmpty
                     ? ''
                     : axis.format(weeks.last.bucket.endInclusive),
@@ -201,14 +199,46 @@ class PlannerLoadChart extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: _captionGap),
+          // REPLACED, never removed: the bars scale against the user's own
+          // scheduled stack, and a scale the reader cannot see is a scale the
+          // reader will guess at. The caption states what a full bar means and
+          // judges nothing.
+          //
+          // Its OWN full-width row, under the two bounds rather than wedged
+          // between them (CR-02). As a third equal slot it got 107 of the
+          // card's 322 logical pixels and ellipsized in both locales on every
+          // phone — «повний стовпчик …» — while the two date labels each used
+          // under half of theirs. A truncated ceiling statement leaves the
+          // ceiling exactly as invisible as deleting the caption would (D-4).
+          //
+          // `maxLines: 2` and no `overflow`: this is a caption, not a data
+          // label, so it may wrap. At a large text scale wrapping is the
+          // correct outcome and truncation never is.
+          Text(
+            l10n.loadScaleCaption,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            style: BqText.mono(
+              size: _axisSize,
+              weight: FontWeight.w400,
+              color: BqColors.textFaint,
+              letterSpacing: 0,
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-/// One third of the axis row. Three `Expanded` children rather than three
-/// rigid ones, so a long localized date truncates instead of overflowing.
+/// One half of the axis row: the window's start bound or its end bound.
+///
+/// Two `Expanded` children rather than two rigid ones, so a long localized
+/// date truncates instead of overflowing. The scale caption is deliberately
+/// NOT one of these — it gets its own full-width row below, because a caption
+/// competing with a date for a third of the card is a caption nobody can read
+/// (CR-02).
 class _AxisLabel extends StatelessWidget {
   const _AxisLabel({required this.text, required this.align});
 
