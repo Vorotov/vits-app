@@ -44,6 +44,45 @@ bool isActiveOn(Regimen r, DateTime day) {
   }
 }
 
+/// Whether regimen [r] will be active on EVERY day from [day] onward, forever.
+///
+/// The tier-A predicate of the notification plan (07-RESEARCH §8.1): a time of
+/// day whose every contributing regimen answers true here can be armed as one
+/// repeating request instead of one request per day.
+///
+/// True only for a cyclic regimen that is not paused, has a positive on-day
+/// count, has a zero off-day count, and whose start date is not after [day]. A
+/// cyclic regimen ignores its end date, so the end date plays no part; a course
+/// always answers false, because it has a last day and a repeat does not.
+///
+/// The start-date condition is not belt-and-braces. A daily regimen starting
+/// next week satisfies every other condition TODAY, and promoting it would arm a
+/// repeating request that begins firing before the regimen begins. It becomes
+/// promotable on its start date, at which point the ordinary re-derivation picks
+/// it up — which is why nothing else is needed to handle it.
+///
+/// **This lives here, and not in `lib/core/notifications/`, for one reason:** it
+/// mirrors two of the guard conditions inside [isActiveOn]'s cyclic arm (`onDays
+/// <= 0` and `offDays == 0`) plus its pause and pre-start guards, so it is
+/// coupled to that function's internals in a way no amount of care at a distance
+/// can protect. One screenful below the thing it mirrors, a future change to the
+/// activity rule — a new regimen kind, a new pre-start rule, a new pause
+/// semantic — is made by someone looking straight at the predicate that depends
+/// on it. The same reasoning `planner_view_model.dart` records for having exactly
+/// one activity decision point applies to having exactly one PLACE where that
+/// decision's shape is mirrored. `cycle_math_test.dart`'s two property tests
+/// walk 400 days over a generated regimen set to assert the mirror holds.
+bool runsEveryDayFrom(Regimen r, DateTime day) {
+  if (r.paused) return false;
+  if (dateOnly(r.startDate).isAfter(dateOnly(day))) return false;
+  switch (r.kind) {
+    case RegimenKind.course:
+      return false;
+    case RegimenKind.cyclic:
+      return r.onDays > 0 && r.offDays == 0;
+  }
+}
+
 /// The Monday of [day]'s week, as a date-only UTC value.
 ///
 /// Pure arithmetic on the UTC calendar day — `subtract` on a UTC value can
