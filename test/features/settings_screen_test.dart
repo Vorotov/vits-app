@@ -22,6 +22,7 @@ import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/l10n/locale_controller.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
+import 'package:boostque/core/widgets/bq_add_fab.dart';
 import 'package:boostque/core/widgets/bq_nav_bar.dart';
 import 'package:boostque/features/settings/language_picker.dart';
 import 'package:boostque/features/settings/settings_screen.dart';
@@ -615,7 +616,10 @@ void main() {
         listen: false,
       );
 
-      await tester.tap(find.text(uk.addSupplement));
+      // The add sheet is opened through the shell's FAB since plan 06-04 —
+      // matched by widget, not by the `addSupplement` label, which is now a
+      // semantics label rather than painted text (T-06-10).
+      await tester.tap(find.byType(BqAddFab));
       for (var i = 0; i < 20; i++) {
         await tester.pump(const Duration(milliseconds: 20));
       }

@@ -88,6 +88,7 @@ import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/l10n/locale_controller.dart';
 import 'package:boostque/core/providers.dart';
+import 'package:boostque/core/widgets/bq_add_fab.dart';
 import 'package:boostque/core/widgets/bq_nav_bar.dart';
 import 'package:boostque/features/calendar/week_strip.dart';
 import 'package:boostque/features/settings/language_picker.dart';
@@ -227,7 +228,9 @@ void main() {
       if (alreadyThere) {
         debugPrint('L10N (c): "$_ukCatalogName" already in the stack — reused');
       } else {
-        await _tap(tester, find.widgetWithText(FilledButton, 'Додати добавку'));
+        // The shell's floating + since plan 06-04 — the Стек screen's
+        // full-width add button is deleted.
+        await _tap(tester, find.byType(BqAddFab));
         await _pumpUntil(
           tester,
           () => find.byType(BottomSheet).evaluate().isNotEmpty,

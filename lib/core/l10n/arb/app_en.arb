@@ -90,9 +90,9 @@
   "@emptyStackTitle": {
     "description": "Empty-state heading on the Stack screen, below the still-visible CTA"
   },
-  "emptyStackBody": "Add your first supplement — from the catalog or manually.",
+  "emptyStackBody": "Add your first supplement with the + button — from the catalog or manually.",
   "@emptyStackBody": {
-    "description": "Empty-state body on the Stack screen"
+    "description": "Empty-state body on the Stack screen. Names the + ACTION rather than a screen corner ('bottom right'), so it stays true under RTL and if the floating button ever moves (plan 06-04)"
   },
   "stackLoadError": "Couldn't load your stack. Try again.",
   "@stackLoadError": {

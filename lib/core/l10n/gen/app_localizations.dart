@@ -206,10 +206,10 @@ abstract class AppLocalizations {
   /// **'Your stack is empty'**
   String get emptyStackTitle;
 
-  /// Empty-state body on the Stack screen
+  /// Empty-state body on the Stack screen. Names the + ACTION rather than a screen corner ('bottom right'), so it stays true under RTL and if the floating button ever moves (plan 06-04)
   ///
   /// In en, this message translates to:
-  /// **'Add your first supplement — from the catalog or manually.'**
+  /// **'Add your first supplement with the + button — from the catalog or manually.'**
   String get emptyStackBody;
 
   /// Stack list AsyncValue.error copy — raw exception text is never user-visible

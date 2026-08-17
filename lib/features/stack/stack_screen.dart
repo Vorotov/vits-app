@@ -4,9 +4,10 @@
 /// wrapping name/dose, status chip (tested `statusOf`), schedule-summary chip
 /// (tested `scheduleSummaryOf`), plus the summary header, ДОБАВКИ eyebrow,
 /// and all five list states per UI-SPEC UI Considerations #1-#7:
-/// - empty: `emptyStackTitle`/`emptyStackBody` below the still-visible CTA,
-///   eyebrow omitted (#1)
-/// - loading: header + CTA with an empty list area, NO spinner (#2)
+/// - empty: `emptyStackTitle`/`emptyStackBody` directly under the header, with
+///   the body pointing at the shell's floating + — this screen carries no add
+///   button of its own since plan 06-04 — eyebrow omitted (#1)
+/// - loading: header with an empty list area, NO spinner (#2)
 /// - error: `stackLoadError` + retry (provider invalidate) — raw exception
 ///   text is never user-visible (#3, threat T-02-08)
 /// - populated: scrollable list, 9px gaps, bottom padding >= 84px (#4)
@@ -30,7 +31,6 @@ import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/settings/settings_screen.dart';
-import 'package:boostque/features/stack/add_supplement_sheet.dart';
 import 'package:boostque/features/stack/regimen_editor_screen.dart';
 import 'package:boostque/features/stack/schedule_summary_text.dart';
 import 'package:boostque/features/stack/stack_status.dart';
@@ -132,28 +132,12 @@ class StackScreen extends ConsumerWidget {
                 ),
               ),
             ],
+            // The 18px gap below the summary now runs straight into the list:
+            // the full-width accent add button that used to sit here — and its
+            // trailing gap — are deleted (UX-01, plan 06-04). Adding is the
+            // shell's floating + , identical on all three tabs, so this screen
+            // has no add affordance and no accent-filled block of its own.
             const SizedBox(height: 18),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: BqColors.accent,
-                  foregroundColor: BqColors.surface,
-                  overlayColor: BqColors.accentPressed,
-                  padding: const EdgeInsetsDirectional.symmetric(vertical: 13),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(BqRadii.button),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                onPressed: () => showAddSupplementSheet(context),
-                child: Text(l10n.addSupplement),
-              ),
-            ),
-            const SizedBox(height: BqSpace.md),
             // "Has an error" beats "is loading", matched on the PROPERTY and
             // in this arm order — the same shape the planner's `_surface` uses
             // (`planner_screen.dart:618`), so the two screens cannot drift into
@@ -201,8 +185,8 @@ class StackScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
-              // Empty state below the still-visible CTA; the ДОБАВКИ eyebrow
-              // is omitted when the list is empty (#1).
+              // Empty state directly under the header; the ДОБАВКИ eyebrow is
+              // omitted when the list is empty (#1).
               AsyncData(value: final list) when list.isEmpty =>
                 const <Widget>[_EmptyStackState()],
               AsyncData(value: final list) => <Widget>[
@@ -232,8 +216,10 @@ class StackScreen extends ConsumerWidget {
   }
 }
 
-/// Empty-stack state (UI-SPEC #1): title + body under the CTA; the CTA above
-/// remains the single next-step affordance.
+/// Empty-stack state (UI-SPEC #1): title + body, with nothing above them but
+/// the header. The single next-step affordance is the shell's floating + ,
+/// which the body names as an ACTION rather than as a screen corner — so the
+/// sentence stays true under RTL and if the button ever moves (plan 06-04).
 class _EmptyStackState extends StatelessWidget {
   const _EmptyStackState();
 
