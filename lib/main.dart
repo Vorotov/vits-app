@@ -9,6 +9,7 @@ import 'package:boostque/core/notifications/notification_locale.dart';
 import 'package:boostque/core/notifications/notification_providers.dart';
 import 'package:boostque/core/notifications/notification_scheduler.dart';
 import 'package:boostque/core/notifications/notification_service.dart';
+import 'package:boostque/core/notifications/notification_sync.dart';
 import 'package:boostque/core/notifications/tz_conversion.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/selected_tab_controller.dart';
@@ -137,11 +138,12 @@ class BoostqueApp extends ConsumerWidget {
     // is cheaper than plumbing a ProviderContainer out of main() to drive the
     // bootstrap from there.
     //
-    // It is watched only to keep the provider ALIVE for the app's lifetime: an
-    // unlistened provider is paused in this version of Riverpod, so the
-    // bootstrap's own listener on the resolved locale would never be
-    // registered. The value itself is not read here.
+    // Both are watched only to keep them ALIVE for the app's lifetime: an
+    // unlistened provider is paused in this version of Riverpod, so neither the
+    // bootstrap's listener on the resolved locale nor the sync's four trigger
+    // listeners would ever be registered. Neither value is read here.
     ref.watch(notificationBootstrapProvider);
+    ref.watch(notificationSyncProvider);
     return MaterialApp(
       onGenerateTitle: (context) => context.l10n.appTitle,
       theme: bqTheme(),

@@ -95,6 +95,16 @@ String notificationChannelDescription(Locale locale) =>
 /// The date the fragment is read off is a fixed UTC day, never today: only the
 /// hour and the minute are rendered, and a real day would drag a daylight-saving
 /// transition into a function that has nothing to do with one.
+///
+/// **One dependency worth naming, because it is invisible until it breaks.** The
+/// formatting symbols for [locale] must already be loaded, or this throws. In
+/// the app that is free and it is not a coincidence: the resolved locale is only
+/// ever reported by a tree that has ALREADY loaded that locale's material
+/// localizations, and loading them is exactly what initializes the symbols. It
+/// stops being free if the global localizations delegate is ever removed from
+/// the delegate list — and the sync's own guard would then turn every reminder
+/// into a crash report rather than a crash. A bare unit test must load them
+/// itself.
 String formatReminderTime({
   required Locale locale,
   required int minutesFromMidnight,
