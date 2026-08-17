@@ -5,6 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:boostque/app_shell.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/l10n/locale_controller.dart';
+import 'package:boostque/core/notifications/notification_providers.dart';
+import 'package:boostque/core/notifications/notification_scheduler.dart';
+import 'package:boostque/core/notifications/notification_service.dart';
+import 'package:boostque/core/notifications/tz_conversion.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 
@@ -34,13 +38,33 @@ Future<void> main() async {
       ),
     );
   }
+  // NOTHING notification-related is added above this line, and that is a checked
+  // fact (07-UI-CHECK FLAG-3, asserted by test/notifications/
+  // notification_bootstrap_test.dart). The zone database is about a megabyte to
+  // parse and the plugin's initialize() plus the channel creation are two
+  // platform round trips; only a launch-details read has a frame-1 dependency,
+  // and it is not in this plan. Both overrides below merely INSTALL
+  // implementations — the provider bodies are lazy and nothing runs here.
   runApp(
     ProviderScope(
-      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+        notificationSchedulerProvider.overrideWith(_pluginScheduler),
+        timeZoneLoaderProvider.overrideWithValue(initTimeZones),
+      ],
       child: const BoostqueApp(),
     ),
   );
 }
+
+/// The plugin-backed scheduler, constructed LAZILY by the provider rather than
+/// eagerly in `main()`, so nothing plugin-shaped exists before the first frame.
+///
+/// A named top-level function rather than an inline closure so the override reads
+/// as one contiguous `notificationSchedulerProvider.overrideWith(...)` that a
+/// source gate — and a reviewer's grep — can find whatever the formatter does
+/// with the line.
+NotificationScheduler _pluginScheduler(Ref ref) => PluginNotificationScheduler();
 
 /// Root app widget: theme + l10n + locale resolution (D-10, D-11).
 ///
@@ -56,12 +80,34 @@ class BoostqueApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Watching the bootstrap flag costs exactly ONE extra rebuild of this widget
+    // when it flips. That is the price of the FLAG-3 ordering guarantee, and it
+    // is cheaper than plumbing a ProviderContainer out of main() to drive the
+    // bootstrap from there.
+    ref.watch(notificationBootstrapProvider);
+    final bootstrap = ref.read(notificationBootstrapProvider.notifier);
     return MaterialApp(
       onGenerateTitle: (context) => context.l10n.appTitle,
       theme: bqTheme(),
       locale: ref.watch(localeControllerProvider),
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
+      builder: (context, child) {
+        // The notification copy is built in the locale the UI is ACTUALLY
+        // rendering, OBSERVED here rather than re-derived: reproducing
+        // MaterialApp's own resolution would be a second copy of a rule whose
+        // correctness depends on this file never passing a
+        // localeResolutionCallback (DECIDED-15, the PF-1 defect shape).
+        //
+        // Post-frame, never during build: this is the whole of the notification
+        // bootstrap, and FLAG-3 permits none of it before the first frame is on
+        // screen.
+        final observed = Localizations.localeOf(context);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          bootstrap.bootstrap(locale: observed);
+        });
+        return child!;
+      },
       home: const AppShell(),
     );
   }

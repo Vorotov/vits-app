@@ -596,4 +596,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsLanguageTitle => 'LANGUAGE';
+
+  @override
+  String get doseReminderTitle => 'Time for your doses';
+
+  @override
+  String doseReminderBody(int count, String time) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count doses',
+      one: '$count dose',
+    );
+    return '$time · $_temp0';
+  }
+
+  @override
+  String get doseChannelName => 'Dose reminders';
+
+  @override
+  String get doseChannelDescription =>
+      'One reminder for each dose time in your schedule.';
 }

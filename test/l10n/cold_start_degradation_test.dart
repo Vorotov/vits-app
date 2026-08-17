@@ -62,6 +62,23 @@ void main() {
   testWidgets(
       'a store that cannot be opened still reaches runApp — the app starts in '
       'the system language instead of not starting (CR-02)', (tester) async {
+    // Every error the launch path reports, collected instead of counted.
+    //
+    // Phase 7 made the launch path report MORE than one fault in a host
+    // environment: the notification bootstrap runs after the first frame and, with
+    // no notification plugin registered here, both its device-zone read and the
+    // plugin's own initialization fail and are reported — exactly as they would be
+    // reported on a device where they genuinely failed. `takeException()` returns
+    // ONE exception and collapses to a summary string as soon as there are
+    // several, so the assertion below names the fault it cares about rather than
+    // depending on how many other subsystems also had something to say. The claim
+    // is unchanged and now stated more precisely: the store failure IS reported,
+    // by an app that started.
+    final reported = <FlutterErrorDetails>[];
+    final previousOnError = FlutterError.onError;
+    FlutterError.onError = reported.add;
+    addTearDown(() => FlutterError.onError = previousOnError);
+
     // `runAsync`, because both steps below talk to a platform channel and the
     // fake clock a widget test normally runs under never delivers that reply.
     await tester.runAsync(() async {
@@ -93,8 +110,10 @@ void main() {
     );
     await tester.pump();
     expect(
-      tester.takeException(),
-      isA<MissingPluginException>(),
+      reported
+          .where((details) => details.exception is MissingPluginException)
+          .map((details) => details.context.toString()),
+      contains(contains('SharedPreferences')),
       reason: 'the store failure IS reported (a crash logger must still see a '
           'real device fault) — but it is reported by an app that started, '
           'rather than replacing the launch. Nothing user-visible carries it',

@@ -612,4 +612,27 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get settingsLanguageTitle => 'МОВА';
+
+  @override
+  String get doseReminderTitle => 'Час прийому';
+
+  @override
+  String doseReminderBody(int count, String time) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count прийоми',
+      many: '$count прийомів',
+      few: '$count прийоми',
+      one: '$count прийом',
+    );
+    return '$time · $_temp0';
+  }
+
+  @override
+  String get doseChannelName => 'Нагадування про прийом';
+
+  @override
+  String get doseChannelDescription =>
+      'Одне нагадування на кожен час прийому у вашому розкладі.';
 }
