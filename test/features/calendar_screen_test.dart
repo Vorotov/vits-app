@@ -43,6 +43,7 @@ import 'package:boostque/features/calendar/day_block_section.dart';
 import 'package:boostque/features/calendar/day_progress_ring.dart';
 import 'package:boostque/features/calendar/dose_row.dart';
 import 'package:boostque/features/calendar/week_strip.dart';
+import 'package:boostque/features/settings/settings_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -78,7 +79,15 @@ void main() {
   /// read — the minute ticker — so current-block and overdue assertions do not
   /// depend on what time the suite happens to run at; it also replaces the
   /// periodic timer with a single-value stream.
-  ProviderContainer makeContainer({DateTime? today, int? nowMinutes}) {
+  /// [prefs] is only needed by tests that mount the Settings screen — since
+  /// plan 05-01 `LocaleController` seeds itself SYNCHRONOUSLY from
+  /// [sharedPreferencesProvider], which throws unless overridden. The Today
+  /// page itself never reaches it, which is why every other container omits it.
+  ProviderContainer makeContainer({
+    DateTime? today,
+    int? nowMinutes,
+    SharedPreferences? prefs,
+  }) {
     return ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
@@ -90,6 +99,7 @@ void main() {
         if (today != null) todayProvider.overrideWith(() => _FixedToday(today)),
         if (nowMinutes != null)
           nowMinutesProvider.overrideWith((ref) => Stream.value(nowMinutes)),
+        if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs),
       ],
     );
   }
@@ -3391,7 +3401,193 @@ void main() {
       await tearDownTree(tester, container);
     });
   });
+
+  // ---------------------------------------------------------------------
+  // The settings gear (plan 06-02, UI-SPEC S11 / D-5, NAV-03).
+  // ---------------------------------------------------------------------
+
+  group('the settings gear (S11)', () {
+    for (final locale in const ['uk', 'en']) {
+      final l10n = lookupAppLocalizations(Locale(locale));
+
+      testWidgets(
+          '$locale: the gear renders exactly once, in the OUTLINED variant, '
+          'with a box >= 44 that is identical at 1.0 / 1.6 / 2.0',
+          (tester) async {
+        usePhoneSurface(tester);
+        final container = makeContainer(
+          today: DateTime.utc(2026, 8, 13),
+          nowMinutes: 600,
+        );
+        final sizes = <Size>[];
+        final rowHeights = <double>[];
+        for (final scale in bqTextScaleMatrix) {
+          await tester.pumpWidget(
+            app(
+              container,
+              locale: locale,
+              textScaler: TextScaler.linear(scale),
+            ),
+          );
+          await tester.pump();
+
+          expect(gearControl(), findsOneWidget, reason: gearPresenceReason);
+          expect(find.byIcon(Icons.settings), findsNothing,
+              reason: 'the FILLED glyph expresses a selected state, and the '
+                  'gear has none — it is a control, not a destination');
+          expect(find.bySemanticsLabel(l10n.tabSettings), findsOneWidget,
+              reason: 'the gear is icon-only, so the ARB label is the only '
+                  'thing a screen-reader user has — and it follows the active '
+                  'language like every other string');
+          final size = tester.getSize(gearControl());
+          expect(size.width, greaterThanOrEqualTo(44.0),
+              reason: gearTapTargetReason);
+          expect(size.height, greaterThanOrEqualTo(44.0),
+              reason: gearTapTargetReason);
+          expect(tester.takeException(), isNull, reason: overflowReason);
+          sizes.add(size);
+          rowHeights.add(tester.getSize(gearRow()).height);
+        }
+
+        expect(sizes.toSet(), hasLength(1), reason: gearGeometryReason(sizes));
+        expect(rowHeights.toSet(), hasLength(1),
+            reason: gearGeometryReason(rowHeights));
+        await tearDownTree(tester, container);
+      });
+    }
+
+    testWidgets(
+        'the Сьогодні TITLE ROW still holds exactly its two content children '
+        'and the 10px spacer between them — the gear did NOT join it '
+        '(WR-04, D-5)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(
+        today: DateTime.utc(2026, 8, 13),
+        nowMinutes: 600,
+      );
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(alwaysActive());
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.byType(DayProgressRing).evaluate().isNotEmpty,
+        'the ring, so the title row is at its WIDEST — two children plus the '
+        'ring is the shape the assertion has to see',
+      );
+
+      // The title row is the Row that OWNS the ring; counting its children is
+      // what makes a third rigid child a red test instead of a shipped
+      // overflow. Read off the widget tree, never off the source.
+      final titleRow = tester.widget<Row>(
+        find
+            .ancestor(
+              of: find.byType(DayProgressRing),
+              matching: find.byType(Row),
+            )
+            .first,
+      );
+      expect(titleRow.children, hasLength(3),
+          reason: 'the row is Expanded(title column) + SizedBox(10) + ring. '
+              'Its own comment says verbatim that it never gains a third '
+              'NON-FLEXIBLE child, and the gear is exactly such a child: the '
+              'gear lives in its own text-free row above the title instead '
+              '(D-5). A fourth entry here means someone tidied it back in and '
+              'reopened WR-04');
+      expect(
+        find.descendant(
+          of: find.byWidget(titleRow),
+          matching: find.byIcon(Icons.settings_outlined),
+        ),
+        findsNothing,
+        reason: 'stated as an absence as well as a count, so the gear cannot '
+            'sneak in by replacing the SizedBox rather than by being appended',
+      );
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('activating the gear through SemanticsAction.tap PUSHES the '
+        'Settings route — not a coordinate tap', (tester) async {
+      usePhoneSurface(tester);
+      final prefs = await SharedPreferences.getInstance();
+      final container = makeContainer(
+        today: DateTime.utc(2026, 8, 13),
+        nowMinutes: 600,
+        prefs: prefs,
+      );
+      final l10n = lookupAppLocalizations(const Locale('uk'));
+      await tester.pumpWidget(app(container));
+      await tester.pump();
+
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel(l10n.tabSettings))
+            .getSemanticsData()
+            .hasAction(SemanticsAction.tap),
+        isTrue,
+        reason: '`excludeSemantics: true` drops every DESCENDANT action, so '
+            'the gear node has to carry one itself — without it the control '
+            'announces a button VoiceOver and TalkBack cannot press, while '
+            'passing every coordinate-tap test (WR-02)',
+      );
+
+      // Assistive technology does not tap widgets. It activates actions.
+      tester.semantics.performAction(
+        find.semantics.byLabel(l10n.tabSettings),
+        SemanticsAction.tap,
+      );
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      expect(find.byType(SettingsScreen), findsOneWidget,
+          reason: 'the gear pushes Settings as a full-screen route; a control '
+              'that announces itself and navigates nowhere is worse than no '
+              'control at all');
+      expect(find.byType(CalendarScreen), findsOneWidget,
+          reason: 'a PUSH, not a replacement: the tab underneath stays '
+              'mounted, which is what keeps the browsed day and the selected '
+              'destination intact across the return trip');
+
+      await tearDownTree(tester, container);
+    });
+  });
 }
+
+/// The settings gear's `IconButton`, scoped through its glyph so the finder
+/// cannot drift onto some other button the header grows later.
+Finder gearControl() => find.ancestor(
+      of: find.byIcon(Icons.settings_outlined),
+      matching: find.byType(IconButton),
+    );
+
+/// The gear's own `Row` — the first one ABOVE the control, so it is the row
+/// the screen owns and never some row inside `IconButton`.
+Finder gearRow() =>
+    find.ancestor(of: gearControl(), matching: find.byType(Row)).first;
+
+/// Why the gear must not be conditional.
+const String gearPresenceReason =
+    'the gear is the only way into Settings once the destination is removed '
+    '(plan 06-03). A gear that renders only in some screen state is a screen '
+    'the user can get stranded on — and "some screen state" includes the empty '
+    'day a first-run user sees';
+
+/// Why the gear box is asserted as a FLOOR and not as 44.0 exactly.
+const String gearTapTargetReason =
+    'the gear is built to the S11 recipe — an IconButton with '
+    'BoxConstraints.tightFor(44, 44) and zero padding — and Material then '
+    'wraps it to its 48dp padded tap target, so the rendered box is 48 while '
+    'the constrained icon box is 44. 48 >= 44 satisfies the guidance; what '
+    'must not happen is a box SMALLER than 44 or one that changes with the '
+    'text scaler';
+
+/// Why the gear row's extent must not move with the text scaler.
+String gearGeometryReason(Object measured) =>
+    'the gear row holds NO text, so its extent is pure geometry — a '
+    'scale-dependent box means something textual leaked into the row, and the '
+    'D-5 argument that this header CANNOT overflow no longer holds '
+    '(measured: $measured)';
 
 /// An [IntakeRepository] whose writes take a full second to land, so a test
 /// can act while one is genuinely in flight. Reads delegate to the real

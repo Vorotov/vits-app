@@ -39,10 +39,19 @@ import 'package:boostque/features/calendar/planner_providers.dart';
 import 'package:boostque/features/calendar/planner_view_model.dart';
 import 'package:boostque/features/calendar/planner_week_detail.dart';
 import 'package:boostque/features/calendar/planner_year_grid.dart';
+import 'package:boostque/features/settings/settings_screen.dart';
 
 /// Screen horizontal padding — the same edge the Calendar screen runs down
 /// (mockup lines 286, 294).
 const double _screenPadding = 20;
+
+/// Pushes Settings as a full-screen route, covering the nav bar (UI-SPEC S12).
+///
+/// Same call shape as every other push in this app
+/// (`stack_screen.dart`'s card tap).
+void _openSettings(BuildContext context) => Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+    );
 
 /// Vertical gap between two Цикли cards (mockup lines 333, 352). Рік uses 14;
 /// the two are mockup-exact per segment and deliberately not unified.
@@ -133,6 +142,53 @@ class _Header extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
+          // The gear gets its OWN end-aligned row ABOVE the title, identical on
+          // all three screens the nav bar reaches (UI-SPEC S11 / D-5). The row
+          // holds NO text, so its extent is pure geometry and it cannot
+          // overflow at any text scale, in any locale, in any direction.
+          //
+          // Do NOT "tidy" it into the row below, or into the title. The
+          // rejected alternative — a bounded trailing group sharing a row with
+          // the start-side control — is probably safe, but it makes the
+          // header's overflow safety depend on a reader correctly re-deriving
+          // "these children are not text" on every future edit, and the control
+          // it would share a row with carries a LABEL. The dedicated row makes
+          // it depend on nothing.
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Semantics(
+                button: true,
+                // One key, two placements: this label and the Settings screen
+                // title, so the control and its destination can never disagree.
+                label: l10n.tabSettings,
+                excludeSemantics: true,
+                // The action lives on THIS node, not only on the IconButton
+                // below it: `excludeSemantics: true` drops every descendant
+                // action, so without this the gear announces itself as a button
+                // VoiceOver / TalkBack cannot press, while passing every
+                // coordinate-tap test (WR-02).
+                onTap: () => _openSettings(context),
+                child: IconButton(
+                  onPressed: () => _openSettings(context),
+                  // A bounded, text-free box: >= 44pt guidance, and it cannot
+                  // grow with the text scaler.
+                  constraints: const BoxConstraints.tightFor(
+                    width: 44,
+                    height: 44,
+                  ),
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(
+                    // Outlined only: the gear is never "selected", so the
+                    // filled variant has no state to express.
+                    Icons.settings_outlined,
+                    size: 20,
+                    color: BqColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
           Align(
             alignment: AlignmentDirectional.centerStart,
             child: TextButton(

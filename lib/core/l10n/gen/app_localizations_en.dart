@@ -22,6 +22,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tabSettings => 'Settings';
 
   @override
+  String get navBack => 'Back';
+
+  @override
   String get disclaimerEducational =>
       'Educational material, not medical advice.';
 

@@ -29,10 +29,18 @@ import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/core/today_controller.dart';
+import 'package:boostque/features/settings/settings_screen.dart';
 import 'package:boostque/features/stack/add_supplement_sheet.dart';
 import 'package:boostque/features/stack/regimen_editor_screen.dart';
 import 'package:boostque/features/stack/schedule_summary_text.dart';
 import 'package:boostque/features/stack/stack_status.dart';
+
+/// Pushes Settings as a full-screen route, covering the nav bar (UI-SPEC S12).
+///
+/// Same call shape as the card tap below — one push idiom on this screen.
+void _openSettings(BuildContext context) => Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+    );
 
 /// The Stack screen ("Мій стек", mockup screen 01, UI-SPEC S1).
 class StackScreen extends ConsumerWidget {
@@ -55,6 +63,52 @@ class StackScreen extends ConsumerWidget {
             bottom: 84,
           ),
           children: [
+            // The gear gets its OWN end-aligned row ABOVE the title, identical
+            // on all three screens the nav bar reaches (UI-SPEC S11 / D-5). The
+            // row holds NO text, so its extent is pure geometry and it cannot
+            // overflow at any text scale, in any locale, in any direction.
+            //
+            // Do NOT "tidy" it into a title row. The rejected alternative — a
+            // bounded trailing group beside the title — is probably safe, but
+            // it makes the header's overflow safety depend on a reader
+            // correctly re-deriving "these children are not text" on every
+            // future edit; the dedicated row makes it depend on nothing.
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Semantics(
+                  button: true,
+                  // One key, two placements: this label and the Settings screen
+                  // title, so the control and its destination can never
+                  // disagree.
+                  label: l10n.tabSettings,
+                  excludeSemantics: true,
+                  // The action lives on THIS node, not only on the IconButton
+                  // below it: `excludeSemantics: true` drops every descendant
+                  // action, so without this the gear announces itself as a
+                  // button VoiceOver / TalkBack cannot press, while passing
+                  // every coordinate-tap test (WR-02).
+                  onTap: () => _openSettings(context),
+                  child: IconButton(
+                    onPressed: () => _openSettings(context),
+                    // A bounded, text-free box: >= 44pt guidance, and it
+                    // cannot grow with the text scaler.
+                    constraints: const BoxConstraints.tightFor(
+                      width: 44,
+                      height: 44,
+                    ),
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(
+                      // Outlined only: the gear is never "selected", so the
+                      // filled variant has no state to express.
+                      Icons.settings_outlined,
+                      size: 20,
+                      color: BqColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             Text(
               l10n.stackTitle,
               style: Theme.of(context).textTheme.headlineSmall,
