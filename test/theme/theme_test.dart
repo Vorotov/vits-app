@@ -200,34 +200,39 @@ void main() {
       expect(b?.color, BqColors.ink);
     });
 
-    test('NavigationBar theming (D-25)', () {
+    // ------------------------------------------------------------------
+    // The bottom-navigation sub-theme is GONE (plan 06-01, T-06-01).
+    //
+    // These three cases are the D-25 assertions INVERTED rather than
+    // deleted. `BqNavBar` is hand-built and reads `BqColors` directly
+    // (D-07), so a sub-theme here would style nothing — and a dead
+    // sub-theme is worse than none: the next reader believes it is what
+    // colours the bar, edits it, and sees no change. Deleting the tests
+    // along with the values would have left that regression ungated,
+    // which is the real integrity risk in a deletion-heavy phase.
+    // ------------------------------------------------------------------
+
+    test('no bottom-navigation sub-theme survives (06-01, T-06-01)', () {
       final NavigationBarThemeData nav = t.navigationBarTheme;
-      expect(nav.backgroundColor, BqColors.surfaceAlt);
-      expect(nav.elevation, 0);
-      expect(nav.indicatorColor, Colors.transparent);
+      expect(nav.backgroundColor, isNull,
+          reason: 'BqNavBar paints BqColors.surfaceAlt itself');
+      expect(nav.elevation, isNull);
+      expect(nav.indicatorColor, isNull,
+          reason: 'the hand-built bar has no pill indicator to suppress');
     });
 
-    test('NavigationBar label role — 10 / w500, accent/textFaint (D-25)', () {
+    test('no bottom-navigation label role survives (06-01)', () {
       final NavigationBarThemeData nav = t.navigationBarTheme;
-      final TextStyle? selected =
-          nav.labelTextStyle?.resolve({WidgetState.selected});
-      final TextStyle? unselected = nav.labelTextStyle?.resolve(const {});
-      expect(selected?.fontSize, 10);
-      expect(selected?.fontWeight, FontWeight.w500);
-      expect(selected?.color, BqColors.accent);
-      expect(unselected?.fontSize, 10);
-      expect(unselected?.fontWeight, FontWeight.w500);
-      expect(unselected?.color, BqColors.textFaint);
+      expect(nav.labelTextStyle, isNull,
+          reason: 'the 10 / accent-or-textFaint label style moved INTO '
+              'bq_nav_bar.dart, where the widget that uses it lives');
     });
 
-    test('NavigationBar icon colors — accent selected / textFaint unselected',
-        () {
+    test('no bottom-navigation icon theme survives (06-01)', () {
       final NavigationBarThemeData nav = t.navigationBarTheme;
-      final IconThemeData? selected =
-          nav.iconTheme?.resolve({WidgetState.selected});
-      final IconThemeData? unselected = nav.iconTheme?.resolve(const {});
-      expect(selected?.color, BqColors.accent);
-      expect(unselected?.color, BqColors.textFaint);
+      expect(nav.iconTheme, isNull,
+          reason: 'the accent/textFaint icon pair moved INTO '
+              'bq_nav_bar.dart alongside the 22dp icon box');
     });
 
     test('inputDecorationTheme — surface fill, input radius, inputBorder side',

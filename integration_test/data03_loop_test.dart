@@ -52,6 +52,7 @@ import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/today_controller.dart';
+import 'package:boostque/core/widgets/bq_nav_bar.dart';
 import 'package:boostque/features/calendar/calendar_screen.dart';
 import 'package:boostque/features/calendar/day_progress_ring.dart';
 import 'package:boostque/features/calendar/dose_row.dart';
@@ -87,7 +88,7 @@ void main() {
       await tester.pumpWidget(bootScope());
       await _pump(tester, 20);
 
-      expect(find.byType(NavigationBar), findsOneWidget, reason: 'app shell');
+      expect(find.byType(BqNavBar), findsOneWidget, reason: 'app shell');
       expect(find.byType(StackScreen), findsOneWidget);
       expect(find.text('Стек'), findsOneWidget);
       expect(find.text('Календар'), findsOneWidget);

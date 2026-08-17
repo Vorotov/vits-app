@@ -88,6 +88,7 @@ import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/l10n/locale_controller.dart';
 import 'package:boostque/core/providers.dart';
+import 'package:boostque/core/widgets/bq_nav_bar.dart';
 import 'package:boostque/features/settings/language_picker.dart';
 import 'package:boostque/features/settings/settings_screen.dart';
 import 'package:boostque/features/stack/regimen_editor_screen.dart';
@@ -122,7 +123,7 @@ void main() {
       debugPrint('L10N (a): main() painted the shell after $launchFrames frame(s)');
 
       expect(find.byType(BoostqueApp), findsOneWidget, reason: 'runApp ran');
-      expect(find.byType(NavigationBar), findsOneWidget, reason: 'app shell');
+      expect(find.byType(BqNavBar), findsOneWidget, reason: 'app shell');
       expect(find.byType(StackScreen), findsOneWidget);
       expect(tester.takeException(), isNull, reason: 'clean bootstrap');
 
@@ -589,7 +590,7 @@ Future<void> _pumpUntil(
 Future<int> _pumpUntilShell(WidgetTester tester) async {
   for (var i = 1; i <= 200; i++) {
     await tester.pump(const Duration(milliseconds: 50));
-    if (find.byType(NavigationBar).evaluate().isNotEmpty) return i;
+    if (find.byType(BqNavBar).evaluate().isNotEmpty) return i;
   }
   fail('L10N timed out waiting for main() to paint the app shell');
 }
@@ -604,15 +605,15 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
 
 /// The locale the widget tree is actually rendering in.
 Locale _locale(WidgetTester tester) =>
-    Localizations.localeOf(tester.element(find.byType(NavigationBar)));
+    Localizations.localeOf(tester.element(find.byType(BqNavBar)));
 
 /// The strings the widget tree is actually rendering with.
 AppLocalizations _l10n(WidgetTester tester) =>
-    AppLocalizations.of(tester.element(find.byType(NavigationBar)));
+    AppLocalizations.of(tester.element(find.byType(BqNavBar)));
 
 /// [text] as rendered inside the bottom navigation bar.
 Finder _inNav(String text) =>
-    find.descendant(of: find.byType(NavigationBar), matching: find.text(text));
+    find.descendant(of: find.byType(BqNavBar), matching: find.text(text));
 
 /// [text] as rendered inside the Settings screen body.
 Finder _inSettings(String text) =>

@@ -21,7 +21,7 @@ abstract final class BqColors {
   /// Cards, panels, input fields, primary sheets.
   static const Color surface = Color(0xFFFFFFFF);
 
-  /// NavigationBar (bottom tab bar) background, home-indicator bar.
+  /// `BqNavBar` (bottom tab bar) background.
   static const Color surfaceAlt = Color(0xFFFBFBF9);
 
   /// Chip / tag / pill backgrounds.
@@ -39,10 +39,10 @@ abstract final class BqColors {
   /// Captions, meta labels, mono eyebrow labels.
   static const Color textMuted = Color(0xFF8E8E99);
 
-  /// Tertiary text; unselected NavigationBar icon + label.
+  /// Tertiary text; unselected `BqNavBar` icon + label.
   static const Color textFaint = Color(0xFFA0A0A9);
 
-  /// Primary brand indigo; selected NavigationBar icon + label.
+  /// Primary brand indigo; selected `BqNavBar` icon + label.
   static const Color accent = Color(0xFF4A4E7C);
 
   /// Accent pressed/hover state.
@@ -211,9 +211,12 @@ abstract final class BqRadii {
 
 /// Spacing scale — standard 8-point scale (UI-SPEC).
 ///
-/// The NavigationBar mockup-exact pixel overrides (top 10 / horizontal 22 /
-/// destination column 66 / home-indicator 24) are intentionally NOT tokens —
-/// they are hardcoded in the shell widget only (UI-SPEC Spacing exemption).
+/// The nav-bar mockup-exact pixel overrides are intentionally NOT tokens —
+/// they are hardcoded in `bq_nav_bar.dart` only (UI-SPEC Spacing exemption).
+/// Since plan 06-01 only the horizontal 22 survives: the top 10 moved INSIDE
+/// `navBarHeightFor`, the 66px destination column is deleted (a fixed-width
+/// column is a fixed-width text container) and the 24px home-indicator strip
+/// is deleted (that is `SafeArea`'s job).
 abstract final class BqSpace {
   static const double xs = 4.0;
   static const double sm = 8.0;

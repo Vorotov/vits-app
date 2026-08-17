@@ -53,6 +53,24 @@ const String cyrillicLeakReason =
 ///    entry today.
 const List<String> cyrillicAllowlist = <String>['Українська'];
 
+/// The text scales every render matrix in this repository sweeps.
+///
+/// Hoisted here from `app_shell_test.dart` by plan 06-01 for the same reason
+/// the allowlist above lives here: a per-file literal is a per-file decision,
+/// and the file that quietly omits a scale has a matrix that no longer covers
+/// it. The 2.0 row is what NAV-01 needs — `navBarHeightFor` has to hold at the
+/// worst realistic accessibility setting, not just at the 1.6 the Phase-5
+/// matrix stopped at. 1.0 is the mockup-exact baseline; 1.6 and 2.0 are the
+/// two scales the CR-01 / WR-04 defects actually reproduced at.
+///
+/// A cell that clips is fixed by correcting the surface's computed extent,
+/// never by shrinking its text and never by dropping a row from this list.
+const List<double> bqTextScaleMatrix = <double>[1.0, 1.6, 2.0];
+
+/// The locales every render matrix sweeps: the Ukrainian-first default and the
+/// English translation that had zero render coverage before plan 05-04.
+const List<String> bqLocaleMatrix = <String>['uk', 'en'];
+
 /// A character in the Cyrillic block, the V-4 leak probe.
 final RegExp _cyrillic = RegExp(r'[Ѐ-ӿ]');
 

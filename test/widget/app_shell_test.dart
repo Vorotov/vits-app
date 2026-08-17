@@ -1,5 +1,6 @@
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +10,7 @@ import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
+import 'package:boostque/core/widgets/bq_nav_bar.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/main.dart';
 
@@ -183,6 +185,75 @@ void main() {
     await flushTearDown(tester);
   });
 
+  testWidgets(
+      'uk: a destination is activatable through SemanticsAction.tap, and '
+      'activating the already-selected one is a no-op (WR-02)',
+      (tester) async {
+    await tester.pumpWidget(shellApp(locale: 'uk'));
+    await pumpFrames(tester);
+
+    final l10n = lookupAppLocalizations(const Locale('uk'));
+
+    // The node has to carry the action ITSELF: `excludeSemantics: true` on
+    // the destination drops every descendant action, so a bar whose onTap
+    // lived only on the InkResponse would announce three buttons that
+    // VoiceOver / TalkBack cannot press — and it would pass every
+    // coordinate-tap test in this file (WR-02).
+    expect(
+      tester.getSemantics(find.text(l10n.tabCalendar)),
+      isSemantics(isButton: true, isSelected: false, hasTapAction: true),
+      reason: 'the unselected Calendar destination is a pressable button '
+          'that reports itself unselected',
+    );
+
+    // Assistive technology does not tap widgets. It activates semantics
+    // actions, which is the only path that proves this contract.
+    tester.semantics.performAction(
+      find.semantics.byLabel(l10n.tabCalendar),
+      SemanticsAction.tap,
+    );
+    await pumpFrames(tester);
+
+    // The Calendar screen is now the painted one; the Stack heading is gone.
+    expect(find.text(l10n.stackTitle), findsNothing,
+        reason: 'activating the node switched the visible screen, not just '
+            'the bar styling');
+    expect(
+      tester.getSemantics(find.text(l10n.tabCalendar)),
+      isSemantics(isButton: true, isSelected: true, hasTapAction: true),
+      reason: 'and the node it activated now reports itself selected',
+    );
+
+    // Re-activating the selected destination must stay a no-op rather than
+    // throw or unmount the screen.
+    tester.semantics.performAction(
+      find.semantics.byLabel(l10n.tabCalendar),
+      SemanticsAction.tap,
+    );
+    await pumpFrames(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.text(l10n.stackTitle), findsNothing);
+
+    await flushTearDown(tester);
+  });
+
+  testWidgets('uk: the bar is the hand-built BqNavBar at its computed extent',
+      (tester) async {
+    await tester.pumpWidget(shellApp(locale: 'uk'));
+    await pumpFrames(tester);
+
+    expect(find.byType(BqNavBar), findsOneWidget);
+    expect(
+      tester.getSize(find.byType(BqNavBar)).height,
+      navBarHeightFor(TextScaler.noScaling),
+      reason: 'with no safe-area inset in the test window the painted bar is '
+          'exactly the computed extent — 56dp at scale 1.0 (NAV-01), down '
+          'from v1\'s 80dp',
+    );
+
+    await flushTearDown(tester);
+  });
+
   // ---------------------------------------------------------------------
   // The bilingual × text-scale matrix (plan 05-04, L10N-01 criterion 1).
   //
@@ -192,15 +263,19 @@ void main() {
   // an accessibility scale.
   // ---------------------------------------------------------------------
 
-  group('bilingual render matrix (L10N-01)', () {
-    for (final locale in const ['uk', 'en']) {
+  group('bilingual render matrix (L10N-01, NAV-01)', () {
+    for (final locale in bqLocaleMatrix) {
       final l10n = lookupAppLocalizations(Locale(locale));
 
-      for (final scale in const <double>[1.0, 1.6]) {
+      // Plan 06-01: the scale list is the SHARED one, and it now carries a
+      // 2.0 row. NAV-01's whole claim is that the bar's extent holds at the
+      // worst realistic accessibility setting, so 1.6 is not far enough.
+      for (final scale in bqTextScaleMatrix) {
         testWidgets(
             '$locale: the shell renders its three nav destinations and the '
-            'Stack heading in the active language, with no layout exception '
-            'at textScaler $scale (V-4, E-14)', (tester) async {
+            'Stack heading in the active language, at the bar\'s computed '
+            'extent, with no layout exception at textScaler $scale '
+            '(V-4, E-14, NAV-01)', (tester) async {
           await tester.pumpWidget(
             shellApp(locale: locale, textScaler: TextScaler.linear(scale)),
           );
@@ -215,6 +290,23 @@ void main() {
           expect(find.text(l10n.stackTitle), findsOneWidget,
               reason: 'the Stack tab is the one the app opens on, so its '
                   'heading is part of the shell frame the user first reads');
+
+          // The bar's REAL painted extent, not just the function's return
+          // value: the formula could be right while the widget ignored it.
+          // Reserved content extent + whatever the device gives up to the
+          // home indicator, which SafeArea adds inside the fill.
+          final Finder bar = find.byType(BqNavBar);
+          final double inset =
+              MediaQuery.of(tester.element(bar)).padding.bottom;
+          expect(
+            tester.getSize(bar).height,
+            navBarHeightFor(TextScaler.linear(scale)) + inset,
+            reason: 'the painted bar must equal navBarHeightFor($scale) + the '
+                '${inset}px bottom inset. A constant here would clip the '
+                'label at this scale — the CR-01 class this codebase shipped '
+                'twice. If this fails the extent constants are wrong; do not '
+                'shrink the text',
+          );
 
           if (locale == 'en') {
             expectNoCyrillicWhileEn(tester);
