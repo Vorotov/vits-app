@@ -12,6 +12,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -29,11 +30,14 @@ import 'package:boostque/features/settings/language_picker.dart';
 import 'package:boostque/features/settings/settings_screen.dart';
 import 'package:boostque/main.dart';
 
+// The shared seam double, rather than a fourth recorder: it answers all three
+// permission states and records what it was asked, which is what the row's
+// control has to be proven against.
+import '../notifications/recording_scheduler.dart';
 // `show` rather than a bare import: this file declares its own `overflowReason`
 // (it predates the shared library) and importing the whole library would
 // collide. The scale list is the one thing that must NOT be a per-file literal
 // — the file that quietly omits a scale has a matrix that no longer covers it.
-import '../notifications/recording_scheduler.dart';
 import '../support/locale_matrix.dart' show bqTextScaleMatrix;
 
 /// The consequence of a red case, named in device terms rather than as a
@@ -1144,6 +1148,52 @@ void main() {
       expect(find.text(uk.settingsRemindersOpenSystem), findsOneWidget,
           reason: 'this is the only route back on iOS after a refusal, and '
               'after a second refusal on Android.');
+    });
+
+    testWidgets(
+        'the row SELF-CORRECTS: coming back from the system settings is a '
+        'resume, and the statement follows it with no further action',
+        (tester) async {
+      usePhoneSurface(tester);
+      final prefs = await seedPrefs({});
+      final scheduler = RecordingScheduler(enabled: false);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            notificationSchedulerProvider.overrideWithValue(scheduler),
+          ],
+          child: MaterialApp(
+            locale: const Locale('uk'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: bqTheme(),
+            home: const SettingsScreen(),
+          ),
+        ),
+      );
+      await pumpResolved(tester);
+      expect(find.text(uk.settingsRemindersBlocked), findsOneWidget);
+
+      // The user leaves through the control, switches reminders on in the
+      // operating system's own settings, and comes back.
+      scheduler.enabled = true;
+      for (final state in const [
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+          'flutter/lifecycle',
+          const StringCodec().encodeMessage(state.toString()),
+          (_) {},
+        );
+      }
+      await pumpResolved(tester);
+
+      expect(find.text(uk.settingsRemindersAllowed), findsOneWidget,
+          reason: 'this is what lets the row carry no retry control — which '
+              'this screen\'s own gates forbid anyway.');
+      expect(find.text(uk.settingsRemindersBlocked), findsNothing);
     });
 
     testWidgets('the eyebrow is a semantics HEADER, like the language one',
