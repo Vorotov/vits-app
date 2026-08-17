@@ -6,7 +6,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:boostque/core/l10n/gen/app_localizations.dart';
-import 'package:boostque/core/notifications/notification_constants.dart';
 import 'package:boostque/core/notifications/notification_scheduler.dart';
 
 /// The seam every later plan mocks.
@@ -38,6 +37,66 @@ final notificationSchedulerProvider = Provider<NotificationScheduler>(
 /// not-ready rather than claiming a zone database it never loaded.
 final timeZoneLoaderProvider = Provider<Future<void> Function()?>(
   (ref) => null,
+);
+
+/// One tap on a delivered reminder, as the platform reported it.
+///
+/// Carries the RAW payload — untrusted, unvalidated, exactly the string the
+/// operating system handed back — plus a sequence number.
+///
+/// The sequence is not decoration. Without it the state would be a bare
+/// `String?`, two consecutive taps on the same reminder would compare equal, no
+/// listener would fire, and a user who tapped, browsed to a past day and then
+/// tapped the next reminder would stay on that past day. Taps are EVENTS; a
+/// value type that models them as a setting silently swallows every repeat.
+@immutable
+class NotificationTap {
+  /// The raw payload, straight from the platform.
+  final String? payload;
+
+  /// How many taps have been reported this session. `0` means none has.
+  final int sequence;
+
+  const NotificationTap({this.payload, this.sequence = 0});
+
+  /// Value equality over BOTH fields, deliberately rather than the inherited
+  /// identity. Identity would make every report a distinct object and hide the
+  /// sequence's whole job behind an accident of allocation — a later editor
+  /// adding equality (or a `copyWith`) would then silently break repeat taps
+  /// with every test still green. With this, the sequence is what a second tap
+  /// on the same reminder differs by, and the test that drives two taps is what
+  /// holds it.
+  @override
+  bool operator ==(Object other) =>
+      other is NotificationTap &&
+      other.payload == payload &&
+      other.sequence == sequence;
+
+  @override
+  int get hashCode => Object.hash(payload, sequence);
+}
+
+/// The last tap reported by the platform, and nothing more.
+///
+/// It holds a PAYLOAD rather than a resolved destination on purpose: the
+/// whitelist and the payload-to-destination mapping belong to one place, and
+/// that place is `notification_constants.dart`. Keeping this notifier free of
+/// both is what lets the cold path reuse the same predicate instead of growing
+/// a second opinion about what a valid payload is.
+class NotificationTapReporter extends Notifier<NotificationTap> {
+  @override
+  NotificationTap build() => const NotificationTap();
+
+  /// Reports one tap. The ONLY mutator, called by the plugin's foreground
+  /// callback and by nothing else in production.
+  void report(String? payload) =>
+      state = NotificationTap(payload: payload, sequence: state.sequence + 1);
+}
+
+/// App-lifetime (D-23): a tap can arrive at any moment the app is alive.
+final notificationTapProvider =
+    NotifierProvider<NotificationTapReporter, NotificationTap>(
+  NotificationTapReporter.new,
 );
 
 /// Whether the notification layer is ready to be asked for anything.
@@ -139,14 +198,19 @@ class NotificationBootstrap extends Notifier<bool> {
     }
   }
 
-  /// Handles a tap on a delivered reminder.
+  /// Handles a tap on a delivered reminder by REPORTING it, and doing nothing
+  /// else.
   ///
-  /// The whitelist is here from the first commit even though there is nothing to
-  /// route to yet: the operating system persists the payload and can replay one an
-  /// older build wrote, so validating BEFORE a destination exists means no build
-  /// can ever route on an unvalidated payload. Setting the tab and resetting the
-  /// browsed day is plan 07-03's.
+  /// No policy at all lives here — not the whitelist, not the destination. The
+  /// callback the plugin holds is one line, so the entire tap policy is
+  /// exercised by tests that never touch the plugin, and the warm path a test
+  /// drives is byte-for-byte the warm path a real tap takes.
+  ///
+  /// The payload is reported UNVALIDATED because the one place that can act on
+  /// it validates it before acting (`app_shell.dart`). Validating twice would be
+  /// two copies of a security control, which is how the copies come to disagree.
   void _handleTap(String? payload) {
-    if (!isKnownNotificationPayload(payload)) return;
+    if (!ref.mounted) return;
+    ref.read(notificationTapProvider.notifier).report(payload);
   }
 }
