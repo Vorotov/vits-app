@@ -447,8 +447,14 @@ void main() {
   /// ("both segments close with the SAME key") the thing actually proven,
   /// rather than two segments each carrying some disclaimer or other.
   final disclaimer = find.text(
-    'Межа в 5 речовин — наше редакційне правило для зручності відстеження, '
-    'а не медичний норматив. Освітній матеріал, не медична порада.',
+    'Планувальник показує, як ваші цикли накладаються в часі. '
+    'Освітній матеріал, не медична порада.',
+  );
+  /// The closing faint line, by its shape rather than its words — locale
+  /// independent, and after this phase there is exactly one of them per body
+  /// (the Year footnote that used to make it two is deleted, 06-UI-SPEC S13).
+  final closingLine = find.byWidgetPredicate(
+    (w) => w is Text && w.style?.fontSize == 11.5 && w.style?.height == 1.5,
   );
   final emptyTitle = find.text('Планувати ще нічого');
   final loadError =
@@ -559,19 +565,55 @@ void main() {
 
       await tester.tap(find.text('Рік'));
       await tester.pump();
-      // Рік is five elements deep too — chip, grid, legend, detail, footnote —
-      // so its closing line also sits below the fold.
+      // Рік is four cards deep — chip, grid, legend, detail — so its closing
+      // line also sits below the fold. The footnote that used to sit above it
+      // is deleted (06-UI-SPEC S13); Рік now closes exactly as Цикли does.
       await scrollBody(tester, 500);
 
       expect(disclaimer, findsOneWidget, reason: 'Рік closes with it too');
-      expect(
-        find.text('Рік показує, як цикли накладаються один на одний. '
-            'Червоне число в місяці означає перевищення нашої межі у '
-            '5 речовин одночасно.'),
-        findsOneWidget,
-        reason: 'the year footnote renders ABOVE the disclaimer, never '
-            'instead of it (M9)',
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the disclaimer is the LAST element of both bodies, not '
+        'merely present in them (PLAN-04, unweakened by PLAN-05)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
       );
+
+      // Read the body's own child list rather than comparing y-offsets: a
+      // card rendered BELOW the disclaimer and a card that simply has not
+      // been scrolled into view look identical to a geometric assertion.
+      void expectDisclaimerLast(String segment) {
+        final delegate = tester
+            .widget<ListView>(find.byType(ListView))
+            .childrenDelegate as SliverChildListDelegate;
+        expect(
+          find.descendant(
+            of: find.byWidget(delegate.children.last),
+            matching: disclaimer,
+          ),
+          findsOneWidget,
+          reason: '$segment must close on the disclaimer — nothing may be '
+              'appended after it, and the deleted year footnote is not '
+              'replaced by anything',
+        );
+      }
+
+      await scrollBody(tester, 500);
+      expectDisclaimerLast('Цикли');
+
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+      await scrollBody(tester, 500);
+      expectDisclaimerLast('Рік');
 
       await tearDownTree(tester, container);
     });
@@ -1556,30 +1598,34 @@ void main() {
       await tearDownTree(tester, container);
     });
 
-    testWidgets('the summary chip names this week\'s load and bands at OR '
-        'above the limit (DECIDED-6)', (tester) async {
+    testWidgets('the summary chip names this week\'s load as a plain count, '
+        'on the neutral chip, with no badge beside it (PLAN-05)',
+        (tester) async {
       usePhoneSurface(tester);
       final container = makeContainer();
       await openBands(tester, container);
 
       expect(find.text('Цього тижня одночасно 4 речовини'), findsOneWidget);
-      expect(find.text('межа 5'), findsOneWidget);
-      expect(fillOf(tester, 'cycles-summary-chip'), BqColors.calmBg,
-          reason: 'a load of 4 is still below the limit');
+      expect(find.text('межа 5'), findsNothing,
+          reason: 'the limit badge is deleted, not moved');
+      expect(fillOf(tester, 'cycles-summary-chip'), BqColors.chip,
+          reason: 'the app\'s neutral chip fill, the same one the stack '
+              'schedule chip uses');
 
       await tearDownTree(tester, container);
     });
 
-    testWidgets('a this-week load AT the limit turns the summary chip amber '
-        '(DECIDED-6)', (tester) async {
+    testWidgets('the summary chip stays neutral at the load that used to band '
+        'it — no threshold survives to change a colour (PLAN-05)',
+        (tester) async {
       usePhoneSurface(tester);
       final container = makeContainer();
       await openBands(tester, container, startsOnAugust: const [1, 1, 1, 1, 1]);
 
       expect(find.text('Цього тижня одночасно 5 речовин'), findsOneWidget);
-      expect(fillOf(tester, 'cycles-summary-chip'), BqColors.warnBg,
-          reason: 'the WEEK chip nudges AT the limit — the year peak chip '
-              'deliberately does not (DECIDED-6)');
+      expect(fillOf(tester, 'cycles-summary-chip'), BqColors.chip,
+          reason: 'five overlapping supplements is a bigger number, not a '
+              'worse one — the DECIDED-6 asymmetry is moot, not reconciled');
 
       await tearDownTree(tester, container);
     });
@@ -1615,13 +1661,8 @@ void main() {
       );
     }
 
-    Color? fillOf(WidgetTester tester, String key) {
-      final box = tester.widget<Container>(find.byKey(ValueKey<String>(key)));
-      return (box.decoration! as BoxDecoration).color;
-    }
-
-    testWidgets('at load 0 it reads comfort, five empty pips and five free '
-        'slots — an empty chip row, never an empty state (UI-SPEC truth #11)',
+    testWidgets('a zero-cycle week ends after the meta line: no chip wrap, no '
+        'trailing margin, and a header row with exactly one child (PLAN-05)',
         (tester) async {
       usePhoneSurface(tester);
       final container = makeContainer();
@@ -1630,36 +1671,44 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('load-week-0')));
       await tester.pump();
 
-      expect(find.text('КОМФОРТНО'), findsOneWidget);
-      expect(fillOf(tester, 'week-verdict-chip'), BqColors.calmBg);
-      expect(byKeyPrefix('week-pip-'), findsNWidgets(5));
-      for (var i = 0; i < 5; i++) {
-        expect(fillOf(tester, 'week-pip-$i'), BqColors.surface,
-            reason: 'no slot is used in a week with no cycles');
-      }
-      expect(
-        find.textContaining('0 з 5 слотів · Вільно 5 — можна планувати старт'),
-        findsOneWidget,
+      expect(find.text('0 речовин'), findsOneWidget,
+          reason: 'the plain count, rendered directly — no denominator');
+      expect(find.byKey(const ValueKey('week-name-chips')), findsNothing,
+          reason: 'the wrap and its 14px top margin appear together or not at '
+              'all, so the card cannot end in dead space');
+
+      // The card's own Column, read structurally: whatever follows the meta
+      // line would BE the dead space this assertion exists to forbid.
+      final column = tester.widget<Column>(
+        find.descendant(
+          of: find.byKey(const ValueKey('week-detail-card')),
+          matching: find.byType(Column),
+        ).first,
       );
-      expect(
-        tester
-            .widget<Wrap>(find.byKey(const ValueKey('week-name-chips')))
-            .children,
-        isEmpty,
-        reason: 'zero names is a normal state of a real week — an empty Wrap, '
-            'never an empty-state block',
+      expect(column.children.last, isA<Text>()
+          .having((t) => t.key, 'key',
+              const ValueKey<String>('week-detail-meta')),
+          reason: 'the meta line is the last thing a zero-cycle card renders');
+
+      // The header row's only overflow risk was its trailing verdict chip.
+      // One child is not "a smaller risk"; it is no risk (WR-04).
+      final header = tester.widget<Row>(
+        find.descendant(
+          of: find.byKey(const ValueKey('week-detail-card')),
+          matching: find.byType(Row),
+        ).first,
       );
-      expect(find.text('Планувати ще нічого'), findsNothing);
-      expect(find.text(
-        'До трьох речовин одночасно легко відстежувати: якщо щось піде не '
-        'так, зрозуміло, що саме прибрати.',
-      ), findsOneWidget);
+      expect(header.children.length, 1);
+
+      expect(find.text('Планувати ще нічого'), findsNothing,
+          reason: 'a week with no cycles is a normal week, not an empty state');
 
       await tearDownTree(tester, container);
     });
 
-    testWidgets('at load 4 it reads МЕЖА in the warn band with four filled '
-        'pips and one empty (P-7)', (tester) async {
+    testWidgets('at load 4 the card is range, plain count and four name chips '
+        '— nothing that judges the number (PLAN-05, 06-UI-SPEC S13)',
+        (tester) async {
       usePhoneSurface(tester);
       final container = makeContainer();
       await openBands(tester, container);
@@ -1671,17 +1720,7 @@ void main() {
             '${range.format(DateTime.utc(2026, 8, 16))}'),
         findsOneWidget,
       );
-      expect(find.text('МЕЖА'), findsOneWidget);
-      expect(fillOf(tester, 'week-verdict-chip'), BqColors.warnBg);
-      expect(byKeyPrefix('week-pip-'), findsNWidgets(5));
-      for (var i = 0; i < 4; i++) {
-        expect(fillOf(tester, 'week-pip-$i'), BqColors.accent);
-      }
-      expect(fillOf(tester, 'week-pip-4'), BqColors.surface);
-      expect(
-        find.textContaining('4 з 5 слотів · Вільно 1 — можна планувати старт'),
-        findsOneWidget,
-      );
+      expect(find.text('4 речовини'), findsOneWidget);
       expect(
         tester
             .widget<Wrap>(find.byKey(const ValueKey('week-name-chips')))
@@ -1690,12 +1729,19 @@ void main() {
         4,
       );
 
+      // The deleted design, asserted absent rather than assumed gone.
+      expect(find.text('МЕЖА'), findsNothing);
+      expect(find.text('КОМФОРТНО'), findsNothing);
+      expect(find.byKey(const ValueKey('week-verdict-chip')), findsNothing);
+      expect(byKeyPrefix('week-pip-'), findsNothing);
+      expect(find.textContaining('слот'), findsNothing);
+
       await tearDownTree(tester, container);
     });
 
-    testWidgets('tapping an over-limit week re-renders the card IN PLACE: '
-        'seven pips, the last two in risk, and the truncated note (P-13, '
-        'DECIDED-8)', (tester) async {
+    testWidgets('tapping the densest week re-renders the card IN PLACE with '
+        'its seven names and no verdict of any kind (P-13, PLAN-05)',
+        (tester) async {
       usePhoneSurface(tester);
       final container = makeContainer();
       await openBands(tester, container);
@@ -1703,22 +1749,20 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('load-week-3')));
       await tester.pump();
 
-      expect(find.text('ПОНАД МЕЖУ'), findsOneWidget);
-      expect(fillOf(tester, 'week-verdict-chip'), BqColors.riskBg);
-      expect(byKeyPrefix('week-pip-'), findsNWidgets(7),
-          reason: 'the excess runs PAST the row — the visual half of what the '
-              'note says in words');
-      expect(fillOf(tester, 'week-pip-4'), BqColors.accent);
-      expect(fillOf(tester, 'week-pip-5'), BqColors.risk);
-      expect(fillOf(tester, 'week-pip-6'), BqColors.risk);
-      expect(find.textContaining('7 з 5 слотів · Вільних слотів немає'),
-          findsOneWidget);
+      expect(find.text('7 речовин'), findsOneWidget);
       expect(
-        find.text('Цього тижня перетинаються 7 циклів. Варто зсунути старт '
-            'частини з них або обговорити такий обсяг із лікарем.'),
-        findsOneWidget,
-        reason: 'a pre-formatted cyclesCount inside the note key',
+        tester
+            .widget<Wrap>(find.byKey(const ValueKey('week-name-chips')))
+            .children
+            .length,
+        7,
+        reason: 'WHICH supplements overlap is the question the chart above '
+            'cannot answer — and all that is left to answer',
       );
+      expect(find.text('ПОНАД МЕЖУ'), findsNothing);
+      expect(byKeyPrefix('week-pip-'), findsNothing);
+      expect(find.textContaining('Варто зсунути старт'), findsNothing,
+          reason: 'the verdict note is deleted with the verdict');
 
       // Inline, always — the user is comparing this against the chart
       // directly above it (P-13).
@@ -1922,8 +1966,8 @@ void main() {
       await tearDownTree(tester, container);
     });
 
-    testWidgets('a month above the editorial limit counts in risk; every '
-        'other month counts faint (UI-SPEC banding, strictly above)',
+    testWidgets('every month counts faint, at every load — the densest month '
+        'in the year is a bigger number, not a red one (PLAN-05)',
         (tester) async {
       usePhoneSurface(tester);
       final container = makeContainer();
@@ -1935,13 +1979,13 @@ void main() {
           .style
           ?.color;
 
-      expect(countColor(5), BqColors.risk,
-          reason: 'June carries six concurrent cycles — one above the limit, '
-              'which is what the year footnote explains');
+      expect(countColor(5), BqColors.textFaint,
+          reason: 'June carries six concurrent cycles — the load that used to '
+              'paint this count red. There is no limit left for it to exceed');
       expect(countColor(2), BqColors.textFaint,
           reason: 'March carries one');
       expect(countColor(0), BqColors.textFaint,
-          reason: 'an empty month is faint, never red');
+          reason: 'an empty month is faint too — one token, every load');
 
       await tearDownTree(tester, container);
     });
@@ -2095,8 +2139,15 @@ void main() {
         findsOneWidget,
         reason: 'the standalone FULL month name, uppercased in the locale',
       );
-      expect(find.text('3 речовини · межа 5'), findsOneWidget,
-          reason: 'a pre-formatted substancesCount inside monthMeta');
+      expect(
+          find.descendant(
+            of: find.byKey(const ValueKey('month-detail-card')),
+            matching: find.text('3 речовини'),
+          ),
+          findsOneWidget,
+          reason: 'substancesCount rendered DIRECTLY — the two-placeholder '
+              'monthMeta sentence that wrapped it around a limit is deleted, '
+              'not neutralized (06-UI-SPEC D-6)');
 
       expect(byKeyPrefix('month-detail-row-'), findsNWidgets(3));
       expect(find.text('приймаю'), findsOneWidget);
@@ -2137,7 +2188,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Цього місяця жоден цикл не активний.'), findsOneWidget);
-      expect(find.text('0 речовин · межа 5'), findsOneWidget);
+      expect(find.text('0 речовин'), findsOneWidget);
       expect(byKeyPrefix('month-detail-row-'), findsNothing);
       expect(find.byType(BottomSheet), findsNothing);
       expect(find.byType(Dialog), findsNothing);
@@ -2145,8 +2196,8 @@ void main() {
       await tearDownTree(tester, container);
     });
 
-    testWidgets('the peak chip names the densest month in the calm band, and '
-        'the legend names every supplement (S6b items 1 and 3)',
+    testWidgets('the peak chip names the densest month on the neutral chip, '
+        'and the legend names every supplement (S6b item 3, PLAN-05)',
         (tester) async {
       usePhoneSurface(tester);
       final container = makeContainer();
@@ -2158,7 +2209,7 @@ void main() {
             '${nominative(8)}'),
         findsOneWidget,
       );
-      expect(fillOfKey(tester, 'year-peak-chip'), BqColors.calmBg);
+      expect(fillOfKey(tester, 'year-peak-chip'), BqColors.chip);
 
       expect(byKeyPrefix('year-legend-entry-'), findsNWidgets(4),
           reason: 'one two-tone swatch per gantt-eligible supplement');
@@ -2211,13 +2262,22 @@ void main() {
           reason: 'a peak folded from a seed of 0 ties all twelve months, '
               'resolves to the current one, and reads "the densest months, '
               'including August" for a year with no coverage at all');
-      expect(find.text('0 речовин'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('month-detail-card')),
+          matching: find.text('0 речовин'),
+        ),
+        findsOneWidget,
+        reason: 'the zero count belongs to the month-detail card, which does '
+            'render it — the chip above is absent entirely, not zeroed',
+      );
 
       await tearDownTree(tester, container);
     });
 
-    testWidgets('the peak chip warns STRICTLY above the editorial limit — a '
-        'peak sitting exactly at it stays calm (DECIDED-6)', (tester) async {
+    testWidgets('the peak chip is neutral at every load — the band that used '
+        'to fire above the limit is gone with the limit (PLAN-05)',
+        (tester) async {
       usePhoneSurface(tester);
 
       final atLimit = makeContainer();
@@ -2232,10 +2292,8 @@ void main() {
       await openYear(tester, atLimit);
 
       expect(find.text('5 речовин'), findsOneWidget);
-      expect(fillOfKey(tester, 'year-peak-chip'), BqColors.calmBg,
-          reason: 'a month that merely TOUCHES the limit is not flagged — the '
-              'Цикли summary chip warns at or above it instead, and that '
-              'asymmetry is deliberate (DECIDED-6)');
+      expect(fillOfKey(tester, 'year-peak-chip'), BqColors.chip,
+          reason: 'the neutral chip pair, the same one Цикли uses');
       await tearDownTree(tester, atLimit);
 
       final over = makeContainer();
@@ -2250,34 +2308,30 @@ void main() {
       await openYear(tester, over);
 
       expect(find.text('6 речовин'), findsOneWidget);
-      expect(fillOfKey(tester, 'year-peak-chip'), BqColors.warnBg);
+      expect(fillOfKey(tester, 'year-peak-chip'), BqColors.chip,
+          reason: 'six is a bigger number than five and nothing more — one '
+              'load above what used to band this chip amber');
       await tearDownTree(tester, over);
     });
 
-    testWidgets('the year footnote renders ABOVE the disclaimer, proven by '
-        'rendered position, not by presence (DECIDED-8, M9, PLAN-04)',
+    testWidgets('Рік closes on the disclaimer ALONE — the footnote is deleted '
+        'and nothing was promoted into its slot (PLAN-05, PLAN-04 intact)',
         (tester) async {
       usePhoneSurface(tester);
       final container = makeContainer();
       await seedAugust(container);
       await openYear(tester, container);
-      // The Рік body is five elements deep now; its closing lines sit below
-      // the fold.
+      // The Рік body is four cards deep; its closing line sits below the fold.
       await scrollBody(tester, 400);
 
-      final footnote = find.text(
-        'Рік показує, як цикли накладаються один на одний. Червоне число в '
-        'місяці означає перевищення нашої межі у 5 речовин одночасно.',
-      );
-      expect(footnote, findsOneWidget);
-      expect(disclaimer, findsOneWidget);
-      expect(
-        tester.getTopLeft(footnote).dy,
-        lessThan(tester.getTopLeft(disclaimer).dy),
-        reason: 'the footnote explains the red counts; the disclaimer frames '
-            'the limit as OURS — Рік carries both, in that order, and the '
-            'footnote never replaces it',
-      );
+      expect(disclaimer, findsOneWidget,
+          reason: 'PLAN-04 is unconditional and this phase does not weaken it');
+      expect(find.textContaining('Червоне число'), findsNothing);
+      expect(find.textContaining('нашої межі'), findsNothing);
+
+      // The disclaimer is the ONLY faint closing line: nothing was promoted
+      // into the slot the footnote vacated.
+      expect(closingLine, findsOneWidget);
 
       await tearDownTree(tester, container);
     });
@@ -2618,7 +2672,15 @@ void main() {
     Future<void> sweepBody(WidgetTester tester) async {
       for (var i = 0; i < 80; i++) {
         final position = bodyPosition(tester);
-        if (position.pixels >= position.maxScrollExtent) return;
+        if (position.pixels >= position.maxScrollExtent) {
+          // The last drag can leave the position past a max scroll extent
+          // that only shrank once the final card was built — pump the
+          // correction out so the assertion below reads a RESTING position
+          // rather than a mid-settle one. (The planner's bodies got shorter
+          // in this phase, which is what surfaced this.)
+          await pumpFrames(tester);
+          return;
+        }
         await scrollBody(tester, 500);
         await pumpFrames(tester, 3);
       }
@@ -2660,9 +2722,13 @@ void main() {
           await sweepBody(tester);
 
           expect(bodyPosition(tester).pixels,
-              bodyPosition(tester).maxScrollExtent,
+              greaterThanOrEqualTo(bodyPosition(tester).maxScrollExtent),
               reason: 'the sweep reached the end of the body, so every card '
                   'below the fold was actually built and laid out');
+          expect(closingLine, findsOneWidget,
+              reason: 'the closing disclaimer is the LAST element of the '
+                  'body, so finding it built is what "swept to the end" '
+                  'actually means — a scroll offset alone can be an estimate');
           expect(tester.takeException(), isNull, reason: overflowReason);
 
           await tearDownTree(tester, container);
@@ -2693,9 +2759,12 @@ void main() {
           await sweepBody(tester);
 
           expect(bodyPosition(tester).pixels,
-              bodyPosition(tester).maxScrollExtent,
+              greaterThanOrEqualTo(bodyPosition(tester).maxScrollExtent),
               reason: 'the sweep reached the end of the body, so the grid, '
                   'the legend and the month detail were all built');
+          expect(closingLine, findsOneWidget,
+              reason: 'the closing disclaimer is the LAST element of the Рік '
+                  'body too, now that the footnote above it is deleted');
           expect(tester.takeException(), isNull, reason: overflowReason);
 
           await tearDownTree(tester, container);

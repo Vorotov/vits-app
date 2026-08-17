@@ -646,15 +646,6 @@
       }
     }
   },
-  "cyclesCount": "{count, plural, one{{count} cycle} other{{count} cycles}}",
-  "@cyclesCount": {
-    "description": "Count of cycles overlapping a week (mockup line 658), pre-formatted into weekNoteOverLimit. uk carries all four CLDR forms",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "periodsCount": "{count, plural, one{{count} period} other{{count} periods}}",
   "@periodsCount": {
     "description": "Count of painted runs on a gantt row — accessibility only, pre-formatted into ganttRowSemantics because the painted bands are invisible to assistive tech. uk carries all four CLDR forms",
@@ -670,15 +661,6 @@
     "placeholders": {
       "count": {
         "type": "String"
-      }
-    }
-  },
-  "limitBadge": "limit {max}",
-  "@limitBadge": {
-    "description": "Mono badge inside the Цикли summary chip (mockup line 297) naming the editorial 5-substance rule — a limit of ours, never a safety threshold",
-    "placeholders": {
-      "max": {
-        "type": "int"
       }
     }
   },
@@ -702,93 +684,9 @@
   "@loadChartMeta": {
     "description": "Mono meta beside loadChartTitle (mockup line 336)"
   },
-  "loadAxisLegend": "limit {max} · comfort {comfort}",
-  "@loadAxisLegend": {
-    "description": "Centre label of the load chart's axis row (mockup line 348); both numbers are editorial rules of this product",
-    "placeholders": {
-      "max": {
-        "type": "int"
-      },
-      "comfort": {
-        "type": "int"
-      }
-    }
-  },
   "loadScaleCaption": "full bar = your whole stack",
   "@loadScaleCaption": {
     "description": "Centre label of the load chart's axis row (plan 06-05) — the chart's scale caption. It states what a full bar MEANS (every scheduled supplement in the stack overlaps that week) and asserts nothing about whether that is good or bad; it replaces loadAxisLegend, which named an editorial limit"
-  },
-  "slotsCount": "{count, plural, one{{count} slot} other{{count} slots}}",
-  "@slotsCount": {
-    "description": "Count of tracking slots, pre-formatted into weekLoadLabel. The uk forms are the ones the preposition «з» governs — genitive singular for one («з 1 слота»), genitive plural otherwise — the same rule ringSemantics follows for «з {n} доз». Before this key the uk sentence hardcoded the genitive plural, so moving editorialLimit off 5 produced ungrammatical copy that no test could catch (WR-05)",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "substancesLimitCount": "{count, plural, one{{count} substance} other{{count} substances}}",
-  "@substancesLimitCount": {
-    "description": "Count of substances in the ACCUSATIVE case the uk phrase «межі у …» governs (one{речовину}, unlike substancesCount's nominative one{речовина}); pre-formatted into yearFootnote. English has no case distinction, so the two keys read identically here — they are separate because uk cannot compose one sentence out of the other's forms (WR-05)",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "weekLoadLabel": "{load} of {max}",
-  "@weekLoadLabel": {
-    "description": "Week-detail meta (mockup line 913), also pre-formatted into weekBarSemantics. `max` is a pre-formatted slotsCount string — the count is declined by its own plural key and passed in finished, the cycleSummaryCyclic idiom",
-    "placeholders": {
-      "load": {
-        "type": "int"
-      },
-      "max": {
-        "type": "String"
-      }
-    }
-  },
-  "weekFreeSlots": "{n} free — you can plan a start",
-  "@weekFreeSlots": {
-    "description": "Week-detail hint when the week is below the editorial limit (mockup line 921)",
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
-  },
-  "weekNoFreeSlots": "No free slots",
-  "@weekNoFreeSlots": {
-    "description": "Week-detail hint when the week is at or above the editorial limit (mockup line 921)"
-  },
-  "verdictComfort": "COMFORTABLE",
-  "@verdictComfort": {
-    "description": "Week verdict chip at load <= 3 (mockup line 778)"
-  },
-  "verdictLimit": "AT THE LIMIT",
-  "@verdictLimit": {
-    "description": "Week verdict chip at load <= 5 (mockup line 781) — at OUR limit, not a warning"
-  },
-  "verdictOverLimit": "OVER THE LIMIT",
-  "@verdictOverLimit": {
-    "description": "Week verdict chip at load > 5 (mockup line 784) — above OUR editorial limit, never 'unsafe'"
-  },
-  "weekNoteComfort": "Up to three substances at once is easy to track: if something goes wrong, it is clear what to remove.",
-  "@weekNoteComfort": {
-    "description": "Verdict note under the comfort band (mockup line 779, uk verbatim)"
-  },
-  "weekNoteLimit": "Five is our default limit. Above it, it becomes hard to tell what is producing an effect and what is a side sensation.",
-  "@weekNoteLimit": {
-    "description": "Verdict note at the limit (mockup line 782, uk verbatim) — 'our default limit', explicitly this product's rule"
-  },
-  "weekNoteOverLimit": "{cycles} overlap this week. Consider moving the start of some of them, or discussing this volume with your doctor.",
-  "@weekNoteOverLimit": {
-    "description": "Verdict note above the limit (mockup line 785), shipped TRUNCATED. The mockup's trailing clause about the cumulative load of fat-soluble forms is deliberately absent: it is a pharmacological claim inside the never-ship interaction-advice exclusion (PF-5, DECIDED-8). If the truncation ever reads oddly, rewrite the final sentence — the clause is NEVER restored. `cycles` is a pre-formatted cyclesCount string",
-    "placeholders": {
-      "cycles": {
-        "type": "String"
-      }
-    }
   },
   "peakMonth": "Densest month — {month}",
   "@peakMonth": {
@@ -811,18 +709,6 @@
   "yearLegendHint": "lighter = planned",
   "@yearLegendHint": {
     "description": "Closing entry of the Рік legend explaining the two-tone swatch (mockup line 436)"
-  },
-  "monthMeta": "{count} · limit {max}",
-  "@monthMeta": {
-    "description": "Month-detail header meta (mockup line 972); `count` is a pre-formatted substancesCount string",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      },
-      "max": {
-        "type": "int"
-      }
-    }
   },
   "monthStateTaking": "taking",
   "@monthStateTaking": {
@@ -856,18 +742,9 @@
   "@plannerLoadError": {
     "description": "AsyncValue.error copy for the planner's stack stream, paired with the existing `retry` key; raw exception text and stack traces never enter the widget tree"
   },
-  "plannerDisclaimer": "The 5-substance limit is our editorial rule for easier tracking, not a medical standard. Educational material, not medical advice.",
+  "plannerDisclaimer": "The planner shows how your cycles overlap over time. Educational material, not medical advice.",
   "@plannerDisclaimer": {
-    "description": "PLAN-04 closure (mockup line 374, uk verbatim). Rendered as the LAST element of BOTH planner segments — Цикли and Рік — and on the empty and error surfaces too, because PLAN-04 is unconditional. It frames the 5-substance limit as THIS PRODUCT'S editorial rule and explicitly not a medical standard; that framing is the half of PLAN-04 that does the work, which is why the bare `disclaimerEducational` cannot stand in for it (DECIDED-8). On the Рік segment `yearFootnote` renders ABOVE this key, never instead of it (M9)"
-  },
-  "yearFootnote": "The year view shows how cycles overlap. A red number on a month means it exceeds our limit of {max} at once.",
-  "@yearFootnote": {
-    "description": "Рік closing note (mockup line 454, uk verbatim), rendered directly above plannerDisclaimer with an 8px gap. `max` is a pre-formatted substancesLimitCount string, so the sentence stays grammatical in uk at any editorial limit (WR-05)",
-    "placeholders": {
-      "max": {
-        "type": "String"
-      }
-    }
+    "description": "PLAN-04 closure, REWRITTEN in phase 06 (06-UI-SPEC D-4). Rendered as the LAST element of BOTH planner segments — Цикли and Рік — and on the empty and error surfaces too, because PLAN-04 is unconditional. It says what the planner IS and closes with the educational sentence verbatim; it asserts no limit, because after PLAN-05 there is no limit anywhere in the planner to frame. The bare `disclaimerEducational` still cannot stand in for it — the first sentence is what makes this the planner's own closure (DECIDED-8, superseded in part by 06-UI-SPEC D-4)"
   },
   "ganttRowSemantics": "{name}, {schedule}, {periods}",
   "@ganttRowSemantics": {
@@ -913,7 +790,7 @@
   },
   "weekBarSemantics": "{range}, {load}",
   "@weekBarSemantics": {
-    "description": "Accessibility label of a load-chart week column; `range` is an intl-formatted bucket range and `load` a pre-formatted weekLoadLabel string",
+    "description": "Accessibility label of a load-chart week column; `range` is an intl-formatted bucket range and `load` a pre-formatted substancesCount string (it named a weekLoadLabel string until phase 06 deleted that key along with the limit it stated)",
     "placeholders": {
       "range": {
         "type": "String"
@@ -937,7 +814,7 @@
   },
   "addSupplementCatalogSemantics": "{action}: {name}",
   "@addSupplementCatalogSemantics": {
-    "description": "Accessibility label of a catalog row's add affordance. The whole sentence — including its separator — lives here rather than being concatenated in Dart, because word order and punctuation between the two fragments are a per-language decision (PF-5); both parts are passed in finished, the weekLoadLabel idiom",
+    "description": "Accessibility label of a catalog row's add affordance. The whole sentence — including its separator — lives here rather than being concatenated in Dart, because word order and punctuation between the two fragments are a per-language decision (PF-5); both parts are passed in finished, the pre-formatted-count idiom",
     "placeholders": {
       "action": {
         "type": "String"

@@ -1,12 +1,13 @@
 /// The PLAN-04 copy gate (plan 04-02, T-04-06, 04-UI-SPEC "Forbidden
 /// vocabulary").
 ///
-/// The liability surface of this phase is editorial, not technical: nothing on
-/// the planner may describe the 5-substance limit as safe, normal, a medical
-/// standard or an overdose threshold. That rule is enforced HERE, over the
-/// actually-loaded localizations of BOTH locales, rather than by a reviewer
-/// reading the ARB diff — a reviewer sees this commit once, this test sees
-/// every commit after it.
+/// The liability surface of this phase is editorial, not technical: no planner
+/// copy may make a safety, interaction or pharmacological claim. Since PLAN-05
+/// (phase 06) the gate is STRICTER still — no planner copy may name a limit at
+/// all, because the planner no longer has one to name. Both halves are
+/// enforced HERE, over the actually-loaded localizations of BOTH locales,
+/// rather than by a reviewer reading the ARB diff — a reviewer sees this
+/// commit once, this test sees every commit after it.
 ///
 /// Loaded through the delegate with no widget pump (01-RESEARCH Pattern 6).
 library;
@@ -27,10 +28,20 @@ import 'package:boostque/core/l10n/gen/app_localizations.dart';
 /// **Matching is CASE-SENSITIVE where an entry is capitalized, and that is
 /// load-bearing.** `Зсунути` is the mockup's "Зсунути цикл" button — a
 /// schedule mutation on a read-only screen that must never ship. Its lowercase
-/// form appears legitimately INSIDE shipped copy: `weekNoteOverLimit` reads
-/// "Варто зсунути старт частини з них". A case-insensitive match would fail
-/// on correct, approved copy and the gate would be deleted as noisy — which is
-/// precisely how a real gate stops protecting anything.
+/// form is an ordinary verb that approved copy could legitimately use in a
+/// sentence (`weekNoteOverLimit`, deleted in phase 06, read "Варто зсунути
+/// старт частини з них"). A case-insensitive match would fail on correct copy
+/// and the gate would be deleted as noisy — which is precisely how a real gate
+/// stops protecting anything.
+///
+/// **Phase 06 widened this list and did NOT shrink it (PLAN-05).** The four
+/// Ukrainian limit stems joined it because the planner no longer HAS a limit:
+/// there is no verdict, no badge, no reference line and no threshold colour
+/// left for copy to name, so a sentence naming one describes a product that
+/// does not exist. `норма` moved here out of the deleted negation exemption —
+/// the rewritten disclaimer denies nothing, so nothing needs permission to say
+/// it. The fat-soluble pair stays even though the sentence it guarded is
+/// deleted: the guarantee outlives the sentence it was attached to.
 const forbiddenVocabulary = <String>[
   // uk — 04-UI-SPEC
   'безпечн', // безпечна / безпечну / безпечний норма
@@ -40,25 +51,23 @@ const forbiddenVocabulary = <String>[
   'жиророзчин', // M2: the truncated over-limit clause never returns
   'Зсунути', // M3, capitalized: the button label, not the verb in a sentence
   'Порівняти', // M3, capitalized: idem
+  // uk — 06-UI-SPEC, PLAN-05: the limit vocabulary itself
+  'межа', // «межа 5», the deleted limit badge
+  'меж', // межі / межу / перевищення межі — every declined form
+  'перевищ', // перевищення / перевищує
+  'норма', // норма / норматив — no longer exempt anywhere
   // en — the same claims, translated
   'overdose',
   'fat-soluble',
   'Shift cycle',
   'Compare weeks',
-];
-
-/// Terms permitted ONLY inside `plannerDisclaimer`'s own negation.
-///
-/// The disclaimer's whole job is to say the limit is "не медичний норматив" /
-/// "not a medical standard"; the words are forbidden everywhere else, because
-/// anywhere else they would assert what the disclaimer denies.
-const negationOnlyVocabulary = <String>[
-  'норма', // also catches "норматив"
   'medical standard',
 ];
 
-/// Keys allowed to carry [negationOnlyVocabulary].
-const negationBearingKeys = <String>{'plannerDisclaimer'};
+/// The PLAN-05 subset of [forbiddenVocabulary], named on its own so the
+/// absence of limit vocabulary is a stated guarantee rather than four entries
+/// buried in a longer list.
+const limitVocabulary = <String>['межа', 'меж', 'перевищ', 'норма'];
 
 /// True when [value] contains [term], case-sensitively for a capitalized term
 /// and case-insensitively otherwise.
@@ -99,11 +108,7 @@ const plannerKeyPrefixes = <String>[
 /// another surface and named for what they count, not for where they appear.
 const plannerKeysExact = <String>{
   'substancesCount',
-  'substancesLimitCount',
-  'slotsCount',
-  'cyclesCount',
   'periodsCount',
-  'limitBadge',
   'disclaimerEducational',
 };
 
@@ -125,12 +130,9 @@ Map<String, String> plannerCopy(AppLocalizations l10n) {
   }
 
   plural('monthsCount', l10n.monthsCount);
-  plural('cyclesCount', l10n.cyclesCount);
   plural('periodsCount', l10n.periodsCount);
   plural('substancesCount', l10n.substancesCount);
-  plural('substancesLimitCount', l10n.substancesLimitCount);
   plural('weeksCount', l10n.weeksCount);
-  plural('slotsCount', l10n.slotsCount);
 
   return {
     ...sample,
@@ -143,27 +145,15 @@ Map<String, String> plannerCopy(AppLocalizations l10n) {
         l10n.plannerRangeSubtitleCrossYear('A', '2026', 'B', '2027'),
     'plannerYearSubtitle': l10n.plannerYearSubtitle('2026', 'M'),
     'plannerThisWeek': l10n.plannerThisWeek('N'),
-    'limitBadge': l10n.limitBadge(5),
     'legendTaking': l10n.legendTaking,
     'legendPlanned': l10n.legendPlanned,
     'legendPaused': l10n.legendPaused,
     'loadChartTitle': l10n.loadChartTitle,
     'loadChartMeta': l10n.loadChartMeta,
-    'loadAxisLegend': l10n.loadAxisLegend(5, 3),
     'loadScaleCaption': l10n.loadScaleCaption,
-    'weekLoadLabel': l10n.weekLoadLabel(4, l10n.slotsCount(5)),
-    'weekFreeSlots': l10n.weekFreeSlots(1),
-    'weekNoFreeSlots': l10n.weekNoFreeSlots,
-    'verdictComfort': l10n.verdictComfort,
-    'verdictLimit': l10n.verdictLimit,
-    'verdictOverLimit': l10n.verdictOverLimit,
-    'weekNoteComfort': l10n.weekNoteComfort,
-    'weekNoteLimit': l10n.weekNoteLimit,
-    'weekNoteOverLimit': l10n.weekNoteOverLimit('C'),
     'peakMonth': l10n.peakMonth('M'),
     'peakMonthsTie': l10n.peakMonthsTie('M'),
     'yearLegendHint': l10n.yearLegendHint,
-    'monthMeta': l10n.monthMeta('N', 5),
     'monthStateTaking': l10n.monthStateTaking,
     'monthStatePlanned': l10n.monthStatePlanned,
     'monthStatePartial': l10n.monthStatePartial,
@@ -173,7 +163,6 @@ Map<String, String> plannerCopy(AppLocalizations l10n) {
     'emptyPlannerBodyNoRegimen': l10n.emptyPlannerBodyNoRegimen,
     'plannerLoadError': l10n.plannerLoadError,
     'plannerDisclaimer': l10n.plannerDisclaimer,
-    'yearFootnote': l10n.yearFootnote(l10n.substancesLimitCount(5)),
     'ganttRowSemantics': l10n.ganttRowSemantics('N', 'S', 'P'),
     'ganttRowSemanticsPaused': l10n.ganttRowSemanticsPaused('N', 'S', 'P'),
     'yearLegendEntrySemantics': l10n.yearLegendEntrySemantics('N', 'P'),
@@ -205,8 +194,11 @@ void main() {
 
         // A filter that matched nothing would make every assertion below
         // vacuously true, which is worse than no gate at all.
-        expect(arbKeys.length, greaterThanOrEqualTo(40),
-            reason: 'the prefix filter stopped resolving the planner surface');
+        expect(arbKeys.length, greaterThanOrEqualTo(35),
+            reason: 'the prefix filter stopped resolving the planner surface. '
+                '35 is the MEASURED planner-key count after phase 06 deleted '
+                'the sixteen limit keys (was 51 against a floor of 40) — '
+                're-derived from the ARB, never guessed downward (T-06-17)');
 
         // Plural samples are keyed "name(n)"; the ARB knows only "name".
         final covered = copy.keys.map((k) => k.split('(').first).toSet();
@@ -238,23 +230,25 @@ void main() {
                 'never this list. Offenders: $hits');
       });
 
-      test('names a medical standard ONLY to deny it, and only in the '
-          'disclaimer', () {
+      test('carries NO limit vocabulary at all, in any key, including the '
+          'disclaimer (PLAN-05)', () {
+        // The Phase-4 gate above exempted plannerDisclaimer from "норма" so
+        // it could DENY a medical standard. Phase 06 deleted that exemption
+        // with the sentence that needed it: the planner has no limit, so no
+        // key — not even the disclaimer — has anything to deny. There is no
+        // allowlist here on purpose; an unused permission is an invitation.
         final hits = <String>[];
         copy.forEach((key, value) {
-          // Plural samples are keyed "name(n)"; strip the sample suffix.
-          final arbKey = key.split('(').first;
-          if (negationBearingKeys.contains(arbKey)) return;
-          for (final term in negationOnlyVocabulary) {
+          for (final term in limitVocabulary) {
             if (_contains(value, term)) hits.add('$key contains "$term"');
           }
         });
 
         expect(hits, isEmpty,
-            reason: 'PLAN-04: "норма/норматив" / "medical standard" may '
-                'appear only inside plannerDisclaimer\'s own negation. '
-                'Anywhere else the word asserts exactly what the disclaimer '
-                'denies. Offenders: $hits');
+            reason: 'PLAN-05: the planner shows weekly concurrent load with '
+                'no reference line, no verdict, no badge and no threshold — '
+                'so copy naming a limit describes a product that does not '
+                'exist. Fix the ARB, never this list. Offenders: $hits');
       });
 
       test('the disclaimer itself still frames the limit as editorial', () {
@@ -277,12 +271,9 @@ void main() {
     });
   }
 
-  test('the over-limit note ships truncated — the fat-soluble clause is '
-      'never restored (M2, PF-5)', () async {
-    final uk = await AppLocalizations.delegate.load(const Locale('uk'));
-    expect(uk.weekNoteOverLimit('2 цикли'), endsWith('із лікарем.'),
-        reason: 'the mockup sentence continues with a pharmacological claim '
-            'about fat-soluble forms; if the truncation ever reads oddly the '
-            'final sentence is REWRITTEN, never re-extended');
-  });
+  // The standalone "the over-limit note ships truncated" test is deleted with
+  // its key: `weekNoteOverLimit` no longer exists, so the test could not
+  // compile. Its guarantee is NOT lost — the `жиророзчин` / `fat-soluble`
+  // entries stay in [forbiddenVocabulary] above, which is what actually keeps
+  // the pharmacological clause from returning, in any key, in either locale.
 }

@@ -1051,7 +1051,8 @@ void main() {
               'and no ARB-parity gate can see them: the resulting string is '
               'not a literal, so the no-hardcoded-strings gate passes it. The '
               'fix is always a new ARB key with placeholders (the '
-              'weekLoadLabel idiom), never an allowlist entry (PF-5, A2)');
+              'pre-formatted-count idiom), never an allowlist entry '
+              '(PF-5, A2)');
     });
   });
 

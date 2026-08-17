@@ -417,59 +417,6 @@ List<WeekLoad> weekLoads(List<GanttRow> rows, List<WeekBucket> buckets) {
 bool _overlaps(DateRun r, DateTime a, DateTime b) =>
     !r.start.isAfter(b) && !r.end.isBefore(a);
 
-/// The editorial tracking-comfort rule (PLAN-04) — **not a medical
-/// threshold**, and never to be described as one anywhere in the app.
-///
-/// Five is the count above which the user's own tracking gets hard: it is our
-/// editorial default for legibility, not a safety limit, not a norm and not a
-/// dose ceiling. Both numbers live here once, so moving a boundary is a
-/// one-line, test-caught edit — and the copy honours that: every sentence that
-/// names either number takes it PRE-FORMATTED through a plural key, so the
-/// Ukrainian declines with the value instead of being frozen at five (WR-05).
-///
-/// The two chips read this rule ASYMMETRICALLY, on purpose (DECIDED-6): the
-/// week summary chip warns at a load greater than OR EQUAL to
-/// [editorialLimit], while the year peak chip warns only ABOVE it. A week
-/// sitting exactly at the limit is worth a nudge, because the user can still
-/// move a start date; a month that merely touches it for a few days is not.
-/// Transcribed deliberately — do not "fix" the asymmetry.
-const int editorialLimit = 5;
-
-/// The upper bound of the comfort band (PLAN-04) — see [editorialLimit].
-const int comfortLoad = 3;
-
-/// Structured week verdict — the renderer switches exhaustively (sealed,
-/// Dart 3) and maps each case to an ARB key and a colour pair itself, so no
-/// copy lives here.
-sealed class LoadVerdict {
-  const LoadVerdict();
-}
-
-/// At or below [comfortLoad]: easy to keep track of.
-class ComfortVerdict extends LoadVerdict {
-  const ComfortVerdict();
-}
-
-/// Above the comfort band but at or below [editorialLimit].
-class LimitVerdict extends LoadVerdict {
-  const LimitVerdict();
-}
-
-/// Above [editorialLimit]. Carries [load] because the copy names the number.
-class OverLimitVerdict extends LoadVerdict {
-  /// The week's concurrent load.
-  final int load;
-
-  const OverLimitVerdict(this.load);
-}
-
-/// Resolves the three editorial bands for [load].
-LoadVerdict verdictOf(int load) => load <= comfortLoad
-    ? const ComfortVerdict()
-    : load <= editorialLimit
-        ? const LimitVerdict()
-        : OverLimitVerdict(load);
-
 /// The coverage fraction at or above which a month reads as fully covered
 /// (mockup line 842). The ONE place this boundary lives.
 const double fullMonthFraction = 0.85;

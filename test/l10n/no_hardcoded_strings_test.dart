@@ -19,7 +19,7 @@
 ///
 /// **What "translatable words" means, and why the rule is this and not
 /// `Text\('`.** A literal is translatable when, after its `$interpolations`
-/// are removed, two or more letters remain. `Text('${l10n.weekLoadLabel(x)} · ')`
+/// are removed, two or more letters remain. `Text('${l10n.substancesCount(x)} · ')`
 /// therefore does NOT trip: every word in it came from an ARB key and only a
 /// separator is literal. `Text('Cycles')` does. This is a SHARPER rule than
 /// "a literal appears here", not a looser one — it names exactly the thing a

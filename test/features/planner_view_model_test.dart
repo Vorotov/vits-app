@@ -514,29 +514,6 @@ void main() {
     });
   });
 
-  group('verdictOf — three editorial bands, both sides of each boundary', () {
-    test('the boundaries live in exactly one place', () {
-      expect(comfortLoad, 3);
-      expect(editorialLimit, 5);
-    });
-
-    test('load 0 and 3 are comfort', () {
-      expect(verdictOf(0), isA<ComfortVerdict>());
-      expect(verdictOf(3), isA<ComfortVerdict>());
-    });
-
-    test('load 4 and 5 are at the limit', () {
-      expect(verdictOf(4), isA<LimitVerdict>());
-      expect(verdictOf(5), isA<LimitVerdict>());
-    });
-
-    test('load 6 is over the limit and CARRIES the load', () {
-      final v = verdictOf(6);
-      expect(v, isA<OverLimitVerdict>());
-      expect((v as OverLimitVerdict).load, 6);
-    });
-  });
-
   group('monthCellFor — coverage, fullness and the planned rule (P-10)', () {
     test('the fullness boundary: 0.84 is not full, 0.85 is', () {
       expect(const MonthCell(frac: 0.84, planned: false).full, isFalse);

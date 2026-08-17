@@ -357,7 +357,7 @@ class _CatalogResultRow extends StatelessWidget {
               // (PF-5). Concatenating two localized fragments in Dart
               // hardcodes word order and punctuation across every language,
               // which the "one new ARB file" contract cannot survive; both
-              // parts are passed in finished, the weekLoadLabel idiom.
+              // parts are passed in finished, the pre-formatted-count idiom.
               label: l10n.addSupplementCatalogSemantics(
                 l10n.addSupplement,
                 entry.name(l10n),
