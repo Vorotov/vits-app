@@ -365,7 +365,7 @@ const int comfortLoad = 3;
 | month-card count colour | `over ? BqColors.risk : BqColors.textFaint` (`planner_year_grid.dart:296`), with `final over = month.load > editorialLimit;` (`:202`) | always `textFaint` |
 | month-detail meta | `l10n.monthMeta(substancesCount(rows.length), editorialLimit)` (`planner_month_detail.dart:142-145`) | a one-placeholder count |
 | week-detail meta line | `weekLoadLabel(load, slotsCount(editorialLimit))` (`planner_week_detail.dart:153`) | `substancesCount(load)` |
-| load-chart bar **height** | `min(load, editorialLimit) / editorialLimit * 38` (`planner_load_chart.dart:266-268`) | **see Q1 — unresolved** |
+| load-chart bar **height** | `min(load, editorialLimit) / editorialLimit * 38` (`planner_load_chart.dart:266-268`) | `round(load / scheduledCount * 38)` — **Q1 is RESOLVED by spec §3.1**: the denominator is the number of supplements carrying a schedule |
 
 #### Colours that must NOT be deleted
 
@@ -469,7 +469,7 @@ Lines `80-123` assert CLDR forms for `cyclesCount`, `slotsCount`, `substancesLim
 **What goes wrong:** `BqColors.risk` is removed with the over-limit bar. **Why:** it is also the regimen editor's delete-control colour (`regimen_editor_screen.dart:902-904`, `:1017-1018`). **Avoid:** only `thresholdDash` is orphaned. **Warning sign:** `theme_test.dart` failing for a screen this phase never touched.
 
 ### PF-10 — The load chart cannot be drawn after the constant is deleted
-See §Q1. This is not a pitfall to avoid; it is a decision to make before coding starts.
+See §Q1 — **already decided, not an open decision.** Spec §3.1 supplies the replacement denominator (the scheduled-supplement ceiling, computed in `planner_view_model.dart`), and plan 06-05 installs it before plan 06-06 deletes the constant, so the chart is never left undrawable.
 
 ### PF-11 — `planner_invariants_test.dart`'s glob floor
 `test/features/planner_invariants_test.dart:83` globs `Directory('lib/features/calendar')` and asserts a minimum file count (*"a smaller set means the glob stopped matching"*, `:124-130`). This phase **adds** `today_screen.dart` and **removes** `calendar_screen.dart` — net zero, so the floor should hold. Verify rather than assume, and note that `today_screen.dart` now enters the "no raw colour literal / no wall-clock read / no materializing path" gates it was never scanned by before. That is a *good* outcome, but it may surface pre-existing findings in code that merely moved.
@@ -650,9 +650,11 @@ No `security_enforcement: false` was found; the domain is assessed and is **near
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-### Q1 — What replaces `editorialLimit` as the load chart's height denominator? **[ASSUMED — needs user confirmation]**
+### Q1 — What replaces `editorialLimit` as the load chart's height denominator? **[RESOLVED by spec §3.1 — the ceiling is the number of supplements carrying a schedule; research options A/B/C below are all rejected and must not be planned]**
+
+> **RESOLVED by spec §3.1.** The denominator is **the number of supplements currently carrying a schedule**, computed in `planner_view_model.dart` beside the week loads (06-UI-SPEC S13, plan 06-05 Task 1). `load ≤ ceiling` then holds by construction, so no cap, no clipping and no over-bar are needed. **Options A, B and C below — including B, this section's own recommendation — are all rejected and must not be planned or implemented.** The table is kept for the record of what was considered, not as a menu.
 
 `planner_load_chart.dart:266-268` reads, verbatim:
 
@@ -670,7 +672,7 @@ Deleting `editorialLimit` deletes the y-axis. Options:
 | **B. Self-scaling with a floor** — `max(peak, 3)` | Fixes the one-substance case | The floor is a number the code chose; a reviewer will ask whether it is a limit in disguise. It is *not* — it carries no colour, no copy and no verdict — but that must be documented |
 | **C. Fixed scale constant** (`loadChartScale = 5`) | Smallest diff | **Rejected:** it is `editorialLimit` renamed, and a load of 8 would clip or need an over-bar — the exact thing PLAN-05 removes |
 
-**Recommendation: B**, with the constant named for what it is (a *drawing scale*, not a rule), defined in `planner_view_model.dart` beside the model that computes the peak, and covered by a unit test. **But this is a design decision the spec did not make, so it belongs in `/gsd-discuss-phase`, not in a planner's discretion.**
+~~**Recommendation: B**, with the constant named for what it is (a *drawing scale*, not a rule), defined in `planner_view_model.dart` beside the model that computes the peak, and covered by a unit test.~~ **Superseded — do not follow this recommendation.** Spec §3.1 settled the question after this research was written: the denominator is the scheduled-supplement count, not a peak and not a constant. B is rejected along with A and C.
 
 ### Q2 — Does the Цикли summary chip keep its `calm` palette, or go fully neutral? **[ASSUMED]**
 
