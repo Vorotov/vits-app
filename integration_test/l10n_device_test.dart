@@ -215,7 +215,8 @@ void main() {
       // =================================================================
       // (c) E-12 fixture: a CATALOG supplement added while Ukrainian is live
       // =================================================================
-      await _tap(tester, find.byIcon(Icons.inventory_2_outlined));
+      await _leaveSettings(tester);
+      await _goToTab(tester, Icons.inventory_2_outlined, Icons.inventory_2);
       await _pumpUntil(
         tester,
         () => find.byType(StackScreen).evaluate().isNotEmpty,
@@ -322,7 +323,8 @@ void main() {
       // =================================================================
       // (e) E-12: chrome flips, the saved supplement NAME does not
       // =================================================================
-      await _tap(tester, find.byIcon(Icons.inventory_2_outlined));
+      await _leaveSettings(tester);
+      await _goToTab(tester, Icons.inventory_2_outlined, Icons.inventory_2);
       await _pumpUntil(
         tester,
         () => find.text('My stack').evaluate().isNotEmpty,
@@ -332,7 +334,17 @@ void main() {
       // green E-12 cannot mean "the switch never happened".
       expect(find.text('SUPPLEMENTS'), findsOneWidget);
       expect(find.text('ДОБАВКИ'), findsNothing);
-      expect(find.widgetWithText(FilledButton, 'Add supplement'), findsWidgets);
+      // v1 asserted a full-width "Add supplement" FilledButton here. Plan
+      // 06-04 deleted it: the shell's floating + is the only add affordance
+      // now (UX-01), so its absence is the assertion — and it is checked on a
+      // NON-empty stack, which is the case the deleted button used to serve.
+      expect(
+        find.widgetWithText(FilledButton, 'Add supplement'),
+        findsNothing,
+        reason: 'UX-01: the Stack screen has no add CTA of its own any more',
+      );
+      expect(find.byType(BqAddFab), findsOneWidget,
+          reason: 'the shell FAB is what replaced it');
 
       // The claim itself, at the data layer (the name is user data now)...
       final afterSwitch = await _stack(tester, container);
@@ -361,10 +373,9 @@ void main() {
       // =================================================================
       // (f) an OPEN bottom sheet and a PUSHED route follow the language
       // =================================================================
-      await _tap(
-        tester,
-        find.widgetWithText(FilledButton, 'Add supplement').first,
-      );
+      // Through the shell's floating + since plan 06-04 — the full-width CTA
+      // this step used to tap no longer exists.
+      await _tap(tester, find.byType(BqAddFab));
       await _pumpUntil(
         tester,
         () => find.byType(BottomSheet).evaluate().isNotEmpty,
@@ -436,14 +447,14 @@ void main() {
       // =================================================================
       // (g) the Сьогодні + Календар surfaces follow too
       // =================================================================
-      await _tap(tester, find.byIcon(Icons.today_outlined));
+      await _goToTab(tester, Icons.today_outlined, Icons.today);
       await _pumpUntil(
         tester,
         () => find.byType(WeekStrip).evaluate().isNotEmpty,
         'the Сьогодні tab in Ukrainian',
       );
       expect(find.text('Сьогодні'), findsWidgets);
-      await _tap(tester, find.byIcon(Icons.calendar_month_outlined));
+      await _goToTab(tester, Icons.calendar_month_outlined, Icons.calendar_month);
       await _pumpUntil(
         tester,
         () => find.text('Рік').evaluate().isNotEmpty,
@@ -615,17 +626,68 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
   await _pump(tester, 8);
 }
 
+/// Pops the pushed Settings route back to the shell.
+///
+/// Since plan 06-02 (NAV-03) Settings is a route ON TOP of the shell, not a
+/// fourth destination, so the navigation bar is offstage while it is open and
+/// no tab can be tapped from here. Every "now go to tab X" step that follows a
+/// Settings visit has to leave through the back control first.
+Future<void> _leaveSettings(WidgetTester tester) async {
+  await _tap(tester, find.byIcon(Icons.arrow_back_ios_new));
+  await _pumpUntil(
+    tester,
+    () => find.byType(SettingsScreen).evaluate().isEmpty,
+    'Settings to pop back to the shell',
+  );
+}
+
+/// Selects a bar destination, tolerating that it may already be selected.
+///
+/// The bar swaps a destination's glyph when it is selected (`inventory_2` for
+/// `inventory_2_outlined`), and since plan 06-02 Settings is a route rather
+/// than a fourth destination — so popping it leaves the tab the user came from
+/// still selected, showing the FILLED glyph. A step that says "go to Стек"
+/// therefore has to accept "already there" instead of hunting for an outlined
+/// icon that is legitimately not on screen. In v1 this could not arise:
+/// visiting Settings always deselected whatever tab preceded it.
+Future<void> _goToTab(
+  WidgetTester tester,
+  IconData icon,
+  IconData selectedIcon,
+) async {
+  if (find.byIcon(selectedIcon).evaluate().isNotEmpty) return;
+  await _tap(tester, find.byIcon(icon));
+}
+
+/// The shell's navigation bar, INCLUDING when it is offstage.
+///
+/// Since plan 06-03 (NAV-03) Settings is a pushed opaque route rather than a
+/// fourth destination, so while it is open the shell beneath it is still
+/// mounted — that is precisely what "returns to the tab you were on" rests on —
+/// but it is marked offstage, and `find.byType` skips offstage widgets by
+/// default. Without `skipOffstage: false` every assertion below that reads the
+/// locale or the bar's labels throws `Bad state: No element` the moment
+/// Settings is open, which is exactly when this test needs to read them.
+Finder _navBar() => find.byType(BqNavBar, skipOffstage: false);
+
 /// The locale the widget tree is actually rendering in.
 Locale _locale(WidgetTester tester) =>
-    Localizations.localeOf(tester.element(find.byType(BqNavBar)));
+    Localizations.localeOf(tester.element(_navBar()));
 
 /// The strings the widget tree is actually rendering with.
 AppLocalizations _l10n(WidgetTester tester) =>
-    AppLocalizations.of(tester.element(find.byType(BqNavBar)));
+    AppLocalizations.of(tester.element(_navBar()));
 
 /// [text] as rendered inside the bottom navigation bar.
-Finder _inNav(String text) =>
-    find.descendant(of: find.byType(BqNavBar), matching: find.text(text));
+///
+/// Offstage-tolerant for the same reason as [_navBar]: the bar's labels are
+/// rebuilt in the new language while Settings sits on top of it, and the point
+/// of checking them here is that the rebuild reached the shell too, not only
+/// the visible route.
+Finder _inNav(String text) => find.descendant(
+      of: _navBar(),
+      matching: find.text(text, skipOffstage: false),
+    );
 
 /// [text] as rendered inside the Settings screen body.
 Finder _inSettings(String text) =>

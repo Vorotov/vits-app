@@ -206,6 +206,28 @@ void main() {
         () => find.byType(RegimenEditorScreen).evaluate().isEmpty,
         'the editor to pop after save',
       );
+      // On a device carrying earlier runs' supplements the new card can be
+      // below the fold, and the list builds lazily — so an unscrolled finder
+      // reports "not there yet" forever. Wait for the write to land, then
+      // scroll to it. (This file runs against the user's real database by
+      // design; "works only on a freshly wiped device" would not be a
+      // regression test.)
+      await _pumpUntil(
+        tester,
+        () => find.byType(StackScreen).evaluate().isNotEmpty,
+        'the Stack tab after the editor popped',
+      );
+      await tester.scrollUntilVisible(
+        find.text(supplementName),
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byType(StackScreen),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+        maxScrolls: 60,
+      );
       await _pumpUntil(
         tester,
         () => find.text(supplementName).evaluate().isNotEmpty,
@@ -467,7 +489,10 @@ void main() {
         await tester.drag(find.byType(PageView), const Offset(300, 0));
         await _pump(tester, 20);
       }
-      await _tap(tester, find.byKey(ValueKey<DateTime>(dateOnly(pastDay))));
+      await _tapWeekCell(
+        tester,
+        find.byKey(ValueKey<DateTime>(dateOnly(pastDay))),
+      );
       // Wait for the PAST day's own rows — the previous day's list is held on
       // screen for a frame while the new day's stream resolves (PF-7), so the
       // chip, not the mere presence of a row, is the real condition.
@@ -533,6 +558,16 @@ Future<void> _pumpUntil(
     await tester.pump(const Duration(milliseconds: 50));
     if (condition()) return;
   }
+  // On a device the only thing worse than a timeout is a timeout that does not
+  // say what WAS on screen: dump it, so the next failure is diagnosable from
+  // the log alone instead of costing a bisecting re-run per hypothesis.
+  final texts = find
+      .byType(Text)
+      .evaluate()
+      .map((e) => (e.widget as Text).data)
+      .where((s) => s != null)
+      .toList();
+  debugPrint('DATA-03 on-screen text at timeout: $texts');
   fail('DATA-03 timed out waiting for $what');
 }
 
@@ -540,6 +575,35 @@ Future<void> _pumpUntil(
 Future<void> _tap(WidgetTester tester, Finder finder) async {
   await tester.ensureVisible(finder);
   await _pump(tester, 4);
+  await tester.tap(finder);
+  await _pump(tester, 8);
+}
+
+/// Taps a week-strip cell that a preceding swipe has already brought on screen.
+///
+/// Deliberately does NOT call `ensureVisible`, which [_tap] does and which is
+/// actively wrong inside a paged viewport: `Scrollable.ensureVisible` aligns
+/// its target to the viewport's LEADING edge, so inside the strip's `PageView`
+/// it drags a perfectly visible cell out of view and page snapping then settles
+/// back to the week the pager started on — the tap lands on nothing and the
+/// selected day never changes. Measured on 2026-08-17 (the first Monday this
+/// path ever ran): the Aug-14 cell sat at x=238..292 after the swipe and
+/// `ensureVisible` alone moved it to x=-127..-72.
+///
+/// The swipe is what positions a paged viewport. So assert the cell really is
+/// on screen — a failure here means the swipe missed, which is worth a distinct
+/// message — and then tap it where it already is.
+Future<void> _tapWeekCell(WidgetTester tester, Finder finder) async {
+  final rect = tester.getRect(finder);
+  final viewportWidth =
+      tester.view.physicalSize.width / tester.view.devicePixelRatio;
+  expect(
+    rect.left >= 0 && rect.right <= viewportWidth,
+    isTrue,
+    reason: 'the week cell is at $rect, outside the 0..$viewportWidth '
+        'viewport — the pager is not showing the expected week, so the swipe '
+        'above did not land',
+  );
   await tester.tap(finder);
   await _pump(tester, 8);
 }
