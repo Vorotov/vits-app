@@ -202,6 +202,76 @@ void main() {
       );
     });
 
+    // Added by plan 07-06, and deliberately a WIDENING of the two assertions
+    // above rather than a copy of them in another file. Those two read the
+    // `main` variant only, because that is the one whose contents ship. This
+    // one reads EVERY variant, because `profile` also ships when a release
+    // build is profiled and because the merged manifest is the union of them
+    // all — an exact-alarm permission parked in `profile` would be invisible to
+    // every assertion in this repository while still being a real Play-policy
+    // declaration in a build the team actually installs.
+    test('no variant of the manifest declares an exact-alarm permission, and '
+        'INTERNET lives in exactly the two development variants', () {
+      final variants = Directory('android/app/src')
+          .listSync()
+          .whereType<Directory>()
+          .map((d) => d.path.split(Platform.pathSeparator).last)
+          .where((v) =>
+              File('android/app/src/$v/AndroidManifest.xml').existsSync())
+          .toList()
+        ..sort();
+      // The glob self-proof this file's other manifest assertions get for free
+      // by naming their variant literally.
+      expect(variants, containsAll(<String>['main', 'debug']),
+          reason: 'the manifest variants glob resolved $variants — without at '
+              'least main and debug this assertion is scanning nothing');
+
+      for (final variant in variants) {
+        final declared = declaredPermissions(variant);
+        for (final exact in const [
+          'android.permission.SCHEDULE_EXACT_ALARM',
+          'android.permission.USE_EXACT_ALARM',
+        ]) {
+          expect(
+            declared.contains(exact),
+            isFalse,
+            reason: 'android/app/src/$variant/AndroidManifest.xml declares '
+                '$exact. This app schedules with inexactAllowWhileIdle, which '
+                'needs no permission at all, and accepts ~10-15 minutes of '
+                'doze jitter as a stated cost — the reminder body restates the '
+                'scheduled time precisely because delivery is not exact. An '
+                'exact-alarm declaration in ANY variant is a policy '
+                'declaration the app would have to justify to a reviewer for a '
+                'capability it does not use.',
+          );
+        }
+      }
+
+      // Which variants declare INTERNET, as a SET rather than as two separate
+      // membership checks. `debug` and `profile` are the Flutter template's own
+      // development manifests and both need it for the tool's VM-service
+      // connection; `main` is the one whose contents ship. Asserting the set by
+      // equality is what makes a FOURTH variant — or `main` acquiring it —
+      // fail here, where the two assertions above would both stay green.
+      final internetVariants = <String>{
+        for (final variant in variants)
+          if (declaredPermissions(variant)
+              .contains('android.permission.INTERNET'))
+            variant,
+      };
+      expect(
+        internetVariants,
+        <String>{'debug', 'profile'},
+        reason: 'INTERNET must be declared by the development manifests and by '
+            'nothing else. This app is fully offline — no client, no '
+            'serialization package, no endpoint — and the notification phase '
+            'added none of the three: reminders are scheduled by the operating '
+            'system on the device, not fetched. INTERNET reaching the shipped '
+            'manifest would be a capability the app never uses and a '
+            'permission a reviewer would ask about.',
+      );
+    });
+
     test('both plugin receivers are declared, non-exported', () {
       final xml = _stripXmlComments(
         File('android/app/src/main/AndroidManifest.xml').readAsStringSync(),
