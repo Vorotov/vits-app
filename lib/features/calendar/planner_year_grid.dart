@@ -196,10 +196,6 @@ class _MonthCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
-    // STRICTLY above — a month that merely touches the limit is not flagged.
-    // The Цикли summary chip warns at or above it instead, and that asymmetry
-    // is transcribed on purpose (DECIDED-6). Do not reconcile them.
-    final over = month.load > editorialLimit;
 
     // The month's first day, never the card's position: the grid is today's
     // calendar year, and on 1 January index 11 stops meaning the December the
@@ -290,10 +286,12 @@ class _MonthCard extends ConsumerWidget {
                         style: BqText.mono(
                           size: _headerSize,
                           weight: FontWeight.w500,
-                          // `risk` here means "above OUR editorial rule",
-                          // never unsafe — which is what the year footnote
-                          // beneath the grid says in words (PLAN-04).
-                          color: over ? BqColors.risk : BqColors.textFaint,
+                          // `textFaint` at EVERY load: the count states how
+                          // many supplements overlap in this month and says
+                          // nothing about whether that is a lot (06-UI-SPEC
+                          // S13). The footnote that used to explain a red
+                          // number is deleted along with the red number.
+                          color: BqColors.textFaint,
                           letterSpacing: 0,
                         ),
                       ),

@@ -1063,10 +1063,10 @@ abstract class AppLocalizations {
   /// **'Couldn\'t load the planner. Try again.'**
   String get plannerLoadError;
 
-  /// PLAN-04 closure (mockup line 374, uk verbatim). Rendered as the LAST element of BOTH planner segments — Цикли and Рік — and on the empty and error surfaces too, because PLAN-04 is unconditional. It frames the 5-substance limit as THIS PRODUCT'S editorial rule and explicitly not a medical standard; that framing is the half of PLAN-04 that does the work, which is why the bare `disclaimerEducational` cannot stand in for it (DECIDED-8). On the Рік segment `yearFootnote` renders ABOVE this key, never instead of it (M9)
+  /// PLAN-04 closure, REWRITTEN in phase 06 (06-UI-SPEC D-4). Rendered as the LAST element of BOTH planner segments — Цикли and Рік — and on the empty and error surfaces too, because PLAN-04 is unconditional. It says what the planner IS and closes with the educational sentence verbatim; it asserts no limit, because after PLAN-05 there is no limit anywhere in the planner to frame. The bare `disclaimerEducational` still cannot stand in for it — the first sentence is what makes this the planner's own closure (DECIDED-8, superseded in part by 06-UI-SPEC D-4)
   ///
   /// In en, this message translates to:
-  /// **'The 5-substance limit is our editorial rule for easier tracking, not a medical standard. Educational material, not medical advice.'**
+  /// **'The planner shows how your cycles overlap over time. Educational material, not medical advice.'**
   String get plannerDisclaimer;
 
   /// Рік closing note (mockup line 454, uk verbatim), rendered directly above plannerDisclaimer with an 8px gap. `max` is a pre-formatted substancesLimitCount string, so the sentence stays grammatical in uk at any editorial limit (WR-05)

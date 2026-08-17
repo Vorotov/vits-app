@@ -28,7 +28,6 @@ import 'package:intl/intl.dart';
 import 'package:boostque/core/domain/cycle_math.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/core/widgets/bq_segmented.dart';
@@ -305,7 +304,10 @@ class _CyclesBody extends ConsumerWidget {
   }
 }
 
-/// The Цикли summary chip: this week's concurrent load against the limit.
+/// The Цикли summary chip: how many supplements overlap this week.
+///
+/// A plain count on a neutral chip — it is compared against nothing, and the
+/// badge that used to name a limit beside it is deleted (06-UI-SPEC S13).
 ///
 /// "This week" is the CALENDAR week containing today — which is exactly why
 /// the buckets are full Monday weeks and not the mockup's window-aligned
@@ -325,14 +327,6 @@ class _CyclesSummaryChip extends StatelessWidget {
     // could not find today is worse than one that cannot happen (WR-02).
     final load = model.weeks[model.currentWeekIndex].load;
 
-    // AT or above the limit, deliberately — a week sitting exactly at the
-    // limit is worth a nudge because the user can still move a start date.
-    // The Рік peak chip warns only ABOVE it, and that asymmetry is
-    // transcribed on purpose (DECIDED-6). Do not reconcile them.
-    final atLimit = load >= editorialLimit;
-    final Color fg = atLimit ? BqColors.warn : BqColors.calm;
-    final Color bg = atLimit ? BqColors.warnBg : BqColors.calmBg;
-
     return Padding(
       padding: const EdgeInsetsDirectional.only(bottom: _chipBottomMargin),
       child: Container(
@@ -341,38 +335,27 @@ class _CyclesSummaryChip extends StatelessWidget {
           vertical: _chipPadVertical,
           horizontal: _chipPadHorizontal,
         ),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius:
-              const BorderRadius.all(Radius.circular(BqRadii.button)),
+        decoration: const BoxDecoration(
+          color: BqColors.chip,
+          borderRadius: BorderRadius.all(Radius.circular(BqRadii.button)),
         ),
         child: Row(
           children: [
-            // A flexible sentence against a rigid trailing badge — never two
-            // rigid children (WR-04).
+            // A single flexible label: the limit badge that made this a
+            // two-child row is deleted, and the colours are the app's neutral
+            // chip pair (`stack_screen.dart:377-393`), at every load. There is
+            // no threshold left for a colour to express (06-UI-SPEC S13).
             Expanded(
               child: Text(
                 // The count is PRE-FORMATTED through its own plural key and
                 // passed into the sentence (the cycleSummaryCyclic idiom).
                 l10n.plannerThisWeek(l10n.substancesCount(load)),
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
                   height: 1.35,
-                  color: fg,
+                  color: BqColors.textSecondary,
                 ),
-              ),
-            ),
-            const SizedBox(width: _chipInnerGap),
-            Text(
-              l10n.limitBadge(editorialLimit),
-              maxLines: 1,
-              softWrap: false,
-              style: BqText.mono(
-                size: 11,
-                weight: FontWeight.w400,
-                color: fg,
-                letterSpacing: 0,
               ),
             ),
           ],
@@ -383,23 +366,17 @@ class _CyclesSummaryChip extends StatelessWidget {
 }
 
 /// Рік scroll body: the peak chip, the grid, the legend and the month detail,
-/// closed by the year footnote ABOVE the disclaimer.
+/// closed by the disclaimer alone.
+///
+/// The year footnote is deleted rather than neutralized (06-UI-SPEC S13): its
+/// entire subject was the red month count and the limit it exceeded, and both
+/// cease to exist in this phase. The Рік body now closes exactly as Цикли does.
 class _YearBody extends ConsumerWidget {
   const _YearBody();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return _BodyScroll(
-      // Rendered ABOVE the closing disclaimer, never instead of it: the
-      // mockup's Year footnote carries no editorial framing of the limit, and
-      // PLAN-04 needs both (M9, DECIDED-8).
-      // The ONE place the editorial limit is defined is the pure model — the
-      // screen never restates the number.
-      // The count is PRE-FORMATTED through the plural key whose forms the uk
-      // phrase «межі у …» governs, so moving the limit cannot leave the
-      // sentence declined for a number it no longer names (WR-05).
-      footnote: context.l10n
-          .yearFootnote(context.l10n.substancesLimitCount(editorialLimit)),
       children: _surface(
         context,
         ref,
@@ -408,8 +385,8 @@ class _YearBody extends ConsumerWidget {
         // the gantt rows carry (DECIDED-7).
         isEmpty: (model) => model.entries.isEmpty,
         // Body order, exactly: peak chip, grid card, legend, month-detail
-        // card — and then, from `_BodyScroll`, the footnote above the
-        // disclaimer (DECIDED-8, M9).
+        // card — and then, from `_BodyScroll`, the closing disclaimer
+        // (PLAN-04, unweakened by this phase).
         cards: (model) => [
           _YearPeakChip(model: model),
           PlannerYearGrid(model: model),
@@ -448,15 +425,6 @@ class _YearPeakChip extends StatelessWidget {
     final peak = model.months[model.peakIndex];
     final load = peak.load;
 
-    // STRICTLY above the limit, deliberately — a month that merely touches
-    // the limit for a few days is not worth flagging, while the Цикли summary
-    // chip warns AT or above it because a week's start date can still be
-    // moved. The asymmetry is transcribed on purpose (DECIDED-6). Do not
-    // reconcile them.
-    final over = load > editorialLimit;
-    final Color fg = over ? BqColors.warn : BqColors.calm;
-    final Color bg = over ? BqColors.warnBg : BqColors.calmBg;
-
     // A STANDALONE full month name: it stands here without a day number,
     // which in Ukrainian means the nominative case (PF-4).
     final month = DateFormat('LLLL', locale).format(peak.month);
@@ -469,10 +437,13 @@ class _YearPeakChip extends StatelessWidget {
           vertical: _chipPadVertical,
           horizontal: _chipPadHorizontal,
         ),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius:
-              const BorderRadius.all(Radius.circular(BqRadii.button)),
+        // The neutral chip pair at EVERY load — same as the Цикли summary
+        // chip, and no longer "the same geometry, a different comparison":
+        // there is no comparison left for the two to disagree about, so the
+        // DECIDED-6 asymmetry is moot rather than reconciled (06-UI-SPEC S13).
+        decoration: const BoxDecoration(
+          color: BqColors.chip,
+          borderRadius: BorderRadius.all(Radius.circular(BqRadii.button)),
         ),
         child: Row(
           children: [
@@ -481,11 +452,11 @@ class _YearPeakChip extends StatelessWidget {
             Expanded(
               child: Text(
                 model.peakTied ? l10n.peakMonthsTie(month) : l10n.peakMonth(month),
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
                   height: 1.35,
-                  color: fg,
+                  color: BqColors.textSecondary,
                 ),
               ),
             ),
@@ -494,10 +465,10 @@ class _YearPeakChip extends StatelessWidget {
               l10n.substancesCount(load),
               maxLines: 1,
               softWrap: false,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w400,
-                color: fg,
+                color: BqColors.textSecondary,
               ),
             ),
           ],
@@ -680,18 +651,13 @@ List<Widget> _surface<T>(
 /// The shared scroll body: mockup-exact padding, and the same closing
 /// disclaimer under every state.
 class _BodyScroll extends StatelessWidget {
-  const _BodyScroll({required this.children, this.footnote});
+  const _BodyScroll({required this.children});
 
   /// Whatever the segment renders above its closing copy.
   final List<Widget> children;
 
-  /// Optional line rendered directly above the closing disclaimer.
-  final String? footnote;
-
   @override
   Widget build(BuildContext context) {
-    final note = footnote;
-
     return ListView(
       padding: const EdgeInsetsDirectional.only(
         start: _screenPadding,
@@ -700,10 +666,6 @@ class _BodyScroll extends StatelessWidget {
       ),
       children: [
         ...children,
-        if (note != null) ...[
-          _FaintNote(text: note),
-          const SizedBox(height: 8), // mockup lines 454, 374
-        ],
         // Closes the body of BOTH segments, under EVERY state including the
         // empty and error ones — the requirement is unconditional, so the
         // widget is too (PLAN-04, DECIDED-8).
@@ -713,9 +675,9 @@ class _BodyScroll extends StatelessWidget {
   }
 }
 
-/// The closing 11.5/1.5 `textFaint` line — the disclaimer, and the Year
-/// footnote that sits above it (mockup lines 374, 454). Same shape as the
-/// Calendar screen's closing line, with the planner's own copy.
+/// The closing 11.5/1.5 `textFaint` line — the disclaimer, and nothing else
+/// since the Year footnote above it was deleted (mockup line 374, 06-UI-SPEC
+/// S13). Same shape as the Calendar screen's closing line, planner copy.
 class _FaintNote extends StatelessWidget {
   const _FaintNote({required this.text});
 

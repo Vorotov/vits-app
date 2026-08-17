@@ -135,17 +135,15 @@ class PlannerMonthDetail extends ConsumerWidget {
                   ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: ceiling),
                     child: Text(
-                      // The count is PRE-FORMATTED through its own plural key
-                      // and passed into the sentence (the cycleSummaryCyclic
-                      // idiom). The ONE place the limit is defined is the pure
-                      // model.
-                      l10n.monthMeta(
-                        l10n.substancesCount(rows.length),
-                        editorialLimit,
-                      ),
-                      // WRAPS rather than ellipsizes: the count and the limit
-                      // are both PLAN-04 content, and truncating either would
-                      // hide the editorial framing this card exists to carry.
+                      // The plain count, rendered DIRECTLY: the two-placeholder
+                      // sentence key that used to wrap it around a limit is
+                      // deleted rather than neutralized, because a neutralized
+                      // sentence key is an empty vessel a later editor can
+                      // refill with judgement (06-UI-SPEC D-6).
+                      l10n.substancesCount(rows.length),
+                      // WRAPS rather than ellipsizes: this is the card's only
+                      // statement of how many supplements the month carries,
+                      // and truncating a count is worse than wrapping it.
                       textAlign: TextAlign.end,
                       style: BqText.mono(
                         size: _titleSize,

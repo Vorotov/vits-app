@@ -661,7 +661,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get plannerDisclaimer =>
-      'Межа в 5 речовин — наше редакційне правило для зручності відстеження, а не медичний норматив. Освітній матеріал, не медична порада.';
+      'Планувальник показує, як ваші цикли накладаються в часі. Освітній матеріал, не медична порада.';
 
   @override
   String yearFootnote(String max) {

@@ -639,7 +639,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get plannerDisclaimer =>
-      'The 5-substance limit is our editorial rule for easier tracking, not a medical standard. Educational material, not medical advice.';
+      'The planner shows how your cycles overlap over time. Educational material, not medical advice.';
 
   @override
   String yearFootnote(String max) {
