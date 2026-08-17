@@ -1113,6 +1113,7 @@ void main() {
         usePhoneSurface(tester);
         final container = makeContainer();
         final sizes = <Size>[];
+        final rowHeights = <double>[];
         for (final scale in bqTextScaleMatrix) {
           await tester.pumpWidget(
             app(
@@ -1138,9 +1139,12 @@ void main() {
               reason: gearTapTargetReason);
           expect(tester.takeException(), isNull, reason: overflowReason);
           sizes.add(size);
+          rowHeights.add(tester.getSize(gearRow()).height);
         }
 
         expect(sizes.toSet(), hasLength(1), reason: gearGeometryReason(sizes));
+        expect(rowHeights.toSet(), hasLength(1),
+            reason: gearGeometryReason(rowHeights));
         await tearDownTree(tester, container);
       });
     }
@@ -1197,6 +1201,11 @@ Finder gearControl() => find.ancestor(
       matching: find.byType(IconButton),
     );
 
+/// The gear's own `Row` — the first one ABOVE the control, so it is the row
+/// the screen owns and never some row inside `IconButton`.
+Finder gearRow() =>
+    find.ancestor(of: gearControl(), matching: find.byType(Row)).first;
+
 /// Why the gear must not be conditional.
 const String gearPresenceReason =
     'the gear is the only way into Settings once the destination is removed '
@@ -1214,11 +1223,11 @@ const String gearTapTargetReason =
     'text scaler';
 
 /// Why the gear row's extent must not move with the text scaler.
-String gearGeometryReason(List<Size> sizes) =>
+String gearGeometryReason(Object measured) =>
     'the gear row holds NO text, so its extent is pure geometry — a '
     'scale-dependent box means something textual leaked into the row, and the '
     'D-5 argument that this header CANNOT overflow no longer holds '
-    '(measured: $sizes)';
+    '(measured: $measured)';
 
 /// Pins the shared calendar clock to a fixed UTC date-only day; overriding
 /// [TodayController.build] also means no midnight Timer and no lifecycle

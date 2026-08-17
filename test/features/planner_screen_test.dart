@@ -2996,6 +2996,7 @@ void main() {
         usePhoneSurface(tester);
         final container = makeContainer();
         final sizes = <Size>[];
+        final rowHeights = <double>[];
         for (final scale in bqTextScaleMatrix) {
           await tester.pumpWidget(
             plannerApp(
@@ -3021,9 +3022,12 @@ void main() {
               reason: gearTapTargetReason);
           expect(tester.takeException(), isNull, reason: gearOverflowReason);
           sizes.add(size);
+          rowHeights.add(tester.getSize(gearRow()).height);
         }
 
         expect(sizes.toSet(), hasLength(1), reason: gearGeometryReason(sizes));
+        expect(rowHeights.toSet(), hasLength(1),
+            reason: gearGeometryReason(rowHeights));
         await tearDownTree(tester, container);
       });
     }
@@ -3099,6 +3103,157 @@ void main() {
       await tearDownTree(tester, container);
     });
   });
+
+  // ---------------------------------------------------------------------
+  // Push/pop state preservation on the REAL shell (plan 06-02, S12,
+  // Interaction Contracts 2 and 3).
+  //
+  // The only tests in this plan that mount [AppShell]: "the tab you left is
+  // the tab you come back to" is a claim about the nav bar and the route
+  // stack, and neither exists when a screen is pumped as a bare `home`.
+  // ---------------------------------------------------------------------
+
+  group('pushing Settings from the shell preserves the selected tab', () {
+    final uk = lookupAppLocalizations(const Locale('uk'));
+
+    Widget shellApp(ProviderContainer container) {
+      return UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          locale: const Locale('uk'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: bqTheme(),
+          home: const AppShell(),
+        ),
+      );
+    }
+
+    int selectedTab(WidgetTester tester) =>
+        tester.widget<BqNavBar>(find.byType(BqNavBar)).selectedIndex;
+
+    /// The same reading, taken while the shell is offstage under the pushed
+    /// route — the only way to ask "which tab is selected" from behind a
+    /// full-screen route.
+    int selectedTabOffstage(WidgetTester tester) => tester
+        .widget<BqNavBar>(find.byType(BqNavBar, skipOffstage: false))
+        .selectedIndex;
+
+    /// The gear of the tab currently on screen.
+    ///
+    /// Scoped by hit-testability rather than by screen type: the shell is an
+    /// [IndexedStack], so EVERY tab's gear is mounted at once and an unscoped
+    /// finder is ambiguous. The one the user can actually press is the one
+    /// under test.
+    Finder visibleGear() => find
+        .ancestor(
+          of: find.byIcon(Icons.settings_outlined),
+          matching: find.byType(IconButton),
+        )
+        .hitTestable();
+
+    // Two starting destinations, so the assertion is about PRESERVING the
+    // selection and not about the default index happening to be right.
+    for (final start in const <int>[0, 1]) {
+      testWidgets(
+          'from destination $start: the gear pushes Settings over the bar and '
+          'popping returns to the SAME destination', (tester) async {
+        usePhoneSurface(tester);
+        final container = makeContainer();
+        await seed(container);
+        await tester.pumpWidget(shellApp(container));
+        await pumpUntil(
+          tester,
+          () => find.byType(BqNavBar).evaluate().isNotEmpty,
+          'the shell nav bar',
+        );
+
+        if (start != 0) {
+          // Tapped, not called: the destination the user would press is the
+          // one the rest of the case then has to preserve.
+          await tester.tap(
+            find.descendant(
+              of: find.byType(BqNavBar),
+              matching: find.text(uk.tabCalendar),
+            ),
+          );
+          for (var i = 0; i < 10; i++) {
+            await tester.pump(const Duration(milliseconds: 20));
+          }
+        }
+        expect(selectedTab(tester), start,
+            reason: 'the starting destination has to be the one the rest of '
+                'this case is about');
+
+        expect(visibleGear(), findsOneWidget,
+            reason: 'exactly one gear is pressable at a time — the one on the '
+                'tab the user is looking at');
+        // Settings is STILL a destination in this plan, so one SettingsScreen
+        // is already mounted inside the IndexedStack. The push is asserted as
+        // a DELTA rather than as a count, so this case keeps working when
+        // plan 06-03 removes the destination.
+        final mounted = find.byType(SettingsScreen).evaluate().length;
+        await tester.tap(visibleGear());
+        await pumpUntil(
+          tester,
+          () =>
+              find.byType(SettingsScreen).evaluate().length == mounted + 1 &&
+              !tester.binding.hasScheduledFrame,
+          'the pushed Settings route to finish its transition',
+        );
+
+        expect(find.byType(SettingsScreen), findsNWidgets(mounted + 1),
+            reason: 'the gear PUSHED a Settings route on top of the shell — '
+                'it did not switch to the destination that happens to hold '
+                'the same screen');
+        final route = ModalRoute.of(
+          tester.element(find.byType(SettingsScreen).last),
+        )!;
+        expect(route.isCurrent, isTrue,
+            reason: 'the pushed route is the one the user is on');
+        expect(route.opaque, isTrue,
+            reason: 'opacity is what makes it COVER the bar rather than float '
+                'over it — Settings stops being a destination in plan 06-03, '
+                'so it must not render as if it still were one');
+        expect(find.byType(BqNavBar), findsNothing,
+            reason: 'the framework itself takes the whole shell offstage under '
+                'an opaque full-screen route, and "the bar is offstage" IS '
+                'what covering it means — a route that left the bar onstage '
+                'would still advertise Settings as a destination');
+        expect(find.byType(BqNavBar, skipOffstage: false), findsOneWidget,
+            reason: 'covered, NOT unmounted: the tab and everything it holds '
+                'survive underneath, which is what makes the return trip free');
+        expect(selectedTabOffstage(tester), start,
+            reason: 'pushing a route is not a tab switch');
+
+        // `maybePop`, the same call the back control makes — the control's own
+        // activation path is proven in settings_screen_test.dart.
+        final popped = await tester
+            .state<NavigatorState>(find.byType(Navigator).first)
+            .maybePop();
+        expect(popped, isTrue,
+            reason: 'maybePop reports whether anything was popped, and a '
+                'silent false here would make every assertion below pass for '
+                'the wrong reason');
+        await pumpUntil(
+          tester,
+          () => find.byType(SettingsScreen).evaluate().length == mounted,
+          'the Settings route to finish popping',
+        );
+
+        expect(find.byType(SettingsScreen), findsNWidgets(mounted),
+            reason: 'the pushed route is gone once it is popped');
+        expect(selectedTab(tester), start,
+            reason: 'the user returns to the tab they left. A pushed route '
+                'that resets the selection sends the user back to Стек after '
+                'every visit to Settings, which is the failure this case '
+                'exists to catch (Interaction Contract 3)');
+        expect(tester.takeException(), isNull);
+
+        await tearDownTree(tester, container);
+      });
+    }
+  });
 }
 
 /// The settings gear's `IconButton`, scoped through its glyph so the finder
@@ -3107,6 +3262,11 @@ Finder gearControl() => find.ancestor(
       of: find.byIcon(Icons.settings_outlined),
       matching: find.byType(IconButton),
     );
+
+/// The gear's own `Row` — the first one ABOVE the control, so it is the row
+/// the screen owns and never some row inside `IconButton`.
+Finder gearRow() =>
+    find.ancestor(of: gearControl(), matching: find.byType(Row)).first;
 
 /// The consequence of a layout exception in the header the gear row joined.
 const String gearOverflowReason =
@@ -3132,11 +3292,11 @@ const String gearTapTargetReason =
     'text scaler';
 
 /// Why the gear row's extent must not move with the text scaler.
-String gearGeometryReason(List<Size> sizes) =>
+String gearGeometryReason(Object measured) =>
     'the gear row holds NO text, so its extent is pure geometry — a '
     'scale-dependent box means something textual leaked into the row, and the '
     'D-5 argument that this header CANNOT overflow no longer holds '
-    '(measured: $sizes)';
+    '(measured: $measured)';
 
 /// Pins `todayProvider` to a fixed calendar day.
 class _FixedToday extends TodayController {
