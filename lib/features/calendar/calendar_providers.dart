@@ -1,7 +1,7 @@
 /// Screen-scoped calendar state (plan 03-01, P-3, D-23).
 ///
 /// autoDispose here is the screen-scoped half of the D-23 dispose policy
-/// recorded in `core/providers.dart`: this is Calendar-tab state, not
+/// recorded in `core/providers.dart`: this is Сьогодні-tab state, not
 /// app-lifetime state (the clock itself lives in `core/today_controller.dart`).
 library;
 
@@ -29,7 +29,7 @@ class SelectedDayController extends Notifier<DateTime?> {
 
 /// Calendar day selection; autoDispose per D-23 (screen-scoped state).
 ///
-/// Note the shell keeps the Calendar screen mounted on every tab, so this
+/// Note the shell keeps the Сьогодні screen mounted on every tab, so this
 /// never actually disposes while the app is running (WR-05) — the browsed day
 /// therefore survives a tab round trip, which is the behavior the user expects
 /// anyway.
@@ -38,7 +38,7 @@ final selectedDayProvider =
   SelectedDayController.new,
 );
 
-/// The day the Calendar tab currently renders: the explicit selection, or
+/// The day the Сьогодні tab currently renders: the explicit selection, or
 /// today when following.
 ///
 /// Every `dayDosesProvider` key in the app originates here (or, from plan
@@ -49,38 +49,6 @@ final resolvedDayProvider = Provider.autoDispose<DateTime>(
   (ref) => ref.watch(selectedDayProvider) ?? ref.watch(todayProvider),
 );
 
-/// Which page the Calendar tab currently renders (DECIDED-1).
-///
-/// The planner is a second PAGE inside this tab, never a pushed route: the app
-/// shell is an `IndexedStack` and a root-level push would cover the
-/// `NavigationBar` that the mockup deliberately keeps visible on both planner
-/// screens.
-enum CalendarPage { today, planner }
-
-/// The Calendar tab's page swap (DECIDED-1).
-///
-/// autoDispose per D-23 (Calendar-tab state). As with [selectedDayProvider],
-/// the shell keeps the Calendar screen mounted on every tab, so this never
-/// actually disposes while the app runs (WR-05) — the page therefore survives
-/// a tab round trip.
-class CalendarPageController extends Notifier<CalendarPage> {
-  @override
-  CalendarPage build() => CalendarPage.today;
-
-  /// Opens the planner page.
-  void showPlanner() => state = CalendarPage.planner;
-
-  /// Returns to the Today page — the target of both the planner's back control
-  /// and the system back gesture.
-  void showToday() => state = CalendarPage.today;
-}
-
-/// The Calendar tab's current page; autoDispose per D-23.
-final calendarPageProvider =
-    NotifierProvider.autoDispose<CalendarPageController, CalendarPage>(
-  CalendarPageController.new,
-);
-
 /// Minutes elapsed since LOCAL midnight, re-emitted once a minute (P-5).
 ///
 /// This is the second and last sanctioned clock read in the app: the calendar
@@ -89,7 +57,7 @@ final calendarPageProvider =
 /// path can derive "which day it is" from it.
 ///
 /// Calendar-scoped, therefore autoDispose (D-23). autoDispose alone does NOT
-/// make that true under the app shell: `IndexedStack` keeps the Calendar screen
+/// make that true under the app shell: `IndexedStack` keeps the Сьогодні screen
 /// mounted on every tab, so a provider watched unconditionally in `build` would
 /// live from app launch forever (WR-05). What actually cancels the periodic
 /// subscription is the screen's `TickerMode` gate — `_DayBody` stops watching

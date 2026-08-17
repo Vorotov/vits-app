@@ -110,17 +110,23 @@ abstract class AppLocalizations {
   /// **'Stack'**
   String get tabStack;
 
-  /// Bottom navigation tab label for the calendar screen
+  /// Bottom navigation destination label for the Сьогодні tab, which holds today's doses and the week strip. A DISTINCT key from `backToToday`, the Today header's escape-hatch control: the two strings coincide in Ukrainian today and are unrelated, so collapsing them would make a future locale wrong
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get tabToday;
+
+  /// Bottom navigation destination label for the Календар tab, which holds the Цикли/Рік planner
   ///
   /// In en, this message translates to:
   /// **'Calendar'**
   String get tabCalendar;
 
-  /// Bottom navigation tab label for the settings screen
+  /// ONE key, TWO placements (D-3): the settings gear's accessibility label on every bar-reachable screen, and the title of the Settings screen the gear pushes — so the control and its destination can never disagree. Settings is no longer a nav destination, which is why this key is no longer named after one
   ///
   /// In en, this message translates to:
   /// **'Settings'**
-  String get tabSettings;
+  String get settingsTitle;
 
   /// Accessibility label on the back control of the pushed Settings route. Never painted: the control is an icon-only chevron, so this string exists only for screen readers
   ///
@@ -806,7 +812,7 @@ abstract class AppLocalizations {
   /// **'This schedule is built from your own entries. Educational material, not medical advice.'**
   String get calendarDisclaimer;
 
-  /// ONE key, TWO placements (04-UI-SPEC Copywriting Contract): the planner screen's own title (mockup line 287) and the Calendar header's entry button. Sharing the key is deliberate — the button always names its destination exactly, the same convention `backToToday` follows. Verb-free by design; never 'Open planner'
+  /// The planner screen's own title (mockup line 287) — its only placement since phase 06 deleted the Calendar header's entry button along with the page swap; the planner is reached by its own nav destination now, whose label is `tabCalendar`. Verb-free by design; never 'Open planner'
   ///
   /// In en, this message translates to:
   /// **'Planner'**

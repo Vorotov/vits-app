@@ -81,7 +81,7 @@ class StackScreen extends ConsumerWidget {
                   // One key, two placements: this label and the Settings screen
                   // title, so the control and its destination can never
                   // disagree.
-                  label: l10n.tabSettings,
+                  label: l10n.settingsTitle,
                   excludeSemantics: true,
                   // The action lives on THIS node, not only on the IconButton
                   // below it: `excludeSemantics: true` drops every descendant

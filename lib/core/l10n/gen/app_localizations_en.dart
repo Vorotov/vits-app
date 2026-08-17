@@ -16,10 +16,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tabStack => 'Stack';
 
   @override
+  String get tabToday => 'Today';
+
+  @override
   String get tabCalendar => 'Calendar';
 
   @override
-  String get tabSettings => 'Settings';
+  String get settingsTitle => 'Settings';
 
   @override
   String get navBack => 'Back';

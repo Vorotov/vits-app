@@ -16,8 +16,13 @@ import 'package:boostque/main.dart';
 
 import '../support/locale_matrix.dart';
 
-/// D-27: the shell renders localized tab labels in en and uk, switches tabs,
-/// and produces no overflow with the longest uk label ("Налаштування").
+/// D-27: the shell renders localized destination labels in en and uk, switches
+/// tabs, and produces no overflow at any scale.
+///
+/// Plan 06-03: the destinations are Стек / Сьогодні / Календар. Settings is a
+/// route pushed by the gear, not a destination (NAV-02, NAV-03), which is
+/// asserted here as an ABSENCE — a bar that merely renders the three expected
+/// labels would still pass with a fourth destination beside them.
 ///
 /// Since plan 02-01 the Stack tab watches [stackEntriesProvider], so every
 /// shell test overrides [dbProvider] with an in-memory database (D-19) and
@@ -105,31 +110,35 @@ void main() {
     await tester.pumpWidget(scoped(const BoostqueApp()));
     await tester.pumpAndSettle();
 
-    // Three en tab labels present; initial tab shows the Stack screen
+    // Three en destination labels present; initial tab shows the Stack screen
     // heading (stackTitle, since plan 02-01).
     expect(find.text('Stack'), findsOneWidget);
     expect(find.text('My stack'), findsOneWidget);
+    expect(find.text('Today'), findsOneWidget);
     expect(find.text('Calendar'), findsOneWidget);
-    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Settings'), findsNothing,
+        reason: 'Settings is a pushed route behind the gear since plan 06-03, '
+            'never a destination — its title must not be in the bar');
 
-    // Switch to Settings: its heading appears (2 widgets), Stack heading
-    // hidden again (tab label only).
-    await tester.tap(find.text('Settings'));
+    // Switch to Календар: the planner's own heading appears, the Stack
+    // heading goes offstage with its tab.
+    await tester.tap(find.text('Calendar'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Settings'), findsNWidgets(2));
+    expect(find.text('Planner'), findsOneWidget);
     expect(find.text('Stack'), findsOneWidget);
     expect(find.text('My stack'), findsNothing);
 
     await flushTearDown(tester);
   });
 
-  testWidgets('uk: the minute ticker runs only while the Calendar tab is the '
+  testWidgets('uk: the minute ticker runs only while the Сьогодні tab is the '
       'visible one (WR-05)', (tester) async {
     final container = ProviderContainer(overrides: [
-      // AppShell mounts the Settings tab even while the Stack tab is visible
-      // (IndexedStack), and its language picker reaches LocaleController —
-      // so this container needs the prefs seed too (P-4 Option A).
+      // AppShell mounts every destination even while the Stack tab is visible
+      // (IndexedStack), and the pushed Settings screen's language picker
+      // reaches LocaleController — so this container needs the prefs seed too
+      // (P-4 Option A).
       sharedPreferencesProvider.overrideWithValue(prefs),
       dbProvider.overrideWith((ref) {
         final db = BoostqueDb.forTesting(NativeDatabase.memory());
@@ -146,16 +155,17 @@ void main() {
     }
 
     expect(container.exists(nowMinutesProvider), isFalse,
-        reason: 'the app opens on the Stack tab — an IndexedStack mounts the '
-            'Calendar too, but no periodic clock may run for it');
+        reason: 'the app opens on the Stack tab — an IndexedStack mounts '
+            'Сьогодні too, but no periodic clock may run for it');
 
-    await tester.tap(find.text('Календар'));
+    await tester.tap(find.text('Сьогодні'));
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 20));
     }
     expect(container.exists(nowMinutesProvider), isTrue,
-        reason: 'the visible calendar needs the minute of day for its current '
-            'block and overdue treatments');
+        reason: 'the visible Сьогодні tab needs the minute of day for its '
+            'current block and overdue treatments — the ticker gate moved '
+            'with the page into today_screen.dart (plan 06-03)');
 
     await tester.tap(find.text('Стек'));
     for (var i = 0; i < 10; i++) {
@@ -169,17 +179,23 @@ void main() {
     await tester.pump(const Duration(milliseconds: 10));
   });
 
-  testWidgets('uk: switching to Settings renders heading without overflow',
-      (tester) async {
+  testWidgets('uk: the gear pushes Settings and its heading renders without '
+      'overflow', (tester) async {
     await tester.pumpWidget(shellApp(locale: 'uk'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Налаштування'));
+    // Settings is reached by the gear now, not by a destination (NAV-03), so
+    // the only 'Налаштування' on screen beforehand is the gear's semantics
+    // label — never painted text.
+    expect(find.text('Налаштування'), findsNothing,
+        reason: 'no settings destination remains in the bar');
+
+    await tester.tap(find.byIcon(Icons.settings_outlined));
     await tester.pumpAndSettle();
 
-    // E2 overflow truth: uk heading renders twice (tab label + heading),
-    // no exception thrown.
-    expect(find.text('Налаштування'), findsNWidgets(2));
+    // E2 overflow truth: the uk heading renders once — the pushed screen's
+    // title — and no exception is thrown.
+    expect(find.text('Налаштування'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
     await flushTearDown(tester);
@@ -237,6 +253,50 @@ void main() {
     await flushTearDown(tester);
   });
 
+  testWidgets(
+      'the bar renders EXACTLY three destinations and the settings title '
+      'resolves zero times inside it (NAV-02, NAV-03)', (tester) async {
+    for (final locale in const ['uk', 'en']) {
+      final l10n = lookupAppLocalizations(Locale(locale));
+      await tester.pumpWidget(shellApp(locale: locale));
+      await pumpFrames(tester);
+
+      final bar = find.byType(BqNavBar);
+      expect(
+        tester.widget<BqNavBar>(bar).destinations.length,
+        3,
+        reason: '$locale: three destinations, no more. Counting the widget\'s '
+            'own list rather than its labels is what makes a FOURTH '
+            'destination fail here — a set of present-label assertions '
+            'passes happily beside one',
+      );
+
+      // The absence, asserted directly. A test that only checks the three
+      // expected labels are present would still pass with Settings sitting
+      // beside them, which is exactly the state this plan removed.
+      expect(
+        find.descendant(of: bar, matching: find.text(l10n.settingsTitle)),
+        findsNothing,
+        reason: '$locale: Settings is reached by the gear, never by the bar '
+            '(NAV-03). This is the assertion the acceptance criterion asks '
+            'for by name: the settings title resolves ZERO times inside the '
+            'bar\'s subtree',
+      );
+      expect(
+        tester
+            .widget<BqNavBar>(bar)
+            .destinations
+            .map((d) => d.label)
+            .toList(),
+        [l10n.tabStack, l10n.tabToday, l10n.tabCalendar],
+        reason: '$locale: in order — Стек, Сьогодні, Календар — because the '
+            'index-to-screen mapping in the IndexedStack is positional',
+      );
+
+      await flushTearDown(tester);
+    }
+  });
+
   testWidgets('uk: the bar is the hand-built BqNavBar at its computed extent',
       (tester) async {
     await tester.pumpWidget(shellApp(locale: 'uk'));
@@ -285,8 +345,8 @@ void main() {
           // differ between uk and en, so a shell that fell back to the other
           // language fails here rather than passing on a bare render.
           expect(find.text(l10n.tabStack), findsOneWidget);
+          expect(find.text(l10n.tabToday), findsOneWidget);
           expect(find.text(l10n.tabCalendar), findsOneWidget);
-          expect(find.text(l10n.tabSettings), findsOneWidget);
           expect(find.text(l10n.stackTitle), findsOneWidget,
               reason: 'the Stack tab is the one the app opens on, so its '
                   'heading is part of the shell frame the user first reads');

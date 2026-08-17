@@ -1,4 +1,5 @@
-/// Widget tests for the Calendar tracer slice (plan 03-01, Task 1).
+/// Widget tests for the Сьогодні screen (plan 03-01 Task 1's tracer slice,
+/// promoted out of the deleted Calendar screen in plan 06-03).
 ///
 /// Harness: real in-memory Drift database behind the repository providers
 /// (Phase-1/2 pattern, same as stack_screen_test.dart), locale uk, 390x844
@@ -38,7 +39,7 @@ import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
-import 'package:boostque/features/calendar/calendar_screen.dart';
+import 'package:boostque/features/calendar/today_screen.dart';
 import 'package:boostque/features/calendar/day_block_section.dart';
 import 'package:boostque/features/calendar/day_progress_ring.dart';
 import 'package:boostque/features/calendar/dose_row.dart';
@@ -116,7 +117,7 @@ void main() {
     ProviderContainer container, {
     String locale = 'uk',
     TextScaler textScaler = TextScaler.noScaling,
-    Widget home = const CalendarScreen(),
+    Widget home = const TodayScreen(),
   }) {
     return UncontrolledProviderScope(
       container: container,
@@ -3105,7 +3106,7 @@ void main() {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             theme: bqTheme(),
-            home: const CalendarScreen(),
+            home: const TodayScreen(),
           ),
         ),
       );
@@ -3435,7 +3436,7 @@ void main() {
           expect(find.byIcon(Icons.settings), findsNothing,
               reason: 'the FILLED glyph expresses a selected state, and the '
                   'gear has none — it is a control, not a destination');
-          expect(find.bySemanticsLabel(l10n.tabSettings), findsOneWidget,
+          expect(find.bySemanticsLabel(l10n.settingsTitle), findsOneWidget,
               reason: 'the gear is icon-only, so the ARB label is the only '
                   'thing a screen-reader user has — and it follows the active '
                   'language like every other string');
@@ -3521,7 +3522,7 @@ void main() {
 
       expect(
         tester
-            .getSemantics(find.bySemanticsLabel(l10n.tabSettings))
+            .getSemantics(find.bySemanticsLabel(l10n.settingsTitle))
             .getSemanticsData()
             .hasAction(SemanticsAction.tap),
         isTrue,
@@ -3533,7 +3534,7 @@ void main() {
 
       // Assistive technology does not tap widgets. It activates actions.
       tester.semantics.performAction(
-        find.semantics.byLabel(l10n.tabSettings),
+        find.semantics.byLabel(l10n.settingsTitle),
         SemanticsAction.tap,
       );
       for (var i = 0; i < 20; i++) {
@@ -3544,7 +3545,7 @@ void main() {
           reason: 'the gear pushes Settings as a full-screen route; a control '
               'that announces itself and navigates nowhere is worse than no '
               'control at all');
-      expect(find.byType(CalendarScreen), findsOneWidget,
+      expect(find.byType(TodayScreen), findsOneWidget,
           reason: 'a PUSH, not a replacement: the tab underneath stays '
               'mounted, which is what keeps the browsed day and the selected '
               'destination intact across the return trip');

@@ -1,13 +1,6 @@
-/// Calendar tab — the Today screen's permanent frame (UI-SPEC S4), plus the
-/// planner page swapped in over it (plan 04-01, DECIDED-1).
+/// Сьогодні — the Today screen (mockup screen 02, UI-SPEC S4).
 ///
-/// This file owns the whole page swap: `calendarPageProvider` decides which
-/// page renders, the header's action `Wrap` opens the planner, and a
-/// `PopScope` sends system back to Today. `PlannerScreen` itself is
-/// navigation-agnostic, so moving to a nested `Navigator` later touches only
-/// this file (UI-SPEC S4-amendment).
-///
-/// Structure of the Today page, and who owns each region:
+/// Structure, and who owns each region:
 /// - fixed header (plan 03-03): title, locale-formatted subtitle, the
 ///   `backToToday` escape hatch, and [DayProgressRing] on the end side. It
 ///   lives OUTSIDE the scroll view, so it never scrolls away.
@@ -46,7 +39,6 @@ import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/day_block_section.dart';
 import 'package:boostque/features/calendar/day_progress_ring.dart';
 import 'package:boostque/features/calendar/day_view_model.dart';
-import 'package:boostque/features/calendar/planner_screen.dart';
 import 'package:boostque/features/calendar/week_strip.dart';
 import 'package:boostque/features/settings/settings_screen.dart';
 
@@ -63,38 +55,9 @@ void _openSettings(BuildContext context) => Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
     );
 
-/// The Calendar tab: the Today page, or the planner page swapped in over it
-/// (DECIDED-1).
-///
-/// A page SWAP, not a `Navigator.push`: the app shell is an `IndexedStack` and
-/// a root-level push would cover the `NavigationBar` the mockup deliberately
-/// keeps visible on both planner screens. System back returns to Today rather
-/// than leaving the tab.
-class CalendarScreen extends ConsumerWidget {
-  const CalendarScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (ref.watch(calendarPageProvider) == CalendarPage.planner) {
-      return PopScope(
-        // The pop is intercepted rather than allowed: there is no route to pop
-        // here, so letting it through would leave the Calendar tab (or the
-        // app) instead of returning to Today.
-        canPop: false,
-        onPopInvokedWithResult: (didPop, _) {
-          if (didPop) return;
-          ref.read(calendarPageProvider.notifier).showToday();
-        },
-        child: const PlannerScreen(),
-      );
-    }
-    return const _TodayPage();
-  }
-}
-
-/// The Today page ("Сьогодні", mockup screen 02, UI-SPEC S4).
-class _TodayPage extends ConsumerWidget {
-  const _TodayPage();
+/// The Today screen ("Сьогодні", mockup screen 02, UI-SPEC S4).
+class TodayScreen extends ConsumerWidget {
+  const TodayScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -197,7 +160,7 @@ class _Header extends ConsumerWidget {
                 button: true,
                 // One key, two placements: this label and the Settings screen
                 // title, so the control and its destination can never disagree.
-                label: l10n.tabSettings,
+                label: l10n.settingsTitle,
                 excludeSemantics: true,
                 // The action lives on THIS node, not only on the IconButton
                 // below it: `excludeSemantics: true` drops every descendant
@@ -247,32 +210,19 @@ class _Header extends ConsumerWidget {
                           ?.copyWith(color: BqColors.textMuted),
                     ),
                     const SizedBox(height: BqSpace.sm),
-                    // A Wrap, NOT a Row: at textScaler 2.0 the two uk labels
-                    // ("Планувальник", "Сьогодні") do not fit one line, and a
-                    // Row would overflow exactly as the header did in WR-04.
-                    // The header's title ROW above is left structurally
+                    // A Wrap, NOT a Row: it holds text actions whose uk labels
+                    // do not fit one line at textScaler 2.0, and a Row would
+                    // overflow exactly as the header did in WR-04. It stays a
+                    // Wrap after the planner-entry action was deleted with the
+                    // page swap: `backToToday` alone is one label today, but a
+                    // Row here is a trap re-armed by the next action anyone
+                    // adds. The header's title ROW above is left structurally
                     // untouched for the same reason — it never gains a third
                     // non-flexible child.
                     Wrap(
                       spacing: BqSpace.sm,
                       runSpacing: BqSpace.sm,
                       children: [
-                        // Named for its destination, not its effect — the same
-                        // key labels the planner's own title, so the button
-                        // always names where it goes (UI-SPEC Copywriting
-                        // Contract).
-                        TextButton(
-                          onPressed: () => ref
-                              .read(calendarPageProvider.notifier)
-                              .showPlanner(),
-                          child: Text(
-                            l10n.plannerTitle,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: BqColors.accent,
-                            ),
-                          ),
-                        ),
                         // Named for its destination, not its effect — same
                         // word as the title by design (UI-SPEC Copywriting
                         // Contract).
@@ -387,7 +337,7 @@ class _DayBodyState extends ConsumerState<_DayBody> {
   Widget build(BuildContext context) {
     // The shell keeps this screen mounted on every tab (IndexedStack), so
     // "watched" is not the same as "looked at". TickerMode carries the shell's
-    // answer: while the Calendar tab is offstage the ticker is not watched, so
+    // answer: while the Сьогодні tab is offstage the ticker is not watched, so
     // the autoDispose StreamProvider tears its periodic timer down and the day
     // list stops rebuilding once a minute for nobody (WR-05). The last minute
     // stays cached, and re-entering the tab re-subscribes with an immediate
