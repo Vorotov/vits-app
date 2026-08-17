@@ -1,4 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The ONLY permission this app declares. It lets
+         ScheduledNotificationBootReceiver re-arm pending dose reminders after a
+         reboot; without it reminders silently stop at the first restart.
+
+         Deliberately NOT declared here, and asserted absent by
+         test/platform_config_test.dart: the two notification permissions the
+         plugin's own manifest already supplies (they arrive at merge time), and
+         any exact-alarm permission — the scheduling mode this app uses needs no
+         permission whatsoever, and a privileged one would break the milestone's
+         "no privileged permission" property. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <application
         android:label="boostque"
         android:name="${applicationName}"
@@ -30,6 +41,26 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- flutter_local_notifications' two receivers. These are NOT optional
+             hardening: without the first the plugin cannot fire a scheduled
+             notification at all, and without the second nothing is re-armed
+             after a reboot or an app update. Nothing in the Dart suite can see
+             their absence, which is why platform_config_test.dart asserts both
+             by class name, together with exported="false" on each — neither is
+             ever launched by another app. -->
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver
+            android:exported="false"
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

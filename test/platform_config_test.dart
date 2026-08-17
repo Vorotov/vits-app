@@ -119,6 +119,169 @@ void main() {
     });
   });
 
+  group('NOTIF-02 — the notification platform config, asserted in both directions',
+      () {
+    // Reads the DECLARED permission set of our own main manifest. That is the
+    // only set this repository controls: the merged release manifest also holds
+    // POST_NOTIFICATIONS and VIBRATE, which arrive from the plugin's own
+    // manifest at merge time (measured by building the app twice, 07-RESEARCH
+    // §3.3). Asserting the declared set by EQUALITY is the point — a
+    // forbidden-list `contains` check passes happily the day a merge into our
+    // own file introduces a permission nobody listed.
+    Set<String> declaredPermissions(String variant) {
+      final file = File('android/app/src/$variant/AndroidManifest.xml');
+      if (!file.existsSync()) return const <String>{};
+      final xml = _stripXmlComments(file.readAsStringSync());
+      return RegExp(r'<uses-permission\s+android:name="([^"]+)"')
+          .allMatches(xml)
+          .map((m) => m.group(1)!)
+          .toSet();
+    }
+
+    test('the main manifest declares EXACTLY the boot-completed permission', () {
+      expect(
+        declaredPermissions('main'),
+        <String>{'android.permission.RECEIVE_BOOT_COMPLETED'},
+        reason:
+            'android/app/src/main/AndroidManifest.xml must declare exactly one '
+            'permission: RECEIVE_BOOT_COMPLETED, so the plugin can re-arm dose '
+            'reminders after a reboot. The two notification permissions arrive '
+            'from the plugin\'s own manifest at merge time and must NOT be '
+            'declared here; nothing else may be added at all.',
+      );
+    });
+
+    test('no privileged or network permission is declared, by name', () {
+      // Named individually so a failure reports the specific policy problem
+      // rather than only a set mismatch.
+      const forbidden = <String, String>{
+        'android.permission.SCHEDULE_EXACT_ALARM':
+            'exact alarms are a Play-policy landmine and the scheduling mode '
+                'this app uses (inexactAllowWhileIdle) needs no permission',
+        'android.permission.USE_EXACT_ALARM': 'same, and this one is the '
+            'restricted variant that requires a policy declaration',
+        'android.permission.INTERNET':
+            'the release build is fully offline; INTERNET belongs to the debug '
+                'manifest only',
+        'android.permission.ACCESS_NETWORK_STATE': 'the app makes no network '
+            'requests at all',
+        'android.permission.USE_FULL_SCREEN_INTENT':
+            'a dose reminder is not an alarm clock and this permission is '
+                'review-gated',
+        'android.permission.ACCESS_NOTIFICATION_POLICY':
+            'the app never overrides Do Not Disturb',
+        'android.permission.POST_NOTIFICATIONS':
+            'supplied by the plugin\'s own manifest — declaring it here would '
+                'duplicate it in the file this gate protects',
+        'android.permission.VIBRATE': 'supplied by the plugin\'s own manifest',
+      };
+      final declared = declaredPermissions('main');
+      for (final entry in forbidden.entries) {
+        expect(
+          declared.contains(entry.key),
+          isFalse,
+          reason: 'android/app/src/main/AndroidManifest.xml declares '
+              '${entry.key} — ${entry.value}.',
+        );
+      }
+    });
+
+    test('INTERNET stays debug-only, which is what keeps the release build offline',
+        () {
+      expect(
+        declaredPermissions('debug'),
+        contains('android.permission.INTERNET'),
+        reason: 'the debug manifest must keep its own INTERNET permission — the '
+            'Flutter tool needs it for hot reload.',
+      );
+      expect(
+        declaredPermissions('main'),
+        isNot(contains('android.permission.INTERNET')),
+        reason: 'INTERNET in the main manifest would ship in the release '
+            'build, breaking the fully-offline property.',
+      );
+    });
+
+    test('both plugin receivers are declared, non-exported', () {
+      final xml = _stripXmlComments(
+        File('android/app/src/main/AndroidManifest.xml').readAsStringSync(),
+      );
+      for (final receiver in const [
+        'com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver',
+        'com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver',
+      ]) {
+        expect(
+          xml.contains('android:name="$receiver"'),
+          isTrue,
+          reason: 'android/app/src/main/AndroidManifest.xml no longer declares '
+              '$receiver. Without it scheduled dose reminders never fire (or '
+              'never survive a reboot) and NOTHING in the Dart suite can see '
+              'it — a manifest tidy-up breaks scheduling with no other symptom.',
+        );
+      }
+      // Every declared receiver must be non-exported: neither is ever launched
+      // by another app, and an exported one is a free entry point into the
+      // notification machinery.
+      final receiverBlocks =
+          RegExp(r'<receiver[\s\S]*?(?:/>|</receiver>)').allMatches(xml);
+      expect(receiverBlocks.length, 2,
+          reason: 'expected exactly the two plugin receivers.');
+      for (final block in receiverBlocks) {
+        expect(
+          block.group(0)!.contains('android:exported="false"'),
+          isTrue,
+          reason: 'a <receiver> in the main manifest is not '
+              'android:exported="false": ${block.group(0)}',
+        );
+      }
+    });
+
+    test('core-library desugaring is enabled and its runtime declared', () {
+      final gradle = _stripCodeComments(
+        File('android/app/build.gradle.kts').readAsStringSync(),
+      );
+      expect(
+        gradle.contains('isCoreLibraryDesugaringEnabled = true'),
+        isTrue,
+        reason: 'android/app/build.gradle.kts no longer enables core-library '
+            'desugaring. flutter_local_notifications requires it and the '
+            'Android build FAILS outright without it — this assertion turns '
+            '"the build broke mysteriously after a Gradle edit" into a named '
+            'test failure.',
+      );
+      expect(
+        gradle.contains('coreLibraryDesugaring("com.android.tools:desugar_jdk_libs'),
+        isTrue,
+        reason: 'the desugar_jdk_libs runtime is no longer declared in the '
+            'top-level dependencies block of android/app/build.gradle.kts; '
+            'enabling the flag without the library does not build.',
+      );
+    });
+
+    test('the iOS notification-centre delegate is wired, and Info.plist stays bare',
+        () {
+      final appDelegate = _stripCodeComments(
+        File('ios/Runner/AppDelegate.swift').readAsStringSync(),
+      );
+      expect(
+        appDelegate.contains('UNUserNotificationCenter.current().delegate'),
+        isTrue,
+        reason: 'ios/Runner/AppDelegate.swift no longer sets the '
+            'UNUserNotificationCenter delegate. Without it neither foreground '
+            'presentation nor the notification tap callback works on iOS.',
+      );
+      final plist = File('ios/Runner/Info.plist').readAsStringSync();
+      expect(
+        plist.contains('UIBackgroundModes'),
+        isFalse,
+        reason: 'ios/Runner/Info.plist declares UIBackgroundModes. Local '
+            'notifications need no background mode, no entitlement and no '
+            'Info.plist key at all; adding one defensively asks the user (and '
+            'App Review) for capability the app does not use.',
+      );
+    });
+  });
+
   group('release signing — pre-release blocker, asserted so it cannot be forgotten',
       () {
     test('records that release builds still use the debug keystore', () {
