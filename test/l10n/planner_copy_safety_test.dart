@@ -34,14 +34,14 @@ import 'package:boostque/core/l10n/gen/app_localizations.dart';
 /// and the gate would be deleted as noisy — which is precisely how a real gate
 /// stops protecting anything.
 ///
-/// **Phase 06 widened this list and did NOT shrink it (PLAN-05).** The four
-/// Ukrainian limit stems joined it because the planner no longer HAS a limit:
-/// there is no verdict, no badge, no reference line and no threshold colour
-/// left for copy to name, so a sentence naming one describes a product that
-/// does not exist. `норма` moved here out of the deleted negation exemption —
-/// the rewritten disclaimer denies nothing, so nothing needs permission to say
-/// it. The fat-soluble pair stays even though the sentence it guarded is
-/// deleted: the guarantee outlives the sentence it was attached to.
+/// **Phase 06 widened this list and did NOT shrink it (PLAN-05).** The limit
+/// stems of [limitVocabulary] are spread in at the end because the planner no
+/// longer HAS a limit: there is no verdict, no badge, no reference line and no
+/// threshold colour left for copy to name, so a sentence naming one describes a
+/// product that does not exist. `норма` moved here out of the deleted negation
+/// exemption — the rewritten disclaimer denies nothing, so nothing needs
+/// permission to say it. The fat-soluble pair stays even though the sentence it
+/// guarded is deleted: the guarantee outlives the sentence it was attached to.
 const forbiddenVocabulary = <String>[
   // uk — 04-UI-SPEC
   'безпечн', // безпечна / безпечну / безпечний норма
@@ -51,23 +51,46 @@ const forbiddenVocabulary = <String>[
   'жиророзчин', // M2: the truncated over-limit clause never returns
   'Зсунути', // M3, capitalized: the button label, not the verb in a sentence
   'Порівняти', // M3, capitalized: idem
-  // uk — 06-UI-SPEC, PLAN-05: the limit vocabulary itself
-  'межа', // «межа 5», the deleted limit badge
-  'меж', // межі / межу / перевищення межі — every declined form
-  'перевищ', // перевищення / перевищує
-  'норма', // норма / норматив — no longer exempt anywhere
   // en — the same claims, translated
   'overdose',
   'fat-soluble',
   'Shift cycle',
   'Compare weeks',
   'medical standard',
+  // 06-UI-SPEC, PLAN-05: the limit vocabulary itself, SPREAD rather than
+  // re-typed. The doc on [limitVocabulary] calls itself a subset of this list;
+  // spreading is what makes that structurally true instead of a claim two
+  // literals have to keep agreeing on.
+  ...limitVocabulary,
 ];
 
-/// The PLAN-05 subset of [forbiddenVocabulary], named on its own so the
-/// absence of limit vocabulary is a stated guarantee rather than four entries
-/// buried in a longer list.
-const limitVocabulary = <String>['межа', 'меж', 'перевищ', 'норма'];
+/// The PLAN-05 subset of [forbiddenVocabulary], named on its own so the absence
+/// of limit vocabulary is a stated guarantee rather than entries buried in a
+/// longer list.
+///
+/// **BOTH locales, because the gate loops over both.** This list held only
+/// Ukrainian stems while the loop that reads it ran over uk AND en, so English
+/// limit copy was completely unenforced: an en string reading "over your limit"
+/// or "exceeds the threshold" would have shipped green. `forbiddenVocabulary`'s
+/// own English entries are about overdose and medical claims, none of which is
+/// limit vocabulary, so nothing else covered it either.
+///
+/// The English stems are the same four ideas the Ukrainian ones cover — a
+/// boundary, crossing it, the boundary's technical name, and the verdict a
+/// reader would draw — not a translation word for word.
+const limitVocabulary = <String>[
+  // uk
+  'меж', // межа / межі / межу / перевищення межі — every declined form
+  'перевищ', // перевищення / перевищує
+  'норма', // норма / норматив — no longer exempt anywhere
+  // en
+  'limit', // limit / limits / limited / unlimited
+  'exceed', // exceed / exceeds / exceeded
+  'threshold',
+  'maximum', // deliberately not 'max': "max" is a substring of nothing here
+  // today, but it is one keystroke from matching a supplement's dose text
+  'too many', // the verdict a limit invites, with no limit named
+];
 
 /// True when [value] contains [term], case-sensitively for a capitalized term
 /// and case-insensitively otherwise.
