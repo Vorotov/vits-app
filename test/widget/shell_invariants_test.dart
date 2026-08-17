@@ -73,9 +73,32 @@ void main() {
           'CalendarPageController)',
       'calendarPageProvider': 'the page-swap provider — the single piece of '
           'state the whole deleted mechanism turned on',
-      'PopScope': 'the back-interception. System back on a tab must behave '
-          'exactly as it does in any single-screen app: it leaves. A PopScope '
-          'anywhere in lib/ means something started intercepting it again',
+      // SCOPE IS DELIBERATELY APP-WIDE, and the reason has to say so (IN-03).
+      // The mechanism this entry was written for was the shell's — but the
+      // scan is every file under lib/, and narrowing the needle to
+      // app_shell.dart / today_screen.dart / planner_screen.dart would make
+      // the gate blind to the reintroduction path most likely to escape
+      // review: a NEW file (a route wrapper, a router, a fresh screen). The
+      // breadth is the value. What was wrong was a shell-specific reason
+      // printed by an app-wide check, so a future editor guard would have
+      // tripped a gate whose message described a page swap that no longer
+      // exists.
+      //
+      // There is deliberately no allowlist constant sitting here empty: this
+      // codebase's own position (planner_copy_safety_test.dart) is that an
+      // unused permission is an invitation. A future editor who genuinely
+      // needs an unsaved-changes guard adds the mechanism AND states the
+      // reason, as a decision — not by filling in a slot someone left open.
+      'PopScope': 'the back-interception, forbidden EVERYWHERE under lib/ and '
+          'not only in the shell. System back on a tab must behave exactly as '
+          'it does in any single-screen app: it leaves (NAV-03, Interaction '
+          'Contract 10), and the page-swap PopScope that used to intercept it '
+          'is deleted. No PopScope may exist today. If a future screen has a '
+          'legitimate need — an unsaved-changes guard on the regimen editor is '
+          'the likely one — the fix is NOT to delete this gate or to relax it '
+          'to the shell: add that file to an allowlist here together with a '
+          'stated reason, so the exemption is a recorded decision and every '
+          'OTHER file stays covered',
       'tabSettings': 'the old ARB key name. Settings is not a destination, so '
           'a key named after one lies; it was renamed settingsTitle, and a '
           'surviving reference means gen-l10n was not re-run or a call site '
