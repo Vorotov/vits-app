@@ -1,8 +1,10 @@
-/// Which dose reminders should exist — the whole correctness surface of Phase 7
-/// (NOTIF-01, NOTIF-02's budget half).
+/// Which dose reminders should exist, and what must change for the platform to
+/// be holding them — the whole correctness surface of Phase 7 (NOTIF-01,
+/// NOTIF-02's budget half, NOTIF-04).
 ///
 /// Pure, in the `planner_view_model.dart` sense: this library imports the two
-/// pure domain libraries and the notification constants, and nothing else. No
+/// pure domain libraries and the seam's pending-request value type, and nothing
+/// else — and each of those three is itself import-free or domain-only. No
 /// timezone, no plugin, no Flutter, no clock. `today` and the current minute of
 /// day both arrive as parameters, which is what lets the "a slot exactly at now"
 /// boundary be a test rather than a race.
@@ -16,6 +18,11 @@ library;
 
 import 'package:boostque/core/domain/cycle_math.dart';
 import 'package:boostque/core/domain/models.dart';
+// The seam's PENDING-REQUEST value type only, and it is pure: this file imports
+// nothing that imports anything (`notification_scheduler.dart` has no imports
+// at all). `reconcile` compares against the platform's own record, so it has to
+// name the type the platform's record arrives as.
+import 'package:boostque/core/notifications/notification_scheduler.dart';
 
 /// One reminder the app wants the operating system to be holding.
 ///
@@ -180,6 +187,106 @@ List<PlannedNotification> planNotifications({
   return List.unmodifiable(
     planned.length <= budget ? planned : planned.sublist(0, budget),
   );
+}
+
+/// A planned reminder together with the text that WILL be scheduled for it.
+///
+/// The pairing exists because the id cannot carry the text and the reconciler
+/// has to compare both — see [reconcile]. Rendering the copy is the caller's
+/// job (it needs a locale, and this library has none); deciding what to do with
+/// the difference is this library's.
+class DesiredNotification {
+  /// What to schedule.
+  final PlannedNotification notification;
+
+  /// The title as it will be handed to the platform, already localized.
+  final String title;
+
+  /// The body as it will be handed to the platform, already localized.
+  final String body;
+
+  const DesiredNotification({
+    required this.notification,
+    required this.title,
+    required this.body,
+  });
+
+  /// The id of [notification] — never a second, independent id.
+  int get id => notification.id;
+}
+
+/// What must change for the platform to be holding [desired] instead of
+/// [pending]: ids to cancel, entries to schedule.
+///
+/// Four rules, and nothing else:
+///
+/// 1. a matched id whose title AND body both match is satisfied, and appears in
+///    neither output;
+/// 2. a matched id whose text differs is cancelled AND re-scheduled;
+/// 3. a pending id that is not desired is cancelled;
+/// 4. a desired id that is not pending is scheduled.
+///
+/// **Rule 2 is the one worth explaining, because implementing past it is
+/// silent.** Ids are derived from tier, time and date, and they carry NO locale
+/// (see [notificationIdFor]). A language change therefore produces an identical
+/// desired id set, so an id-only set difference computes an empty diff and does
+/// nothing at all — the notifications keep their old-language text for up to the
+/// whole horizon, with nothing but a test able to notice (07-UI-SPEC
+/// DECIDED-16). Comparing the text is also self-correcting in a second way
+/// worth having on its own: it repairs a re-derivation that was interrupted
+/// halfway through, with no special-case trigger and no persisted "we were in
+/// the middle of something" flag. The alternative the UI contract also permits —
+/// treating a language change as a distinguished trigger that forces a full
+/// cancel-and-reschedule — was NOT chosen: it needs that trigger to be plumbed
+/// correctly forever, whereas comparing what is actually there needs nothing to
+/// be remembered.
+///
+/// Comparing the text is possible only because the platform's pending-request
+/// record happens to carry the title and body ([PendingNotification], from
+/// 07-RESEARCH §5.6). The same record carries no scheduled TIME, which is the
+/// same fact seen from the other side — it is why the fire time has to be folded
+/// into the id instead.
+///
+/// The payload is deliberately not compared: the whole app has exactly one
+/// payload token, so it cannot differ between two records the current build
+/// wrote, and a record an older build wrote is cancelled by rule 3 anyway.
+///
+/// **There is no instruction to clear everything, in any input combination** —
+/// including an empty [desired] against a large [pending], which returns every
+/// pending id as an individual cancellation. A blanket clear also dismisses
+/// reminders that were delivered and that the user has not acted on yet, and it
+/// leaves a window in which nothing at all is scheduled. Cancelling by id is not
+/// merely tidier: it is the difference between a re-derivation the user cannot
+/// perceive and one that eats a notification they were about to act on.
+///
+/// Pure, and deliberately imposes no I/O ordering. Cancels before schedules, or
+/// interleaved, is the caller's concern, and the caller has a reason to prefer
+/// one; encoding an order here would only be something to work around.
+({Set<int> toCancel, List<DesiredNotification> toSchedule}) reconcile({
+  required List<DesiredNotification> desired,
+  required List<PendingNotification> pending,
+}) {
+  final held = <int, PendingNotification>{
+    for (final p in pending) p.id: p,
+  };
+  final wanted = <int>{for (final d in desired) d.id};
+
+  final toCancel = <int>{};
+  final toSchedule = <DesiredNotification>[];
+
+  for (final d in desired) {
+    final current = held[d.id];
+    if (current != null && current.title == d.title && current.body == d.body) {
+      continue; // rule 1
+    }
+    if (current != null) toCancel.add(d.id); // rule 2
+    toSchedule.add(d); // rules 2 and 4
+  }
+  for (final p in pending) {
+    if (!wanted.contains(p.id)) toCancel.add(p.id); // rule 3
+  }
+
+  return (toCancel: toCancel, toSchedule: toSchedule);
 }
 
 /// The stable id for a reminder at [minutesFromMidnight] on [day].

@@ -7,7 +7,9 @@
 library;
 
 import 'package:boostque/core/domain/models.dart';
+import 'package:boostque/core/notifications/notification_constants.dart';
 import 'package:boostque/core/notifications/notification_plan.dart';
+import 'package:boostque/core/notifications/notification_scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 DoseSlot slot(int minutes, {String id = 'sl'}) =>
@@ -667,6 +669,183 @@ void main() {
         plan.single.id,
         notificationIdFor(day: today, minutesFromMidnight: 540),
       );
+    });
+  });
+
+  group('reconcile — the difference, including the one the ids cannot see', () {
+    /// A desired entry at [minute], with the text already rendered.
+    DesiredNotification want(
+      int minute, {
+      DateTime? day,
+      String title = 'Час прийому',
+      String body = '1 прийом',
+    }) =>
+        DesiredNotification(
+          notification: PlannedNotification(
+            id: notificationIdFor(day: day, minutesFromMidnight: minute),
+            day: day,
+            minutesFromMidnight: minute,
+            doseCount: 1,
+          ),
+          title: title,
+          body: body,
+        );
+
+    /// The platform's record of [d], as it would report it after scheduling.
+    PendingNotification held(DesiredNotification d) => PendingNotification(
+          id: d.id,
+          title: d.title,
+          body: d.body,
+          payload: doseTapPayload,
+        );
+
+    test('desired and pending identical, ids AND text: an empty diff both ways',
+        () {
+      final desired = [want(480, day: today), want(600)];
+      final diff = reconcile(
+        desired: desired,
+        pending: desired.map(held).toList(),
+      );
+
+      expect(diff.toCancel, isEmpty);
+      expect(diff.toSchedule, isEmpty);
+    });
+
+    test('an id in desired and absent from pending is scheduled, and nothing '
+        'is cancelled', () {
+      final diff = reconcile(
+        desired: [want(480, day: today)],
+        pending: const [],
+      );
+
+      expect(diff.toCancel, isEmpty);
+      expect(diff.toSchedule.single.notification.minutesFromMidnight, 480);
+    });
+
+    test('an id in pending and absent from desired is cancelled, and nothing '
+        'is scheduled', () {
+      final stale = want(480, day: today);
+      final diff = reconcile(desired: const [], pending: [held(stale)]);
+
+      expect(diff.toCancel, <int>{stale.id});
+      expect(diff.toSchedule, isEmpty);
+    });
+
+    test('THE LOCALE CASE: the same id with the same title but a different '
+        'body is cancelled AND re-scheduled', () {
+      // The single test that would fail if someone later "simplified" the
+      // comparison back to ids. A language change produces an IDENTICAL desired
+      // id set — ids carry no locale — so an id-only diff is empty and the
+      // notifications keep their old-language text for the whole horizon,
+      // silently, with nothing but this able to notice.
+      final ukrainian = want(480, day: today, body: '3 прийоми');
+      final english = want(480, day: today, body: '3 doses');
+
+      final diff = reconcile(desired: [english], pending: [held(ukrainian)]);
+
+      expect(diff.toCancel, <int>{english.id});
+      expect(diff.toSchedule.single.body, '3 doses');
+      expect(
+        diff.toSchedule.single.id,
+        english.id,
+        reason: 'the id is unchanged — which is exactly why the text has to be '
+            'what is compared.',
+      );
+    });
+
+    test('a different title and the same body: the same result', () {
+      final before = want(480, day: today, title: 'Час прийому');
+      final after = want(480, day: today, title: 'Time to take');
+
+      final diff = reconcile(desired: [after], pending: [held(before)]);
+
+      expect(diff.toCancel, <int>{after.id});
+      expect(diff.toSchedule.single.title, 'Time to take');
+    });
+
+    test('a pending id the plan has never produced is cancelled, not ignored',
+        () {
+      // A leftover from an older build with a different id scheme.
+      const leftover = PendingNotification(
+        id: 12345,
+        title: 'from an older build',
+        body: 'with a different id scheme',
+      );
+      final diff = reconcile(
+        desired: [want(480, day: today)],
+        pending: [leftover],
+      );
+
+      expect(diff.toCancel, <int>{12345});
+      expect(diff.toSchedule, hasLength(1));
+    });
+
+    test('the schedule list carries the FULL planned entry, not just an id', () {
+      final diff = reconcile(desired: [want(480)], pending: const []);
+      final scheduled = diff.toSchedule.single.notification;
+
+      expect(scheduled.repeatsDaily, isTrue);
+      expect(scheduled.minutesFromMidnight, 480);
+      expect(scheduled.doseCount, 1);
+      expect(
+        scheduled.id,
+        notificationIdFor(day: null, minutesFromMidnight: 480),
+        reason: 'so the caller needs no second lookup and cannot mismatch one.',
+      );
+    });
+
+    test('an empty desired set against a large pending set cancels every id '
+        'INDIVIDUALLY', () {
+      final held0 = List.generate(
+        40,
+        (i) => held(want(i * 30, day: today.add(Duration(days: i)))),
+      );
+
+      final diff = reconcile(desired: const [], pending: held0);
+
+      expect(diff.toCancel, held0.map((p) => p.id).toSet());
+      expect(diff.toCancel, hasLength(40));
+      expect(
+        diff.toSchedule,
+        isEmpty,
+        reason: 'and there is no third field asking to clear everything: a '
+            'blanket clear also dismisses delivered reminders the user has not '
+            'acted on, and leaves a window with nothing scheduled.',
+      );
+    });
+
+    test('IDEMPOTENCE: applying the diff and running it again gives an empty '
+        'diff', () {
+      final pending = [
+        held(want(480, day: today)), // survives untouched
+        held(want(600, day: today, body: 'старий текст')), // stale text
+        held(want(720, day: today)), // no longer desired
+      ];
+      final desired = [
+        want(480, day: today),
+        want(600, day: today, body: 'новий текст'),
+        want(1080, day: today), // brand new
+      ];
+
+      final first = reconcile(desired: desired, pending: pending);
+      expect(first.toCancel, hasLength(2)); // the stale one and the dropped one
+      expect(first.toSchedule, hasLength(2)); // the stale one and the new one
+
+      // Apply it, exactly as the caller will: drop the cancelled, add the
+      // scheduled with the text that was actually sent.
+      final applied = <PendingNotification>[
+        ...pending.where((p) => !first.toCancel.contains(p.id)),
+        ...first.toSchedule.map(held),
+      ];
+
+      final second = reconcile(desired: desired, pending: applied);
+      expect(
+        second.toCancel,
+        isEmpty,
+        reason: 'a plan that keeps asking for something already scheduled '
+            'turns every resume into dozens of platform round trips.',
+      );
+      expect(second.toSchedule, isEmpty);
     });
   });
 }
