@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:boostque/core/l10n/l10n.dart';
+import 'package:boostque/core/notifications/notification_constants.dart';
+import 'package:boostque/core/notifications/notification_providers.dart';
 import 'package:boostque/core/selected_tab_controller.dart';
 import 'package:boostque/core/widgets/bq_add_fab.dart';
 import 'package:boostque/core/widgets/bq_nav_bar.dart';
+import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/planner_screen.dart';
 import 'package:boostque/features/calendar/today_screen.dart';
 import 'package:boostque/features/stack/stack_screen.dart';
@@ -31,6 +34,46 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final selectedIndex = ref.watch(selectedTabProvider);
+    ref.listen(notificationTapProvider, (previous, next) {
+      // Untrusted, replayable, cross-process input: the operating system
+      // persists this string across app updates and can hand back one an older
+      // build wrote. A WHITELIST by equality against the one known token, never
+      // a parse — an unknown value, a stale value and a null all mean "do
+      // nothing", with no error copy anywhere (DECIDED-13, T-07-13).
+      if (!isKnownNotificationPayload(next.payload)) return;
+      // TWO writes, and exactly two. The second is not polish: the browsed day
+      // survives a destination round trip by construction — this shell keeps
+      // the Сьогодні screen mounted on every destination, which
+      // `calendar_providers.dart` documents — so a user who last looked at
+      // Monday and taps today's reminder would otherwise land on MONDAY's dose
+      // list, reading a past day's taken state while the reminder describes
+      // doses that are not on screen. Setting the destination alone is a
+      // defect, not a partial implementation (DECIDED-10).
+      ref.read(selectedTabProvider.notifier).select(todayTabIndex);
+      ref.read(selectedDayProvider.notifier).followToday();
+      // And NOTHING else, which is as load-bearing as the two above. No route
+      // is popped: doing so would discard an in-progress regimen edit because a
+      // timer fired, a destructive side effect triggered by the clock. The cost
+      // is stated rather than hidden — the destination change is invisible
+      // until the user leaves the route themselves, at which point they land on
+      // Сьогодні, which is the right place, just later (DECIDED-11). Nothing
+      // scrolls to a block either: the payload carries no time, so there is no
+      // target even in principle; the day view groups into four coarse blocks
+      // that deliberately do not match the notification's exact-minute
+      // grouping; and a reminder that jumps the app's most-used screen is
+      // harder to reason about than one that simply shows today. No sheet, no
+      // row highlight, and no confirmation of any kind.
+      //
+      // A tapped reminder may also outlive its cause — the supplement deleted,
+      // the regimen paused, or the app force-stopped so the cancellation never
+      // ran. The user then arrives at a shorter day or an empty one, and NO NEW
+      // COPY may be added for it: the empty case already renders the existing
+      // empty-day state and the partial case is an ordinary shorter day. The
+      // count in a reminder's body is a snapshot taken when it was scheduled,
+      // and saying so honestly beats chasing an exactness neither platform
+      // offers — neither has a delivery-time hook for a local notification at
+      // all (UI-SPEC §5.5).
+    });
     return Scaffold(
       // [IndexedStack] builds and KEEPS every child mounted — only painting is
       // suppressed — so all three screens are alive from app launch on every
