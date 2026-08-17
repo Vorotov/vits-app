@@ -1,7 +1,8 @@
 ---
 phase: 6
 slug: shell-simplification
-status: draft
+status: approved
+reviewed_at: 2026-08-17
 shadcn_initialized: false
 preset: none
 created: 2026-08-17
@@ -134,7 +135,9 @@ Roles unchanged from Phases 1-5 (same fonts; the locked 3-weight exception — 4
 | Цикли summary / Рік peak chip label | Instrument 13.5 / 500 / 1.35, `BqColors.textSecondary` | colour only; the `limitBadge` mono 11 sibling is deleted |
 | Month-card count | `BqText.mono(size: 10.5, weight: 500, color: BqColors.textFaint)` | colour is now unconditional |
 
-> **Component font-size list for this phase is CLOSED and introduces NOTHING new:** 25 / 13.5 / 12 / 10.5 / 10 only — every one already enumerated in the Phase-1..5 closed lists. The executor may not introduce a font size in this phase, full stop. Deleted sizes (the verdict chip's mono 9.5, the limit badge's mono 11) leave the planner's list; they remain legal elsewhere.
+> **Component font-size list for this phase is CLOSED and introduces NOTHING new.** Sizes this phase *writes*: 25 / 13.5 / 12 / 10.5 / 10 — every one already enumerated in the Phase-1..5 closed lists. Sizes this phase *retains untouched on surfaces it edits* (do NOT "correct" these down to a written size): the week-detail range at 15.5 and its name chips at 11.5 (S13, both Phase-4 values on a card this phase only edits). The executor may not introduce a font size that appears in neither list.
+>
+> Deleted sizes (the verdict chip's mono 9.5, the limit badge's mono 11) leave the planner's list; they remain legal elsewhere.
 
 `maxLines: 1, softWrap: false` on the nav label is permitted **only because `navBarHeightFor` scales the line box** — the identical argument `week_strip.dart:286-296` makes for the day-number cell. The label sits in an `Expanded` cell, never a fixed-width box.
 
@@ -455,6 +458,20 @@ Cross-cutting: #3 (text scale), #6 / #9 (assistive-tech activation) and #18 (cop
 
 Every clause below is **overturned by this phase**. A future reader hitting the v1 spec must land here instead.
 
+### `.planning/phases/02-supplement-stack/02-UI-SPEC.md`
+
+The most directly contradicted v1 contract: it made the full-width button the Stack screen's
+anchor and *explicitly rejected* a FAB. This phase reverses that.
+
+| Superseded clause | Replacement |
+|---|---|
+| `02:167` accent reserved item 1 — "«Додати добавку» primary CTA fill (Stack screen)" | Deleted. The Stack screen has no accent-filled block of its own; the FAB carries the accent (see this contract's Color section) |
+| `02:187` / `02:214` — Primary CTA (Stack) is a full-width accent button below the header | Deleted. The full-width button is removed; adding is the FAB, present identically on all three tabs |
+| `02:192` — `emptyStackBody` old text + "the `addSupplement` CTA stays visible above the empty state" | Rewritten (see Copywriting): the body names the + action rather than pointing at a button that no longer exists |
+| `02:257` **D6** — "Floating «+ Додати» FAB … **Omitted** on the Stack screen — the full-width CTA at top is the single add affordance" | **REVERSED.** The FAB is the single add affordance, on exactly the three tabs (UX-01). D6's stated reason (duplicate affordance on a 390pt screen) is now satisfied by deleting the *button*, not the FAB |
+| `02:283` E1 — empty state renders "below the still-visible `addSupplement` CTA" | Void. The empty state renders with no CTA above it; the FAB floats over it |
+| `02:326` Visual Focal Point — "the accent «Додати добавку» CTA is the single accent-filled block … it anchors the screen" | Replaced by this contract's Стек focal-point row: the card list anchors the screen and the FAB is the single accent surface |
+
 ### `.planning/phases/01-foundation/01-UI-SPEC.md`
 
 | Superseded clause | Replacement |
@@ -559,11 +576,11 @@ Not applicable — Flutter project. No shadcn, npm, or component registry is inv
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** APPROVED by gsd-ui-checker 2026-08-17 — 4 PASS / 2 FLAG, both flags documentation-durability and both fixed in this revision (02-UI-SPEC supersession table added; closed-list sentence disambiguated for retained sizes 15.5/11.5).
