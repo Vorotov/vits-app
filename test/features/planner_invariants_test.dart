@@ -47,15 +47,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///
 /// **Matching is CASE-SENSITIVE where an entry is capitalized, and that is
 /// load-bearing.** `Зсунути` is the mockup's "Зсунути цикл" button label — a
-/// schedule mutation on a read-only screen (M3). Its LOWERCASE form appears
-/// legitimately inside shipped copy: `weekNoteOverLimit` reads "Варто зсунути
-/// старт частини з них". A case-insensitive match would fire on correct,
-/// approved copy, and a gate that cries wolf is a gate that gets deleted.
+/// schedule mutation on a read-only screen (M3). Its LOWERCASE form is an
+/// ordinary verb approved copy could use in a sentence — `weekNoteOverLimit`,
+/// deleted in phase 06, read "Варто зсунути старт частини з них". A
+/// case-insensitive match would fire on correct, approved copy, and a gate
+/// that cries wolf is a gate that gets deleted.
 const excludedMockupContent = <({String text, String basis})>[
   (text: 'взаємодія', basis: 'M1 — the `є взаємодія` legend entry and the '
       'interaction claim behind it are never-ship (REQUIREMENTS Out of Scope)'),
-  (text: 'жиророзчин', basis: 'M2 — the over-limit note ships truncated after '
-      '"із лікарем."; the fat-soluble clause is a pharmacological claim'),
+  (text: 'жиророзчин', basis: 'M2 — the note this clause was truncated out of '
+      'is itself deleted (PLAN-05), but the fat-soluble claim stays forbidden: '
+      'the guarantee outlives the sentence it was attached to'),
   (text: 'Зсунути', basis: 'M3 — a schedule mutation on a read-only screen'),
   (text: 'Порівняти', basis: 'M3 — no compare-weeks action was ever scoped'),
   (text: 'Додати', basis: 'M4 — the add flow belongs to the Stack tab; the '
@@ -218,6 +220,64 @@ void main() {
               'is a value that silently stops tracking the design system — '
               'the ONLY sanctioned non-token colour is Color(entry.supplement'
               '.colorValue), the user\'s own tag colour. Offenders: $hits');
+    });
+
+    test('no planner file paints a judgement colour — the risk, warn and calm '
+        'families are gone from THESE files and only these (PLAN-05)', () {
+      // **This gate is scoped to `planner_*.dart` ON PURPOSE, and the scope is
+      // the assertion.** `lib/features/calendar/` also holds four Today-screen
+      // surfaces whose state colours are legitimate and MUST survive:
+      //   • dose_row.dart          — taken circle, warn border, overdue label
+      //   • day_block_section.dart — all-taken tag, progress tag
+      //   • day_progress_ring.dart — the ring counter
+      //   • week_strip.dart        — today marker
+      // A directory-wide glob is RED on correct code, and an executor
+      // "fixing" it would strip the Today screen's state colours. If this
+      // gate ever fires, the planner regained a verdict — fix the widget.
+      // Do not widen the glob, and do not narrow the token list.
+      final judgement = RegExp(r'BqColors\.(risk|warn|calm)');
+
+      final hits = <String>[];
+      sources.forEach((path, source) {
+        for (final match in judgement.allMatches(source)) {
+          hits.add('$path: ${match.group(0)}');
+        }
+      });
+
+      expect(hits, isEmpty,
+          reason: 'PLAN-05: the planner shows how much of the stack overlaps '
+              'and never how good or bad that is. A judgement colour on a '
+              'planner surface is a verdict without words — the exact thing '
+              'this phase deleted. Offenders: $hits');
+    });
+
+    test('no planner file rebuilds a deleted judgement widget — the verdict '
+        'chip, the slot pips, the threshold line and the over-bar (PLAN-05)',
+        () {
+      const forbidden = <String, String>{
+        'week-verdict-chip': 'the verdict chip on the week-detail card',
+        'week-pip-': 'the slot-pip row, whose whole subject was a denominator',
+        '_SlotPips': 'the pip widget itself',
+        'load-threshold': 'the comfort-3 dashed reference line',
+        'load-over-': 'the over-limit bar segment',
+        'thresholdDash': 'the reference line\'s colour token, deleted',
+        'editorialLimit': 'the limit constant, deleted',
+        'comfortLoad': 'the comfort constant, deleted',
+        'verdictOf': 'the band resolver, deleted',
+      };
+
+      final hits = <String>[];
+      sources.forEach((path, source) {
+        forbidden.forEach((needle, what) {
+          if (source.contains(needle)) hits.add('$path names $needle ($what)');
+        });
+      });
+
+      expect(hits, isEmpty,
+          reason: 'PLAN-05 is proven by ABSENCE, and absence is only a '
+              'guarantee while something checks for it. Each of these names '
+              'belonged to a surface that judged the load; none of them has '
+              'a legitimate reason to return. Offenders: $hits');
     });
 
     test('the pure view model imports EXACTLY the three domain libraries — no '

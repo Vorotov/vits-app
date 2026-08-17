@@ -575,6 +575,49 @@ void main() {
       await tearDownTree(tester, container);
     });
 
+    testWidgets('the disclaimer is the LAST element of both bodies, not '
+        'merely present in them (PLAN-04, unweakened by PLAN-05)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the gantt rows',
+      );
+
+      // Read the body's own child list rather than comparing y-offsets: a
+      // card rendered BELOW the disclaimer and a card that simply has not
+      // been scrolled into view look identical to a geometric assertion.
+      void expectDisclaimerLast(String segment) {
+        final delegate = tester
+            .widget<ListView>(find.byType(ListView))
+            .childrenDelegate as SliverChildListDelegate;
+        expect(
+          find.descendant(
+            of: find.byWidget(delegate.children.last),
+            matching: disclaimer,
+          ),
+          findsOneWidget,
+          reason: '$segment must close on the disclaimer — nothing may be '
+              'appended after it, and the deleted year footnote is not '
+              'replaced by anything',
+        );
+      }
+
+      await scrollBody(tester, 500);
+      expectDisclaimerLast('Цикли');
+
+      await tester.tap(find.text('Рік'));
+      await tester.pump();
+      await scrollBody(tester, 500);
+      expectDisclaimerLast('Рік');
+
+      await tearDownTree(tester, container);
+    });
+
     testWidgets('an empty stack renders the empty block with the '
         'no-supplements body on both segments, and still the disclaimer '
         '(S6c, PLAN-04 is unconditional)', (tester) async {
