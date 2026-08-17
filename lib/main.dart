@@ -10,6 +10,7 @@ import 'package:boostque/core/notifications/notification_scheduler.dart';
 import 'package:boostque/core/notifications/notification_service.dart';
 import 'package:boostque/core/notifications/tz_conversion.dart';
 import 'package:boostque/core/providers.dart';
+import 'package:boostque/core/selected_tab_controller.dart';
 import 'package:boostque/core/theme/theme.dart';
 
 Future<void> main() async {
@@ -38,23 +39,73 @@ Future<void> main() async {
       ),
     );
   }
-  // NOTHING notification-related is added above this line, and that is a checked
-  // fact (07-UI-CHECK FLAG-3, asserted by test/notifications/
-  // notification_bootstrap_test.dart). The zone database is about a megabyte to
-  // parse and the plugin's initialize() plus the channel creation are two
-  // platform round trips; only a launch-details read has a frame-1 dependency,
-  // and it is not in this plan. Both overrides below merely INSTALL
-  // implementations — the provider bodies are lazy and nothing runs here.
+  // The destination a tap launched the app into, resolved HERE for the same
+  // reason and with the same failure stance as the store above: its answer has
+  // to exist by frame 1, or the user watches Стек paint and then jump —
+  // precisely the flash the stored-language seed already exists to remove
+  // (`locale_controller.dart:41-43`, P-4 Option A). This codebase's frame-1
+  // seeds are ONE pattern; a reader who recognizes the first should recognize
+  // this one. It cannot move into the plugin's initialization callback either:
+  // that callback is documented as unable to handle a launch-from-tap at all
+  // (07-RESEARCH §8.6, DECIDED-12).
+  final launchPayload = await _launchNotificationPayload();
+  // NOTHING ELSE notification-related is added above this line, and that is a
+  // checked fact twice over: a needle gate (test/notifications/
+  // notification_bootstrap_test.dart) says the zone load, the plugin's
+  // initialization and the channel creation may never appear in this window,
+  // and a counted gate (test/notifications/notification_routing_test.dart) says
+  // exactly two awaits may. The zone database is about a megabyte to parse and
+  // initialize() plus the channel creation are two platform round trips; none of
+  // them has a frame-1 dependency, so all three stay in the post-first-frame
+  // path. The three overrides below merely INSTALL values — the provider bodies
+  // are lazy and nothing runs here.
   runApp(
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
+        launchNotificationPayloadProvider.overrideWithValue(launchPayload),
         notificationSchedulerProvider.overrideWith(_pluginScheduler),
         timeZoneLoaderProvider.overrideWithValue(initTimeZones),
       ],
       child: const BoostqueApp(),
     ),
   );
+}
+
+/// The payload of the notification that launched the app, or `null` — for any
+/// reason at all, including a failure to ask.
+///
+/// A named function BELOW `main()` rather than three lines inside it, and the
+/// placement is deliberate: the pre-`runApp` window holds the READ, while the
+/// construction of the plugin-backed adapter stays out of it. The needle gate
+/// over that window forbids constructing the adapter there because doing so
+/// makes its `initialize()` the obvious next line for the next editor — and
+/// `initialize()`, the zone load and the channel creation are exactly what
+/// FLAG-3 keeps behind the first frame. This function asks ONE question and
+/// returns; it initializes nothing and creates no channel.
+///
+/// The guard is the same one the preferences resolution carries, for the same
+/// reason spelled out there: this window sits between binding initialization and
+/// `runApp`, so an escaping error means `runApp` is NEVER called — no Flutter UI
+/// attaches, the user stares at the launch screen, and because the failure is
+/// deterministic, restarting does not help. **A notification tap must never be
+/// able to prevent the app from starting.** Catch, report to the crash logger,
+/// degrade to the default destination — an unreadable launch answer is no launch
+/// answer, which is the state the app is in on every ordinary launch anyway.
+Future<String?> _launchNotificationPayload() async {
+  try {
+    return await PluginNotificationScheduler().launchPayload();
+  } catch (error, stack) {
+    FlutterError.reportError(
+      FlutterErrorDetails(
+        exception: error,
+        stack: stack,
+        library: 'boostque',
+        context: ErrorDescription('reading the notification launch details'),
+      ),
+    );
+    return null;
+  }
 }
 
 /// The plugin-backed scheduler, constructed LAZILY by the provider rather than

@@ -14,6 +14,8 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:boostque/core/notifications/notification_constants.dart';
+
 /// Index of the Стек destination — the destination the app opens on when
 /// nothing gives it a reason to open on another.
 ///
@@ -21,12 +23,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// 2 Календар), so this is a claim about which screen the user first reads.
 const stackTabIndex = 0;
 
+/// The payload of the notification that LAUNCHED the app, when one did.
+///
+/// `null` — "the app was not launched from a tap" — everywhere except `main()`,
+/// which resolves the real answer before `runApp` and installs it as an
+/// override (DECIDED-12). A plain `Provider` rather than a notifier because it
+/// is answered once per process and never changes.
+///
+/// The value is UNTRUSTED: the operating system persists it across app updates
+/// and can replay one an older build wrote. It is stored raw here and validated
+/// where it is used, by the one predicate the warm path uses too.
+final launchNotificationPayloadProvider = Provider<String?>((ref) => null);
+
 /// The destination the app OPENS on.
 ///
-/// A seam with a plain default, so nothing in this file has to know why a
-/// launch might want another destination. `main()` overrides it; every test and
-/// every bare container gets [stackTabIndex].
-final initialTabIndexProvider = Provider<int>((ref) => stackTabIndex);
+/// Derived from the launch payload through [isKnownNotificationPayload] — the
+/// SAME whitelist and the SAME destination index the warm tap handler applies,
+/// so the cold path and the warm path cannot come to disagree about what a
+/// valid payload is. An unknown string, a stale one and a null all resolve to
+/// [stackTabIndex], with nothing surfaced to the user (DECIDED-13).
+///
+/// The dependency is on `notification_constants.dart`, which imports nothing at
+/// all — this file reaches a pure value, not the notification machinery.
+final initialTabIndexProvider = Provider<int>(
+  (ref) =>
+      isKnownNotificationPayload(ref.watch(launchNotificationPayloadProvider))
+          ? todayTabIndex
+          : stackTabIndex,
+);
 
 /// The selected destination index.
 class SelectedTabController extends Notifier<int> {
