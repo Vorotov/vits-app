@@ -33,6 +33,31 @@ Regimen cyclic({
       slots: slots,
     );
 
+/// A regimen that runs every day from its start with no break, ever — the one
+/// shape `runsEveryDayFrom` promotes to a repeat.
+Regimen daily({
+  String id = 'd1',
+  DateTime? start,
+  List<DoseSlot> slots = const [],
+}) =>
+    cyclic(id: id, on: 30, off: 0, start: start, slots: slots);
+
+/// A regimen active on every day any test here looks at, but NOT promotable,
+/// because it has a break — 60 days out, past every horizon in this file.
+///
+/// The tier-B tests below were written against `off: 0` when plan 07-01 had no
+/// tier A and every entry was a one-shot. Their CLAIMS are about the one-shot
+/// path — the day walk, the ordering by day, the now boundary, truncation from
+/// the far future — and each one is preserved verbatim; only the fixture moved,
+/// so that the subject of the test is still the tier the test is about. Using
+/// `off: 0` there now would silently test the repeat path under a one-shot name.
+Regimen tierB({
+  String id = 'b1',
+  DateTime? start,
+  List<DoseSlot> slots = const [],
+}) =>
+    cyclic(id: id, on: 60, off: 1, start: start, slots: slots);
+
 Regimen course({
   String id = 'c1',
   DateTime? start,
@@ -156,9 +181,9 @@ void main() {
         () {
       final plan = planFor(
         [
-          cyclic(id: 'a', on: 30, off: 0, slots: [slot(480, id: 'a')]),
-          cyclic(id: 'b', on: 30, off: 0, slots: [slot(480, id: 'b')]),
-          cyclic(id: 'c', on: 30, off: 0, slots: [slot(480, id: 'c')]),
+          tierB(id: 'a', slots: [slot(480, id: 'a')]),
+          tierB(id: 'b', slots: [slot(480, id: 'b')]),
+          tierB(id: 'c', slots: [slot(480, id: 'c')]),
         ],
         horizonDays: 1,
       );
@@ -178,13 +203,8 @@ void main() {
         () {
       final plan = planFor(
         [
-          cyclic(
-            id: 'a',
-            on: 30,
-            off: 0,
-            slots: [slot(480, id: 'a'), slot(1080, id: 'a')],
-          ),
-          cyclic(id: 'b', on: 30, off: 0, slots: [slot(1080, id: 'b')]),
+          tierB(id: 'a', slots: [slot(480, id: 'a'), slot(1080, id: 'a')]),
+          tierB(id: 'b', slots: [slot(1080, id: 'b')]),
         ],
         horizonDays: 1,
       );
@@ -212,8 +232,8 @@ void main() {
       expect(plan[1].doseCount, 1);
     });
 
-    test('every emitted notification is a one-shot in this plan', () {
-      final plan = planFor([cyclic(on: 30, off: 0, slots: [slot(540)])]);
+    test('every notification a tier-B regimen emits is a one-shot', () {
+      final plan = planFor([tierB(slots: [slot(540)])]);
       expect(plan.every((p) => p.day != null), isTrue);
       expect(plan.every((p) => !p.repeatsDaily), isTrue);
     });
@@ -221,11 +241,7 @@ void main() {
     test('the emitted order is by day, then by minute', () {
       final plan = planFor(
         [
-          cyclic(
-            on: 30,
-            off: 0,
-            slots: [slot(1320), slot(60), slot(720)],
-          ),
+          tierB(slots: [slot(1320), slot(60), slot(720)]),
         ],
         horizonDays: 2,
       );
@@ -241,11 +257,7 @@ void main() {
     test("today's slots at or before now are absent; later ones are present", () {
       final plan = planFor(
         [
-          cyclic(
-            on: 30,
-            off: 0,
-            slots: [slot(480), slot(720), slot(1080)],
-          ),
+          tierB(slots: [slot(480), slot(720), slot(1080)]),
         ],
         horizonDays: 1,
         nowMinutesFromMidnight: 720,
@@ -262,7 +274,7 @@ void main() {
 
     test('the now boundary applies to today only, never to a later day', () {
       final plan = planFor(
-        [cyclic(on: 30, off: 0, slots: [slot(480)])],
+        [tierB(slots: [slot(480)])],
         horizonDays: 3,
         nowMinutesFromMidnight: 720,
       );
@@ -276,11 +288,7 @@ void main() {
         () {
       final plan = planFor(
         [
-          cyclic(
-            on: 30,
-            off: 0,
-            slots: [slot(480), slot(720), slot(1080)],
-          ),
+          tierB(slots: [slot(480), slot(720), slot(1080)]),
         ],
         horizonDays: 30,
         budget: 60,
@@ -292,11 +300,7 @@ void main() {
     test('truncation drops the FURTHEST-FUTURE instances first', () {
       final plan = planFor(
         [
-          cyclic(
-            on: 30,
-            off: 0,
-            slots: [slot(480), slot(1080)],
-          ),
+          tierB(slots: [slot(480), slot(1080)]),
         ],
         horizonDays: 30,
         budget: 5,
@@ -316,11 +320,252 @@ void main() {
 
     test('the horizon binds when it is the tighter of the two', () {
       final plan = planFor(
-        [cyclic(on: 30, off: 0, slots: [slot(540)])],
+        [tierB(slots: [slot(540)])],
         horizonDays: 3,
         budget: 60,
       );
       expect(plan, hasLength(3));
+    });
+  });
+
+  group('tier A — the minutes that cost one pending request forever', () {
+    test('one daily regimen with one slot yields exactly ONE entry, a repeat',
+        () {
+      final plan = planFor([daily(slots: [slot(540)])], horizonDays: 30);
+
+      expect(
+        plan,
+        hasLength(1),
+        reason: 'one repeating request covers the whole horizon and never '
+            'lapses — the entire point of the tier split (NOTIF-02).',
+      );
+      expect(plan.single.repeatsDaily, isTrue);
+      expect(plan.single.day, isNull);
+      expect(plan.single.minutesFromMidnight, 540);
+      expect(plan.single.doseCount, 1);
+      expect(plan.single.id, notificationIdFor(day: null, minutesFromMidnight: 540));
+    });
+
+    test('two daily regimens at the SAME minute yield one repeat with count 2',
+        () {
+      final plan = planFor([
+        daily(id: 'a', slots: [slot(480, id: 'a')]),
+        daily(id: 'b', slots: [slot(480, id: 'b')]),
+      ]);
+
+      expect(plan, hasLength(1));
+      expect(plan.single.repeatsDaily, isTrue);
+      expect(plan.single.doseCount, 2);
+    });
+
+    test('two daily regimens at different minutes yield two repeats and no '
+        'one-shots', () {
+      final plan = planFor([
+        daily(id: 'a', slots: [slot(480, id: 'a')]),
+        daily(id: 'b', slots: [slot(1080, id: 'b')]),
+      ]);
+
+      expect(plan.map((p) => p.minutesFromMidnight), <int>[480, 1080]);
+      expect(plan.every((p) => p.repeatsDaily), isTrue);
+    });
+
+    test('a daily and a cycling-with-breaks regimen at the SAME minute yield '
+        'one-shots and NO repeat', () {
+      // The case a wrong promotion gets silently wrong: a repeat carries ONE
+      // frozen dose count, so promoting this minute would under-report the
+      // count on the cycling regimen's on-days and over-report it on its
+      // off-days, forever, with nothing to notice.
+      final plan = planFor(
+        [
+          daily(id: 'd', slots: [slot(480, id: 'd')]),
+          cyclic(id: 'rare', on: 1, off: 6, slots: [slot(480, id: 'r')]),
+        ],
+        horizonDays: 7,
+      );
+
+      expect(plan.any((p) => p.repeatsDaily), isFalse);
+      expect(
+        plan.map((p) => '${p.day!.day}:${p.doseCount}'),
+        <String>['16:2', '17:1', '18:1', '19:1', '20:1', '21:1', '22:1'],
+      );
+    });
+
+    test('a daily regimen and a course sharing a minute: one-shots only', () {
+      final plan = planFor(
+        [
+          daily(id: 'd', slots: [slot(480, id: 'd')]),
+          course(
+            id: 'c',
+            start: DateTime.utc(2026, 8, 16),
+            end: DateTime.utc(2026, 8, 17),
+            slots: [slot(480, id: 'c')],
+          ),
+        ],
+        horizonDays: 3,
+      );
+
+      expect(plan.any((p) => p.repeatsDaily), isFalse);
+      expect(
+        plan.map((p) => '${p.day!.day}:${p.doseCount}'),
+        <String>['16:2', '17:2', '18:1'],
+      );
+    });
+
+    test('a daily and a cycling regimen at DIFFERENT minutes: the two tiers '
+        'coexist in one plan', () {
+      final plan = planFor(
+        [
+          daily(id: 'd', slots: [slot(480, id: 'd')]),
+          cyclic(id: 'rare', on: 1, off: 6, slots: [slot(1080, id: 'r')]),
+        ],
+        horizonDays: 7,
+      );
+
+      expect(plan, hasLength(2));
+      expect(plan[0].repeatsDaily, isTrue);
+      expect(plan[0].minutesFromMidnight, 480);
+      expect(plan[1].repeatsDaily, isFalse);
+      expect(plan[1].minutesFromMidnight, 1080);
+      expect(plan[1].day, DateTime.utc(2026, 8, 16));
+    });
+
+    test('a daily regimen starting TOMORROW yields one-shots, not a repeat', () {
+      final plan = planFor(
+        [daily(start: DateTime.utc(2026, 8, 17), slots: [slot(540)])],
+        horizonDays: 4,
+      );
+
+      expect(
+        plan.any((p) => p.repeatsDaily),
+        isFalse,
+        reason: 'a repeat armed today would start firing before the regimen '
+            'begins; it is promoted on its start date by the ordinary '
+            're-derivation.',
+      );
+      expect(plan.map((p) => p.day!.day), <int>[17, 18, 19]);
+    });
+
+    test('a promoted minute contributes ZERO one-shots', () {
+      final plan = planFor(
+        [
+          daily(id: 'd', slots: [slot(480, id: 'd')]),
+          cyclic(id: 'rare', on: 1, off: 6, slots: [slot(1080, id: 'r')]),
+        ],
+        horizonDays: 30,
+      );
+
+      expect(
+        plan.where((p) => p.day != null && p.minutesFromMidnight == 480),
+        isEmpty,
+        reason: 'leaving the one-shots in place as a backstop would double '
+            'every reminder at that minute, on every day, and spend exactly '
+            'the budget the promotion was meant to save.',
+      );
+    });
+
+    test('a promoted minute already past NOW today is still emitted', () {
+      final plan = planFor(
+        [daily(slots: [slot(480)])],
+        horizonDays: 3,
+        nowMinutesFromMidnight: 720,
+      );
+
+      expect(
+        plan.single.repeatsDaily,
+        isTrue,
+        reason: "a repeat's first fire is computed by the platform from the "
+            'time components, not from an instant this function chose, so only '
+            'a one-shot can be in the past.',
+      );
+    });
+
+    test('every repeat sorts ahead of every one-shot', () {
+      final plan = planFor(
+        [
+          daily(id: 'd', slots: [slot(1380, id: 'd')]),
+          cyclic(id: 'rare', on: 20, off: 1, slots: [slot(60, id: 'r')]),
+        ],
+        horizonDays: 3,
+      );
+
+      expect(plan.first.repeatsDaily, isTrue);
+      expect(
+        plan.skip(1).every((p) => !p.repeatsDaily),
+        isTrue,
+        reason: 'even a 23:00 repeat outranks a 01:00 one-shot today — the '
+            'ordering is by tier first, and it is the ONLY thing protecting '
+            'tier A from truncation.',
+      );
+    });
+  });
+
+  group('the budget can never drop a repeat', () {
+    List<PlannedNotification> mixedStack({required int budget}) => planFor(
+          [
+            daily(id: 'd', slots: [slot(480, id: 'd')]),
+            cyclic(
+              id: 'b',
+              on: 60,
+              off: 1,
+              slots: [slot(600, id: 'b'), slot(720, id: 'b'), slot(840, id: 'b')],
+            ),
+          ],
+          horizonDays: 30,
+          budget: budget,
+        );
+
+    test('a stack whose one-shots alone exhaust the budget keeps every repeat',
+        () {
+      final unbudgeted = mixedStack(budget: 10000);
+      final budgeted = mixedStack(budget: 60);
+
+      expect(unbudgeted, hasLength(91)); // 1 repeat + 90 one-shots
+      expect(budgeted, hasLength(60));
+      expect(
+        budgeted.where((p) => p.repeatsDaily).length,
+        unbudgeted.where((p) => p.repeatsDaily).length,
+        reason: 'a repeat never lapses and costs one request forever, while a '
+            'one-shot beyond the horizon is a reminder that simply stops — '
+            'given a fixed ceiling, spending it on the entries that never '
+            'lapse is strictly better.',
+      );
+      expect(budgeted.first.repeatsDaily, isTrue);
+    });
+
+    test('the surviving one-shots are the NEAREST ones', () {
+      final plan = mixedStack(budget: 5);
+      expect(
+        plan.map((p) => p.repeatsDaily
+            ? 'repeat/${p.minutesFromMidnight}'
+            : '${p.day!.day}/${p.minutesFromMidnight}'),
+        <String>['repeat/480', '16/600', '16/720', '16/840', '17/600'],
+      );
+    });
+
+    test('a stack whose REPEATS alone exceed the budget keeps the earliest '
+        'minutes of the day', () {
+      // Unreachable with the app's six-slots-per-regimen cap and a plausible
+      // stack — and tested anyway, because "unreachable" is a claim about
+      // today's product, not a property of this function.
+      final plan = planFor(
+        [
+          daily(slots: [
+            slot(60),
+            slot(120),
+            slot(180),
+            slot(240),
+            slot(300),
+            slot(360),
+            slot(420),
+            slot(480),
+          ]),
+        ],
+        budget: 5,
+      );
+
+      expect(plan, hasLength(5));
+      expect(plan.every((p) => p.repeatsDaily), isTrue);
+      expect(plan.map((p) => p.minutesFromMidnight), <int>[60, 120, 180, 240, 300]);
     });
   });
 
@@ -405,11 +650,7 @@ void main() {
     test('the ids inside a plan are unique', () {
       final plan = planFor(
         [
-          cyclic(
-            on: 30,
-            off: 0,
-            slots: [slot(480), slot(720), slot(1080)],
-          ),
+          tierB(slots: [slot(480), slot(720), slot(1080)]),
         ],
         horizonDays: 20,
         budget: 60,
@@ -419,7 +660,7 @@ void main() {
 
     test('each planned notification carries the id its own fields derive', () {
       final plan = planFor(
-        [cyclic(on: 30, off: 0, slots: [slot(540)])],
+        [tierB(slots: [slot(540)])],
         horizonDays: 1,
       );
       expect(

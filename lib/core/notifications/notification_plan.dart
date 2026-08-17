@@ -58,20 +58,52 @@ class PlannedNotification {
 
 /// Every reminder that should exist over the next [horizonDays] from [today].
 ///
-/// One entry per (day, minute) with the number of doses due then. Ordered by day
-/// and then by minute, and truncated to [budget] from the TAIL — both are
-/// contractual, not incidental. An instant already in the past makes the plugin
-/// throw rather than degrade, so today's slots at or before
-/// [nowMinutesFromMidnight] are dropped; and truncating the tail keeps the
-/// nearest reminders, which are the ones the user will actually be around for.
+/// Two tiers, and which one a minute of day lands in is decided ONCE, here:
 ///
-/// Every notification here is a one-shot instance. The daily-repeat promotion
-/// for times where every contributing regimen runs daily is an iOS-budget
-/// optimization, not a layer, and it lands in plan 07-02.
+/// - **A repeat.** A minute is promoted to a single repeating request exactly
+///   when EVERY regimen contributing a slot at that minute will run every day
+///   from [today] onward ([runsEveryDayFrom]). It emits one entry with a null
+///   day and the count of contributing slots, and NOTHING else for that minute.
+///   It costs one pending request no matter how long the app runs, and never
+///   lapses.
+/// - **One-shots.** Every other minute gets one entry per active day in the
+///   horizon, exactly as before.
 ///
-/// A paused regimen, a course with no end date and a regimen starting after the
-/// window all fall out for free, because [isActiveOn] already answers all three.
-/// None of them is special-cased.
+/// The promotion is computed per MINUTE over the whole regimen set, never per
+/// regimen, because the notification is per minute. A minute is a shared
+/// surface: a repeat carries a single frozen dose count, so it is truthful only
+/// when the set of doses at that minute is the same every day. So a minute that
+/// even one cycling-with-breaks regimen or one course touches falls back
+/// wholesale rather than promoting the daily half and one-shotting the rest —
+/// which would also mean two notifications at the same minute, two buzzes at
+/// once, the thing the whole grouping decision exists to prevent. A contributor
+/// that will never actually fire (suspended, or already over) also blocks the
+/// promotion: the fallback is always CORRECT, merely more expensive, so being
+/// conservative here can only cost requests, never truthfulness.
+///
+/// Ordering is contractual, not incidental: every repeat first, by minute; then
+/// the one-shots by day and then by minute; and [budget] applied to the TAIL.
+/// That ordering is the ONLY mechanism protecting the repeats from truncation,
+/// and it is worth saying what it buys. A repeat never lapses and costs one
+/// request forever, while a one-shot beyond the horizon is a reminder that
+/// simply stops. Given a fixed ceiling, spending it on the entries that never
+/// lapse is strictly better, and truncating from the far future keeps the
+/// reminders the user will actually be present for. This is also why the budget
+/// is enforced HERE and not in the platform adapter: the platform's behaviour at
+/// its own ceiling is described differently by two credible sources
+/// (07-RESEARCH R-11), and a plan that never reaches the ceiling never has to
+/// know which is right.
+///
+/// An instant already in the past makes the plugin throw rather than degrade, so
+/// today's slots at or before [nowMinutesFromMidnight] are dropped — one-shots
+/// ONLY. A promoted minute earlier than the current minute is still emitted,
+/// because a repeat's first fire is computed by the platform from the time
+/// components and the adapter's next-occurrence helper, not from an instant this
+/// function chose.
+///
+/// A suspended regimen, a course with no end date and a regimen starting after
+/// the window all fall out of the one-shot walk for free, because [isActiveOn]
+/// already answers all three. None of them is special-cased.
 List<PlannedNotification> planNotifications({
   required List<Regimen> regimens,
   required DateTime today,
@@ -80,7 +112,41 @@ List<PlannedNotification> planNotifications({
   required int budget,
 }) {
   final start = dateOnly(today);
+
+  // Pass 1 — the tier question, asked per minute over the whole set. The
+  // question itself is never re-derived here: it is `runsEveryDayFrom`, which
+  // lives beside the activity rule whose shape it mirrors.
+  final repeatCounts = <int, int>{};
+  final blocked = <int>{};
+  for (final regimen in regimens) {
+    final everyDay = runsEveryDayFrom(regimen, start);
+    for (final slot in regimen.slots) {
+      if (everyDay) {
+        repeatCounts.update(
+          slot.minutesFromMidnight,
+          (count) => count + 1,
+          ifAbsent: () => 1,
+        );
+      } else {
+        blocked.add(slot.minutesFromMidnight);
+      }
+    }
+  }
+  final promoted = repeatCounts.keys.toSet()..removeAll(blocked);
+
   final planned = <PlannedNotification>[];
+  for (final minute in promoted.toList()..sort()) {
+    planned.add(
+      PlannedNotification(
+        id: notificationIdFor(day: null, minutesFromMidnight: minute),
+        day: null,
+        minutesFromMidnight: minute,
+        doseCount: repeatCounts[minute]!,
+      ),
+    );
+  }
+
+  // Pass 2 — one-shots, for every minute the promotion did not take.
   for (var offset = 0; offset < horizonDays; offset++) {
     // Exact on UTC date-only values: every day is precisely 24h in UTC.
     final day = start.add(Duration(days: offset));
@@ -88,6 +154,7 @@ List<PlannedNotification> planNotifications({
     for (final regimen in regimens) {
       if (!isActiveOn(regimen, day)) continue;
       for (final slot in regimen.slots) {
+        if (promoted.contains(slot.minutesFromMidnight)) continue;
         if (offset == 0 && slot.minutesFromMidnight <= nowMinutesFromMidnight) {
           continue;
         }
