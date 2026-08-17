@@ -214,6 +214,31 @@ class CyclesModel {
   /// buckets cover the whole window, so the search never fails.
   final int currentWeekIndex;
 
+  /// How many supplements currently carry a schedule — the load chart's
+  /// ceiling (plan 06-05, design spec §3.1).
+  ///
+  /// **Invariant: `week.load <= scheduledCount` for every bucket of [weeks],
+  /// by construction.** Both numbers are derived from the SAME collection —
+  /// the regimen-bearing entries of the stack — so a week's load is a subset
+  /// count of the very set this counts. That is why the chart needs no cap, no
+  /// clipping branch and no over-limit segment: a bar can never exceed full
+  /// height, because a week can never hold more supplements than the stack
+  /// has scheduled.
+  ///
+  /// This is a MODEL value, never a widget constant: a scale that lives in a
+  /// widget is a magic number waiting to be mistaken for a rule. It is the
+  /// denominator of the bars' height, and it is not a limit — a full bar means
+  /// "the whole scheduled stack overlaps this week", which is a fact about the
+  /// user's plan and not a judgement of it.
+  ///
+  /// Two edge values are correct rather than exceptional. **1** — a stack of
+  /// one draws a full bar in any week that one supplement is active; the
+  /// chart's question is "how much of my stack is running at once" and the
+  /// answer is "all of it". **0** — nothing is scheduled, so the planner's
+  /// existing empty state renders and no chart is built at all; the division
+  /// is therefore unreachable and no guard belongs inside the widget.
+  final int scheduledCount;
+
   const CyclesModel({
     required this.windowStart,
     required this.windowEndExclusive,
@@ -223,6 +248,7 @@ class CyclesModel {
     required this.rows,
     required this.weeks,
     required this.currentWeekIndex,
+    required this.scheduledCount,
   });
 }
 
@@ -299,6 +325,10 @@ CyclesModel buildCyclesModel(
     rows: List.unmodifiable(rows),
     weeks: weekLoads(loadRows, buckets),
     currentWeekIndex: currentWeek < 0 ? 0 : currentWeek,
+    // The SAME collection the loads are counted from — `loadRows`, not a
+    // second filter over `entries`. That is what makes `load <= ceiling` an
+    // invariant instead of a coincidence (see [CyclesModel.scheduledCount]).
+    scheduledCount: loadRows.length,
   );
 }
 
