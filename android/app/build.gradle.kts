@@ -10,6 +10,14 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // Required by flutter_local_notifications: without it the build fails
+        // outright with "Dependency ':flutter_local_notifications' requires core
+        // library desugaring to be enabled for :app" — a hard failure, not a
+        // warning. Asserted by test/platform_config_test.dart so a Gradle
+        // tidy-up cannot silently remove the phase's ability to build.
+        // (Kotlin DSL spells the flag with an `is` prefix; the Groovy form
+        // `coreLibraryDesugaringEnabled true` does not compile here.)
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -46,4 +54,13 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// The desugaring runtime that `isCoreLibraryDesugaringEnabled` above needs, at
+// the version 07-RESEARCH §3.1 built a green debug AND release APK with.
+// Deliberately NOT accompanied by `multiDexEnabled` — the plugin's README
+// suggests it, both APKs built without it, and a speculative build flag is a
+// thing nobody later dares remove.
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

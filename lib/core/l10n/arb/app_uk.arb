@@ -154,5 +154,9 @@
   "addSupplementCatalogSemantics": "{action}: {name}",
   "languageName": "Українська",
   "languageSystem": "Системна",
-  "settingsLanguageTitle": "МОВА"
+  "settingsLanguageTitle": "МОВА",
+  "doseReminderTitle": "Час прийому",
+  "doseReminderBody": "{time} · {count, plural, one{{count} прийом} few{{count} прийоми} many{{count} прийомів} other{{count} прийоми}}",
+  "doseChannelName": "Нагадування про прийом",
+  "doseChannelDescription": "Одне нагадування на кожен час прийому у вашому розкладі."
 }

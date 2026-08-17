@@ -45,6 +45,9 @@ dependencies:
 # intl is required by generated l10n code; version is deliberately unpinned so
   # flutter_localizations (SDK) owns resolution — never hand-pin (locked decision).
   intl: any
+  flutter_local_notifications: ^22.3.0
+  timezone: ^0.11.1
+  flutter_timezone: ^5.1.0
 
 dev_dependencies:
   flutter_test:

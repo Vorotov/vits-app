@@ -372,6 +372,19 @@ bool _isLocaleTag(Literal l) => l.enclosingCall == 'Locale';
 bool _isCasingLanguageSubtag(Literal l) =>
     l.path.endsWith('core/l10n/casing.dart');
 
+/// The three platform identifiers the notification layer must spell literally.
+///
+/// Scoped by VALUE **and** by path, in that order of importance. A path-only
+/// predicate is forbidden here: [allowlistEntryFor] returns the FIRST matching
+/// entry, so `l.path.startsWith('lib/core/notifications/')` alone would
+/// permanently bless every string literal anywhere in the notification layer, in
+/// this phase and every future one — and it would silently shadow the
+/// preferences-key entry for any key that comes to live under that path. The
+/// value set is what keeps the exemption the size of its own reason.
+bool _isNotificationPlatformIdentifier(Literal l) =>
+    l.path.startsWith('lib/core/notifications/') &&
+    const {'doses_v1', 'today', '@mipmap/ic_launcher'}.contains(l.value);
+
 /// Literal categories that are NOT user-visible copy, each with the reason it
 /// is not. Extend HERE, never by loosening a pattern.
 const stringLiteralAllowlist = <({
@@ -452,6 +465,26 @@ const stringLiteralAllowlist = <({
         'that one file so the entry cannot bless a language code anywhere '
         'else (WR-03)',
     allows: _isCasingLanguageSubtag,
+  ),
+  (
+    name: 'notification platform identifiers (channel id, tap payload, small icon)',
+    why: 'THREE values, each a platform key the operating system holds rather '
+        "than a word: 'doses_v1' is the Android channel id, persisted exactly "
+        "like 'app_locale' — translating it would orphan the channel settings "
+        "the user made and silently create a second channel in Android's own "
+        "list; 'today' is the tap payload, a cross-process routing token the OS "
+        'persists and can replay after an app update, validated by equality and '
+        "never rendered, so localizing it would make the whitelist "
+        "locale-dependent; '@mipmap/ic_launcher' is a drawable RESOURCE PATH "
+        'that must match the launcher-icon resources under '
+        'android/app/src/main/res/mipmap-* byte for byte, the same category as '
+        'the bundled-font-family entry above. Scoped by VALUE and by path: a '
+        'path-only predicate would bless every literal in the notification '
+        'layer forever, which is the failure mode this file exists to prevent '
+        '(07-UI-SPEC condition 27, corrected from two literals to three — the '
+        'small-icon name is translatable under the word pattern and matches no '
+        'other predicate)',
+    allows: _isNotificationPlatformIdentifier,
   ),
 ];
 

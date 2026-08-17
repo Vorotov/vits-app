@@ -835,5 +835,29 @@
   "settingsLanguageTitle": "LANGUAGE",
   "@settingsLanguageTitle": {
     "description": "Mono eyebrow above the language list on the Settings screen, in the supplementsLabel style. Stored uppercase; never toUpperCase()'d at runtime"
+  },
+  "doseReminderTitle": "Time for your doses",
+  "@doseReminderTitle": {
+    "description": "Title line of the grouped dose-reminder notification, rendered by the OS in the notification shade and on the lock screen. CONSTANT across every reminder and deliberately carries neither the app name (both platforms print it in chrome the app does not control), nor the count, nor the time (both live in the body, so the title stays a recognition line). MUST NEVER name a supplement: this text sits on a lock screen, and iOS exposes no hiddenPreviewsBodyPlaceholder through this plugin, which makes the text itself the only privacy control (spec 2.1, ASVS V4). Budget: 24 characters in every locale"
+  },
+  "doseReminderBody": "{time} · {count, plural, one{{count} dose} other{{count} doses}}",
+  "@doseReminderBody": {
+    "description": "Body line of the grouped dose-reminder notification: the scheduled dose time this reminder belongs to, then how many doses are due at it. One notification exists per time-of-day, so `count` counts DOSES DUE AT THAT ONE TIME — never supplements in the stack, never doses left in the day. `count` is never 0: the pure plan emits nothing for a time with no active doses. `time` is pre-formatted 24-hour HH:mm by the notification service via DateFormat.Hm, matching the app's alwaysUse24HourFormat rule on every other time display; it is restated even though the notification arrives at that time, because inexactAllowWhileIdle can shift delivery by 10-15 minutes and the OS timestamps delivery, not schedule. The ' · ' separator is the house idiom from doseSheetSubtitle and deliberately replaces a preposition, which Ukrainian would have to inflect per hour (о 08:00 / об 11:00). MUST NEVER name a supplement. Budget: 32 characters at count=999 in every locale",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "doseChannelName": "Dose reminders",
+  "@doseChannelName": {
+    "description": "Name of the Android notification channel `doses_v1`, user-visible in the OS's own Settings > Apps > Boostque > Notifications list. It is UI copy rendered by Android, so it is localized like everything else. Android's createNotificationChannel updates the name and description of an existing channel id, so this is re-applied at startup and on every language change WITHOUT versioning the id — versioning it would reset the user's own channel customizations (DECIDED-14)"
+  },
+  "doseChannelDescription": "One reminder for each dose time in your schedule.",
+  "@doseChannelDescription": {
+    "description": "Description of the Android notification channel `doses_v1`, shown under its name in the OS's notification settings. States the grouping rule (one per time-of-day, not one per supplement) so the user can predict the volume before enabling it. Mutable alongside the name; same refresh rule (DECIDED-14)"
   }
 }
