@@ -9,6 +9,7 @@ import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
+import 'package:boostque/core/widgets/bq_nav_bar.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/main.dart';
 
@@ -179,6 +180,75 @@ void main() {
     // no exception thrown.
     expect(find.text('Налаштування'), findsNWidgets(2));
     expect(tester.takeException(), isNull);
+
+    await flushTearDown(tester);
+  });
+
+  testWidgets(
+      'uk: a destination is activatable through SemanticsAction.tap, and '
+      'activating the already-selected one is a no-op (WR-02)',
+      (tester) async {
+    await tester.pumpWidget(shellApp(locale: 'uk'));
+    await pumpFrames(tester);
+
+    final l10n = lookupAppLocalizations(const Locale('uk'));
+
+    // The node has to carry the action ITSELF: `excludeSemantics: true` on
+    // the destination drops every descendant action, so a bar whose onTap
+    // lived only on the InkResponse would announce three buttons that
+    // VoiceOver / TalkBack cannot press — and it would pass every
+    // coordinate-tap test in this file (WR-02).
+    expect(
+      tester.getSemantics(find.text(l10n.tabCalendar)),
+      isSemantics(isButton: true, isSelected: false, hasTapAction: true),
+      reason: 'the unselected Calendar destination is a pressable button '
+          'that reports itself unselected',
+    );
+
+    // Assistive technology does not tap widgets. It activates semantics
+    // actions, which is the only path that proves this contract.
+    tester.semantics.performAction(
+      find.semantics.byLabel(l10n.tabCalendar),
+      SemanticsAction.tap,
+    );
+    await pumpFrames(tester);
+
+    // The Calendar screen is now the painted one; the Stack heading is gone.
+    expect(find.text(l10n.stackTitle), findsNothing,
+        reason: 'activating the node switched the visible screen, not just '
+            'the bar styling');
+    expect(
+      tester.getSemantics(find.text(l10n.tabCalendar)),
+      isSemantics(isButton: true, isSelected: true, hasTapAction: true),
+      reason: 'and the node it activated now reports itself selected',
+    );
+
+    // Re-activating the selected destination must stay a no-op rather than
+    // throw or unmount the screen.
+    tester.semantics.performAction(
+      find.semantics.byLabel(l10n.tabCalendar),
+      SemanticsAction.tap,
+    );
+    await pumpFrames(tester);
+    expect(tester.takeException(), isNull);
+    expect(find.text(l10n.stackTitle), findsNothing);
+
+    await flushTearDown(tester);
+  });
+
+  testWidgets('uk: the bar is the hand-built BqNavBar at its computed extent',
+      (tester) async {
+    await tester.pumpWidget(shellApp(locale: 'uk'));
+    await pumpFrames(tester);
+
+    expect(find.byType(BqNavBar), findsOneWidget);
+    expect(
+      tester.getSize(find.byType(BqNavBar)).height,
+      navBarHeightFor(TextScaler.noScaling),
+      reason: 'with no safe-area inset in the test window the painted bar is '
+          'exactly the computed extent — 56dp at scale 1.0 (NAV-01), down '
+          'from v1\'s 80dp',
+    );
 
     await flushTearDown(tester);
   });
