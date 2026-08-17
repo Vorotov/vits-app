@@ -40,6 +40,19 @@ final timeZoneLoaderProvider = Provider<Future<void> Function()?>(
   (ref) => null,
 );
 
+/// Reads the device's own zone identifier, on every resume.
+///
+/// Separate from [timeZoneLoaderProvider] because it answers a different
+/// question at a different moment: the loader parses the database once, this
+/// asks "where are we NOW" — the only way a zone change made while the app was
+/// backgrounded is ever noticed. Injected with a **null** default for exactly
+/// the reason the loader is: it ends in a platform-channel round trip, and a
+/// bare container must reach no plugin. Null means "nothing to re-read", and a
+/// sync that cannot ask keeps the zone it already has.
+final deviceZoneReaderProvider = Provider<Future<String> Function()?>(
+  (ref) => null,
+);
+
 /// One tap on a delivered reminder, as the platform reported it.
 ///
 /// Carries the RAW payload — untrusted, unvalidated, exactly the string the

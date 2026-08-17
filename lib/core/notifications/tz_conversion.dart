@@ -50,7 +50,7 @@ Future<void> initTimeZones({
   // initializeTimeZones sets the local location to UTC, so `tz.local` is safe to
   // read from here on even if the resolution below fails.
   _ready = true;
-  final read = readDeviceZone ?? _deviceZoneIdentifier;
+  final read = readDeviceZone ?? deviceZoneIdentifier;
   try {
     tz.setLocalLocation(tz.getLocation(await read()));
   } catch (error, stack) {
@@ -66,8 +66,37 @@ Future<void> initTimeZones({
   }
 }
 
-Future<String> _deviceZoneIdentifier() async =>
+/// The device's own IANA zone identifier — the one platform-channel call in
+/// this file.
+///
+/// Public because it is read TWICE in the app's life: once at bootstrap, and
+/// again on every resume, which is the only moment a zone change made while the
+/// app was backgrounded can be noticed. It is installed into
+/// `deviceZoneReaderProvider` by `main()` for the same reason the zone LOADER
+/// is injected — an un-injected default would make every widget test reach a
+/// plugin.
+Future<String> deviceZoneIdentifier() async =>
     (await FlutterTimezone.getLocalTimezone()).identifier;
+
+/// The identifier of the zone instants are currently being built in.
+String get localZoneIdentifier => tz.local.name;
+
+/// Points this boundary at [identifier], when it is not already pointed there.
+///
+/// Returns whether anything changed. Kept here rather than at the call site so
+/// `package:timezone` still stops in this file: nothing above it names a
+/// location, a zone database or a `TZDateTime`.
+///
+/// Throws for an identifier the database does not carry. That is deliberate and
+/// the caller absorbs it — degrading silently to UTC here would move every
+/// remaining reminder by the device offset with nothing to say so, where the
+/// caller can keep the zone it already had.
+bool setLocalZoneIfChanged(String identifier) {
+  assert(_ready, 'initTimeZones() must complete before a zone is changed');
+  if (identifier == tz.local.name) return false;
+  tz.setLocalLocation(tz.getLocation(identifier));
+  return true;
+}
 
 /// The instant at which [minutesFromMidnight] falls on calendar day [day].
 ///

@@ -14,7 +14,7 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:boostque/core/domain/models.dart';
@@ -23,6 +23,7 @@ import 'package:boostque/core/notifications/notification_copy.dart';
 import 'package:boostque/core/notifications/notification_locale.dart';
 import 'package:boostque/core/notifications/notification_plan.dart';
 import 'package:boostque/core/notifications/notification_providers.dart';
+import 'package:boostque/core/notifications/tz_conversion.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/today_controller.dart';
 
@@ -43,6 +44,7 @@ const notificationSyncDebounce = Duration(milliseconds: 300);
 /// a test that merely builds a container would observe nothing.
 class NotificationSync extends Notifier<int> {
   Timer? _debounce;
+  AppLifecycleListener? _lifecycle;
   bool _inFlight = false;
   int _applications = 0;
 
@@ -51,7 +53,15 @@ class NotificationSync extends Notifier<int> {
     ref.onDispose(() {
       _debounce?.cancel();
       _debounce = null;
+      _lifecycle?.dispose();
+      _lifecycle = null;
     });
+
+    // The sixth trigger, and the one that cannot arrive through the provider
+    // graph. `TodayController` carries the same listener for the same reason,
+    // recorded there: timers are suspended while the app is backgrounded, so a
+    // resume may arrive days after the last scheduled tick.
+    _lifecycle = AppLifecycleListener(onResume: () => unawaited(_onResume()));
 
     // LISTENED, not watched, and the difference is load-bearing: watching would
     // re-run this build on every trigger, and `ref.onDispose` fires on a
@@ -76,6 +86,50 @@ class NotificationSync extends Notifier<int> {
 
     _request();
     return _applications;
+  }
+
+  /// Re-resolves the device's zone, then asks for an application — always.
+  ///
+  /// **The zone first, because the instants are built from the local location.**
+  /// Applying a difference against a stale zone would arm every remaining
+  /// reminder at the old offset, which is precisely what a user who has just
+  /// flown somewhere would notice.
+  ///
+  /// A read that throws is reported and absorbed, and the zone already set is
+  /// kept: a wrong zone costs correct reminder times, and this path may never
+  /// be able to fail a resume.
+  ///
+  /// **This is also what tops up the horizon**, and therefore the mechanism
+  /// behind the phase's one honest limitation: reminders for cycling regimens
+  /// and courses are armed only a limited distance ahead, so they depend on the
+  /// app being opened occasionally — roughly a week of silence for a typical
+  /// cycling stack before they lapse. That limitation is deliberately NOT
+  /// surfaced anywhere in this milestone, and **no tail reminder announces it**.
+  /// A tail reminder would convert a silent degradation into a scheduled
+  /// interruption whose only call to action is "open the app", aimed precisely
+  /// at the users who have stopped opening it — and it would post a non-dose
+  /// message on a channel whose own description promises dose reminders. It is
+  /// recorded here, beside the code that causes the limitation, so nobody
+  /// re-litigates it as a small addition.
+  Future<void> _onResume() async {
+    if (!ref.mounted) return;
+    final readZone = ref.read(deviceZoneReaderProvider);
+    if (readZone != null) {
+      try {
+        setLocalZoneIfChanged(await readZone());
+      } catch (error, stack) {
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: error,
+            stack: stack,
+            library: 'boostque',
+            context: ErrorDescription('re-resolving the device time zone'),
+          ),
+        );
+      }
+    }
+    if (!ref.mounted) return;
+    _request();
   }
 
   /// Asks for an application, at the end of the debounce window.

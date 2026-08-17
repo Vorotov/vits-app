@@ -68,6 +68,7 @@ Future<void> main() async {
         launchNotificationPayloadProvider.overrideWithValue(launchPayload),
         notificationSchedulerProvider.overrideWith(_pluginScheduler),
         timeZoneLoaderProvider.overrideWithValue(initTimeZones),
+        deviceZoneReaderProvider.overrideWithValue(deviceZoneIdentifier),
       ],
       child: const BoostqueApp(),
     ),

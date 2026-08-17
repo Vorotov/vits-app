@@ -24,12 +24,15 @@ import 'package:boostque/core/notifications/notification_plan.dart';
 import 'package:boostque/core/notifications/notification_providers.dart';
 import 'package:boostque/core/notifications/notification_scheduler.dart';
 import 'package:boostque/core/notifications/notification_sync.dart';
+import 'package:boostque/core/notifications/tz_conversion.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import 'recording_scheduler.dart';
 
@@ -41,6 +44,23 @@ DateTime wallClock = DateTime(2026, 8, 17, 9);
 
 const uk = Locale('uk');
 const en = Locale('en');
+
+/// The app's primary audience's zone, and one seven hours west of it.
+const kyiv = 'Europe/Kyiv';
+const newYork = 'America/New_York';
+
+/// Delivers a real platform lifecycle message, the way the engine does.
+///
+/// `WidgetsBinding.handleAppLifecycleStateChanged` is `@protected`; the channel
+/// is the supported test seam. Taken verbatim from `today_provider_test.dart`,
+/// which drives the OTHER lifecycle listener in this app the same way.
+Future<void> sendLifecycle(WidgetTester tester, AppLifecycleState state) async {
+  await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+    'flutter/lifecycle',
+    const StringCodec().encodeMessage(state.toString()),
+    (_) {},
+  );
+}
 
 /// The calendar clock with its day pinned and its wall clock injected.
 ///
@@ -125,6 +145,7 @@ void main() {
   ProviderContainer build({
     bool ready = true,
     bool realBootstrap = false,
+    Future<String> Function()? zoneReader,
   }) {
     late final StreamController<List<Regimen>> regimenStream;
     regimenStream = StreamController<List<Regimen>>.broadcast();
@@ -138,6 +159,8 @@ void main() {
       overrides: [
         notificationSchedulerProvider.overrideWithValue(scheduler),
         timeZoneLoaderProvider.overrideWithValue(() async {}),
+        if (zoneReader != null)
+          deviceZoneReaderProvider.overrideWithValue(zoneReader),
         todayProvider.overrideWith(() => clock),
         regimensStreamProvider.overrideWith((ref) {
           ref.onDispose(regimenStream.close);
@@ -184,8 +207,13 @@ void main() {
     Locale? locale = uk,
     bool ready = true,
     bool realBootstrap = false,
+    Future<String> Function()? zoneReader,
   }) async {
-    container = build(ready: ready, realBootstrap: realBootstrap);
+    container = build(
+      ready: ready,
+      realBootstrap: realBootstrap,
+      zoneReader: zoneReader,
+    );
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
@@ -463,6 +491,280 @@ void main() {
     });
   });
 
+  group('the six triggers, one at a time', () {
+    // One test per trigger rather than one sweep that fires everything and
+    // counts once: a combined test cannot tell WHICH trigger broke, and a
+    // trigger that silently stopped working is the failure mode this whole plan
+    // exists to prevent.
+    late Regimen base;
+
+    setUp(() {
+      base = course(slots: [slot(600)]);
+      regimens = [base];
+    });
+
+    /// Fires [trigger] against a settled sync and returns how many applications
+    /// it caused.
+    Future<int> applicationsFrom(
+      WidgetTester tester,
+      Future<void> Function() trigger,
+    ) async {
+      final before = applications();
+      await trigger();
+      await settle(tester);
+      return applications() - before;
+    }
+
+    testWidgets('a regimen created', (tester) async {
+      await start(tester);
+      expect(
+        await applicationsFrom(tester, () async {
+          emit([base, course(id: 'c2', slots: [slot(700)])]);
+        }),
+        1,
+      );
+    });
+
+    testWidgets('a regimen edited', (tester) async {
+      await start(tester);
+      expect(
+        await applicationsFrom(tester, () async {
+          emit([course(slots: [slot(660)])]);
+        }),
+        1,
+      );
+    });
+
+    testWidgets('a regimen paused', (tester) async {
+      await start(tester);
+      expect(
+        await applicationsFrom(tester, () async {
+          emit([course(paused: true, slots: [slot(600)])]);
+        }),
+        1,
+      );
+    });
+
+    testWidgets('a regimen deleted — which is also how a deleted SUPPLEMENT '
+        'arrives, because the cascade soft-deletes its regimen too',
+        (tester) async {
+      await start(tester);
+      expect(
+        await applicationsFrom(tester, () async => emit(const <Regimen>[])),
+        1,
+      );
+    });
+
+    testWidgets('the day rolling over', (tester) async {
+      await start(tester);
+      expect(
+        await applicationsFrom(tester, () async => clock.rollTo(tomorrow)),
+        1,
+      );
+    });
+
+    testWidgets('the app resuming', (tester) async {
+      await start(tester);
+      expect(
+        await applicationsFrom(tester, () async {
+          await sendLifecycle(tester, AppLifecycleState.inactive);
+          await sendLifecycle(tester, AppLifecycleState.resumed);
+        }),
+        1,
+        reason: 'timers are suspended while the app is backgrounded, so a '
+            'resume may arrive days after the last scheduled tick — and it is '
+            'the only moment a timezone change made while backgrounded can be '
+            'noticed.',
+      );
+    });
+
+    testWidgets('the language changing — one application AND one channel '
+        'refresh', (tester) async {
+      // The one case that uses the REAL bootstrap, because the reschedule and
+      // the channel rewrite have to move together here.
+      await start(tester, realBootstrap: true);
+      final channelsBefore =
+          scheduler.calls.where((c) => c.method == ensureChannelCall).length;
+
+      final applied = await applicationsFrom(tester, () async {
+        container.read(notificationLocaleProvider.notifier).report(en);
+      });
+
+      expect(applied, 1);
+      expect(
+        scheduler.calls.where((c) => c.method == ensureChannelCall).length,
+        channelsBefore + 1,
+      );
+      expect(scheduler.calls.last.method, isNot(ensureChannelCall));
+      final refresh =
+          scheduler.calls.lastWhere((c) => c.method == ensureChannelCall);
+      expect(refresh.name, notificationChannelName(en));
+      expect(refresh.description, notificationChannelDescription(en));
+      // And the text that is now armed is the NEW language's — the whole point
+      // of the trigger, and invisible to an id-only diff.
+      expect(
+        scheduler.mutations.last.title,
+        notificationTitle(en),
+      );
+    });
+  });
+
+  group('a resume, and a timezone the user flew into', () {
+    setUpAll(() async {
+      await initTimeZones(readDeviceZone: () async => kyiv);
+    });
+
+    // The local location is PROCESS-global — that is the whole point of the
+    // boundary — so a test that changes it leaks into the next one. Pinned back
+    // here so these tests are independent of their order.
+    setUp(() => setLocalZoneIfChanged(kyiv));
+
+    Future<void> resume(WidgetTester tester) async {
+      await sendLifecycle(tester, AppLifecycleState.inactive);
+      await sendLifecycle(tester, AppLifecycleState.resumed);
+      await settle(tester);
+    }
+
+    testWidgets('a zone identifier that has not changed leaves the local '
+        'location alone', (tester) async {
+      regimens = [
+        course(slots: [slot(600)])
+      ];
+      await start(tester, zoneReader: () async => kyiv);
+      await resume(tester);
+
+      expect(localZoneIdentifier, kyiv);
+    });
+
+    testWidgets('a zone identifier that HAS changed is set before anything is '
+        'applied, and the instants move with it', (tester) async {
+      regimens = [
+        course(slots: [slot(600)])
+      ];
+      var zone = kyiv;
+      await start(tester, zoneReader: () async => zone);
+
+      // Capture the instant the ADAPTER would build, at the moment the schedule
+      // call happens. A test that only asserted the location was set would pass
+      // against a sync that then scheduled from a cached conversion.
+      final instants = <tz.TZDateTime>[];
+      scheduler.onSchedule = (call) => instants.add(
+            instantFor(
+              day: call.day!,
+              minutesFromMidnight: call.minutesFromMidnight!,
+            ),
+          );
+
+      zone = newYork;
+      await resume(tester);
+
+      expect(localZoneIdentifier, newYork);
+      expect(instants, isNotEmpty);
+      expect(instants.first.location.name, newYork);
+      expect(
+        instants.first.timeZoneOffset,
+        const Duration(hours: -4),
+        reason: 'applying a difference against a stale zone would arm every '
+            'remaining reminder at the old offset — seven hours out, in this '
+            'case.',
+      );
+    });
+
+    testWidgets('a zone read that throws is reported and absorbed, and the '
+        'difference is still applied against the zone already set',
+        (tester) async {
+      regimens = [
+        course(slots: [slot(600)])
+      ];
+      await start(
+        tester,
+        zoneReader: () async => throw StateError('no zone'),
+      );
+      final before = applications();
+
+      await resume(tester);
+
+      expect(tester.takeException(), isA<StateError>());
+      expect(applications(), before + 1,
+          reason: 'a wrong zone costs correct reminder times; this path may '
+              'never be able to fail a resume.');
+      expect(localZoneIdentifier, kyiv);
+    });
+
+    testWidgets('a day-later resume tops up the far edge of the horizon and '
+        'cancels what fell off it', (tester) async {
+      // A course long enough to outrun the horizon, so the window genuinely
+      // slides rather than merely re-deriving the same set.
+      regimens = [
+        course(end: today.add(const Duration(days: 40)), slots: [slot(600)])
+      ];
+      await start(tester, zoneReader: () async => kyiv);
+
+      final firstDay = notificationIdFor(day: today, minutesFromMidnight: 600);
+      final newEdge = notificationIdFor(
+        day: today.add(const Duration(days: 30)),
+        minutesFromMidnight: 600,
+      );
+      expect(scheduler.mutations.map((c) => c.id), contains(firstDay));
+      expect(scheduler.mutations.map((c) => c.id), isNot(contains(newEdge)));
+
+      // What the platform now holds, and then: a day passes with the app shut.
+      scheduler.held = scheduler.mutations
+          .map((c) => PendingNotification(id: c.id!, title: c.title, body: c.body))
+          .toList();
+      scheduler.calls.clear();
+      clock.rollTo(tomorrow);
+      await resume(tester);
+
+      expect(
+        scheduler.mutations
+            .where((c) => c.method == scheduleOnceCall)
+            .map((c) => c.id),
+        contains(newEdge),
+        reason: 'the horizon is topped up on resume — this is the mechanism '
+            'behind the phase\'s one honest limitation, that reminders for '
+            'cycling regimens and courses are armed only a limited distance '
+            'ahead and depend on the app being opened occasionally.',
+      );
+      expect(
+        scheduler.mutations
+            .where((c) => c.method == cancelCall)
+            .map((c) => c.id),
+        contains(firstDay),
+        reason: 'the day that fell out of the window is cancelled by id.',
+      );
+    });
+
+    testWidgets('a resume after the container is gone is inert, and throws '
+        'nothing', (tester) async {
+      regimens = [
+        course(slots: [slot(600)])
+      ];
+      await start(tester, zoneReader: () async => kyiv);
+      container.dispose();
+      scheduler.calls.clear();
+
+      await sendLifecycle(tester, AppLifecycleState.inactive);
+      await sendLifecycle(tester, AppLifecycleState.resumed);
+      await tester.pump(notificationSyncDebounce);
+      await tester.pump();
+
+      expect(scheduler.calls, isEmpty);
+      expect(
+        tester.takeException(),
+        isNull,
+        reason: 'a resume arriving after the container is gone reaches a '
+            'disposed ref, and reading one throws.',
+      );
+      // Stated plainly, because it is the limit of what this test proves: it
+      // CANNOT distinguish "the listener was disposed" from "the mounted guard
+      // held", and both are present. Deleting the disposal leaves this green —
+      // verified. The disposal itself is carried by the source gate below.
+      //
+      // The tearDown disposes the container again; that is idempotent.
+    });
+  });
+
   group('source gates — the facts no run of this suite can carry', () {
     String source(String path) => File(path).readAsStringSync();
 
@@ -520,6 +822,34 @@ void main() {
               'which nothing at all is scheduled.',
         );
       }
+    });
+
+    test('there is ONE lifecycle listener, and the disposal callback disposes '
+        'it', () {
+      final sync = source('lib/core/notifications/notification_sync.dart');
+      // CONSTRUCTIONS, not occurrences: the nullable field declaration names
+      // the type too, so the plan's "exactly one occurrence" criterion cannot
+      // hold for any listener that is held in order to be disposed —
+      // `today_controller.dart` has the same two.
+      expect(
+        RegExp(r'AppLifecycleListener\(').allMatches(sync).length,
+        1,
+        reason: 'a second listener would be a second opinion about what a '
+            'resume means.',
+      );
+      final onDispose = sync.substring(
+        sync.indexOf('ref.onDispose('),
+        sync.indexOf('});', sync.indexOf('ref.onDispose(')),
+      );
+      expect(
+        onDispose.contains('_lifecycle?.dispose()'),
+        isTrue,
+        reason: 'this is a SOURCE gate on purpose. No behavioural test in this '
+            'file can carry the claim: `_onResume` returns immediately on an '
+            'unmounted ref, so a leaked listener is indistinguishable from a '
+            'disposed one from the outside. Deleting the disposal was tried and '
+            'left the whole file green.',
+      );
     });
 
     test('the root app widget keeps the sync alive', () {
