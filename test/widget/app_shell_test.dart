@@ -253,6 +253,50 @@ void main() {
     await flushTearDown(tester);
   });
 
+  testWidgets(
+      'the bar renders EXACTLY three destinations and the settings title '
+      'resolves zero times inside it (NAV-02, NAV-03)', (tester) async {
+    for (final locale in const ['uk', 'en']) {
+      final l10n = lookupAppLocalizations(Locale(locale));
+      await tester.pumpWidget(shellApp(locale: locale));
+      await pumpFrames(tester);
+
+      final bar = find.byType(BqNavBar);
+      expect(
+        tester.widget<BqNavBar>(bar).destinations.length,
+        3,
+        reason: '$locale: three destinations, no more. Counting the widget\'s '
+            'own list rather than its labels is what makes a FOURTH '
+            'destination fail here — a set of present-label assertions '
+            'passes happily beside one',
+      );
+
+      // The absence, asserted directly. A test that only checks the three
+      // expected labels are present would still pass with Settings sitting
+      // beside them, which is exactly the state this plan removed.
+      expect(
+        find.descendant(of: bar, matching: find.text(l10n.settingsTitle)),
+        findsNothing,
+        reason: '$locale: Settings is reached by the gear, never by the bar '
+            '(NAV-03). This is the assertion the acceptance criterion asks '
+            'for by name: the settings title resolves ZERO times inside the '
+            'bar\'s subtree',
+      );
+      expect(
+        tester
+            .widget<BqNavBar>(bar)
+            .destinations
+            .map((d) => d.label)
+            .toList(),
+        [l10n.tabStack, l10n.tabToday, l10n.tabCalendar],
+        reason: '$locale: in order — Стек, Сьогодні, Календар — because the '
+            'index-to-screen mapping in the IndexedStack is positional',
+      );
+
+      await flushTearDown(tester);
+    }
+  });
+
   testWidgets('uk: the bar is the hand-built BqNavBar at its computed extent',
       (tester) async {
     await tester.pumpWidget(shellApp(locale: 'uk'));

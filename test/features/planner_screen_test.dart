@@ -28,10 +28,12 @@ import 'package:boostque/features/calendar/planner_gantt.dart';
 import 'package:boostque/features/calendar/planner_providers.dart';
 import 'package:boostque/features/calendar/planner_screen.dart';
 import 'package:boostque/features/calendar/planner_year_grid.dart';
+import 'package:boostque/features/calendar/week_strip.dart';
 import 'package:boostque/features/settings/settings_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
@@ -2938,9 +2940,9 @@ void main() {
     // selection and not about the default index happening to be right.
     // Plan 06-03: three destinations, and the case runs from every one of
     // them — Стек, Сьогодні and Календар all carry the gear.
-    const destinationLabels = <int, String>{
-      1: 'Сьогодні',
-      2: 'Календар',
+    final destinationLabels = <int, String>{
+      1: uk.tabToday,
+      2: uk.tabCalendar,
     };
     for (final start in const <int>[0, 1, 2]) {
       testWidgets(
@@ -3041,6 +3043,321 @@ void main() {
         await tearDownTree(tester, container);
       });
     }
+  });
+
+  // ---------------------------------------------------------------------
+  // Deep state across a tab switch (plan 06-03, Interaction Contract 6).
+  //
+  // This is TRUE BY CONSTRUCTION now — the shell's IndexedStack never
+  // unmounts a child, so the four autoDispose selections below never lose
+  // their last listener. It was FALSE under the deleted page swap: returning
+  // to Today unmounted PlannerScreen and every selection went with it. Being
+  // true by construction is exactly why it is worth encoding: nothing in the
+  // type system stops a later plan from wrapping a child in something that
+  // unmounts it, and the symptom (a silently reset pick) is invisible until
+  // a user notices their week jumped back to today's.
+  //
+  // The selections are made through the controllers rather than by tapping a
+  // week column or a month card. The tap PATH is proven by its own cases
+  // above (WR-02 semantic activation); the claim here is about SURVIVAL, and
+  // driving it through the same controller the tap calls keeps these cases
+  // from failing for a scroll-position reason that has nothing to do with
+  // the contract.
+  // ---------------------------------------------------------------------
+
+  group('deep state survives a tab switch (Interaction Contract 6)', () {
+    /// Which destination the shell reports as selected.
+    int selectedTab(WidgetTester tester) =>
+        tester.widget<BqNavBar>(find.byType(BqNavBar)).selectedIndex;
+
+    /// Mounts the real shell and waits for its bar.
+    Future<void> openShell(
+      WidgetTester tester,
+      ProviderContainer container,
+    ) async {
+      await tester.pumpWidget(shellApp(container));
+      await pumpUntil(
+        tester,
+        () => find.byType(BqNavBar).evaluate().isNotEmpty,
+        'the shell nav bar',
+      );
+    }
+
+    /// Taps the destination labelled [label] and lets the frame settle.
+    Future<void> tapDestination(WidgetTester tester, String label) async {
+      await tester.tap(
+        find.descendant(
+          of: find.byType(BqNavBar),
+          matching: find.text(label),
+        ),
+      );
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+    }
+
+    /// Leaves the current destination for Стек and comes back to [label].
+    Future<void> roundTrip(WidgetTester tester, String label) async {
+      await tapDestination(tester, 'Стек');
+      await tapDestination(tester, label);
+    }
+
+    testWidgets('the selected planner SEGMENT survives leaving Календар and '
+        'coming back', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openShell(tester, container);
+
+      await tapDestination(tester, 'Календар');
+      await pumpUntil(
+        tester,
+        () => find.byType(BqSegmented).evaluate().isNotEmpty,
+        'the planner header',
+      );
+      // Цикли is the default, so picking Рік is a real change rather than a
+      // re-selection that would survive by accident.
+      await tester.tap(find.text('Рік'));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      final picked = container.read(plannerSegmentProvider);
+      expect(find.byType(GanttRowBar), findsNothing,
+          reason: 'the Рік body replaced the Цикли gantt — the premise, '
+              'asserted rather than assumed');
+
+      await roundTrip(tester, 'Календар');
+
+      expect(container.read(plannerSegmentProvider), picked,
+          reason: 'the segment the user picked is still picked. Under the '
+              'deleted page swap the planner unmounted on every return to '
+              'Today and this autoDispose provider died with it, silently '
+              'sending the user back to Цикли');
+      expect(find.byType(GanttRowBar), findsNothing,
+          reason: 'and the Рік body is what re-renders, not merely a '
+              'provider value nothing reads');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the selected WEEK survives leaving Календар and coming back',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openShell(tester, container);
+
+      await tapDestination(tester, 'Календар');
+      await pumpUntil(
+        tester,
+        () => find.byType(GanttRowBar).evaluate().isNotEmpty,
+        'the planner gantt rows',
+      );
+
+      final model = switch (container.read(cyclesModelProvider)) {
+        AsyncData(:final value) => value,
+        _ => null,
+      };
+      expect(model, isNotNull, reason: 'the cycles model has resolved');
+      final current = container.read(resolvedWeekIndexProvider);
+      // A week that is NOT the current one: following today would survive a
+      // round trip for the wrong reason.
+      final target = (current + 1) % model!.weeks.length;
+      container
+          .read(selectedWeekProvider.notifier)
+          .select(model.weeks[target].bucket.start);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      expect(container.read(resolvedWeekIndexProvider), target);
+      expect(target, isNot(current));
+
+      await roundTrip(tester, 'Календар');
+
+      expect(container.read(resolvedWeekIndexProvider), target,
+          reason: 'the picked week is still the resolved one. The identity-'
+              'based lookup in resolvedWeekIndexProvider is what makes this '
+              'hold — it is VERIFIED here, not rebuilt (WR-03)');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the selected MONTH survives leaving Календар and coming back',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openShell(tester, container);
+
+      await tapDestination(tester, 'Календар');
+      await pumpUntil(
+        tester,
+        () => find.byType(BqSegmented).evaluate().isNotEmpty,
+        'the planner header',
+      );
+      await tester.tap(find.text('Рік'));
+      await pumpUntil(
+        tester,
+        () => find.byType(PlannerYearGrid).evaluate().isNotEmpty,
+        'the year grid',
+      );
+
+      final model = switch (container.read(yearModelProvider)) {
+        AsyncData(:final value) => value,
+        _ => null,
+      };
+      expect(model, isNotNull, reason: 'the year model has resolved');
+      final current = container.read(resolvedMonthIndexProvider);
+      final target = (current + 1) % model!.months.length;
+      container
+          .read(selectedMonthProvider.notifier)
+          .select(model.months[target].month);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      expect(container.read(resolvedMonthIndexProvider), target);
+      expect(target, isNot(current));
+
+      await roundTrip(tester, 'Календар');
+
+      expect(container.read(resolvedMonthIndexProvider), target,
+          reason: 'the picked month card is still the resolved one, by the '
+              'same identity lookup the week selection uses (WR-03)');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the BROWSED DAY survives leaving Сьогодні and coming back',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      await openShell(tester, container);
+
+      await tapDestination(tester, 'Сьогодні');
+      await pumpUntil(
+        tester,
+        () => find.byType(WeekStrip).evaluate().isNotEmpty,
+        'the week strip',
+      );
+
+      final today = container.read(todayProvider);
+      final past = today.subtract(const Duration(days: 2));
+      container.read(selectedDayProvider.notifier).select(past);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+      expect(container.read(resolvedDayProvider), past,
+          reason: 'the premise: a PAST day is being browsed, not today');
+
+      await roundTrip(tester, 'Сьогодні');
+
+      expect(container.read(resolvedDayProvider), past,
+          reason: 'the browsed day survives the round trip — a user who '
+              'checked Стек mid-review comes back to the day they were '
+              'reading, not to today');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    // -------------------------------------------------------------------
+    // System back, after the interception was deleted (NAV-03).
+    //
+    // The two cases this replaces asserted the opposite — that a PopScope
+    // swallowed the back and returned the page swap to Today. That mechanism
+    // is gone, and the contract inverted with it: a tab is a root page, so
+    // back leaves the app exactly as it does from any single-screen Android
+    // app. The back is driven down the real platform channel rather than by
+    // calling a callback, so the assertion covers the whole path — engine
+    // message -> WidgetsBinding.handlePopRoute -> WidgetsApp.didPopRoute ->
+    // Navigator.maybePop — rather than proving something about who calls it.
+    // -------------------------------------------------------------------
+
+    /// Every method call the app makes on `SystemChannels.platform`.
+    ///
+    /// `SystemNavigator.pop()` — "close the app" — travels this channel, and
+    /// it is the ONLY observable difference between a back the app consumed
+    /// and one that fell through to the platform: a real exit leaves the
+    /// widget tree looking exactly as it was.
+    List<MethodCall> recordPlatformCalls(WidgetTester tester) {
+      final calls = <MethodCall>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          calls.add(call);
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, null),
+      );
+      return calls;
+    }
+
+    /// Delivers the engine's `popRoute` notification — an Android hardware /
+    /// gesture back, or an iOS back, as the framework actually receives it.
+    Future<void> systemBack(WidgetTester tester) async {
+      final message = const JSONMethodCodec().encodeMethodCall(
+        const MethodCall('popRoute'),
+      );
+      await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+        SystemChannels.navigation.name,
+        message,
+        (_) {},
+      );
+      await tester.pump();
+    }
+
+    testWidgets('a system back on a tab is NOT intercepted: it reaches the '
+        'platform, changes no destination and throws nothing (NAV-03)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await seed(container);
+      final platformCalls = recordPlatformCalls(tester);
+      await openShell(tester, container);
+
+      await tapDestination(tester, 'Календар');
+      await pumpUntil(
+        tester,
+        () => find.byType(PlannerScreen).evaluate().isNotEmpty,
+        'the planner',
+      );
+      expect(selectedTab(tester), 2);
+
+      // Cleared so the assertion is about the back gesture alone, not about
+      // anything the app said to the platform while starting up.
+      platformCalls.clear();
+      await systemBack(tester);
+      await pumpUntil(
+        tester,
+        () => platformCalls.any((c) => c.method == 'SystemNavigator.pop'),
+        'the back on a tab to reach the platform',
+      );
+
+      expect(
+        platformCalls.map((call) => call.method),
+        contains('SystemNavigator.pop'),
+        reason: 'nothing intercepts back on a tab any more. The deleted '
+            'PopScope existed only to send the page swap back to Today; with '
+            'the planner a destination, a back the app has nowhere to spend '
+            'must leave, exactly as it does from any root page',
+      );
+      expect(selectedTab(tester), 2,
+          reason: 'and the selection is untouched by a back the app declined '
+              'to handle — back is not a tab-history gesture');
+      expect(find.byType(PlannerScreen), findsOneWidget,
+          reason: 'the destination is still the planner: nothing swapped a '
+              'page out from under the user');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
   });
 }
 
