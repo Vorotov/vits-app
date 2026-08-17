@@ -99,11 +99,7 @@ const plannerKeyPrefixes = <String>[
 /// another surface and named for what they count, not for where they appear.
 const plannerKeysExact = <String>{
   'substancesCount',
-  'substancesLimitCount',
-  'slotsCount',
-  'cyclesCount',
   'periodsCount',
-  'limitBadge',
   'disclaimerEducational',
 };
 
@@ -125,12 +121,9 @@ Map<String, String> plannerCopy(AppLocalizations l10n) {
   }
 
   plural('monthsCount', l10n.monthsCount);
-  plural('cyclesCount', l10n.cyclesCount);
   plural('periodsCount', l10n.periodsCount);
   plural('substancesCount', l10n.substancesCount);
-  plural('substancesLimitCount', l10n.substancesLimitCount);
   plural('weeksCount', l10n.weeksCount);
-  plural('slotsCount', l10n.slotsCount);
 
   return {
     ...sample,
@@ -143,27 +136,15 @@ Map<String, String> plannerCopy(AppLocalizations l10n) {
         l10n.plannerRangeSubtitleCrossYear('A', '2026', 'B', '2027'),
     'plannerYearSubtitle': l10n.plannerYearSubtitle('2026', 'M'),
     'plannerThisWeek': l10n.plannerThisWeek('N'),
-    'limitBadge': l10n.limitBadge(5),
     'legendTaking': l10n.legendTaking,
     'legendPlanned': l10n.legendPlanned,
     'legendPaused': l10n.legendPaused,
     'loadChartTitle': l10n.loadChartTitle,
     'loadChartMeta': l10n.loadChartMeta,
-    'loadAxisLegend': l10n.loadAxisLegend(5, 3),
     'loadScaleCaption': l10n.loadScaleCaption,
-    'weekLoadLabel': l10n.weekLoadLabel(4, l10n.slotsCount(5)),
-    'weekFreeSlots': l10n.weekFreeSlots(1),
-    'weekNoFreeSlots': l10n.weekNoFreeSlots,
-    'verdictComfort': l10n.verdictComfort,
-    'verdictLimit': l10n.verdictLimit,
-    'verdictOverLimit': l10n.verdictOverLimit,
-    'weekNoteComfort': l10n.weekNoteComfort,
-    'weekNoteLimit': l10n.weekNoteLimit,
-    'weekNoteOverLimit': l10n.weekNoteOverLimit('C'),
     'peakMonth': l10n.peakMonth('M'),
     'peakMonthsTie': l10n.peakMonthsTie('M'),
     'yearLegendHint': l10n.yearLegendHint,
-    'monthMeta': l10n.monthMeta('N', 5),
     'monthStateTaking': l10n.monthStateTaking,
     'monthStatePlanned': l10n.monthStatePlanned,
     'monthStatePartial': l10n.monthStatePartial,
@@ -173,7 +154,6 @@ Map<String, String> plannerCopy(AppLocalizations l10n) {
     'emptyPlannerBodyNoRegimen': l10n.emptyPlannerBodyNoRegimen,
     'plannerLoadError': l10n.plannerLoadError,
     'plannerDisclaimer': l10n.plannerDisclaimer,
-    'yearFootnote': l10n.yearFootnote(l10n.substancesLimitCount(5)),
     'ganttRowSemantics': l10n.ganttRowSemantics('N', 'S', 'P'),
     'ganttRowSemanticsPaused': l10n.ganttRowSemanticsPaused('N', 'S', 'P'),
     'yearLegendEntrySemantics': l10n.yearLegendEntrySemantics('N', 'P'),
@@ -205,8 +185,11 @@ void main() {
 
         // A filter that matched nothing would make every assertion below
         // vacuously true, which is worse than no gate at all.
-        expect(arbKeys.length, greaterThanOrEqualTo(40),
-            reason: 'the prefix filter stopped resolving the planner surface');
+        expect(arbKeys.length, greaterThanOrEqualTo(35),
+            reason: 'the prefix filter stopped resolving the planner surface. '
+                '35 is the MEASURED planner-key count after phase 06 deleted '
+                'the sixteen limit keys (was 51 against a floor of 40) — '
+                're-derived from the ARB, never guessed downward (T-06-17)');
 
         // Plural samples are keyed "name(n)"; the ARB knows only "name".
         final covered = copy.keys.map((k) => k.split('(').first).toSet();
@@ -277,12 +260,9 @@ void main() {
     });
   }
 
-  test('the over-limit note ships truncated — the fat-soluble clause is '
-      'never restored (M2, PF-5)', () async {
-    final uk = await AppLocalizations.delegate.load(const Locale('uk'));
-    expect(uk.weekNoteOverLimit('2 цикли'), endsWith('із лікарем.'),
-        reason: 'the mockup sentence continues with a pharmacological claim '
-            'about fat-soluble forms; if the truncation ever reads oddly the '
-            'final sentence is REWRITTEN, never re-extended');
-  });
+  // The standalone "the over-limit note ships truncated" test is deleted with
+  // its key: `weekNoteOverLimit` no longer exists, so the test could not
+  // compile. Its guarantee is NOT lost — the `жиророзчин` / `fat-soluble`
+  // entries stay in [forbiddenVocabulary] above, which is what actually keeps
+  // the pharmacological clause from returning, in any key, in either locale.
 }

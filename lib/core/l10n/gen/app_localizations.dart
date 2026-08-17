@@ -859,12 +859,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{{count} month} other{{count} months}}'**
   String monthsCount(int count);
 
-  /// Count of cycles overlapping a week (mockup line 658), pre-formatted into weekNoteOverLimit. uk carries all four CLDR forms
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{{count} cycle} other{{count} cycles}}'**
-  String cyclesCount(int count);
-
   /// Count of painted runs on a gantt row — accessibility only, pre-formatted into ganttRowSemantics because the painted bands are invisible to assistive tech. uk carries all four CLDR forms
   ///
   /// In en, this message translates to:
@@ -876,12 +870,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} at the same time this week'**
   String plannerThisWeek(String count);
-
-  /// Mono badge inside the Цикли summary chip (mockup line 297) naming the editorial 5-substance rule — a limit of ours, never a safety threshold
-  ///
-  /// In en, this message translates to:
-  /// **'limit {max}'**
-  String limitBadge(int max);
 
   /// Gantt legend entry for a solid accent segment (mockup line 326)
   ///
@@ -913,83 +901,11 @@ abstract class AppLocalizations {
   /// **'by week'**
   String get loadChartMeta;
 
-  /// Centre label of the load chart's axis row (mockup line 348); both numbers are editorial rules of this product
-  ///
-  /// In en, this message translates to:
-  /// **'limit {max} · comfort {comfort}'**
-  String loadAxisLegend(int max, int comfort);
-
   /// Centre label of the load chart's axis row (plan 06-05) — the chart's scale caption. It states what a full bar MEANS (every scheduled supplement in the stack overlaps that week) and asserts nothing about whether that is good or bad; it replaces loadAxisLegend, which named an editorial limit
   ///
   /// In en, this message translates to:
   /// **'full bar = your whole stack'**
   String get loadScaleCaption;
-
-  /// Count of tracking slots, pre-formatted into weekLoadLabel. The uk forms are the ones the preposition «з» governs — genitive singular for one («з 1 слота»), genitive plural otherwise — the same rule ringSemantics follows for «з {n} доз». Before this key the uk sentence hardcoded the genitive plural, so moving editorialLimit off 5 produced ungrammatical copy that no test could catch (WR-05)
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{{count} slot} other{{count} slots}}'**
-  String slotsCount(int count);
-
-  /// Count of substances in the ACCUSATIVE case the uk phrase «межі у …» governs (one{речовину}, unlike substancesCount's nominative one{речовина}); pre-formatted into yearFootnote. English has no case distinction, so the two keys read identically here — they are separate because uk cannot compose one sentence out of the other's forms (WR-05)
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{{count} substance} other{{count} substances}}'**
-  String substancesLimitCount(int count);
-
-  /// Week-detail meta (mockup line 913), also pre-formatted into weekBarSemantics. `max` is a pre-formatted slotsCount string — the count is declined by its own plural key and passed in finished, the cycleSummaryCyclic idiom
-  ///
-  /// In en, this message translates to:
-  /// **'{load} of {max}'**
-  String weekLoadLabel(int load, String max);
-
-  /// Week-detail hint when the week is below the editorial limit (mockup line 921)
-  ///
-  /// In en, this message translates to:
-  /// **'{n} free — you can plan a start'**
-  String weekFreeSlots(int n);
-
-  /// Week-detail hint when the week is at or above the editorial limit (mockup line 921)
-  ///
-  /// In en, this message translates to:
-  /// **'No free slots'**
-  String get weekNoFreeSlots;
-
-  /// Week verdict chip at load <= 3 (mockup line 778)
-  ///
-  /// In en, this message translates to:
-  /// **'COMFORTABLE'**
-  String get verdictComfort;
-
-  /// Week verdict chip at load <= 5 (mockup line 781) — at OUR limit, not a warning
-  ///
-  /// In en, this message translates to:
-  /// **'AT THE LIMIT'**
-  String get verdictLimit;
-
-  /// Week verdict chip at load > 5 (mockup line 784) — above OUR editorial limit, never 'unsafe'
-  ///
-  /// In en, this message translates to:
-  /// **'OVER THE LIMIT'**
-  String get verdictOverLimit;
-
-  /// Verdict note under the comfort band (mockup line 779, uk verbatim)
-  ///
-  /// In en, this message translates to:
-  /// **'Up to three substances at once is easy to track: if something goes wrong, it is clear what to remove.'**
-  String get weekNoteComfort;
-
-  /// Verdict note at the limit (mockup line 782, uk verbatim) — 'our default limit', explicitly this product's rule
-  ///
-  /// In en, this message translates to:
-  /// **'Five is our default limit. Above it, it becomes hard to tell what is producing an effect and what is a side sensation.'**
-  String get weekNoteLimit;
-
-  /// Verdict note above the limit (mockup line 785), shipped TRUNCATED. The mockup's trailing clause about the cumulative load of fat-soluble forms is deliberately absent: it is a pharmacological claim inside the never-ship interaction-advice exclusion (PF-5, DECIDED-8). If the truncation ever reads oddly, rewrite the final sentence — the clause is NEVER restored. `cycles` is a pre-formatted cyclesCount string
-  ///
-  /// In en, this message translates to:
-  /// **'{cycles} overlap this week. Consider moving the start of some of them, or discussing this volume with your doctor.'**
-  String weekNoteOverLimit(String cycles);
 
   /// Рік peak chip when one month leads (mockup line 967); `month` is an intl LLLL standalone (nominative) form
   ///
@@ -1008,12 +924,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'lighter = planned'**
   String get yearLegendHint;
-
-  /// Month-detail header meta (mockup line 972); `count` is a pre-formatted substancesCount string
-  ///
-  /// In en, this message translates to:
-  /// **'{count} · limit {max}'**
-  String monthMeta(String count, int max);
 
   /// Month-detail row state when the whole month is covered and already running (mockup line 850)
   ///
@@ -1069,12 +979,6 @@ abstract class AppLocalizations {
   /// **'The planner shows how your cycles overlap over time. Educational material, not medical advice.'**
   String get plannerDisclaimer;
 
-  /// Рік closing note (mockup line 454, uk verbatim), rendered directly above plannerDisclaimer with an 8px gap. `max` is a pre-formatted substancesLimitCount string, so the sentence stays grammatical in uk at any editorial limit (WR-05)
-  ///
-  /// In en, this message translates to:
-  /// **'The year view shows how cycles overlap. A red number on a month means it exceeds our limit of {max} at once.'**
-  String yearFootnote(String max);
-
   /// Accessibility label of a gantt row: the painted bands are invisible to assistive tech, so the run count is spoken. `schedule` is the shared schedule-summary composition (minus the daily-slot tail) and `periods` is a pre-formatted periodsCount string
   ///
   /// In en, this message translates to:
@@ -1093,7 +997,7 @@ abstract class AppLocalizations {
   /// **'{name}, {state}'**
   String yearLegendEntrySemantics(String name, String state);
 
-  /// Accessibility label of a load-chart week column; `range` is an intl-formatted bucket range and `load` a pre-formatted weekLoadLabel string
+  /// Accessibility label of a load-chart week column; `range` is an intl-formatted bucket range and `load` a pre-formatted substancesCount string (it named a weekLoadLabel string until phase 06 deleted that key along with the limit it stated)
   ///
   /// In en, this message translates to:
   /// **'{range}, {load}'**
@@ -1105,7 +1009,7 @@ abstract class AppLocalizations {
   /// **'{month}, {count}'**
   String monthCardSemantics(String month, String count);
 
-  /// Accessibility label of a catalog row's add affordance. The whole sentence — including its separator — lives here rather than being concatenated in Dart, because word order and punctuation between the two fragments are a per-language decision (PF-5); both parts are passed in finished, the weekLoadLabel idiom
+  /// Accessibility label of a catalog row's add affordance. The whole sentence — including its separator — lives here rather than being concatenated in Dart, because word order and punctuation between the two fragments are a per-language decision (PF-5); both parts are passed in finished, the pre-formatted-count idiom
   ///
   /// In en, this message translates to:
   /// **'{action}: {name}'**

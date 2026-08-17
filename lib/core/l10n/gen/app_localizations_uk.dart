@@ -495,19 +495,6 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
-  String cyclesCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count цикли',
-      many: '$count циклів',
-      few: '$count цикли',
-      one: '$count цикл',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String periodsCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -526,11 +513,6 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
-  String limitBadge(int max) {
-    return 'межа $max';
-  }
-
-  @override
   String get legendTaking => 'приймаю';
 
   @override
@@ -546,73 +528,7 @@ class AppLocalizationsUk extends AppLocalizations {
   String get loadChartMeta => 'по тижнях';
 
   @override
-  String loadAxisLegend(int max, int comfort) {
-    return 'межа $max · комфорт $comfort';
-  }
-
-  @override
   String get loadScaleCaption => 'повний стовпчик — увесь стек';
-
-  @override
-  String slotsCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count слотів',
-      many: '$count слотів',
-      few: '$count слотів',
-      one: '$count слота',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String substancesLimitCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count речовини',
-      many: '$count речовин',
-      few: '$count речовини',
-      one: '$count речовину',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String weekLoadLabel(int load, String max) {
-    return '$load з $max';
-  }
-
-  @override
-  String weekFreeSlots(int n) {
-    return 'Вільно $n — можна планувати старт';
-  }
-
-  @override
-  String get weekNoFreeSlots => 'Вільних слотів немає';
-
-  @override
-  String get verdictComfort => 'КОМФОРТНО';
-
-  @override
-  String get verdictLimit => 'МЕЖА';
-
-  @override
-  String get verdictOverLimit => 'ПОНАД МЕЖУ';
-
-  @override
-  String get weekNoteComfort =>
-      'До трьох речовин одночасно легко відстежувати: якщо щось піде не так, зрозуміло, що саме прибрати.';
-
-  @override
-  String get weekNoteLimit =>
-      'П\'ять — наша межа за замовчуванням. Вище стає важко відрізнити, що дає ефект, а що — побічні відчуття.';
-
-  @override
-  String weekNoteOverLimit(String cycles) {
-    return 'Цього тижня перетинаються $cycles. Варто зсунути старт частини з них або обговорити такий обсяг із лікарем.';
-  }
 
   @override
   String peakMonth(String month) {
@@ -626,11 +542,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get yearLegendHint => 'світліше = заплановано';
-
-  @override
-  String monthMeta(String count, int max) {
-    return '$count · межа $max';
-  }
 
   @override
   String get monthStateTaking => 'приймаю';
@@ -662,11 +573,6 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get plannerDisclaimer =>
       'Планувальник показує, як ваші цикли накладаються в часі. Освітній матеріал, не медична порада.';
-
-  @override
-  String yearFootnote(String max) {
-    return 'Рік показує, як цикли накладаються один на одний. Червоне число в місяці означає перевищення нашої межі у $max одночасно.';
-  }
 
   @override
   String ganttRowSemantics(String name, String schedule, String periods) {

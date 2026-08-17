@@ -93,17 +93,7 @@ void main() {
       expect(BqColors.todayMarker, const Color(0x5917171B));
     });
 
-    test('thresholdDash — comfort-3 dashed line, ink at .22', () {
-      expect(BqColors.thresholdDash, const Color(0x3817171B));
-    });
-
-    test(
-        'thresholdDash is a token of its own, not an alias of checkBorder '
-        '(equal today, independent forever)', () {
-      expect(BqColors.thresholdDash, BqColors.checkBorder);
-    });
-
-    test('loadBar — comfort-band load bar #7C80AB, and NOT accent', () {
+    test('loadBar — the load-chart bar #7C80AB, and NOT accent', () {
       expect(BqColors.loadBar, const Color(0xFF7C80AB));
       expect(BqColors.loadBar, isNot(BqColors.accent));
     });

@@ -139,19 +139,12 @@ abstract final class BqColors {
   /// `background:#17171B;opacity:.35` (line 305). Ink at .35.
   static const Color todayMarker = Color(0x5917171B);
 
-  /// The comfort-3 dashed reference line of the load chart — mockup's
-  /// `repeating-linear-gradient(90deg,rgba(23,23,27,.22) 0 4px,transparent
-  /// 4px 8px)` (line 339). Ink at .22.
+  /// The load-chart bar, at EVERY height — mockup's `'#7C80AB'` (line 907).
+  /// A desaturated accent-family tone that is deliberately NOT [accent], so
+  /// the chart does not consume accent budget.
   ///
-  /// Deliberately a SEPARATE token even though it currently equals
-  /// [checkBorder] — the same mechanism [BqRadii.dayCell] uses against
-  /// [BqRadii.input]: a chart reference line must never be restyled by a
-  /// change to a checkbox border. Do not collapse the two.
-  static const Color thresholdDash = Color(0x3817171B);
-
-  /// Load-chart bar in the comfort band (load <= 3) — mockup's `'#7C80AB'`
-  /// (line 907). A desaturated accent-family tone that is deliberately NOT
-  /// [accent], so the chart does not consume accent budget.
+  /// One colour, no bands: the chart states how much of the stack overlaps
+  /// and says nothing about whether that is a lot (PLAN-05).
   static const Color loadBar = Color(0xFF7C80AB);
 
   /// Fill of the selected month card in the Year grid — mockup's
