@@ -96,7 +96,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyStackBody =>
-      'Add your first supplement — from the catalog or manually.';
+      'Add your first supplement with the + button — from the catalog or manually.';
 
   @override
   String get stackLoadError => 'Couldn\'t load your stack. Try again.';

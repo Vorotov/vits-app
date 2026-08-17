@@ -52,6 +52,7 @@ import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/today_controller.dart';
+import 'package:boostque/core/widgets/bq_add_fab.dart';
 import 'package:boostque/core/widgets/bq_nav_bar.dart';
 import 'package:boostque/features/calendar/today_screen.dart';
 import 'package:boostque/features/calendar/day_progress_ring.dart';
@@ -112,7 +113,8 @@ void main() {
         // Genuine first-run empty state.
         expect(find.text('Стек порожній'), findsOneWidget);
         expect(
-          find.text('Додайте першу добавку — з каталогу або вручну.'),
+          // Rewritten by plan 06-04 to name the + action.
+          find.text('Додайте першу добавку кнопкою + — з каталогу або вручну.'),
           findsOneWidget,
         );
         debugPrint('DATA-03 step a: empty state asserted');
@@ -137,7 +139,11 @@ void main() {
       // ---------------------------------------------------------------
       // (b) add a supplement manually
       // ---------------------------------------------------------------
-      await _tap(tester, find.widgetWithText(FilledButton, 'Додати добавку'));
+      // The shell's floating + since plan 06-04 — the Стек screen's
+      // full-width add button is deleted. The sheet's own SAVE button below
+      // still carries the same words, which is why this one is matched by
+      // widget type rather than by text.
+      await _tap(tester, find.byType(BqAddFab));
       await _pump(tester, 10);
       expect(find.byType(BottomSheet), findsOneWidget, reason: 'add sheet');
       expect(find.text('Пошук у базі'), findsOneWidget);

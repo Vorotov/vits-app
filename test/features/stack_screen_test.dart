@@ -36,6 +36,7 @@ import 'package:boostque/core/l10n/locale_controller.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/today_controller.dart';
+import 'package:boostque/core/widgets/bq_add_fab.dart';
 import 'package:boostque/features/settings/settings_screen.dart';
 import 'package:boostque/features/stack/regimen_editor_screen.dart';
 import 'package:boostque/features/stack/stack_screen.dart';
@@ -113,9 +114,33 @@ void main() {
                 data: MediaQuery.of(context).copyWith(textScaler: textScaler),
                 child: child!,
               ),
-        home: const StackScreen(),
+        // Since plan 06-04 the add affordance is the shell's floating + , not
+        // a button on this screen — the full-width accent CTA is deleted. The
+        // harness therefore hosts StackScreen the way the shell does, under a
+        // Scaffold carrying the REAL [BqAddFab], so every add flow below is
+        // driven through the same control the user actually touches. Where
+        // the FAB is mounted (root Scaffold, all three tabs, never Settings)
+        // is asserted in `app_shell_test.dart`; this file asserts what
+        // happens when it is used above the Стек screen.
+        home: const Scaffold(
+          body: StackScreen(),
+          floatingActionButton: BqAddFab(),
+        ),
       ),
     );
+  }
+
+  /// Opens the add-supplement sheet through the FAB.
+  ///
+  /// Matched by WIDGET TYPE, never by the `addSupplement` label: that string
+  /// is also the FAB's semantics label and, before plan 06-04, was the
+  /// deleted button's painted text. A label finder here would be a finder
+  /// that says "some node carrying this string", which is exactly how a
+  /// retargeted assertion starts passing for the wrong reason (T-06-10).
+  Future<void> openAddSheet(WidgetTester tester) async {
+    expect(find.byType(BqAddFab), findsOneWidget);
+    await tester.tap(find.byType(BqAddFab));
+    await tester.pumpAndSettle();
   }
 
   /// The same screen with the language coming from [localeControllerProvider]
@@ -130,7 +155,12 @@ void main() {
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           theme: bqTheme(),
-          home: const StackScreen(),
+          // Same shell-shaped host as `app` above: the add flow this harness
+          // drives goes through the FAB since plan 06-04.
+          home: const Scaffold(
+            body: StackScreen(),
+            floatingActionButton: BqAddFab(),
+          ),
         ),
       ),
     );
@@ -192,9 +222,8 @@ void main() {
     await tester.pumpWidget(app(container));
     await tester.pump();
 
-    // Open the add sheet via the single CTA on the screen.
-    await tester.tap(find.text('Додати добавку'));
-    await tester.pumpAndSettle();
+    // Open the add sheet through the single add affordance — the FAB.
+    await openAddSheet(tester);
 
     // Switch to the manual tab (the search tab is the default).
     await tester.tap(find.text('Вручну'));
@@ -254,8 +283,7 @@ void main() {
     await tester.pumpWidget(app(container));
     await tester.pump();
 
-    await tester.tap(find.text('Додати добавку'));
-    await tester.pumpAndSettle();
+    await openAddSheet(tester);
 
     // Search tab is the default: hint visible, full catalog listed (#8).
     expect(find.text('Назва або діюча речовина'), findsOneWidget);
@@ -289,8 +317,7 @@ void main() {
     await tester.pumpWidget(app(container));
     await tester.pump();
 
-    await tester.tap(find.text('Додати добавку'));
-    await tester.pumpAndSettle();
+    await openAddSheet(tester);
 
     final Finder searchField = find.descendant(
       of: find.byType(BottomSheet),
@@ -329,8 +356,7 @@ void main() {
     await tester.pumpWidget(app(container));
     await tester.pump();
 
-    await tester.tap(find.text('Додати добавку'));
-    await tester.pumpAndSettle();
+    await openAddSheet(tester);
 
     // Observe supplements pump-driven (awaiting .first un-pumped deadlocks
     // against Drift's zero-duration timers in the test zone).
@@ -379,8 +405,7 @@ void main() {
     await tester.pumpWidget(app(container));
     await tester.pump();
 
-    await tester.tap(find.text('Додати добавку'));
-    await tester.pumpAndSettle();
+    await openAddSheet(tester);
 
     final Finder searchField = find.descendant(
       of: find.byType(BottomSheet),
@@ -400,21 +425,45 @@ void main() {
   });
 
   testWidgets(
-      'uk: empty stack renders emptyStackTitle below the still-visible CTA '
-      'and omits the ДОБАВКИ eyebrow (UI-SPEC #1)', (tester) async {
+      'uk: empty stack renders emptyStackTitle, body copy pointing at the + , '
+      'and omits the ДОБАВКИ eyebrow (UI-SPEC #1, UX-01)', (tester) async {
     usePhoneSurface(tester);
+    final handle = tester.ensureSemantics();
     final container = makeContainer();
     await tester.pumpWidget(app(container));
     await pumpUntilFound(tester, find.text('Стек порожній'));
 
     expect(find.text('Стек порожній'), findsOneWidget);
-    expect(find.text('Додайте першу добавку — з каталогу або вручну.'),
+    // The rewritten body (plan 06-04): it names the + ACTION, not a screen
+    // corner, so it stays true under RTL and if the FAB ever moves.
+    expect(find.text('Додайте першу добавку кнопкою + — з каталогу або вручну.'),
         findsOneWidget);
-    expect(find.text('Додати добавку'), findsOneWidget,
-        reason: 'the CTA stays visible above the empty state');
+
+    // The affordance the copy points at, asserted as the FAB's OWN semantics
+    // node — deliberately NOT `find.text('Додати добавку')`. That finder used
+    // to match the deleted full-width button, and a bare-label finder here
+    // would be satisfied by any node carrying the string rather than by the
+    // control existing (T-06-10).
+    expect(find.byType(BqAddFab), findsOneWidget);
+    expect(
+      tester.getSemantics(find.byType(BqAddFab)),
+      isSemantics(
+        isButton: true,
+        label: 'Додати добавку',
+        hasTapAction: true,
+      ),
+      reason: 'the empty state\'s single next step is the floating + , and a '
+          'screen-reader user learns what it does from this node alone',
+    );
+    expect(find.byType(FilledButton), findsNothing,
+        reason: 'the full-width accent add button is DELETED — the Стек '
+            'screen has no accent-filled block of its own (UX-01)');
+
     expect(find.text('ДОБАВКИ'), findsNothing,
         reason: 'the eyebrow is omitted when the list is empty (#1)');
     expect(tester.takeException(), isNull);
+
+    handle.dispose();
 
     await tearDownTree(tester, container);
   });
@@ -433,6 +482,71 @@ void main() {
         reason: 'the eyebrow renders above a non-empty list');
     expect(find.textContaining('на день'), findsNothing,
         reason: 'a fresh entry gets NO schedule chip — never a placeholder');
+    expect(tester.takeException(), isNull);
+
+    await tearDownTree(tester, container);
+  });
+
+  testWidgets(
+      'uk: the LAST card of a full stack is still reachable by scrolling with '
+      'the FAB present at textScaler 2.0 (T-06-11, UX-01)', (tester) async {
+    usePhoneSurface(tester);
+    final container = makeContainer();
+    // Enough entries that the list must scroll at any scale.
+    for (var i = 0; i < 12; i++) {
+      await container.read(supplementRepoProvider).upsert(
+            Supplement(
+              id: 's$i',
+              name: 'Добавка $i',
+              doseText: '${100 + i} мг · капсули',
+              colorValue: 0xFF6B6FA8,
+              note: '',
+            ),
+          );
+    }
+    await tester.pumpWidget(
+      app(container, textScaler: const TextScaler.linear(2.0)),
+    );
+    await pumpUntilFound(tester, find.text('Добавка 0'));
+
+    // What `bottom: 84` is FOR: the FAB occupies 16 + 56 = 72px above the
+    // viewport bottom, so the last card must come to rest clear of it. This
+    // is asserted rather than re-derived — a padding someone "tidied" to 56
+    // would put the last card under the disc, where it cannot be tapped.
+    await tester.dragUntilVisible(
+      find.text('Добавка 11'),
+      find.byType(ListView),
+      const Offset(0, -300),
+    );
+    // Then all the way to the END of the extent, which is where the last card
+    // comes to rest and the only position `bottom: 84` has to protect.
+    // `dragUntilVisible` stops as soon as the target is on screen, which is
+    // not the same place.
+    await tester.drag(find.byType(ListView), const Offset(0, -2000));
+    await tester.pumpAndSettle();
+    final ScrollPosition position =
+        tester.state<ScrollableState>(find.byType(Scrollable).first).position;
+    expect(position.pixels, position.maxScrollExtent,
+        reason: 'the assertion below is only about the RESTING position of '
+            'the last card; if the list is not at its end, it measures '
+            'nothing');
+
+    // The WHOLE card, not just its name line: the name sits at the card's top
+    // and would clear the FAB even with the bottom padding removed, which is
+    // precisely the assertion that would measure nothing. The card's own tap
+    // target is the box that must stay clear.
+    final Rect card = tester.getRect(
+      find
+          .ancestor(
+            of: find.text('Добавка 11'),
+            matching: find.byType(GestureDetector),
+          )
+          .first,
+    );
+    final Rect fab = tester.getRect(find.byType(BqAddFab));
+    expect(card.bottom, lessThanOrEqualTo(fab.top),
+        reason: 'the last card scrolled to a position the FAB covers — the '
+            'user cannot read or tap the entry they scrolled to');
     expect(tester.takeException(), isNull);
 
     await tearDownTree(tester, container);
@@ -766,8 +880,13 @@ void main() {
 
           expect(find.text(l10n.emptyStackTitle), findsOneWidget);
           expect(find.text(l10n.emptyStackBody), findsOneWidget);
-          expect(find.text(l10n.addSupplement), findsOneWidget,
-              reason: 'the CTA stays visible above the empty state (#1)');
+          // The add affordance, matched by WIDGET rather than by the
+          // `addSupplement` string: since plan 06-04 that string is a
+          // semantics label, and a text finder for it would now assert
+          // nothing about whether the control is on screen (T-06-10).
+          expect(find.byType(BqAddFab), findsOneWidget,
+              reason: 'the floating + is the empty state\'s single next step '
+                  'in $locale at scale $scale (#1, UX-01)');
 
           if (locale == 'en') {
             expectNoCyrillicWhileEn(tester);
@@ -786,10 +905,9 @@ void main() {
           await tester.pumpWidget(
             app(container, locale: locale, textScaler: scaler),
           );
-          await pumpUntilFound(tester, find.text(l10n.addSupplement));
+          await pumpUntilFound(tester, find.byType(BqAddFab));
 
-          await tester.tap(find.text(l10n.addSupplement));
-          await tester.pumpAndSettle();
+          await openAddSheet(tester);
 
           // Search tab (the default): hint + the catalog resolved in the
           // ACTIVE language — the catalog is ARB-backed, so an en render that
@@ -860,10 +978,9 @@ void main() {
         final handle = tester.ensureSemantics();
         final container = makeContainer(today: DateTime.utc(2026, 8, 10));
         await tester.pumpWidget(app(container, locale: locale));
-        await pumpUntilFound(tester, find.text(l10n.addSupplement));
+        await pumpUntilFound(tester, find.byType(BqAddFab));
 
-        await tester.tap(find.text(l10n.addSupplement));
-        await tester.pumpAndSettle();
+        await openAddSheet(tester);
         await pumpUntilFound(tester, find.text(l10n.catalogCreatineName));
 
         // Scope to ONE catalog row: every row carries a "+", so an unscoped
@@ -1063,8 +1180,7 @@ void main() {
 
     // Add the catalog entry while UKRAINIAN is active: the row copies the
     // active locale's name onto the Supplement (catalog.dart:11-15).
-    await tester.tap(find.text(uk.addSupplement));
-    await tester.pumpAndSettle();
+    await openAddSheet(tester);
     await tester.tap(find.text(uk.catalogCreatineName));
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.arrow_back_ios_new));

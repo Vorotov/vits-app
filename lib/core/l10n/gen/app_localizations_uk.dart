@@ -102,7 +102,8 @@ class AppLocalizationsUk extends AppLocalizations {
   String get emptyStackTitle => 'Стек порожній';
 
   @override
-  String get emptyStackBody => 'Додайте першу добавку — з каталогу або вручну.';
+  String get emptyStackBody =>
+      'Додайте першу добавку кнопкою + — з каталогу або вручну.';
 
   @override
   String get stackLoadError => 'Не вдалося завантажити стек. Спробуйте ще раз.';

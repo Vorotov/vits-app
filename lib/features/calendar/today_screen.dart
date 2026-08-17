@@ -499,7 +499,11 @@ class _DayBodyState extends ConsumerState<_DayBody> {
 ///
 /// An off-week with a stocked stack is a CORRECT, expected state and gets no
 /// call to action; an empty stack gets the one next step that helps — named,
-/// not linked, because the nav bar is the affordance.
+/// not linked, because the affordances are already on screen: the Стек
+/// destination in the bar, and, since plan 06-04, the shell's floating + ,
+/// which adds a supplement from this tab without leaving it. The no-stack body
+/// names the Стек TAB and stays true either way — it points at a destination
+/// that still exists, not at a control that was deleted.
 class _EmptyDayState extends ConsumerWidget {
   const _EmptyDayState();
 

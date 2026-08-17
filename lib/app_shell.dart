@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:boostque/core/l10n/l10n.dart';
+import 'package:boostque/core/widgets/bq_add_fab.dart';
 import 'package:boostque/core/widgets/bq_nav_bar.dart';
 import 'package:boostque/features/calendar/planner_screen.dart';
 import 'package:boostque/features/calendar/today_screen.dart';
@@ -55,6 +56,19 @@ class _AppShellState extends State<AppShell> {
             TickerMode(enabled: index == _selectedIndex, child: screen),
         ],
       ),
+      // The app's single add affordance, mounted ONCE (UX-01, plan 06-04).
+      // Because it lives on the ROOT Scaffold, "present on exactly the three
+      // tabs and nowhere else" is structurally true: Settings is a pushed
+      // route with its own Scaffold and cannot inherit this one's FAB, and no
+      // per-screen `showFab` flag exists to get wrong.
+      //
+      // Position and nav-bar clearance are left to the Scaffold's default
+      // end-float location on purpose. The Scaffold measures the REAL
+      // bottomNavigationBar below, whose extent is `navBarHeightFor(scaler)`,
+      // so the gap rises with the bar at every text scale for free. A
+      // hand-written offset here would reproduce the exact defect class this
+      // phase removes.
+      floatingActionButton: const BqAddFab(),
       bottomNavigationBar: BqNavBar(
         selectedIndex: _selectedIndex,
         onSelected: (index) {

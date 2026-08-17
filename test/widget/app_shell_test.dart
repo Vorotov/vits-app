@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -10,8 +13,10 @@ import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
+import 'package:boostque/core/widgets/bq_add_fab.dart';
 import 'package:boostque/core/widgets/bq_nav_bar.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
+import 'package:boostque/features/settings/settings_screen.dart';
 import 'package:boostque/main.dart';
 
 import '../support/locale_matrix.dart';
@@ -377,5 +382,173 @@ void main() {
         });
       }
     }
+  });
+
+  // ---------------------------------------------------------------------
+  // UX-01, encoded as PRESENCE and ABSENCE (plan 06-04).
+  //
+  // The requirement is "a floating add button on exactly the three tabs and
+  // nowhere else". Presence is asserted PER DESTINATION rather than once,
+  // because a single-tab test would pass just as happily against a per-screen
+  // mount — the arrangement this plan replaced. Absence is asserted while the
+  // pushed Settings route is on top, which is the structural half of the
+  // claim: Settings has its OWN Scaffold and cannot inherit the shell's FAB,
+  // so this case fails loudly if anyone later adds a per-screen mount.
+  // ---------------------------------------------------------------------
+
+  group('UX-01: the add FAB is on exactly the three tabs (06-04)', () {
+    for (final (index, tab) in const <String>[
+      'tabStack',
+      'tabToday',
+      'tabCalendar',
+    ].indexed) {
+      testWidgets('uk: destination $index ($tab) carries exactly ONE add FAB, '
+          'labelled addSupplement', (tester) async {
+        final handle = tester.ensureSemantics();
+        final l10n = lookupAppLocalizations(const Locale('uk'));
+        final label = <String>[
+          l10n.tabStack,
+          l10n.tabToday,
+          l10n.tabCalendar,
+        ][index];
+
+        await tester.pumpWidget(shellApp(locale: 'uk'));
+        await pumpFrames(tester);
+
+        await tester.tap(find.text(label));
+        await pumpFrames(tester);
+
+        expect(find.byType(BqAddFab), findsOneWidget,
+            reason: 'one FAB, on the shell — not one per screen. The count is '
+                'what fails if a second mount is ever added');
+        expect(
+          tester.getSemantics(find.byType(BqAddFab)),
+          isSemantics(
+            isButton: true,
+            label: l10n.addSupplement,
+            hasTapAction: true,
+          ),
+          reason: 'the same labelled, activatable button on every tab — the '
+              'answer to "how do I add another?" does not change with the '
+              'destination',
+        );
+
+        handle.dispose();
+        await flushTearDown(tester);
+      });
+    }
+
+    testWidgets('uk: the FAB is ABSENT while the pushed Settings route is on '
+        'top, and back the moment it pops', (tester) async {
+      final handle = tester.ensureSemantics();
+      final l10n = lookupAppLocalizations(const Locale('uk'));
+
+      await tester.pumpWidget(shellApp(locale: 'uk'));
+      await pumpFrames(tester);
+      expect(find.byType(BqAddFab), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.settings_outlined));
+      await tester.pumpAndSettle();
+      expect(find.byType(SettingsScreen), findsOneWidget);
+
+      // Structural, not conditional: Settings is a route with its own
+      // Scaffold, so the shell's FAB goes offstage with the shell beneath it.
+      expect(find.byType(BqAddFab), findsNothing,
+          reason: 'Settings is a full-screen pushed route — an add affordance '
+              'floating over a settings list would be the per-screen-flag bug '
+              'this mount point exists to make impossible');
+      expect(find.semantics.byLabel(l10n.addSupplement), findsNothing,
+          reason: 'and it is gone from the SEMANTICS tree too, so a '
+              'screen-reader user is not offered a button that is not there');
+
+      await tester.tap(find.byIcon(Icons.arrow_back_ios_new));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BqAddFab), findsOneWidget,
+          reason: 'popping restores it — the absence above was the route '
+              'stack, not a destroyed widget');
+
+      handle.dispose();
+      await flushTearDown(tester);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // Clearance (UX-01 overflow truth): the FAB sits ABOVE the bar at every
+  // text scale, and the gap does not shrink as the bar grows.
+  //
+  // The Scaffold measures the real bottomNavigationBar — whose extent is
+  // `navBarHeightFor(scaler)` — so the clearance rises with the bar for free.
+  // These cells prove that rather than assuming it; a hand-written offset
+  // would show up here as a gap that shrinks by exactly the bar's growth.
+  // ---------------------------------------------------------------------
+
+  group('UX-01 clearance matrix (06-04)', () {
+    for (final locale in bqLocaleMatrix) {
+      testWidgets('$locale: the FAB clears the bar at every scale and the gap '
+          'never shrinks', (tester) async {
+        double? previousGap;
+
+        for (final scale in bqTextScaleMatrix) {
+          await tester.pumpWidget(
+            shellApp(locale: locale, textScaler: TextScaler.linear(scale)),
+          );
+          await pumpFrames(tester);
+
+          final Rect fab = tester.getRect(find.byType(BqAddFab));
+          final Rect bar = tester.getRect(find.byType(BqNavBar));
+
+          expect(fab.bottom, lessThanOrEqualTo(bar.top),
+              reason: '$locale @ $scale: the FAB overlapped the bar. This is '
+                  'the CR-01 collision class — fix the measurement, never the '
+                  'assertion');
+
+          final double gap = bar.top - fab.bottom;
+          if (previousGap != null) {
+            expect(gap, greaterThanOrEqualTo(previousGap),
+                reason: '$locale @ $scale: the gap between the FAB and the bar '
+                    'SHRANK as the bar grew, which is what a hardcoded offset '
+                    'looks like from the outside');
+          }
+          previousGap = gap;
+
+          expect(tester.takeException(), isNull, reason: overflowReason);
+          await flushTearDown(tester);
+        }
+      });
+    }
+
+    test('no source file writes a literal vertical offset for the FAB', () {
+      // A source gate, in the LOCKED-FONT idiom (`stack_screen_test.dart`):
+      // the clearance must come from the Scaffold measuring the real bar, and
+      // the only way to state "nobody wrote one" is to read the two files
+      // that could have.
+      for (final path in const <String>[
+        'lib/app_shell.dart',
+        'lib/core/widgets/bq_add_fab.dart',
+      ]) {
+        final source = File(path).readAsStringSync();
+        expect(source, isNotEmpty,
+            reason: 'if this file stops being readable the gate has silently '
+                'stopped gating');
+        // Comments in these files deliberately DESCRIBE the offset they
+        // refuse to write, so the gate reads code lines only.
+        final code = const LineSplitter()
+            .convert(source)
+            .where((l) => !l.trimLeft().startsWith('//'))
+            .where((l) => !l.trimLeft().startsWith('///'))
+            .join('\n');
+        expect(code.contains('Positioned'), isFalse,
+            reason: '$path hand-positions the FAB. A Stack + Positioned is '
+                'exactly how the nav-bar clearance stops tracking the bar');
+        expect(RegExp(r'bottom:\s*\d').hasMatch(code), isFalse,
+            reason: '$path writes a literal bottom offset. The Scaffold '
+                'already knows the bar\'s height; a constant here is a second '
+                'answer that goes stale at the first text-scale change');
+        expect(code.contains('FloatingActionButtonLocation'), isFalse,
+            reason: '$path overrides the default end-float location, which is '
+                'the direction-aware, bar-aware one');
+      }
+    });
   });
 }
