@@ -22,6 +22,7 @@ import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/calendar_screen.dart';
+import 'package:boostque/core/widgets/bq_nav_bar.dart';
 import 'package:boostque/core/widgets/bq_segmented.dart';
 import 'package:boostque/features/calendar/planner_gantt.dart';
 import 'package:boostque/features/calendar/planner_providers.dart';
@@ -575,8 +576,10 @@ void main() {
       );
     }
 
+    // Plan 06-01: the shell's bar is the hand-built [BqNavBar]; the claim
+    // this reads is unchanged — WHICH TAB the shell reports as selected.
     int selectedTab(WidgetTester tester) =>
-        tester.widget<NavigationBar>(find.byType(NavigationBar)).selectedIndex;
+        tester.widget<BqNavBar>(find.byType(BqNavBar)).selectedIndex;
 
     testWidgets('a system back with the planner open returns to Today and '
         'never leaves the Calendar tab (UI-SPEC truth #18)', (tester) async {

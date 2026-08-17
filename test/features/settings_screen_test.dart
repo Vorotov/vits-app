@@ -21,6 +21,7 @@ import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/l10n/locale_controller.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
+import 'package:boostque/core/widgets/bq_nav_bar.dart';
 import 'package:boostque/features/settings/language_picker.dart';
 import 'package:boostque/features/settings/settings_screen.dart';
 import 'package:boostque/main.dart';
@@ -153,7 +154,7 @@ void main() {
   Future<void> openSettings(WidgetTester tester, AppLocalizations l10n) async {
     await tester.tap(
       find.descendant(
-        of: find.byType(NavigationBar),
+        of: find.byType(BqNavBar),
         matching: find.text(l10n.tabSettings),
       ),
     );
@@ -214,7 +215,7 @@ void main() {
         reason: instantReason);
     expect(
       find.descendant(
-        of: find.byType(NavigationBar),
+        of: find.byType(BqNavBar),
         matching: find.text(uk.tabStack),
       ),
       findsOneWidget,
@@ -232,7 +233,7 @@ void main() {
         reason: instantReason);
     expect(
       find.descendant(
-        of: find.byType(NavigationBar),
+        of: find.byType(BqNavBar),
         matching: find.text(en.tabStack),
       ),
       findsOneWidget,
@@ -268,7 +269,7 @@ void main() {
 
     expect(
       find.descendant(
-        of: find.byType(NavigationBar),
+        of: find.byType(BqNavBar),
         matching: find.text(uk.tabStack),
       ),
       findsOneWidget,

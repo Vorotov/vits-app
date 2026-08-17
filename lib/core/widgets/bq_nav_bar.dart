@@ -1,0 +1,231 @@
+/// Hand-built bottom navigation bar (06-UI-SPEC S8, NAV-01).
+///
+/// WHY THIS IS NOT THE SDK `NavigationBar` — the accurate rationale (D-1).
+/// The SDK bar's height *is* themeable: `navigation_bar.dart:281` resolves
+/// `height ?? navigationBarTheme.height ?? defaults.height!`, so a
+/// `NavigationBarThemeData(height: 56)` would have compiled. Two things it
+/// still could not do:
+///
+/// 1. **A themed height would still clip.** The resolved height lands in a
+///    hard `SizedBox` (`navigation_bar.dart:298`) wrapped around a
+///    destination stack whose LABEL does grow with the text scaler. That is
+///    the CR-01 defect class this codebase has already paid for twice —
+///    `week_strip.dart:59-79` documents seven bottom overflows at scale 1.6
+///    and 2.0, and `planner_year_grid.dart` records the same lesson at the
+///    year grid.
+/// 2. **The height has to be a FUNCTION, not a value.** No `ThemeData` field
+///    accepts a `double Function(TextScaler)`, and that is exactly the shape
+///    NAV-01 requires. [navBarHeightFor] is that function.
+///
+/// Because the bar is hand-built, `bqTheme()` no longer carries a
+/// bottom-navigation sub-theme at all: the label's 10 / accent-or-textFaint
+/// styling and the icon colour pair live in this file, where the widget that
+/// reads them lives. A sub-theme that styles nothing is worse than none — the
+/// next reader edits it and sees no change (T-06-01).
+///
+/// PRESS FEEDBACK is [InkResponse], chosen deliberately over the load chart's
+/// opacity idiom (precedent: `planner_year_grid.dart`'s month card). Both are
+/// precedented here; this bar is the app's primary navigation control and
+/// tapping the ALREADY-SELECTED destination must still feel like it
+/// registered, which an opacity change tied to selection cannot express. Not
+/// to be "unified" with the chart later.
+///
+/// SEMANTICS ROLES: the container carries `SemanticsRole.tabBar` and each
+/// destination `SemanticsRole.tab`, so assistive tech announces "tab 2 of 3"
+/// rather than three unrelated buttons. `button: true, selected: …` is kept
+/// alongside the roles — that pair is what every other bespoke control here
+/// uses (`bq_segmented.dart`, `week_strip.dart`) and it is what the tests
+/// assert, so the roles are an addition, never a substitution.
+///
+/// TOKEN-ONLY RULE (D-07): every colour comes from `BqColors`. The only
+/// literals are the mockup-exact 22px horizontal padding and the 10 / 1.2
+/// label typography — the UI-SPEC spacing exemption recorded at
+/// `tokens.dart:212-216`. The v1 66px destination-column width and 24px
+/// home-indicator strip from that same exemption are DELETED, not reproduced:
+/// a fixed-width column is a fixed-width text container, and the home
+/// indicator is [SafeArea]'s job.
+library;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+
+import '../theme/tokens.dart';
+
+/// The part of the bar's height that does NOT follow the text scale:
+/// 8px top pad + the 22px icon box + the 4px icon-to-label gap + 10px bottom
+/// pad. v1's `top: 10` padding on the shell's outer `Container` is folded in
+/// here — leaving it outside would double-count and miss the 56dp target.
+const double _navBarFixedExtent = 44;
+
+/// The text-bearing part of the bar at scale 1.0: the 10sp label's line box
+/// (10 x line-height 1.2). This is the ONLY part the scaler multiplies.
+const double _navBarLabelExtent = 12;
+
+/// Height reserved for the bar's content, for [scaler].
+///
+/// 56.0 at scale 1.0 (NAV-01, down from v1's 80dp), ~63 at 1.6, 68.0 at 2.0 —
+/// strictly increasing. The `stripHeightFor` (`week_strip.dart:78`) /
+/// `monthCardExtentFor` (`planner_year_grid.dart`) idiom, transcribed: a
+/// top-level function so the extent is unit-testable without pumping a widget.
+///
+/// Only [_navBarLabelExtent] passes through the scaler. [Icon] takes its size
+/// from [IconThemeData] and does NOT follow the text scaler, so multiplying
+/// the whole 56 would over-reserve at every scale above 1.0 — which is why
+/// the extent is SPLIT rather than scaled as a whole.
+double navBarHeightFor(TextScaler scaler) =>
+    _navBarFixedExtent + scaler.scale(_navBarLabelExtent);
+
+/// One destination's immutable content: its glyph pair and its ARB label.
+///
+/// Labels arrive already localized — this widget never reaches for
+/// `context.l10n` itself, so it stays a pure function of its arguments and is
+/// testable without a localization delegate.
+@immutable
+class BqNavDestination {
+  const BqNavDestination({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+  });
+
+  /// Glyph shown while this destination is not the selected one.
+  final IconData icon;
+
+  /// Glyph shown while this destination is selected.
+  final IconData selectedIcon;
+
+  /// The destination's localized label — the ARB string, not a literal.
+  final String label;
+}
+
+/// The app's bottom navigation bar: a flat surfaceAlt strip with a 1px
+/// hairline top border and one [Expanded] cell per destination.
+///
+/// Stateless by design — the selected index is the shell's state and comes
+/// back out through [onSelected]. Renders synchronously on the first frame
+/// from its arguments alone: there is no async source here, so no spinner,
+/// skeleton or error surface exists in this file.
+class BqNavBar extends StatelessWidget {
+  const BqNavBar({
+    super.key,
+    required this.destinations,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  /// Destinations in display order.
+  final List<BqNavDestination> destinations;
+
+  /// Index of the currently selected destination.
+  final int selectedIndex;
+
+  /// Called with the activated destination's index — including when it is
+  /// already the selected one (see the press-feedback note above).
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    // [DecoratedBox], not [Container]: a `Border` inside a Container's
+    // decoration is PADDING — it insets the child and adds its width to the
+    // laid-out height, so the bar measured 57dp rather than the 56dp NAV-01
+    // specifies. `DecoratedBox` paints the same hairline without consuming
+    // layout, which keeps the painted extent exactly
+    // `navBarHeightFor(scaler) + bottom safe-area inset` — the equality the
+    // text-scale matrix asserts per cell. The 1px hairline paints over the
+    // top of the 8px pad already inside the extent.
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: BqColors.surfaceAlt,
+        border: Border(top: BorderSide(color: BqColors.hairline, width: 1)),
+      ),
+      child: Padding(
+        // Mockup-exact horizontal override (UI-SPEC spacing exemption).
+        // Direction-neutral: no left/right inset may enter this file.
+        padding: const EdgeInsetsDirectional.only(start: 22, end: 22),
+        // INSIDE the decorated box, never around it: the fill and the
+        // hairline must reach the physical screen edge while the three touch
+        // targets sit above the home indicator.
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            height: navBarHeightFor(MediaQuery.textScalerOf(context)),
+            child: Semantics(
+              container: true,
+              explicitChildNodes: true,
+              role: SemanticsRole.tabBar,
+              child: Row(
+                children: [
+                  for (int i = 0; i < destinations.length; i++)
+                    Expanded(child: _destination(i)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _destination(int i) {
+    final BqNavDestination destination = destinations[i];
+    final bool selected = i == selectedIndex;
+    final Color color = selected ? BqColors.accent : BqColors.textFaint;
+
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: destination.label,
+        role: SemanticsRole.tab,
+        excludeSemantics: true,
+        // The action lives on THIS node, not only on the InkResponse below
+        // it: `excludeSemantics` drops every descendant action, so without
+        // this a destination announced itself as a button that VoiceOver /
+        // TalkBack could not activate — and switching tabs is the app's
+        // primary affordance. A coordinate tap passes either way, which is
+        // exactly why this line is easy to lose (WR-02).
+        onTap: () => onSelected(i),
+        child: InkResponse(
+          onTap: () => onSelected(i),
+          // The whole Expanded cell is the tap target — a 22dp glyph must
+          // never define it (Interaction Contract 8). `InkResponse`
+          // hit-tests OPAQUE across its full box, which is the behaviour
+          // the week strip spells out on its `GestureDetector`.
+          containedInkWell: false,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                selected ? destination.selectedIcon : destination.icon,
+                size: 22,
+                color: color,
+              ),
+              const SizedBox(height: 4), // icon-to-label gap, in the extent
+              Text(
+                destination.label,
+                textAlign: TextAlign.center,
+                // A one- or two-word tab label is single-line by nature:
+                // wrapping one at a large text scale would grow the cell by
+                // a whole line and clip it (CR-01), so the line COUNT is
+                // pinned and only the line HEIGHT follows the scaler — which
+                // is what navBarHeightFor reserves. There is deliberately no
+                // shrink-to-fit backstop here (the v1 spec's is void): the
+                // label renders at its true 10sp size at every scale, and a
+                // clipped cell means the extent constants are wrong.
+                maxLines: 1,
+                softWrap: false,
+                style: TextStyle(
+                  fontSize: 10,
+                  height: 1.2,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

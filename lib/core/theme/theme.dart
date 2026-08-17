@@ -44,30 +44,13 @@ ThemeData bqTheme() {
         color: BqColors.ink,
       ),
     ),
-    // Tab bar theming per D-25 + UI-SPEC Layout rules. The mockup shows a
-    // flat two-state bar with no pill indicator, so the indicator is made
-    // transparent (discretionary choice per UI-SPEC — recorded in SUMMARY).
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: BqColors.surfaceAlt,
-      elevation: 0,
-      indicatorColor: Colors.transparent,
-      labelTextStyle: WidgetStateProperty.resolveWith(
-        (Set<WidgetState> states) => TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w500,
-          color: states.contains(WidgetState.selected)
-              ? BqColors.accent
-              : BqColors.textFaint,
-        ),
-      ),
-      iconTheme: WidgetStateProperty.resolveWith(
-        (Set<WidgetState> states) => IconThemeData(
-          color: states.contains(WidgetState.selected)
-              ? BqColors.accent
-              : BqColors.textFaint,
-        ),
-      ),
-    ),
+    // NO bottom-navigation sub-theme (plan 06-01, D-25 superseded). The bar
+    // is the hand-built `BqNavBar`, which reads BqColors directly (D-07), so
+    // the former surfaceAlt background / accent-selected / textFaint-unselected
+    // / 10px label values moved INTO `bq_nav_bar.dart` and were then deleted
+    // from here. A sub-theme no widget reads is a trap: the next reader edits
+    // it expecting the bar to change (T-06-01).
+    //
     // Phase-2 sub-themes (02-UI-SPEC "bqTheme() extensions this phase").
     // Every value below references tokens only (D-07).
     //
