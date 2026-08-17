@@ -48,11 +48,20 @@ import 'package:boostque/features/calendar/day_progress_ring.dart';
 import 'package:boostque/features/calendar/day_view_model.dart';
 import 'package:boostque/features/calendar/planner_screen.dart';
 import 'package:boostque/features/calendar/week_strip.dart';
+import 'package:boostque/features/settings/settings_screen.dart';
 
 /// Screen horizontal padding — the mockup-exact override used by both the
 /// header and the scroll body, so one edge runs down the whole screen
 /// (mockup lines 203, 225).
 const double _screenPadding = 20;
+
+/// Pushes Settings as a full-screen route, covering the nav bar (UI-SPEC S12).
+///
+/// Same call shape as every other push in this app
+/// (`stack_screen.dart`'s card tap).
+void _openSettings(BuildContext context) => Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+    );
 
 /// The Calendar tab: the Today page, or the planner page swapped in over it
 /// (DECIDED-1).
@@ -163,70 +172,133 @@ class _Header extends ConsumerWidget {
         end: _screenPadding,
         top: 6, // mockup line 203
       ),
-      child: Row(
-        // The mockup's `align-items:flex-end` (line 204).
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(title, style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: BqSpace.xs), // mockup line 207
-                Text(
-                  subtitle,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: BqColors.textMuted),
+          // The gear gets its OWN end-aligned row ABOVE the title, identical on
+          // all three screens the nav bar reaches (UI-SPEC S11 / D-5). The row
+          // holds NO text, so its extent is pure geometry and it cannot
+          // overflow at any text scale, in any locale, in any direction.
+          //
+          // This is the WR-04 trap, stated so it is not rediscovered: the title
+          // Row below already holds `Expanded` + `SizedBox` + `DayProgressRing`
+          // and its comment says verbatim that it never gains a third
+          // non-flexible child. Adding the gear there is the forbidden move —
+          // do NOT "tidy" this row back into it. The rejected alternative (a
+          // bounded trailing group holding ring + gear) is probably safe, but
+          // it makes the header's overflow safety depend on a reader correctly
+          // re-deriving "these two are not text" on every future edit; the
+          // dedicated row makes it depend on nothing.
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Semantics(
+                button: true,
+                // One key, two placements: this label and the Settings screen
+                // title, so the control and its destination can never disagree.
+                label: l10n.tabSettings,
+                excludeSemantics: true,
+                // The action lives on THIS node, not only on the IconButton
+                // below it: `excludeSemantics: true` drops every descendant
+                // action, so without this the gear announces itself as a button
+                // VoiceOver / TalkBack cannot press, while passing every
+                // coordinate-tap test (WR-02).
+                onTap: () => _openSettings(context),
+                child: IconButton(
+                  onPressed: () => _openSettings(context),
+                  // A bounded, text-free box: >= 44pt guidance, and it cannot
+                  // grow with the text scaler.
+                  constraints: const BoxConstraints.tightFor(
+                    width: 44,
+                    height: 44,
+                  ),
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(
+                    // Outlined only: the gear is never "selected", so the
+                    // filled variant has no state to express.
+                    Icons.settings_outlined,
+                    size: 20,
+                    color: BqColors.textSecondary,
+                  ),
                 ),
-                const SizedBox(height: BqSpace.sm),
-                // A Wrap, NOT a Row: at textScaler 2.0 the two uk labels
-                // ("Планувальник", "Сьогодні") do not fit one line, and a Row
-                // would overflow exactly as the header did in WR-04. The
-                // header's title ROW above is left structurally untouched for
-                // the same reason — it never gains a third non-flexible child.
-                Wrap(
-                  spacing: BqSpace.sm,
-                  runSpacing: BqSpace.sm,
+              ),
+            ],
+          ),
+          Row(
+            // The mockup's `align-items:flex-end` (line 204).
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Named for its destination, not its effect — the same
-                    // key labels the planner's own title, so the button always
-                    // names where it goes (UI-SPEC Copywriting Contract).
-                    TextButton(
-                      onPressed: () =>
-                          ref.read(calendarPageProvider.notifier).showPlanner(),
-                      child: Text(
-                        l10n.plannerTitle,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: BqColors.accent,
-                        ),
-                      ),
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
-                    // Named for its destination, not its effect — same word as
-                    // the title by design (UI-SPEC Copywriting Contract).
-                    if (!isToday)
-                      TextButton(
-                        onPressed: () =>
-                            ref.read(selectedDayProvider.notifier).followToday(),
-                        child: Text(
-                          l10n.backToToday,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: BqColors.accent,
+                    const SizedBox(height: BqSpace.xs), // mockup line 207
+                    Text(
+                      subtitle,
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(color: BqColors.textMuted),
+                    ),
+                    const SizedBox(height: BqSpace.sm),
+                    // A Wrap, NOT a Row: at textScaler 2.0 the two uk labels
+                    // ("Планувальник", "Сьогодні") do not fit one line, and a
+                    // Row would overflow exactly as the header did in WR-04.
+                    // The header's title ROW above is left structurally
+                    // untouched for the same reason — it never gains a third
+                    // non-flexible child.
+                    Wrap(
+                      spacing: BqSpace.sm,
+                      runSpacing: BqSpace.sm,
+                      children: [
+                        // Named for its destination, not its effect — the same
+                        // key labels the planner's own title, so the button
+                        // always names where it goes (UI-SPEC Copywriting
+                        // Contract).
+                        TextButton(
+                          onPressed: () => ref
+                              .read(calendarPageProvider.notifier)
+                              .showPlanner(),
+                          child: Text(
+                            l10n.plannerTitle,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: BqColors.accent,
+                            ),
                           ),
                         ),
-                      ),
+                        // Named for its destination, not its effect — same
+                        // word as the title by design (UI-SPEC Copywriting
+                        // Contract).
+                        if (!isToday)
+                          TextButton(
+                            onPressed: () => ref
+                                .read(selectedDayProvider.notifier)
+                                .followToday(),
+                            child: Text(
+                              l10n.backToToday,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: BqColors.accent,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 10), // mockup line 209
+              if (counts != null && counts.total > 0)
+                DayProgressRing(taken: counts.taken, total: counts.total),
+            ],
           ),
-          const SizedBox(width: 10), // mockup line 209
-          if (counts != null && counts.total > 0)
-            DayProgressRing(taken: counts.taken, total: counts.total),
         ],
       ),
     );

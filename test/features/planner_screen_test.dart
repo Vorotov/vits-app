@@ -29,6 +29,7 @@ import 'package:boostque/features/calendar/planner_providers.dart';
 import 'package:boostque/features/calendar/planner_screen.dart';
 import 'package:boostque/features/calendar/planner_year_grid.dart';
 import 'package:boostque/features/calendar/week_strip.dart';
+import 'package:boostque/features/settings/settings_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -37,6 +38,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+// `show` rather than a bare import: one group below declares a local
+// `overflowReason` that predates the shared library, and importing the whole
+// library would collide. The scale list is the one thing that must NOT be a
+// per-file literal — the file that quietly omits a scale has a matrix that no
+// longer covers it.
+import '../support/locale_matrix.dart' show bqTextScaleMatrix;
 
 void main() {
   const magnesium = Supplement(
@@ -2972,7 +2980,163 @@ void main() {
       await tearDownTree(tester, container);
     });
   });
+
+  // ---------------------------------------------------------------------
+  // The settings gear (plan 06-02, UI-SPEC S11 / D-5, NAV-03).
+  // ---------------------------------------------------------------------
+
+  group('the settings gear (S11)', () {
+    for (final locale in const ['uk', 'en']) {
+      final l10n = lookupAppLocalizations(Locale(locale));
+
+      testWidgets(
+          '$locale: the gear renders exactly once, in the OUTLINED variant, '
+          'with a box >= 44 that is identical at 1.0 / 1.6 / 2.0',
+          (tester) async {
+        usePhoneSurface(tester);
+        final container = makeContainer();
+        final sizes = <Size>[];
+        for (final scale in bqTextScaleMatrix) {
+          await tester.pumpWidget(
+            plannerApp(
+              container,
+              locale: locale,
+              textScaler: TextScaler.linear(scale),
+            ),
+          );
+          await tester.pump();
+
+          expect(gearControl(), findsOneWidget, reason: gearPresenceReason);
+          expect(find.byIcon(Icons.settings), findsNothing,
+              reason: 'the FILLED glyph expresses a selected state, and the '
+                  'gear has none — it is a control, not a destination');
+          expect(find.bySemanticsLabel(l10n.tabSettings), findsOneWidget,
+              reason: 'the gear is icon-only, so the ARB label is the only '
+                  'thing a screen-reader user has — and it follows the active '
+                  'language like every other string');
+          final size = tester.getSize(gearControl());
+          expect(size.width, greaterThanOrEqualTo(44.0),
+              reason: gearTapTargetReason);
+          expect(size.height, greaterThanOrEqualTo(44.0),
+              reason: gearTapTargetReason);
+          expect(tester.takeException(), isNull, reason: gearOverflowReason);
+          sizes.add(size);
+        }
+
+        expect(sizes.toSet(), hasLength(1), reason: gearGeometryReason(sizes));
+        await tearDownTree(tester, container);
+      });
+    }
+
+    testWidgets('activating the gear through SemanticsAction.tap PUSHES the '
+        'Settings route — not a coordinate tap', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      final l10n = lookupAppLocalizations(const Locale('uk'));
+      await tester.pumpWidget(plannerApp(container));
+      await tester.pump();
+
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel(l10n.tabSettings))
+            .getSemanticsData()
+            .hasAction(SemanticsAction.tap),
+        isTrue,
+        reason: '`excludeSemantics: true` drops every DESCENDANT action, so '
+            'the gear node has to carry one itself — without it the control '
+            'announces a button VoiceOver and TalkBack cannot press, while '
+            'passing every coordinate-tap test (WR-02)',
+      );
+
+      // Assistive technology does not tap widgets. It activates actions.
+      tester.semantics.performAction(
+        find.semantics.byLabel(l10n.tabSettings),
+        SemanticsAction.tap,
+      );
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      expect(find.byType(SettingsScreen), findsOneWidget,
+          reason: 'the gear pushes Settings as a full-screen route; a control '
+              'that announces itself and navigates nowhere is worse than no '
+              'control at all');
+      expect(find.byType(PlannerScreen), findsOneWidget,
+          reason: 'a PUSH, not a replacement: the planner underneath stays '
+              'mounted, which is what keeps the selected segment, week and '
+              'month intact across the return trip');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the gear row carries NO text, so the header cannot overflow '
+        'through it at any scale in either locale', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await tester.pumpWidget(plannerApp(container));
+      await tester.pump();
+
+      final row = tester.widget<Row>(
+        find
+            .ancestor(
+              of: find.byIcon(Icons.settings_outlined),
+              matching: find.byType(Row),
+            )
+            .last,
+      );
+      expect(
+        find.descendant(
+          of: find.byWidget(row),
+          matching: find.byType(Text),
+        ),
+        findsNothing,
+        reason: 'the whole D-5 argument is that this row holds one text-free '
+            'control and nothing else: the moment a Text lands in it, the row '
+            'starts following the text scaler and the "cannot overflow" claim '
+            'in the widget comment becomes a lie',
+      );
+
+      await tearDownTree(tester, container);
+    });
+  });
 }
+
+/// The settings gear's `IconButton`, scoped through its glyph so the finder
+/// cannot drift onto some other button the header grows later.
+Finder gearControl() => find.ancestor(
+      of: find.byIcon(Icons.settings_outlined),
+      matching: find.byType(IconButton),
+    );
+
+/// The consequence of a layout exception in the header the gear row joined.
+const String gearOverflowReason =
+    'a layout exception at an accessibility text scale is a clipped header in '
+    'RELEASE — not debug stripes. The gear row is the newest child of this '
+    'header; the fix is a computed extent or a flexible child, never a '
+    'relaxed assertion (CR-01 / WR-04)';
+
+/// Why the gear must not be conditional.
+const String gearPresenceReason =
+    'the gear is the only way into Settings once the destination is removed '
+    '(plan 06-03). A gear that renders only in some screen state is a screen '
+    'the user can get stranded on — and "some screen state" includes the empty '
+    'and failing surfaces this suite covers elsewhere';
+
+/// Why the gear box is asserted as a FLOOR and not as 44.0 exactly.
+const String gearTapTargetReason =
+    'the gear is built to the S11 recipe — an IconButton with '
+    'BoxConstraints.tightFor(44, 44) and zero padding — and Material then '
+    'wraps it to its 48dp padded tap target, so the rendered box is 48 while '
+    'the constrained icon box is 44. 48 >= 44 satisfies the guidance; what '
+    'must not happen is a box SMALLER than 44 or one that changes with the '
+    'text scaler';
+
+/// Why the gear row's extent must not move with the text scaler.
+String gearGeometryReason(List<Size> sizes) =>
+    'the gear row holds NO text, so its extent is pure geometry — a '
+    'scale-dependent box means something textual leaked into the row, and the '
+    'D-5 argument that this header CANNOT overflow no longer holds '
+    '(measured: $sizes)';
 
 /// Pins `todayProvider` to a fixed calendar day.
 class _FixedToday extends TodayController {
