@@ -51,15 +51,26 @@ import 'package:flutter/semantics.dart';
 
 import '../theme/tokens.dart';
 
-/// The part of the bar's height that does NOT follow the text scale:
-/// 8px top pad + the 22px icon box + the 4px icon-to-label gap + 10px bottom
-/// pad. v1's `top: 10` padding on the shell's outer `Container` is folded in
-/// here — leaving it outside would double-count and miss the 56dp target.
+/// The part of the bar's height that does NOT follow the text scale: the 22px
+/// icon box, the 4px icon-to-label gap, and 18px of vertical slack.
+///
+/// The widget applies NO vertical padding of its own. The slack is what is
+/// left over inside `SizedBox(height: navBarHeightFor(scaler))` once the icon,
+/// the gap and the label's line box are laid out, and the destination
+/// `Column`'s `MainAxisAlignment.center` distributes it EVENLY — 9 above and 9
+/// below at scale 1.0, 7.5/7.5 at 2.0. It is not an 8/10 asymmetry; an earlier
+/// version of this doc said it was, and nothing in the widget ever wrote those
+/// two numbers (WR-05). Anyone editing these constants reasons from this
+/// decomposition, so it has to be the real one.
+///
+/// v1's `top: 10` padding on the shell's outer `Container` is folded in here —
+/// leaving it outside would double-count and miss the 56dp target.
 const double _navBarFixedExtent = 44;
 
-/// The text-bearing part of the bar at scale 1.0: the 10sp label's line box
-/// (10 x line-height 1.2). This is the ONLY part the scaler multiplies.
-const double _navBarLabelExtent = 12;
+/// The label's type, in the two numbers the extent formula and the [TextStyle]
+/// BOTH read, so they can no longer disagree (IN-04).
+const double _navBarLabelFontSize = 10;
+const double _navBarLabelHeight = 1.2;
 
 /// Height reserved for the bar's content, for [scaler].
 ///
@@ -68,12 +79,20 @@ const double _navBarLabelExtent = 12;
 /// `monthCardExtentFor` (`planner_year_grid.dart`) idiom, transcribed: a
 /// top-level function so the extent is unit-testable without pumping a widget.
 ///
-/// Only [_navBarLabelExtent] passes through the scaler. [Icon] takes its size
-/// from [IconThemeData] and does NOT follow the text scaler, so multiplying
-/// the whole 56 would over-reserve at every scale above 1.0 — which is why
-/// the extent is SPLIT rather than scaled as a whole.
+/// Only the label passes through the scaler. [Icon] takes its size from
+/// [IconThemeData] and does NOT follow the text scaler, so multiplying the
+/// whole 56 would over-reserve at every scale above 1.0 — which is why the
+/// extent is SPLIT rather than scaled as a whole.
+///
+/// The FONT SIZE is scaled and the line-height multiple applied afterwards,
+/// never the other way round (IN-04). [TextScaler.scale] takes a font size,
+/// and the platform scalers Android 14+ supplies are non-linear — they
+/// compress larger sizes more — so `scale(12)` is not `1.2 * scale(10)` and
+/// feeding it a 12px LINE BOX under-reserves exactly when the scale is
+/// largest, which is when the 18px of slack is thinnest.
 double navBarHeightFor(TextScaler scaler) =>
-    _navBarFixedExtent + scaler.scale(_navBarLabelExtent);
+    _navBarFixedExtent +
+    scaler.scale(_navBarLabelFontSize) * _navBarLabelHeight;
 
 /// One destination's immutable content: its glyph pair and its ARB label.
 ///
@@ -131,8 +150,8 @@ class BqNavBar extends StatelessWidget {
     // specifies. `DecoratedBox` paints the same hairline without consuming
     // layout, which keeps the painted extent exactly
     // `navBarHeightFor(scaler) + bottom safe-area inset` — the equality the
-    // text-scale matrix asserts per cell. The 1px hairline paints over the
-    // top of the 8px pad already inside the extent.
+    // text-scale matrix asserts per cell. The 1px hairline paints over the top
+    // of the vertical slack that is already inside the extent.
     return DecoratedBox(
       decoration: const BoxDecoration(
         color: BqColors.surfaceAlt,
@@ -167,6 +186,20 @@ class BqNavBar extends StatelessWidget {
                 explicitChildNodes: true,
                 role: SemanticsRole.tabBar,
                 child: Row(
+                  // STRETCH, not the default centre. Without it the Row hands
+                  // each destination a LOOSE height constraint, the
+                  // shrink-wrapped Column below takes only its content's 38dp,
+                  // and the Row centres that inside the 56dp bar — leaving a
+                  // 9dp strip along the top and another along the bottom that
+                  // look like the destination and hit-test to nothing. The
+                  // UI-SPEC spacing table contracts this cell as "full-height",
+                  // S8 as "opaque over the whole Expanded cell, never the
+                  // glyph", and the comment in `_destination` says the same;
+                  // all three were false. Stretch is also what makes the
+                  // Column's `MainAxisAlignment.center` do the vertical
+                  // centring the extent decomposition describes, instead of
+                  // being a no-op on a min-sized Column.
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     for (int i = 0; i < destinations.length; i++)
                       Expanded(child: _destination(i)),
@@ -229,9 +262,12 @@ class BqNavBar extends StatelessWidget {
                 // clipped cell means the extent constants are wrong.
                 maxLines: 1,
                 softWrap: false,
+                // The same two constants navBarHeightFor reserves against, so
+                // the reserved extent and the painted line box cannot drift
+                // apart (IN-04).
                 style: TextStyle(
-                  fontSize: 10,
-                  height: 1.2,
+                  fontSize: _navBarLabelFontSize,
+                  height: _navBarLabelHeight,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                   color: color,
                 ),

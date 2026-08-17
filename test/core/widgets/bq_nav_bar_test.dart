@@ -23,6 +23,24 @@ import '../../support/locale_matrix.dart';
 /// 3. **The bar is static** — asserted as an absence, not claimed in prose.
 /// 4. **No fixed-width box wraps a label** — the v1 66px destination column
 ///    is gone, and a test is what keeps it gone.
+/// A deliberately NON-LINEAR text scaler (IN-04).
+///
+/// Android 14+ supplies curves like this: larger font sizes are compressed
+/// more than small ones, so `scale` is not a multiplication and
+/// `scale(a * b) != a * scale(b)`. Doubling a 10sp label while giving a 12px
+/// number only 1.5x is the whole point — it is what separates "scale the font
+/// size, then apply the line height" from "scale the line box".
+class _CompressingScaler extends TextScaler {
+  const _CompressingScaler();
+
+  @override
+  double scale(double fontSize) => fontSize <= 10 ? fontSize * 2.0 : fontSize * 1.5;
+
+  @override
+  // ignore: deprecated_member_use
+  double get textScaleFactor => 2.0;
+}
+
 void main() {
   const List<BqNavDestination> destinations = <BqNavDestination>[
     BqNavDestination(
@@ -81,7 +99,9 @@ void main() {
     test('is exactly 56.0 at text scale 1.0', () {
       expect(navBarHeightFor(TextScaler.noScaling), 56.0,
           reason: 'the mockup-exact base height, down from v1\'s 80dp — 44 '
-              'fixed (8 pad + 22 icon + 4 gap + 10 pad) + a 12px label box');
+              'fixed (22 icon box + 4 icon-to-label gap + 18 of vertical '
+              'slack the centred Column splits 9/9, asserted below) + a 12px '
+              'label box');
       expect(navBarHeightFor(TextScaler.linear(1.0)), 56.0,
           reason: 'linear(1.0) and noScaling must agree — a formula that only '
               'holds for one of them is scaling something it should not');
@@ -105,6 +125,40 @@ void main() {
               'multiplied, over-reserving for a 22dp Icon that takes its size '
               'from IconThemeData and never follows the text scaler');
     });
+
+    test('reserves the label\'s REAL line box under a NON-LINEAR scaler — the '
+        'kind Android 14+ supplies (IN-04)', () {
+      // A platform scaler is not a multiplier. Android 14+ compresses larger
+      // sizes more than small ones, so `scale(12)` is NOT `1.2 x scale(10)` —
+      // and `TextScaler.scale` takes a FONT SIZE, which 12 (a line box) is
+      // not. This fake exaggerates the real curve so the difference is
+      // arithmetic rather than a rounding argument.
+      const TextScaler compressing = _CompressingScaler();
+      expect(compressing.scale(10), 20.0);
+      expect(compressing.scale(12), 18.0,
+          reason: 'the premise: the bigger number gets the smaller factor');
+
+      // The label paints at `scale(fontSize)` and occupies that times its
+      // line-height multiple — the same 10 and 1.2 the TextStyle carries.
+      expect(navBarHeightFor(compressing), 44 + 20.0 * 1.2,
+          reason: 'the extent has to cover the line box the label ACTUALLY '
+              'paints. Scaling the 12px line box as if it were a font size '
+              'reserves 44 + 18 = 62 for a label that needs 24 — the reserve '
+              'drifts SHORT exactly when the scale is largest, which is when '
+              'the 18dp of layout slack is thinnest');
+    });
+
+    test('is unchanged for LINEAR scalers — the equality the matrix asserts '
+        'still holds (IN-04)', () {
+      // scale(10) x 1.2 == 10 x s x 1.2 == 12 x s == scale(12) when, and only
+      // when, the scaler is linear. So the fix is a no-op for every scale the
+      // rest of this suite uses, and the 56 / 68 numbers above are not a
+      // coincidence that survived a formula change.
+      for (final double s in const <double>[1.0, 1.6, 2.0]) {
+        expect(navBarHeightFor(TextScaler.linear(s)), 44 + 12 * s,
+            reason: 'linear($s)');
+      }
+    });
   });
 
   // ---------------------------------------------------------------------
@@ -121,8 +175,13 @@ void main() {
       expect(middle.fontWeight, FontWeight.w600);
       expect(middle.fontSize, 10);
       expect(middle.height, 1.2,
-          reason: '10 x 1.2 is the 12px line box navBarHeightFor reserves — '
-              'if the two drift apart the extent stops matching the content');
+          reason: 'the extent reserves `scaler.scale(10) * 1.2` and this style '
+              'paints `fontSize: 10, height: 1.2` — so this equality is what '
+              'keeps the reserve matching the content. Since IN-04 both sides '
+              'read the SAME two named constants, which is why the claim is '
+              'now structurally true rather than true for linear scalers only; '
+              'the assertion stays because a future edit could still write a '
+              'literal here and re-open the gap');
 
       for (final String other in const ['Stack', 'Settings']) {
         final TextStyle style = resolvedLabelStyle(tester, other);
@@ -189,6 +248,72 @@ void main() {
       expect(tester.getSize(find.byType(BqNavBar)).height,
           navBarHeightFor(TextScaler.linear(2.0)));
       expect(tester.takeException(), isNull, reason: overflowReason);
+    });
+
+    testWidgets('the destination cell fills the bar\'s FULL height — the top '
+        'and bottom strips are tappable, not dead', (tester) async {
+      final List<int> selections = <int>[];
+      await tester.pumpWidget(barApp(onSelected: selections.add));
+
+      final Rect bar = tester.getRect(find.byType(BqNavBar));
+      final Rect cell = tester.getRect(
+        find.ancestor(of: labelIn('Stack'), matching: find.byType(InkResponse)),
+      );
+
+      expect(cell.height, closeTo(bar.height, 0.01),
+          reason: 'the UI-SPEC spacing table contracts the destination cell as '
+              '"Expanded (flex 1), FULL-HEIGHT, HitTestBehavior.opaque", S8 '
+              'says "opaque over the whole Expanded cell, never the glyph", '
+              'and this widget\'s own comment says "the whole Expanded cell is '
+              'the tap target". A shrink-wrapped Column centred by the Row '
+              'makes all three false: the cell is only as tall as its content');
+
+      // The claim in device terms: a thumb landing near the bar's top edge
+      // must still switch tabs.
+      await tester.tapAt(Offset(cell.center.dx, bar.top + 3));
+      await tester.pump();
+      expect(selections, <int>[0],
+          reason: 'a strip along the top of the bar that looks like the '
+              'destination and does nothing is the worst kind of dead pixel — '
+              'it is inside the painted control');
+
+      await tester.tapAt(Offset(cell.center.dx, bar.bottom - 3));
+      await tester.pump();
+      expect(selections, <int>[0, 0], reason: 'and the bottom strip too');
+    });
+
+    testWidgets('the destination content is CENTRED — the vertical slack is '
+        'split evenly, not 8 top / 10 bottom (WR-05)', (tester) async {
+      await tester.pumpWidget(barApp());
+
+      final Rect cell = tester.getRect(
+        find.ancestor(of: labelIn('Stack'), matching: find.byType(InkResponse)),
+      );
+      final Rect icon = tester.getRect(
+        find
+            .descendant(
+              of: find.ancestor(
+                of: labelIn('Stack'),
+                matching: find.byType(InkResponse),
+              ),
+              matching: find.byType(Icon),
+            )
+            .first,
+      );
+      final Rect label = tester.getRect(labelIn('Stack'));
+
+      final double above = icon.top - cell.top;
+      final double below = cell.bottom - label.bottom;
+
+      expect(above, closeTo(below, 0.01),
+          reason: 'the Column is mainAxisAlignment.center inside a SizedBox, '
+              'so the slack is distributed EVENLY. The extent constant\'s doc '
+              'claimed an 8/10 asymmetry the widget has never applied — and '
+              'that decomposition is what anyone editing these numbers reasons '
+              'from');
+      expect(above, closeTo(9.0, 0.01),
+          reason: '56 - 22 icon - 4 gap - 12 label = 18 of slack, halved');
+      expect(cell.height, closeTo(56.0, 0.01));
     });
 
     testWidgets('press feedback paints INSIDE the bar: the InkResponses have a '
