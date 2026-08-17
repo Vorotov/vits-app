@@ -134,15 +134,20 @@ class BoostqueApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watching the bootstrap flag costs exactly ONE extra rebuild of this widget
-    // when it flips. That is the price of the FLAG-3 ordering guarantee, and it
-    // is cheaper than plumbing a ProviderContainer out of main() to drive the
-    // bootstrap from there.
+    // Neither value is read. Both are watched only to keep the provider ALIVE
+    // for the app's lifetime: an unlistened provider is PAUSED in this version
+    // of Riverpod, so neither the bootstrap's listener on the resolved locale
+    // nor the sync's four trigger listeners would ever be registered — and
+    // production would silently schedule nothing, with every test still green.
     //
-    // Both are watched only to keep them ALIVE for the app's lifetime: an
-    // unlistened provider is paused in this version of Riverpod, so neither the
-    // bootstrap's listener on the resolved locale nor the sync's four trigger
-    // listeners would ever be registered. Neither value is read here.
+    // The cost, stated because it is larger than "one rebuild": this widget
+    // rebuilds when the bootstrap flag flips AND once per completed
+    // application, because the sync's state is a count. An application happens
+    // on a save, a day rollover, a resume or a language change — a handful of
+    // times a day, each costing one MaterialApp rebuild over a `const` shell
+    // that the element tree skips. That is the price of the FLAG-3 ordering
+    // guarantee, and it is cheaper than plumbing a ProviderContainer out of
+    // main() to drive both from there.
     ref.watch(notificationBootstrapProvider);
     ref.watch(notificationSyncProvider);
     return MaterialApp(
