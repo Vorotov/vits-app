@@ -147,6 +147,7 @@ Requested after the first hands-on session with the shipped v1 build.
 - [ ] **NOTIF-01** — The user is reminded at each scheduled dose time, grouped one notification per time-of-day, only on days the regimen is active; tapping opens Сьогодні
 - [ ] **NOTIF-02** — Reminders respect platform constraints: no exact-alarm permission on Android (inexact, policy-compliant), and scheduling stays within the iOS 64-request pending cap via the repeating/horizon two-tier plan
 - [ ] **NOTIF-03** — Permission is requested at first regimen save, never at launch; the app is fully usable and silent when permission is denied
+- [ ] **NOTIF-05** — Settings shows whether reminders are allowed and offers a control that opens the OS notification settings — the only recovery path after an iOS denial (owner decision 2026-08-17, DECIDED-9a; no magnitude, no toggle, no priming sheet)
 - [ ] **NOTIF-04** — Reminders re-derive whenever regimens change (create/edit/pause/delete), on app resume, and remain correct across midnight and DST transitions
 
 ## Experience (UX)
@@ -159,8 +160,8 @@ Requested after the first hands-on session with the shipped v1 build.
 
 **Coverage:**
 
-- v1.1 requirements: 9 total (NAV-01..03, NOTIF-01..04, UX-01, PLAN-05)
-- Mapped to phases: 9 (see ROADMAP.md phases 6-7)
+- v1.1 requirements: 10 total (NAV-01..03, NOTIF-01..05, UX-01, PLAN-05) — NOTIF-05 added 2026-08-17 by owner decision
+- Mapped to phases: 10 (see ROADMAP.md phases 6-7)
 - Unmapped: 0 ✓
 
 *v1.1 requirements defined: 2026-08-17*

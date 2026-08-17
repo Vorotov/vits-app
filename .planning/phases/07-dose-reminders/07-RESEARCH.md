@@ -1319,3 +1319,28 @@ installs. Belongs on the pre-release checklist, not this phase.
 **Valid until:** 2026-09-16 (30 days). `flutter_local_notifications` is on a fast minor cadence
 (22.3.0 was ~9 days old at research time) — re-check the version before the phase starts if more
 than a month passes.
+
+---
+
+## Addendum — assumption A5 discharged (orchestrator, 2026-08-17)
+
+§14 recorded the iOS build as the one unexercised claim in this document, and 07-01's task 1
+carries a `<precondition>` on it. **It has now been exercised and it passes.** Run in a throwaway
+git worktree off `041968f` so the main tree stayed clean:
+
+- `flutter pub add flutter_local_notifications timezone flutter_timezone` resolved to exactly the
+  recommended versions — `flutter_local_notifications: ^22.3.0`, `timezone: ^0.11.1`,
+  `flutter_timezone: ^5.1.0` — changing 12 dependencies, with `intl` untouched.
+- `flutter build ios --simulator --debug` → **`✓ Built build/ios/iphonesimulator/Runner.app`**,
+  Xcode 26.5 (17F42), 24.7s. No Podfile involved; SPM resolved both plugins' `Package.swift`
+  as §3.5 predicted.
+- With the three packages merely present: `flutter analyze` clean, `flutter test` **797 passing** —
+  so adding them breaks nothing on its own. Wave 1 starts from a known-good baseline.
+
+The `<precondition>` in 07-01 task 1 may therefore be treated as satisfied. It should still be
+re-run there rather than deleted: this probe used a detached worktree, and the tracer must prove
+it in the tree that ships.
+
+**Not discharged by this probe:** the Android desugaring diff (§3.1) — that was verified by the
+original research, which built both a debug and a release APK. And nothing here exercised
+runtime behaviour on either platform; this is a build-and-resolve result only.
