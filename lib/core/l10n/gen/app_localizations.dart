@@ -122,6 +122,12 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get tabSettings;
 
+  /// Accessibility label on the back control of the pushed Settings route. Never painted: the control is an icon-only chevron, so this string exists only for screen readers
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get navBack;
+
   /// Educational disclaimer shown on screens with recommendations
   ///
   /// In en, this message translates to:

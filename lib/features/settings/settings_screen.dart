@@ -46,6 +46,52 @@ class SettingsScreen extends StatelessWidget {
             bottom: 84,
           ),
           children: [
+            // The pushed route's way out (UI-SPEC S12). It exists because a
+            // pushed route with no back affordance passes every widget test —
+            // tests pop programmatically — and strands the user on the first
+            // manual run on any device without a reliable back gesture
+            // (research PF-6).
+            //
+            // Its own start-aligned row, the exact mirror of the gear row the
+            // three bar-reachable screens carry: the row holds NO text, so its
+            // extent is pure geometry and it cannot overflow at any text scale,
+            // in any locale, in any direction (D-5).
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Semantics(
+                  button: true,
+                  label: l10n.navBack,
+                  excludeSemantics: true,
+                  // The action lives on THIS node, not only on the IconButton
+                  // below it: `excludeSemantics: true` drops every descendant
+                  // action, so without this the control would announce itself
+                  // as a button VoiceOver / TalkBack cannot activate — and on
+                  // a pushed route it is the only way out (WR-02).
+                  onTap: () => Navigator.maybePop(context),
+                  child: IconButton(
+                    // `maybePop`, not `pop`, for the same reason the regimen
+                    // editor's chevron uses it (regimen_editor_screen.dart:221):
+                    // the screen must not assume it was pushed.
+                    onPressed: () => Navigator.maybePop(context),
+                    // A bounded, text-free 44x44 box — >= 44pt guidance, and it
+                    // cannot grow with the text scaler.
+                    constraints: const BoxConstraints.tightFor(
+                      width: 44,
+                      height: 44,
+                    ),
+                    padding: EdgeInsets.zero,
+                    // Glyph, size and colour verbatim from
+                    // regimen_editor_screen.dart:221-226.
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new,
+                      size: 18,
+                      color: BqColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             // One key, two placements: the nav destination and this title, so
             // the tab and its screen can never disagree.
             Text(

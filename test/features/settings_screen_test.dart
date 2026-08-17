@@ -11,6 +11,7 @@ import 'dart:io';
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,6 +27,12 @@ import 'package:boostque/features/settings/language_picker.dart';
 import 'package:boostque/features/settings/settings_screen.dart';
 import 'package:boostque/main.dart';
 
+// `show` rather than a bare import: this file declares its own `overflowReason`
+// (it predates the shared library) and importing the whole library would
+// collide. The scale list is the one thing that must NOT be a per-file literal
+// — the file that quietly omits a scale has a matrix that no longer covers it.
+import '../support/locale_matrix.dart' show bqTextScaleMatrix;
+
 /// The consequence of a red case, named in device terms rather than as a
 /// restatement of the assertion.
 const String instantReason =
@@ -39,6 +46,28 @@ const String overflowReason =
     'RELEASE — not debug stripes. The Settings list is the newest and least '
     'proven surface in the app; the fix is a wrapping label, never a relaxed '
     'assertion (CR-01 / WR-04)';
+
+/// The consequence of a missing or unreachable back control on the pushed
+/// Settings route (plan 06-02, S12, research PF-6).
+const String strandedReason =
+    'a pushed route with no working back affordance passes every widget test — '
+    'tests pop programmatically — and strands the user on the first manual run '
+    'on any device without a reliable back gesture. Settings is a pushed route '
+    'from plan 06-02 on, so the control is the only guaranteed way out';
+
+/// Why the back control's box is asserted as a FLOOR and not as 44.0 exactly.
+const String backTapTargetReason =
+    'the control is built to the S12 recipe — an IconButton with '
+    'BoxConstraints.tightFor(44, 44) and zero padding — and Material then '
+    'wraps it to its 48dp padded tap target, so the rendered box is 48 while '
+    'the constrained icon box is 44. 48 >= 44 satisfies the guidance; what '
+    'must not happen is a box SMALLER than 44 or one that changes with the '
+    'text scaler, and both of those are what this case measures';
+
+/// The visible label of the host route the push tests start from.
+///
+/// A literal in a test file, not copy: it names the harness, never the app.
+const String pushHostLabel = 'host route';
 
 const String tapTargetReason =
     'a row shorter than 52px is a miss-prone tap target on a real thumb, and '
@@ -122,6 +151,42 @@ void main() {
       ),
     );
   }
+
+  /// A host route that PUSHES [SettingsScreen], which is what the screen
+  /// actually is from plan 06-02 on. The bare-root [settingsApp] above cannot
+  /// prove anything about popping, because there is nothing under it.
+  Widget pushHostApp(SharedPreferences prefs, {String locale = 'uk'}) {
+    return ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      child: MaterialApp(
+        locale: Locale(locale),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: bqTheme(),
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SettingsScreen(),
+                  ),
+                ),
+                child: const Text(pushHostLabel),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// The back control's `IconButton`, scoped through its glyph so the finder
+  /// cannot drift onto some other button the screen grows later.
+  Finder backControl() => find.ancestor(
+        of: find.byIcon(Icons.arrow_back_ios_new),
+        matching: find.byType(IconButton),
+      );
 
   /// Sets a phone-sized logical surface (390x844); restored automatically.
   void usePhoneSurface(WidgetTester tester) {
@@ -562,6 +627,126 @@ void main() {
   });
 
   // -------------------------------------------------------------------
+  // The back control on the pushed route (plan 06-02, S12, #13).
+  // -------------------------------------------------------------------
+
+  group('S12 back control', () {
+    for (final locale in const ['uk', 'en']) {
+      final l10n = lookupAppLocalizations(Locale(locale));
+
+      testWidgets(
+          '$locale: the control renders once, is labelled navBack in the '
+          'ACTIVE locale, and its box is >= 44 and TEXT-FREE — identical at '
+          '1.0 / 1.6 / 2.0', (tester) async {
+        usePhoneSurface(tester);
+        final prefs = await seedPrefs({});
+        final sizes = <Size>[];
+        for (final scale in bqTextScaleMatrix) {
+          await tester.pumpWidget(
+            settingsApp(
+              prefs,
+              locale: locale,
+              textScaler: TextScaler.linear(scale),
+            ),
+          );
+          await tester.pump();
+
+          expect(backControl(), findsOneWidget, reason: strandedReason);
+          expect(
+            find.bySemanticsLabel(l10n.navBack),
+            findsOneWidget,
+            reason: 'the control is icon-only, so the ARB label is the ONLY '
+                'thing a screen-reader user has — and it must follow the '
+                'active language like every other string on this screen',
+          );
+          final size = tester.getSize(backControl());
+          expect(size.width, greaterThanOrEqualTo(44.0),
+              reason: backTapTargetReason);
+          expect(size.height, greaterThanOrEqualTo(44.0),
+              reason: backTapTargetReason);
+          expect(tester.takeException(), isNull, reason: overflowReason);
+          sizes.add(size);
+        }
+
+        expect(sizes.toSet(), hasLength(1),
+            reason: 'the control holds NO text, so its extent is pure '
+                'geometry — a scale-dependent box would mean something '
+                'textual leaked into the row and the D-5 argument for a '
+                'dedicated row no longer holds (measured: $sizes)');
+      });
+    }
+
+    testWidgets('the control carries its own tap action under '
+        'excludeSemantics (WR-02)', (tester) async {
+      usePhoneSurface(tester);
+      final prefs = await seedPrefs({});
+      await tester.pumpWidget(settingsApp(prefs));
+      await tester.pump();
+
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel(uk.navBack))
+            .getSemanticsData()
+            .hasAction(SemanticsAction.tap),
+        isTrue,
+        reason: '`excludeSemantics: true` drops every DESCENDANT action, so '
+            'the node has to carry one itself — without it Settings announces '
+            'a back button VoiceOver and TalkBack cannot press, while passing '
+            'every coordinate-tap test',
+      );
+    });
+
+    testWidgets(
+        'activating the control through SemanticsAction.tap pops the PUSHED '
+        'route — not a coordinate tap', (tester) async {
+      usePhoneSurface(tester);
+      final prefs = await seedPrefs({});
+      await tester.pumpWidget(pushHostApp(prefs));
+      await tester.pump();
+
+      await tester.tap(find.text(pushHostLabel));
+      await tester.pumpAndSettle();
+      expect(find.text(uk.tabSettings), findsOneWidget,
+          reason: 'the pushed Settings route must be on screen before the '
+              'pop is exercised');
+
+      // Assistive technology does not tap widgets. It activates actions.
+      tester.semantics.performAction(
+        find.semantics.byLabel(uk.navBack),
+        SemanticsAction.tap,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text(uk.tabSettings), findsNothing, reason: strandedReason);
+      expect(find.text(pushHostLabel), findsOneWidget,
+          reason: 'popping returns to the route underneath, unchanged');
+    });
+
+    testWidgets(
+        'activating the control on a BARE ROOT throws nothing and leaves the '
+        'screen up — what maybePop buys over pop', (tester) async {
+      usePhoneSurface(tester);
+      final prefs = await seedPrefs({});
+      await tester.pumpWidget(settingsApp(prefs));
+      await tester.pump();
+
+      tester.semantics.performAction(
+        find.semantics.byLabel(uk.navBack),
+        SemanticsAction.tap,
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull,
+          reason: 'the screen must not assume it was pushed: `pop` on a root '
+              'route pops nothing and, with a system-back handler behind it, '
+              'is the shape that closes the whole app — `maybePop` is why '
+              'this is a no-op instead');
+      expect(find.text(uk.tabSettings), findsOneWidget,
+          reason: 'a no-op leaves the screen exactly where it was');
+    });
+  });
+
+  // -------------------------------------------------------------------
   // Geometry and text scale (#7, #11, #13 render side).
   // -------------------------------------------------------------------
 
@@ -795,16 +980,35 @@ void main() {
       });
     });
 
-    test('no hex color literal and no font size outside 25/15/10.5 appears '
-        '(token-only styling)', () {
+    test('no hex color literal, no font size outside 25/15/10.5, and no icon '
+        'size outside 18 appears (token-only styling)', () {
       const allowedSizes = {'25', '15', '10.5'};
+      // A GLYPH box is not type. Plan 06-02 added the 18dp back chevron (S12,
+      // verbatim from regimen_editor_screen.dart:221-226); folding 18 into the
+      // font-size list above would have licensed an 18px Text on the one
+      // screen whose type list is closed. Two lists, both closed.
+      const allowedIconSizes = {'18'};
       final hex = RegExp(r'0x[0-9a-fA-F]{6,8}');
       final fontSize = RegExp(r'(?:fontSize|\bsize):\s*([\d.]+)');
+      // An `Icon(...)` call. No Icon call in this feature nests a paren, so a
+      // flat negated class is exact here rather than an approximation — and if
+      // one ever does, the outer sweep below sees its `size:` and fails loudly
+      // instead of skipping it.
+      final iconCall = RegExp(r'\bIcon\([^()]*\)');
       forEachSource((path, source) {
         expect(hex.hasMatch(source), isFalse,
             reason: '$path hardcodes a color; every surface, border and '
                 'foreground on this screen has a named token');
-        for (final match in fontSize.allMatches(source)) {
+        for (final call in iconCall.allMatches(source)) {
+          for (final match in fontSize.allMatches(call.group(0)!)) {
+            expect(allowedIconSizes, contains(match.group(1)),
+                reason: '$path introduces icon size ${match.group(1)}; the '
+                    'icon-size list is CLOSED at 18');
+          }
+        }
+        for (final match in fontSize.allMatches(
+          source.replaceAll(iconCall, 'Icon()'),
+        )) {
           expect(allowedSizes, contains(match.group(1)),
               reason: '$path introduces font size ${match.group(1)}; the '
                   'component-level list is CLOSED at 25 / 15 / 10.5');

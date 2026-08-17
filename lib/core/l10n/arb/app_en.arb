@@ -16,6 +16,10 @@
   "@tabSettings": {
     "description": "Bottom navigation tab label for the settings screen"
   },
+  "navBack": "Back",
+  "@navBack": {
+    "description": "Accessibility label on the back control of the pushed Settings route. Never painted: the control is an icon-only chevron, so this string exists only for screen readers"
+  },
   "disclaimerEducational": "Educational material, not medical advice.",
   "@disclaimerEducational": {
     "description": "Educational disclaimer shown on screens with recommendations"

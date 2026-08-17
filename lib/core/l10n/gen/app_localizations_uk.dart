@@ -22,6 +22,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get tabSettings => 'Налаштування';
 
   @override
+  String get navBack => 'Назад';
+
+  @override
   String get disclaimerEducational => 'Освітній матеріал, не медична порада.';
 
   @override
