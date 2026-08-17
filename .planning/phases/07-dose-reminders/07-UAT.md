@@ -1,5 +1,5 @@
 ---
-status: pending
+status: in_progress
 phase: 07-dose-reminders
 source: [07-06-PLAN.md, 07-RESEARCH.md §9.5, 07-UI-SPEC.md §12 backstops]
 started: 2026-08-17T00:00:00Z
@@ -8,7 +8,19 @@ updated: 2026-08-17T00:00:00Z
 
 ## Current Test
 
-0 — the permission pre-step (nothing below can run before it)
+1 — awaiting a human on device (Android automated half is green; iOS needs one tap)
+
+## Regression — the v1 device suite, after Phase 7
+
+Both pre-existing device tests were re-run on both platforms after the whole
+phase merged, because Phase 7 changed `main()`, lifted the tab index out of
+widget state and added an `AppLifecycleListener` — three things that could
+plausibly disturb the cold-start and tab-preservation guarantees they assert.
+
+| Test | Android (emulator-5554, API 36) | iOS (iPhone 17, iOS 26.5) |
+|---|---|---|
+| `data03_loop_test.dart` | PASS | PASS |
+| `l10n_device_test.dart` | PASS | PASS |
 
 ## Tests
 
@@ -35,7 +47,22 @@ Without the grant the app schedules **nothing, by design** — the sync's enable
 check is what makes a denied permission silent — so every entry below would
 observe an empty set and could be mistaken for a pass. Entry A fails with a
 message naming this step rather than allowing that.
-result:
+result: **Android — DONE.** Granted on emulator-5554 (API 36). Worth recording
+for whoever runs this next: the grant must be applied to the build the test
+harness itself installs. Granting against a separately-installed APK is lost when
+`flutter test` reinstalls, and the guard then fires — which is how the guard was
+first observed working, having been un-runnable for its author. Sequence that
+works: `flutter build apk --debug` → `adb install -r` → `pm grant` → run the test.
+
+**iOS — NOT DONE, and it is a human step.** Confirmed empirically rather than
+assumed: `xcrun simctl privacy` has no notifications service (its list is
+calendar / contacts / location / photos / media-library / microphone / motion /
+reminders / siri), so there is no shell route. Driving the prompt from a
+throwaway harness put the dialog on screen and left `requestPermission()`
+returning **null** — unanswered — with `isEnabled()` still false either side.
+Automating the tap through System Events was tried and is unavailable (macOS
+accessibility control of Simulator is not granted to this shell). Someone has to
+tap **Allow**.
 
 ### A. P1 — automated half: the OS is actually holding what the app asked for
 expected: on each platform,
@@ -49,7 +76,25 @@ app derives for a 23:47 daily repeat after a regimen is saved. It finishes by
 deleting the supplement it created and asserting the id is gone, so the device is
 left as it was found. Record the device identifier of each run. It proves the app
 asked for the right thing and the OS accepted it — **nothing about delivery**.
-result:
+result: **Android — PASS**, emulator-5554 (API 36, Ukrainian). Verbatim:
+
+```
+NOTIF: stack already holds 0 supplement(s)
+NOTIF: this run uses "NOTIF-07 Тест 0" (notif-device-0-1786991933631763)
+NOTIF: waiting for pending request 530437442 (23:47 repeat)
+NOTIF: OS holds 1 pending request(s), including 530437442
+NOTIF: 530437442 cancelled; this run left no reminder behind
+```
+
+This is the first evidence in the whole phase that is not a test asserting
+against another test: Android's own scheduler is holding a request the app
+derived, and the device was left clean. It also incidentally discharges one of
+the two gates 07-06 reported as un-provable — the permission guard was seen
+firing for real on the first, ungranted run.
+
+**iOS — BLOCKED on entry 0.** The scheduler resolves to `PluginNotificationScheduler`
+(not the no-op) on the iPhone 17 simulator, so the wiring is confirmed that far;
+the run stops at the permission guard exactly as designed.
 
 ### 1. P1 — a reminder is actually DELIVERED
 expected: on each device, with permission granted, create a supplement with a
