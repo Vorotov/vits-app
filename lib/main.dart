@@ -5,9 +5,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:boostque/app_shell.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/l10n/locale_controller.dart';
+import 'package:boostque/core/notifications/notification_locale.dart';
 import 'package:boostque/core/notifications/notification_providers.dart';
 import 'package:boostque/core/notifications/notification_scheduler.dart';
 import 'package:boostque/core/notifications/notification_service.dart';
+import 'package:boostque/core/notifications/notification_sync.dart';
 import 'package:boostque/core/notifications/tz_conversion.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/selected_tab_controller.dart';
@@ -66,6 +68,7 @@ Future<void> main() async {
         launchNotificationPayloadProvider.overrideWithValue(launchPayload),
         notificationSchedulerProvider.overrideWith(_pluginScheduler),
         timeZoneLoaderProvider.overrideWithValue(initTimeZones),
+        deviceZoneReaderProvider.overrideWithValue(deviceZoneIdentifier),
       ],
       child: const BoostqueApp(),
     ),
@@ -131,34 +134,40 @@ class BoostqueApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watching the bootstrap flag costs exactly ONE extra rebuild of this widget
-    // when it flips. That is the price of the FLAG-3 ordering guarantee, and it
-    // is cheaper than plumbing a ProviderContainer out of main() to drive the
-    // bootstrap from there.
+    // Neither value is read. Both are watched only to keep the provider ALIVE
+    // for the app's lifetime: an unlistened provider is PAUSED in this version
+    // of Riverpod, so neither the bootstrap's listener on the resolved locale
+    // nor the sync's four trigger listeners would ever be registered — and
+    // production would silently schedule nothing, with every test still green.
+    //
+    // The cost, stated because it is larger than "one rebuild": this widget
+    // rebuilds when the bootstrap flag flips AND once per completed
+    // application, because the sync's state is a count. An application happens
+    // on a save, a day rollover, a resume or a language change — a handful of
+    // times a day, each costing one MaterialApp rebuild over a `const` shell
+    // that the element tree skips. That is the price of the FLAG-3 ordering
+    // guarantee, and it is cheaper than plumbing a ProviderContainer out of
+    // main() to drive both from there.
     ref.watch(notificationBootstrapProvider);
-    final bootstrap = ref.read(notificationBootstrapProvider.notifier);
+    ref.watch(notificationSyncProvider);
     return MaterialApp(
       onGenerateTitle: (context) => context.l10n.appTitle,
       theme: bqTheme(),
       locale: ref.watch(localeControllerProvider),
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      builder: (context, child) {
-        // The notification copy is built in the locale the UI is ACTUALLY
-        // rendering, OBSERVED here rather than re-derived: reproducing
-        // MaterialApp's own resolution would be a second copy of a rule whose
-        // correctness depends on this file never passing a
-        // localeResolutionCallback (DECIDED-15, the PF-1 defect shape).
-        //
-        // Post-frame, never during build: this is the whole of the notification
-        // bootstrap, and FLAG-3 permits none of it before the first frame is on
-        // screen.
-        final observed = Localizations.localeOf(context);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          bootstrap.bootstrap(locale: observed);
-        });
-        return child!;
-      },
+      // The notification copy is built in the locale the UI is ACTUALLY
+      // rendering, OBSERVED here rather than re-derived: reproducing
+      // MaterialApp's own resolution would be a second copy of a rule whose
+      // correctness depends on this file never passing a
+      // localeResolutionCallback (DECIDED-15, the PF-1 defect shape).
+      //
+      // It sits in `builder` rather than in `home` so that it wraps the
+      // navigator and therefore every route, while still being INSIDE the
+      // localizations it observes. It reports from a post-frame callback, which
+      // is what keeps the whole notification bootstrap behind the first frame
+      // (FLAG-3): the resolved locale is what starts it.
+      builder: (context, child) => NotificationLocaleObserver(child: child!),
       home: const AppShell(),
     );
   }

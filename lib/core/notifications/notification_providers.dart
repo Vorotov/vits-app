@@ -5,7 +5,8 @@ library;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/core/l10n/gen/app_localizations.dart';
+import 'package:boostque/core/notifications/notification_copy.dart';
+import 'package:boostque/core/notifications/notification_locale.dart';
 import 'package:boostque/core/notifications/notification_scheduler.dart';
 
 /// The seam every later plan mocks.
@@ -36,6 +37,19 @@ final notificationSchedulerProvider = Provider<NotificationScheduler>(
 /// nothing has bootstrapped nothing, and [NotificationBootstrap] reports
 /// not-ready rather than claiming a zone database it never loaded.
 final timeZoneLoaderProvider = Provider<Future<void> Function()?>(
+  (ref) => null,
+);
+
+/// Reads the device's own zone identifier, on every resume.
+///
+/// Separate from [timeZoneLoaderProvider] because it answers a different
+/// question at a different moment: the loader parses the database once, this
+/// asks "where are we NOW" — the only way a zone change made while the app was
+/// backgrounded is ever noticed. Injected with a **null** default for exactly
+/// the reason the loader is: it ends in a platform-channel round trip, and a
+/// bare container must reach no plugin. Null means "nothing to re-read", and a
+/// sync that cannot ask keeps the zone it already has.
+final deviceZoneReaderProvider = Provider<Future<String> Function()?>(
   (ref) => null,
 );
 
@@ -130,7 +144,21 @@ class NotificationBootstrap extends Notifier<bool> {
   bool _inFlight = false;
 
   @override
-  bool build() => false;
+  bool build() {
+    // The resolved locale is the TRIGGER, not merely an argument. The first
+    // report — which arrives from a post-frame callback, so FLAG-3's ordering
+    // is untouched — starts the bootstrap; every later one rewrites the
+    // channel's name and description in the new language, with the id
+    // unchanged.
+    //
+    // Listened rather than watched: a watch would re-run this build and reset
+    // the readiness flag to false on every language change, which would stop
+    // and restart everything downstream for a copy rewrite.
+    ref.listen(notificationLocaleProvider, (_, next) {
+      if (next != null) bootstrap(locale: next);
+    });
+    return false;
+  }
 
   /// Loads what has not been loaded, then (re)writes the channel copy for
   /// [locale].
@@ -165,10 +193,9 @@ class NotificationBootstrap extends Notifier<bool> {
         await scheduler.initialize(onTap: _handleTap);
         _pluginInitialized = true;
       }
-      final copy = lookupAppLocalizations(locale);
       await scheduler.ensureChannel(
-        name: copy.doseChannelName,
-        description: copy.doseChannelDescription,
+        name: notificationChannelName(locale),
+        description: notificationChannelDescription(locale),
       );
       _locale = locale;
       if (ref.mounted) state = true;
