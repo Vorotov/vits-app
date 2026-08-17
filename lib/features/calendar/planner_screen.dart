@@ -287,7 +287,14 @@ class _CyclesBody extends ConsumerWidget {
           _CyclesSummaryChip(model: model),
           PlannerGantt(model: model),
           const SizedBox(height: _cyclesCardGap),
-          PlannerLoadChart(model: model),
+          // The chart's scale comes from the model, through here — the widget
+          // holds no denominator of its own (plan 06-05). `scheduledCount`
+          // equals `rows.length`, so the `isEmpty` gate above is exactly the
+          // guarantee that the chart is never built with a zero ceiling.
+          PlannerLoadChart(
+            model: model,
+            scheduledCount: model.scheduledCount,
+          ),
           const SizedBox(height: _cyclesCardGap),
           // Inline, directly under the chart it is read against — never a
           // sheet, never a dialog (P-13).

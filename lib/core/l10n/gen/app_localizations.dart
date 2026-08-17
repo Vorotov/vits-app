@@ -919,6 +919,12 @@ abstract class AppLocalizations {
   /// **'limit {max} · comfort {comfort}'**
   String loadAxisLegend(int max, int comfort);
 
+  /// Centre label of the load chart's axis row (plan 06-05) — the chart's scale caption. It states what a full bar MEANS (every scheduled supplement in the stack overlaps that week) and asserts nothing about whether that is good or bad; it replaces loadAxisLegend, which named an editorial limit
+  ///
+  /// In en, this message translates to:
+  /// **'full bar = your whole stack'**
+  String get loadScaleCaption;
+
   /// Count of tracking slots, pre-formatted into weekLoadLabel. The uk forms are the ones the preposition «з» governs — genitive singular for one («з 1 слота»), genitive plural otherwise — the same rule ringSemantics follows for «з {n} доз». Before this key the uk sentence hardcoded the genitive plural, so moving editorialLimit off 5 produced ungrammatical copy that no test could catch (WR-05)
   ///
   /// In en, this message translates to:

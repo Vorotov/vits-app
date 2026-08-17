@@ -534,6 +534,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get loadScaleCaption => 'full bar = your whole stack';
+
+  @override
   String slotsCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
