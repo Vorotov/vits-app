@@ -35,7 +35,8 @@ created: 2026-08-17
 | DECIDED-6 | Ukrainian `other` mirrors `few` (house convention; unreachable for `int`) | § 2.6 |
 | DECIDED-7 | **No priming sheet.** The OS dialog is shown bare, after the editor pops | § 3 |
 | DECIDED-8 | Asked **at most once per install**, gated on a persisted bool | § 3 |
-| DECIDED-9 | **No acknowledgement of silence** anywhere in v1.1, and **no tail sentinel notification** | § 4 |
+| ~~DECIDED-9~~ | ~~No acknowledgement of silence anywhere in v1.1~~ — **SUPERSEDED in part by DECIDED-9a** | § 4 |
+| DECIDED-9a | **Owner decision:** a permission-state row + "open OS settings" action in the existing Settings screen. No magnitude, no toggle, no primer. The tail-sentinel refusal stands | § 4 |
 | DECIDED-10 | Tap sets the tab to Сьогодні **and** resets the browsed day to today — nothing else | § 5.1 |
 | DECIDED-11 | Tap never pops a pushed route | § 5.2 |
 | DECIDED-12 | Cold start resolves launch details **before `runApp`**; frame 1 is Сьогодні | § 5.3 |
@@ -264,7 +265,39 @@ Three ways this app can be quietly doing less than the user believes:
 | Tier-B horizon lapsed (app unopened past the 30-day / 60-request bound; ~a week for a typical cycling stack) | derivable | **nothing** |
 | Android force-stop or OEM battery killer | **no API detects either** (07-RESEARCH Pitfall 11) | nothing possible |
 
-### DECIDED-9 — v1.1 ships NO acknowledgement, and NO tail sentinel notification.
+### DECIDED-9 — SUPERSEDED BY THE PROJECT OWNER, 2026-08-17
+
+> **DECIDED-9a (owner decision, binding — overrides DECIDED-9 in part).**
+>
+> v1.1 **does** surface notification-permission state, in the existing Settings screen: one row
+> stating whether reminders are allowed, plus a control that opens the OS notification settings.
+>
+> This was escalated because DECIDED-7 and DECIDED-9 compound into a path with no exit — a bare
+> OS prompt, no in-app re-ask on iOS, and no indication anywhere that the feature is dead. One
+> reflexive "Don't Allow" silently disables the whole phase, permanently, with no feedback. Each
+> decision priced its own cost honestly; neither priced the composition (07-UI-CHECK FLAG-2).
+>
+> **What this adds, and only this:**
+> - A permission-state row in `features/settings/`: allowed / not allowed, and an action calling
+>   `openAppNotificationSettings()` — the only route back on iOS after a denial, and after a
+>   double-denial on Android.
+> - Two ARB key pairs (state label, action label) in both locales.
+> - The row reads permission state, so the `grep` invariant below is amended: the primitives
+>   become reachable from exactly ONE place under `lib/features/` — this row — and nowhere else.
+>
+> **What this does NOT add, and must not grow into:**
+> - No magnitude, no numeral. The tier-B "roughly a week" sentence still belongs to the deferred
+>   settings screen; the Phase-5 screen-scope invariant is respected in letter and spirit, because
+>   a state row needs no number.
+> - No on/off toggle, no per-slot choice, no quiet hours — still deferred (spec §2.6).
+> - No priming sheet. DECIDED-7 stands unchanged: the OS dialog is still shown bare. The owner
+>   chose recovery over persuasion, which is the cheaper and more honest half.
+> - No tail sentinel notification. That half of DECIDED-9 stands, with its rationale intact.
+>
+> The tier-B horizon lapse therefore remains invisible in v1.1. That residual cost is accepted
+> knowingly and stays on the deferred screen's hand-off list below.
+
+### DECIDED-9 (original, retained for its reasoning) — v1.1 ships NO acknowledgement, and NO tail sentinel notification.
 
 This is an explicit decision with a stated cost, not an omission. Spec §2.3 says the limitation is "to be stated in the UI when notification settings arrive"; settings do not arrive in v1.1.
 
@@ -610,11 +643,13 @@ Checker-verifiable. Each line is a command or a named test, not a judgement.
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending — awaiting `gsd-ui-checker`.
+**Approval:** APPROVED 2026-08-17 — 6/6 dimensions PASS, 0 BLOCK, 3 FLAG (see `07-UI-CHECK.md`).
+FLAG-1 and FLAG-3 are binding on the planner. FLAG-2 was escalated and resolved by the project
+owner as DECIDED-9a.
