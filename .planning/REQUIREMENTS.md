@@ -127,3 +127,40 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 *Requirements defined: 2026-08-14*
 *Last updated: 2026-08-14 after roadmap creation — full traceability mapped across 5 phases*
+
+
+---
+
+# Milestone v1.1 — Navigation, Notifications, Simplification
+
+Source: `docs/superpowers/specs/2026-08-17-boostque-v1.1-design.md` (approved 2026-08-17).
+Requested after the first hands-on session with the shipped v1 build.
+
+## Navigation (NAV)
+
+- [ ] **NAV-01** — Bottom navigation is a slim custom bar (56dp base height, down from Material's fixed 80dp) whose height scales with the text scaler and never clips at 1.0/1.6/2.0
+- [ ] **NAV-02** — Three tabs: Стек, Сьогодні (today's doses plus week-strip browsing of recent days), Календар (the Цикли/Рік planner)
+- [ ] **NAV-03** — Settings is reachable from a top-right control on all three tabs and is no longer a tab; the v1 in-tab planner page-swap mechanism is removed
+
+## Notifications (NOTIF)
+
+- [ ] **NOTIF-01** — The user is reminded at each scheduled dose time, grouped one notification per time-of-day, only on days the regimen is active; tapping opens Сьогодні
+- [ ] **NOTIF-02** — Reminders respect platform constraints: no exact-alarm permission on Android (inexact, policy-compliant), and scheduling stays within the iOS 64-request pending cap via the repeating/horizon two-tier plan
+- [ ] **NOTIF-03** — Permission is requested at first regimen save, never at launch; the app is fully usable and silent when permission is denied
+- [ ] **NOTIF-04** — Reminders re-derive whenever regimens change (create/edit/pause/delete), on app resume, and remain correct across midnight and DST transitions
+
+## Experience (UX)
+
+- [ ] **UX-01** — A floating add-supplement button appears on all three tabs and nowhere else; the Stack screen's full-width add button is removed and its empty state repointed
+
+## Planner (PLAN, continued)
+
+- [ ] **PLAN-05** — The planner presents concurrent weekly load without any limit, threshold, reference line, verdict or warning colour; the educational disclaimer remains
+
+**Coverage:**
+
+- v1.1 requirements: 9 total (NAV-01..03, NOTIF-01..04, UX-01, PLAN-05)
+- Mapped to phases: 9 (see ROADMAP.md phases 6-7)
+- Unmapped: 0 ✓
+
+*v1.1 requirements defined: 2026-08-17*

@@ -157,3 +157,52 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | 3. Daily Tracking | 5/5 | Complete    | 2026-08-15 |
 | 4. Planner Views | 5/5 | Complete    | 2026-08-16 |
 | 5. Localization & Settings | 5/5 | Complete    | 2026-08-16 |
+
+
+---
+
+# Milestone v1.1
+
+Spec: `docs/superpowers/specs/2026-08-17-boostque-v1.1-design.md`
+
+- [ ] **Phase 6: Shell & Simplification** - Slim three-tab navigation with settings moved out, a floating add button everywhere, and the editorial substance limit removed
+- [ ] **Phase 7: Dose Reminders** - Local notifications on iOS and Android, grouped per time-of-day, correct across cycles, DST and platform limits
+
+### Phase 6: Shell & Simplification
+
+**Goal**: The app's chrome matches how it is actually used — a slim bottom bar with Стек / Сьогодні / Календар, settings out of the way, one consistent add affordance — and the planner reports concurrent load without judging it.
+**Depends on**: v1 complete
+**Requirements**: NAV-01, NAV-02, NAV-03, UX-01, PLAN-05
+**Success Criteria** (what must be TRUE):
+
+  1. The bottom bar is visibly slimmer than v1's, renders Стек / Сьогодні / Календар, and neither clips nor overflows at text scale 1.0, 1.6 or 2.0 in both locales
+  2. Сьогодні holds today's doses and the week strip for browsing recent days; Календар holds the Цикли/Рік planner; neither the in-tab page swap nor its back-interception remains anywhere in the codebase
+  3. Settings opens from a top-right control on every tab, and returns without disturbing the tab the user was on
+  4. A floating add-supplement button appears on exactly the three tabs, opens the existing sheet, is reachable by assistive technology, and is the only add affordance on the Stack screen
+  5. The planner shows weekly concurrent load with no reference line, no verdict, no limit badge and no warning colour anywhere, while the educational disclaimer still renders on both segments
+
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 7: Dose Reminders
+
+**Goal**: The app reminds the user at the right times on the right days, on both platforms, without asking for privileged permissions and without lying about what it can guarantee.
+**Depends on**: Phase 6
+**Requirements**: NOTIF-01, NOTIF-02, NOTIF-03, NOTIF-04
+**Success Criteria** (what must be TRUE):
+
+  1. At a scheduled dose time on an active day, one notification arrives naming how many doses are due — not one per supplement — and tapping it opens Сьогодні
+  2. No notification is scheduled for an off-day, a paused regimen, a deleted supplement, or a day outside a course's inclusive range
+  3. The Android release manifest declares no exact-alarm permission, and scheduling never exceeds the iOS pending-request budget regardless of stack size
+  4. Permission is requested at first regimen save; when denied the app works normally and schedules nothing
+  5. The scheduled set re-derives correctly after a regimen is created, edited, paused or deleted, after app resume, and across a DST transition — proven by tests over the pure plan, and observed once on each platform
+
+**Plans**: TBD
+**UI hint**: yes
+
+## v1.1 Progress
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 6. Shell & Simplification | 0/? | Not started | - |
+| 7. Dose Reminders | 0/? | Not started | - |
