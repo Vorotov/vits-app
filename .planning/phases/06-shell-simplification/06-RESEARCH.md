@@ -672,7 +672,7 @@ Deleting `editorialLimit` deletes the y-axis. Options:
 | **B. Self-scaling with a floor** — `max(peak, 3)` | Fixes the one-substance case | The floor is a number the code chose; a reviewer will ask whether it is a limit in disguise. It is *not* — it carries no colour, no copy and no verdict — but that must be documented |
 | **C. Fixed scale constant** (`loadChartScale = 5`) | Smallest diff | **Rejected:** it is `editorialLimit` renamed, and a load of 8 would clip or need an over-bar — the exact thing PLAN-05 removes |
 
-~~**Recommendation: B**, with the constant named for what it is (a *drawing scale*, not a rule), defined in `planner_view_model.dart` beside the model that computes the peak, and covered by a unit test.~~ **Superseded — do not follow this recommendation.** Spec §3.1 settled the question after this research was written: the denominator is the scheduled-supplement count, not a peak and not a constant. B is rejected along with A and C.
+~~**Recommendation SUPERSEDED (research favoured option B; spec §3.1 chose the scheduled-supplement ceiling instead)**, with the constant named for what it is (a *drawing scale*, not a rule), defined in `planner_view_model.dart` beside the model that computes the peak, and covered by a unit test.~~ **Superseded — do not follow this recommendation.** Spec §3.1 settled the question after this research was written: the denominator is the scheduled-supplement count, not a peak and not a constant. B is rejected along with A and C.
 
 ### Q2 — Does the Цикли summary chip keep its `calm` palette, or go fully neutral? **[ASSUMED]**
 
@@ -751,7 +751,7 @@ No web search, no Context7, no package registry lookups — **no external depend
 | Flutter SDK behaviour (`NavigationBar`, FAB) | HIGH | Read from the installed 3.47.0 source, with line numbers |
 | Test churn estimate | HIGH on *which files*, MEDIUM on *how many assertions* | File-level counts are measured; the per-assertion shape inside 2 987- and 3 497-line files is sampled, not exhaustive |
 | ARB / gate impact | HIGH | Key counts computed from `app_en.arb` against the gate's own filters |
-| The load-chart scale (Q1) | LOW — **decision required** | The spec did not settle it; three options with real trade-offs |
+| The load-chart scale (Q1) | NONE — **RESOLVED** by spec §3.1 (scheduled-supplement ceiling; options A/B/C rejected) | The spec did not settle it; three options with real trade-offs |
 | Chip neutrality (Q2) | LOW — **decision required** | Reasonable people differ; the spec's wording supports either |
 
 **Package legitimacy audit:** not applicable — **zero packages installed or changed by this phase.**
