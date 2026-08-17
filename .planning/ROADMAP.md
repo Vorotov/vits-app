@@ -181,7 +181,16 @@ Spec: `docs/superpowers/specs/2026-08-17-boostque-v1.1-design.md`
   4. A floating add-supplement button appears on exactly the three tabs, opens the existing sheet, is reachable by assistive technology, and is the only add affordance on the Stack screen
   5. The planner shows weekly concurrent load with no reference line, no verdict, no limit badge and no warning colour anywhere, while the educational disclaimer still renders on both segments
 
-**Plans**: TBD
+**Plans**: 6 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — BqNavBar live in the shell: a 56dp hand-built bar whose height is a function of the text scaler (NAV-01)
+- [ ] 06-02-PLAN.md — Settings gear on every bar-reachable screen, pushed route with a working back control (NAV-03)
+- [ ] 06-03-PLAN.md — Three destinations: Today promoted, Calendar screen and the in-tab page swap deleted (NAV-02, NAV-03)
+- [ ] 06-04-PLAN.md — One floating add button on the shell; the Stack screen's full-width CTA removed (UX-01)
+- [ ] 06-05-PLAN.md — Load chart rescaled against the scheduled-supplement ceiling; threshold and over-bar deleted (PLAN-05)
+- [ ] 06-06-PLAN.md — Verdicts, limit constants and 16 copy keys deleted; the vocabulary gate tightened (PLAN-05)
+
 **UI hint**: yes
 
 ### Phase 7: Dose Reminders
@@ -204,5 +213,5 @@ Spec: `docs/superpowers/specs/2026-08-17-boostque-v1.1-design.md`
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. Shell & Simplification | 0/? | Not started | - |
+| 6. Shell & Simplification | 0/6 | Planned | - |
 | 7. Dose Reminders | 0/? | Not started | - |
