@@ -191,6 +191,54 @@ void main() {
       expect(tester.takeException(), isNull, reason: overflowReason);
     });
 
+    testWidgets('press feedback paints INSIDE the bar: the InkResponses have a '
+        'Material of their own, above the surfaceAlt fill (CR-01)',
+        (tester) async {
+      await tester.pumpWidget(barApp());
+
+      final Finder barMaterial = find.descendant(
+        of: find.byType(BqNavBar),
+        matching: find.byType(Material),
+      );
+      expect(
+        barMaterial,
+        findsOneWidget,
+        reason: 'without a Material inside the bar the InkResponses register '
+            'their splash on the Scaffold\'s root Material, whose ink layer '
+            'paints BEFORE the whole child subtree — i.e. behind this bar\'s '
+            'fully opaque surfaceAlt fill. Invisible press feedback.',
+      );
+
+      // Not merely "a Material exists": the layer the ink actually registers
+      // on must be that one. Before the fix `Material.of` here resolved to the
+      // Scaffold's full-screen root Material.
+      final BuildContext inkContext = tester.element(
+        find
+            .descendant(
+              of: find.byType(BqNavBar),
+              matching: find.byType(InkResponse),
+            )
+            .first,
+      );
+      final RenderBox inkLayer = Material.of(inkContext) as RenderBox;
+      expect(
+        inkLayer.size.height,
+        closeTo(tester.getSize(find.byType(BqNavBar)).height, 0.01),
+        reason: 'the ink layer is the BAR, not the screen — a full-screen '
+            'height here is the Scaffold\'s root Material',
+      );
+
+      // And a real splash lands on it. `paints` inspects the recorded canvas,
+      // which is the only evidence a callback-only test cannot fake.
+      final TestGesture gesture =
+          await tester.startGesture(tester.getCenter(labelIn('Calendar')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 60));
+      expect(barMaterial, paints..circle());
+      await gesture.up();
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('each destination sits in an equal-width Expanded cell and no '
         'ancestor of a label bounds its width', (tester) async {
       await tester.pumpWidget(barApp());

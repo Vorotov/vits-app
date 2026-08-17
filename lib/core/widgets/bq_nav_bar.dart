@@ -138,26 +138,40 @@ class BqNavBar extends StatelessWidget {
         color: BqColors.surfaceAlt,
         border: Border(top: BorderSide(color: BqColors.hairline, width: 1)),
       ),
-      child: Padding(
-        // Mockup-exact horizontal override (UI-SPEC spacing exemption).
-        // Direction-neutral: no left/right inset may enter this file.
-        padding: const EdgeInsetsDirectional.only(start: 22, end: 22),
-        // INSIDE the decorated box, never around it: the fill and the
-        // hairline must reach the physical screen edge while the three touch
-        // targets sit above the home indicator.
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: navBarHeightFor(MediaQuery.textScalerOf(context)),
-            child: Semantics(
-              container: true,
-              explicitChildNodes: true,
-              role: SemanticsRole.tabBar,
-              child: Row(
-                children: [
-                  for (int i = 0; i < destinations.length; i++)
-                    Expanded(child: _destination(i)),
-                ],
+      // The InkResponses below need a Material of their own to paint into.
+      // Without one they reach the nearest ancestor — the Scaffold's root
+      // Material — and `_RenderInkFeatures.paint` draws every ink feature
+      // BEFORE its child subtree, so the splash lands underneath this
+      // DecoratedBox's fully opaque `surfaceAlt` fill: press feedback nobody
+      // can see, on every destination, at every scale (CR-01). The v1
+      // `NavigationBar` supplied this layer itself; the hand-built
+      // replacement has to.
+      //
+      // `MaterialType.transparency` adds no colour, no elevation and no
+      // layout, so the 56dp painted extent above is untouched.
+      child: Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          // Mockup-exact horizontal override (UI-SPEC spacing exemption).
+          // Direction-neutral: no left/right inset may enter this file.
+          padding: const EdgeInsetsDirectional.only(start: 22, end: 22),
+          // INSIDE the decorated box, never around it: the fill and the
+          // hairline must reach the physical screen edge while the three touch
+          // targets sit above the home indicator.
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              height: navBarHeightFor(MediaQuery.textScalerOf(context)),
+              child: Semantics(
+                container: true,
+                explicitChildNodes: true,
+                role: SemanticsRole.tabBar,
+                child: Row(
+                  children: [
+                    for (int i = 0; i < destinations.length; i++)
+                      Expanded(child: _destination(i)),
+                  ],
+                ),
               ),
             ),
           ),
