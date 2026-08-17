@@ -120,8 +120,13 @@ class PlannerScreen extends ConsumerWidget {
   }
 }
 
-/// Fixed header, outside the scroll: back control, title, segment-dependent
-/// subtitle, segmented control.
+/// Fixed header, outside the scroll: the settings gear row, title,
+/// segment-dependent subtitle, segmented control.
+///
+/// The `‹ Сьогодні` back control this doc used to announce was deleted with
+/// the page swap (deletion inventory A) — the planner is a nav-bar destination
+/// now, so there is nothing to go back TO. The gear row lands in exactly the
+/// slot that control vacated, mirrored to the end side (06-UI-SPEC S11).
 class _Header extends ConsumerWidget {
   const _Header();
 
@@ -401,10 +406,14 @@ class _YearBody extends ConsumerWidget {
   }
 }
 
-/// The Рік peak chip: the densest month of the year against the limit.
+/// The Рік peak chip: which month of the year is densest, and how many
+/// supplements overlap there.
 ///
-/// Same geometry as the Цикли summary chip, deliberately NOT the same
-/// comparison — see the banding comment below (DECIDED-6).
+/// A plain count on the app's neutral chip — the same treatment as the Цикли
+/// summary chip, in both geometry AND colour, because there is no longer a
+/// limit for the two to be asymmetric about (06-UI-SPEC S13). The DECIDED-6
+/// asymmetry this doc used to announce is moot rather than reconciled; see the
+/// decoration comment in [build].
 class _YearPeakChip extends StatelessWidget {
   const _YearPeakChip({required this.model});
 
