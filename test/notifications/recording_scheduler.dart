@@ -59,6 +59,8 @@ const pendingCall = 'pending';
 const ensureChannelCall = 'ensureChannel';
 const initializeCall = 'initialize';
 const isEnabledCall = 'isEnabled';
+const requestPermissionCall = 'requestPermission';
+const openSystemSettingsCall = 'openSystemSettings';
 
 class RecordingScheduler extends NotificationScheduler {
   RecordingScheduler({this.enabled = true});
@@ -79,6 +81,18 @@ class RecordingScheduler extends NotificationScheduler {
   /// capture what the SERVICE would have derived at that exact moment (the
   /// instant, in the zone current when the call happened).
   void Function(SchedulerCall call)? onSchedule;
+
+  /// What [requestPermission] throws instead of answering, when set.
+  ///
+  /// The permission request is the one seam call that genuinely does throw in
+  /// the wild — an app running where no notification plugin is registered dies
+  /// on a `LateInitializationError` rather than no-opping (07-RESEARCH C-3).
+  Object? requestFailure;
+
+  /// Run at the moment [requestPermission] is recorded, so a test can observe
+  /// what the rest of the app looked like AT that moment — which is the only
+  /// way to assert that the editor route had already left the screen.
+  void Function()? onRequestPermission;
 
   /// Ids this recorder silently skips, exactly as the real adapter skips an
   /// instant that has already passed: it returns normally and schedules
@@ -164,7 +178,13 @@ class RecordingScheduler extends NotificationScheduler {
   }
 
   @override
-  Future<bool?> requestPermission() async => enabled;
+  Future<bool?> requestPermission() async {
+    calls.add(SchedulerCall(method: requestPermissionCall));
+    onRequestPermission?.call();
+    final failure = requestFailure;
+    if (failure != null) throw failure;
+    return enabled;
+  }
 
   @override
   Future<bool?> isEnabled() async {
@@ -173,7 +193,9 @@ class RecordingScheduler extends NotificationScheduler {
   }
 
   @override
-  Future<void> openSystemSettings() async {}
+  Future<void> openSystemSettings() async {
+    calls.add(SchedulerCall(method: openSystemSettingsCall));
+  }
 
   @override
   Future<String?> launchPayload() async => null;

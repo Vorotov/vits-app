@@ -836,6 +836,22 @@
   "@settingsLanguageTitle": {
     "description": "Mono eyebrow above the language list on the Settings screen, in the supplementsLabel style. Stored uppercase; never toUpperCase()'d at runtime"
   },
+  "settingsRemindersTitle": "REMINDERS",
+  "@settingsRemindersTitle": {
+    "description": "Mono eyebrow above the dose-reminder permission row on the Settings screen, in the same style as settingsLanguageTitle. Stored UPPERCASE DELIBERATELY, exactly like that key: uppercasing at runtime is locale-dependent, and storing the cased form side-steps the question entirely. The whole section is absent while the permission answer is not yet known"
+  },
+  "settingsRemindersAllowed": "Reminders are allowed",
+  "@settingsRemindersAllowed": {
+    "description": "The reminder-permission row when the operating system allows this app to post notifications (DECIDED-9a). A statement of state, never a control: there is no toggle here, and it carries NO numeral, no duration, no per-slot detail and no schedule information. The horizon limitation wants a magnitude and that magnitude belongs to the deferred notification-settings screen, which is precisely why a state row fits on this one"
+  },
+  "settingsRemindersBlocked": "Reminders are not allowed",
+  "@settingsRemindersBlocked": {
+    "description": "The reminder-permission row when the operating system does not allow this app to post notifications — whether the user refused the prompt or switched them off later (DECIDED-9a). Neither platform can distinguish the two, so the copy states the effect and never the cause. Same rules as settingsRemindersAllowed: no numeral, no toggle, no schedule detail"
+  },
+  "settingsRemindersOpenSystem": "Open system settings",
+  "@settingsRemindersOpenSystem": {
+    "description": "Label of the one control on the reminder-permission row, which opens the operating system's own notification settings for this app. It is the ONLY route back after a refusal on iOS and after a second refusal on Android, which is why it is offered in both states rather than only in the blocked one"
+  },
   "doseReminderTitle": "Time for your doses",
   "@doseReminderTitle": {
     "description": "Title line of the grouped dose-reminder notification, rendered by the OS in the notification shade and on the lock screen. CONSTANT across every reminder and deliberately carries neither the app name (both platforms print it in chrome the app does not control), nor the count, nor the time (both live in the body, so the title stays a recognition line). MUST NEVER name a supplement: this text sits on a lock screen, and iOS exposes no hiddenPreviewsBodyPlaceholder through this plugin, which makes the text itself the only privacy control (spec 2.1, ASVS V4). Budget: 24 characters in every locale"

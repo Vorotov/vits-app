@@ -232,6 +232,18 @@ The four rows above that exercise a *different* Ukrainian form (1 / 2 / 5 / 21) 
 
 **Cost accepted and stated plainly:** a reflexive "Don't Allow" on iOS is unrecoverable inside the app until the deferred settings screen ships. This is a real regression risk against grant rate, it is knowingly taken, and § 4 records what the deferred screen must carry to close it.
 
+> **Correction to the stated ground, recorded 2026-08-17 during plan 07-05 (07-UI-CHECK FLAG-1). The DECISION is unchanged: no priming sheet, the operating system's dialog is still shown bare.**
+>
+> The first bullet above over-generalises. It rejects a primer on the ground that a primer's whole value is deferral and there is no later ask to defer to — which is true of a primer offering a **"Not now"**, and only of that shape. It is **not** true of the other standard shape, a **continue-only** primer, which defers nothing and exists purely to supply context before an irreversible choice. This contract never evaluated that shape, so "identical outcome, one extra tap" was asserted about a design it did not consider. A continue-only primer might well raise the grant rate.
+>
+> The continue-only shape is declined anyway, on the two grounds that do survive the correction plus one that now exists:
+>
+> 1. **The sequencing already supplies the strongest context available.** The dialog lands the instant after the user has saved a dosing schedule full of times. No copy of the app's own can beat that, and it costs no surface.
+> 2. **It would be the app's first modal interrupting a save confirmation**, in a phase that otherwise adds no interface — the second bullet above, which stands as written.
+> 3. **The residual cost is now addressed by recovery rather than by persuasion.** DECIDED-9a's permission-state row and its route into the operating system's own settings answer the unrecoverable refusal directly, which is the cheaper and more honest half. Raising the grant rate at the prompt was never the only way to close that gap.
+>
+> The same correction is written at the ask itself, in `regimen_editor_screen.dart`, so a reader meets it where the decision is implemented as well as where it is stated.
+
 ### What the user actually sees at the save moment
 
 Sequence, exactly:

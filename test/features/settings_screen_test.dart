@@ -12,6 +12,7 @@ import 'dart:io';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,6 +21,7 @@ import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/l10n/locale_controller.dart';
+import 'package:boostque/core/notifications/notification_providers.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/widgets/bq_add_fab.dart';
@@ -28,6 +30,10 @@ import 'package:boostque/features/settings/language_picker.dart';
 import 'package:boostque/features/settings/settings_screen.dart';
 import 'package:boostque/main.dart';
 
+// The shared seam double, rather than a fourth recorder: it answers all three
+// permission states and records what it was asked, which is what the row's
+// control has to be proven against.
+import '../notifications/recording_scheduler.dart';
 // `show` rather than a bare import: this file declares its own `overflowReason`
 // (it predates the shared library) and importing the whole library would
 // collide. The scale list is the one thing that must NOT be a per-file literal
@@ -1029,5 +1035,278 @@ void main() {
         }
       });
     });
+  });
+
+  // -------------------------------------------------------------------
+  // The reminders permission row (NOTIF-05, DECIDED-9a, plan 07-05).
+  //
+  // ADDITIVE in full. Every gate above passes unedited, and the three states
+  // are pumped through this file's own bilingual, text-scale, no-digit and
+  // Cyrillic-leak sweeps rather than through new ones.
+  // -------------------------------------------------------------------
+
+  group('S7 reminders permission row (NOTIF-05)', () {
+    /// The Settings screen with the permission answer pinned from OUTSIDE, the
+    /// way `settingsApp` pins the locale and the text scale.
+    ///
+    /// [allowed] is the seam's answer, not the row's state: the row asks the
+    /// controller, the controller asks the seam, and `null` is the third real
+    /// answer — a platform that cannot say, which is also every widget test
+    /// that installs no seam at all.
+    Widget remindersApp(
+      SharedPreferences prefs, {
+      required bool? allowed,
+      String locale = 'uk',
+      TextScaler? textScaler,
+    }) {
+      return ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          notificationSchedulerProvider
+              .overrideWithValue(RecordingScheduler(enabled: allowed)),
+        ],
+        child: MaterialApp(
+          locale: Locale(locale),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          theme: bqTheme(),
+          builder: (context, child) => textScaler == null
+              ? child!
+              : MediaQuery(
+                  data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+                  child: child!,
+                ),
+          home: const SettingsScreen(),
+        ),
+      );
+    }
+
+    /// Pumps until the permission answer has resolved — it arrives one
+    /// microtask after the row mounts, never as a loading state.
+    Future<void> pumpResolved(WidgetTester tester) async {
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+    }
+
+    /// Every string the language half of this screen renders, derived rather
+    /// than transcribed — the set the screen showed BEFORE this plan.
+    Set<String> languageOnlyText(AppLocalizations l10n) => <String>{
+          l10n.settingsTitle,
+          l10n.settingsLanguageTitle,
+          l10n.languageSystem,
+          for (final locale in AppLocalizations.supportedLocales)
+            lookupAppLocalizations(locale).languageName,
+          '✓',
+        };
+
+    testWidgets(
+        'with the answer UNKNOWN the screen renders exactly what it rendered '
+        'before this plan — no section, no placeholder, no spinner',
+        (tester) async {
+      usePhoneSurface(tester);
+      final prefs = await seedPrefs({});
+      await tester.pumpWidget(remindersApp(prefs, allowed: null));
+      await pumpResolved(tester);
+
+      expect(renderedText(tester).toSet(), languageOnlyText(uk),
+          reason: 'absence is not a loading surface. A row stating an unknown '
+              'fact would be a lie on the one screen whose whole job is to be '
+              'truthful about configuration, and this screen may carry no '
+              'spinner, skeleton or async value at all.');
+      expect(find.text(uk.settingsRemindersTitle), findsNothing);
+      expect(find.text(uk.settingsRemindersOpenSystem), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('with the answer ALLOWED the section, the statement and the '
+        'control all render', (tester) async {
+      usePhoneSurface(tester);
+      final prefs = await seedPrefs({});
+      await tester.pumpWidget(remindersApp(prefs, allowed: true));
+      await pumpResolved(tester);
+
+      expect(find.text(uk.settingsRemindersTitle), findsOneWidget);
+      expect(find.text(uk.settingsRemindersAllowed), findsOneWidget);
+      expect(find.text(uk.settingsRemindersBlocked), findsNothing);
+      expect(find.text(uk.settingsRemindersOpenSystem), findsOneWidget,
+          reason: 'the control is offered in BOTH states: a user who allowed '
+              'reminders may still want to reach the operating system own '
+              'settings for them.');
+    });
+
+    testWidgets('with the answer NOT ALLOWED the same section renders with the '
+        'other statement', (tester) async {
+      usePhoneSurface(tester);
+      final prefs = await seedPrefs({});
+      await tester.pumpWidget(remindersApp(prefs, allowed: false));
+      await pumpResolved(tester);
+
+      expect(find.text(uk.settingsRemindersTitle), findsOneWidget);
+      expect(find.text(uk.settingsRemindersBlocked), findsOneWidget);
+      expect(find.text(uk.settingsRemindersAllowed), findsNothing);
+      expect(find.text(uk.settingsRemindersOpenSystem), findsOneWidget,
+          reason: 'this is the only route back on iOS after a refusal, and '
+              'after a second refusal on Android.');
+    });
+
+    testWidgets(
+        'the row SELF-CORRECTS: coming back from the system settings is a '
+        'resume, and the statement follows it with no further action',
+        (tester) async {
+      usePhoneSurface(tester);
+      final prefs = await seedPrefs({});
+      final scheduler = RecordingScheduler(enabled: false);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            notificationSchedulerProvider.overrideWithValue(scheduler),
+          ],
+          child: MaterialApp(
+            locale: const Locale('uk'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: bqTheme(),
+            home: const SettingsScreen(),
+          ),
+        ),
+      );
+      await pumpResolved(tester);
+      expect(find.text(uk.settingsRemindersBlocked), findsOneWidget);
+
+      // The user leaves through the control, switches reminders on in the
+      // operating system's own settings, and comes back.
+      scheduler.enabled = true;
+      for (final state in const [
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ]) {
+        await tester.binding.defaultBinaryMessenger.handlePlatformMessage(
+          'flutter/lifecycle',
+          const StringCodec().encodeMessage(state.toString()),
+          (_) {},
+        );
+      }
+      await pumpResolved(tester);
+
+      expect(find.text(uk.settingsRemindersAllowed), findsOneWidget,
+          reason: 'this is what lets the row carry no retry control — which '
+              'this screen\'s own gates forbid anyway.');
+      expect(find.text(uk.settingsRemindersBlocked), findsNothing);
+    });
+
+    testWidgets('the eyebrow is a semantics HEADER, like the language one',
+        (tester) async {
+      usePhoneSurface(tester);
+      final prefs = await seedPrefs({});
+      await tester.pumpWidget(remindersApp(prefs, allowed: false));
+      await pumpResolved(tester);
+
+      expect(
+        tester.getSemantics(find.text(uk.settingsRemindersTitle)),
+        isSemantics(isHeader: true),
+        reason: 'assistive technology navigates by heading; the second section '
+            'must be reachable the same way the first is',
+      );
+    });
+
+    testWidgets('the control is a BUTTON in the semantics tree, carrying its '
+        'own label and its own tap action (WR-02)', (tester) async {
+      usePhoneSurface(tester);
+      final prefs = await seedPrefs({});
+      await tester.pumpWidget(remindersApp(prefs, allowed: false));
+      await pumpResolved(tester);
+
+      final node =
+          tester.getSemantics(find.bySemanticsLabel(uk.settingsRemindersOpenSystem));
+      expect(node.getSemanticsData().hasAction(SemanticsAction.tap), isTrue,
+          reason: '`excludeSemantics: true` drops every DESCENDANT action, so '
+              'the node has to carry one itself — without it the row announces '
+              'a button VoiceOver and TalkBack cannot press, while passing '
+              'every coordinate-tap test');
+    });
+
+    testWidgets(
+        'activating the control through SemanticsAction.tap opens the system '
+        'settings exactly once — not a coordinate tap', (tester) async {
+      usePhoneSurface(tester);
+      final prefs = await seedPrefs({});
+      final scheduler = RecordingScheduler(enabled: false);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            notificationSchedulerProvider.overrideWithValue(scheduler),
+          ],
+          child: MaterialApp(
+            locale: const Locale('uk'),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            theme: bqTheme(),
+            home: const SettingsScreen(),
+          ),
+        ),
+      );
+      await pumpResolved(tester);
+
+      // Assistive technology does not tap widgets. It activates actions.
+      tester.semantics.performAction(
+        find.semantics.byLabel(uk.settingsRemindersOpenSystem),
+        SemanticsAction.tap,
+      );
+      await pumpResolved(tester);
+
+      expect(
+        scheduler.calls
+            .where((c) => c.method == openSystemSettingsCall)
+            .length,
+        1,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    for (final locale in const ['uk', 'en']) {
+      for (final allowed in const <bool?>[null, true, false]) {
+        testWidgets(
+            '$locale: the screen renders with no layout exception, no digit '
+            'and no stray Cyrillic with the answer $allowed, at 1.0 / 1.6 / '
+            '2.0', (tester) async {
+          usePhoneSurface(tester);
+          final prefs = await seedPrefs({});
+          final endonyms = {
+            for (final l in AppLocalizations.supportedLocales)
+              lookupAppLocalizations(l).languageName,
+          };
+          final cyrillic = RegExp(r'[Ѐ-ӿ]');
+
+          for (final scale in bqTextScaleMatrix) {
+            await tester.pumpWidget(
+              remindersApp(
+                prefs,
+                allowed: allowed,
+                locale: locale,
+                textScaler: TextScaler.linear(scale),
+              ),
+            );
+            await pumpResolved(tester);
+
+            expect(tester.takeException(), isNull, reason: overflowReason);
+            for (final data in renderedText(tester)) {
+              expect(RegExp(r'[0-9]').hasMatch(data), isFalse,
+                  reason: 'the new copy carries NO numeral and no magnitude: '
+                      'the honest statement of the horizon limitation wants a '
+                      'number and that number belongs to the deferred settings '
+                      'surface. "$data" means one crept in.');
+              if (locale == 'en' && cyrillic.hasMatch(data)) {
+                expect(endonyms, contains(data),
+                    reason: 'a Cyrillic string reached the tree while en was '
+                        'active: "$data" — a literal escaped the ARB');
+              }
+            }
+          }
+        });
+      }
+    }
   });
 }

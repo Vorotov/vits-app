@@ -7,7 +7,17 @@
 /// it carries its own back control and ordinary body padding — both documented
 /// where they are built, below.
 ///
-/// v1 content is exactly: title, mono eyebrow, language card (DECIDED-1). No
+/// Content is: title, mono eyebrow, language card (DECIDED-1), and — since plan
+/// 07-05 — a second section stating whether the operating system allows this app
+/// to post dose reminders, with one control opening the system's own
+/// notification settings (NOTIF-05, DECIDED-9a). That section carries no
+/// numeral, no toggle, no quiet-hours control, no per-slot choice and no
+/// schedule detail; all of those remain deferred, and the honest statement of
+/// the reminder horizon — which wants a magnitude — belongs to the deferred
+/// notification-settings screen. A state row needs no number, which is exactly
+/// what makes it fit on this screen.
+///
+/// There is still no
 /// version/About line (it would need a package, or a hardcoded string that
 /// drifts from pubspec — a lie on the one screen whose whole job is to be
 /// truthful about configuration) and no educational disclaimer: PLAN-04 binds
@@ -20,7 +30,15 @@
 /// The screen has NO async surface and NO error surface, and none may be added
 /// (DECIDED-8): `AppLocalizations.supportedLocales` is a compile-time const and
 /// `LocaleController` is a synchronous `Notifier`, so nothing here can be in
-/// `AsyncLoading` or `AsyncError`. A failed `shared_preferences` write is
+/// `AsyncLoading` or `AsyncError`. The permission answer added in plan 07-05 is
+/// inherently a future, and it is held as a plain three-valued boolean for
+/// exactly this reason: while it is not yet known the section renders NOTHING —
+/// not a placeholder, not a dimmed row, not a spinner. An absent row is not a
+/// loading surface, and a row stating an unknown fact would be a lie on the one
+/// screen whose whole job is to be truthful about configuration. Every failure
+/// on that path is absorbed and reported by the controller, which lives in
+/// `core` precisely so that this screen keeps no error surface at all.
+/// A failed `shared_preferences` write is
 /// deliberately silent — the language visibly took effect, and an error banner
 /// about a setting that worked is worse than the self-correcting quiet.
 /// Selecting IS the commit: no Save, no Apply, no snackbar, no restart prompt
@@ -35,9 +53,13 @@
 /// because `shell_invariants_test.dart` greps lib/ for it, comments included.)
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:boostque/core/l10n/l10n.dart';
+import 'package:boostque/core/notifications/notification_permission.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
 import 'package:boostque/features/settings/language_picker.dart';
@@ -144,7 +166,199 @@ class SettingsScreen extends StatelessWidget {
               ),
               child: const LanguagePicker(),
             ),
+            const _RemindersSection(),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Whether the operating system allows this app to post dose reminders, and the
+/// one way back into its own settings (NOTIF-05, DECIDED-9a).
+///
+/// A private widget in this file rather than a third file under the settings
+/// feature, deliberately: sign-off condition 25 forbids a new file under
+/// `lib/features/`, and the owner decision that added this row did not lift it.
+/// The feature's own source glob expects exactly these two files.
+///
+/// **The whole section renders nothing at all while the answer is unknown**, and
+/// the reasoning is written here because "why does this sometimes not render?"
+/// is the first question a reader will have. The answer is a future; an async
+/// value on this screen would be the loading surface its own gates forbid; and a
+/// row stating an unknown fact would be worse than no row. The window is
+/// sub-perceptible in practice — the answer resolves a microtask after this
+/// mounts, and this is a pushed route the user reaches deliberately.
+///
+/// It is stateful for one reason: it is the ONLY reader of the permission value,
+/// so it is what asks for a fresh one when it appears. Building the controller
+/// costs no platform round trip on its own, which is what lets the reminder sync
+/// watch the same controller purely as a trigger.
+///
+/// It reaches the permission primitives ONLY through named controller methods.
+/// That is not style: it is what keeps the plugin's own primitive names
+/// resolving nowhere under `lib/features/`, which is a locked invariant a later
+/// plan turns into a standing gate.
+class _RemindersSection extends ConsumerStatefulWidget {
+  const _RemindersSection();
+
+  @override
+  ConsumerState<_RemindersSection> createState() => _RemindersSectionState();
+}
+
+class _RemindersSectionState extends ConsumerState<_RemindersSection> {
+  @override
+  void initState() {
+    super.initState();
+    // No string, no formatter and no inherited widget is read here — only the
+    // controller, and only to ask it for a fresh answer. Nothing is cached, so
+    // nothing can outlive a language change.
+    unawaited(ref.read(notificationPermissionProvider.notifier).refresh());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final allowed = ref.watch(notificationPermissionProvider);
+    if (allowed == null) return const SizedBox.shrink();
+    final l10n = context.l10n;
+    return Column(
+      // The section is one child of the body list, so it has to stretch its own
+      // children the way the list stretches its direct ones.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 18),
+        // Eyebrow-then-card, the same structure the language section uses, so
+        // the screen reads as one list of two sections rather than a list plus
+        // an afterthought. Stored uppercase in the ARB, never toUpperCase()'d.
+        Semantics(
+          header: true,
+          child: Text(
+            l10n.settingsRemindersTitle,
+            style: BqText.mono(
+              size: 10.5,
+              color: BqColors.textMuted,
+              letterSpacing: 0.63,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: BqColors.surface,
+            border: Border.all(color: BqColors.cardBorder),
+            borderRadius: BorderRadius.circular(BqRadii.card),
+          ),
+          child: Column(
+            children: [
+              _StateRow(
+                label: allowed
+                    ? l10n.settingsRemindersAllowed
+                    : l10n.settingsRemindersBlocked,
+              ),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: BqColors.hairline,
+              ),
+              _OpenSystemSettingsRow(
+                label: l10n.settingsRemindersOpenSystem,
+                // Offered in BOTH states: it is the only route back after a
+                // refusal on iOS and after a second refusal on Android, and a
+                // user who allowed reminders may still want to reach them.
+                onTap: () => unawaited(
+                  ref
+                      .read(notificationPermissionProvider.notifier)
+                      .openSystemSettings(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The statement half of the row: a fact, never a control.
+///
+/// It carries no tap target and no semantics node of its own — it is text, and
+/// assistive technology reads text. Row metrics are the language rows' verbatim,
+/// so the two cards cannot drift apart.
+class _StateRow extends StatelessWidget {
+  const _StateRow({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 52),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.symmetric(
+          vertical: 14,
+          horizontal: 14,
+        ),
+        child: Align(
+          alignment: AlignmentDirectional.centerStart,
+          // Wraps: no maxLines, no overflow, no fixed width.
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 15,
+              height: 1.3,
+              color: BqColors.ink,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The control half: the one thing on this screen that leaves the app.
+///
+/// The recipe is the language picker's, not an invention: the semantics node
+/// carries its OWN tap action because `excludeSemantics` drops every descendant
+/// action, and the bounded row keeps the target big enough without growing with
+/// the text scaler.
+class _OpenSystemSettingsRow extends StatelessWidget {
+  const _OpenSystemSettingsRow({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      container: true,
+      button: true,
+      label: label,
+      onTap: onTap,
+      child: ExcludeSemantics(
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
+            child: Padding(
+              padding: const EdgeInsetsDirectional.symmetric(
+                vertical: 14,
+                horizontal: 14,
+              ),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    height: 1.3,
+                    fontWeight: FontWeight.w600,
+                    color: BqColors.accent,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
