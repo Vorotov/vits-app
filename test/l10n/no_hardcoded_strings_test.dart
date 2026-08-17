@@ -365,7 +365,14 @@ bool _isStableDomainId(Literal l) => const {
       'driftDatabase',
     }.contains(l.enclosingCall);
 
-bool _isPreferencesKey(Literal l) => l.value == 'app_locale';
+/// The keys the app persists in its small key-value store.
+///
+/// Scoped by VALUE, never by path: the store is written from two places now and
+/// a path-scoped predicate would bless every literal in either of them. Both
+/// keys name a fact the app has to remember across launches, and neither is
+/// ever rendered.
+bool _isPreferencesKey(Literal l) =>
+    const {'app_locale', 'notification_permission_asked'}.contains(l.value);
 
 bool _isLocaleTag(Literal l) => l.enclosingCall == 'Locale';
 
@@ -442,9 +449,14 @@ const stringLiteralAllowlist = <({
     allows: _isStableDomainId,
   ),
   (
-    name: 'the single SharedPreferences key',
+    name: 'the SharedPreferences keys',
     why: "'app_locale' is a storage key (D-10); translating it would lose "
-        "every user's saved language on the next launch",
+        "every user's saved language on the next launch. "
+        "'notification_permission_asked' records whether this install has ever "
+        'asked for permission to post reminders — the one fact neither '
+        'platform API can answer for the app (07-RESEARCH 6.1, 6.2) — and '
+        'translating it would make the app ask again in every language the '
+        'user tries, which is the nagging the approved spec forbids',
     allows: _isPreferencesKey,
   ),
   (
