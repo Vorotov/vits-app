@@ -263,15 +263,19 @@ void main() {
   // an accessibility scale.
   // ---------------------------------------------------------------------
 
-  group('bilingual render matrix (L10N-01)', () {
-    for (final locale in const ['uk', 'en']) {
+  group('bilingual render matrix (L10N-01, NAV-01)', () {
+    for (final locale in bqLocaleMatrix) {
       final l10n = lookupAppLocalizations(Locale(locale));
 
-      for (final scale in const <double>[1.0, 1.6]) {
+      // Plan 06-01: the scale list is the SHARED one, and it now carries a
+      // 2.0 row. NAV-01's whole claim is that the bar's extent holds at the
+      // worst realistic accessibility setting, so 1.6 is not far enough.
+      for (final scale in bqTextScaleMatrix) {
         testWidgets(
             '$locale: the shell renders its three nav destinations and the '
-            'Stack heading in the active language, with no layout exception '
-            'at textScaler $scale (V-4, E-14)', (tester) async {
+            'Stack heading in the active language, at the bar\'s computed '
+            'extent, with no layout exception at textScaler $scale '
+            '(V-4, E-14, NAV-01)', (tester) async {
           await tester.pumpWidget(
             shellApp(locale: locale, textScaler: TextScaler.linear(scale)),
           );
@@ -286,6 +290,23 @@ void main() {
           expect(find.text(l10n.stackTitle), findsOneWidget,
               reason: 'the Stack tab is the one the app opens on, so its '
                   'heading is part of the shell frame the user first reads');
+
+          // The bar's REAL painted extent, not just the function's return
+          // value: the formula could be right while the widget ignored it.
+          // Reserved content extent + whatever the device gives up to the
+          // home indicator, which SafeArea adds inside the fill.
+          final Finder bar = find.byType(BqNavBar);
+          final double inset =
+              MediaQuery.of(tester.element(bar)).padding.bottom;
+          expect(
+            tester.getSize(bar).height,
+            navBarHeightFor(TextScaler.linear(scale)) + inset,
+            reason: 'the painted bar must equal navBarHeightFor($scale) + the '
+                '${inset}px bottom inset. A constant here would clip the '
+                'label at this scale — the CR-01 class this codebase shipped '
+                'twice. If this fails the extent constants are wrong; do not '
+                'shrink the text',
+          );
 
           if (locale == 'en') {
             expectNoCyrillicWhileEn(tester);
