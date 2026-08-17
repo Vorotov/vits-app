@@ -136,6 +136,7 @@
   "loadChartTitle": "ОДНОЧАСНЕ НАВАНТАЖЕННЯ",
   "loadChartMeta": "по тижнях",
   "loadAxisLegend": "межа {max} · комфорт {comfort}",
+  "loadScaleCaption": "повний стовпчик — увесь стек",
   "slotsCount": "{count, plural, one{{count} слота} few{{count} слотів} many{{count} слотів} other{{count} слотів}}",
   "substancesLimitCount": "{count, plural, one{{count} речовину} few{{count} речовини} many{{count} речовин} other{{count} речовини}}",
   "weekLoadLabel": "{load} з {max}",

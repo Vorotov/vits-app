@@ -551,6 +551,9 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
+  String get loadScaleCaption => 'повний стовпчик — увесь стек';
+
+  @override
   String slotsCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

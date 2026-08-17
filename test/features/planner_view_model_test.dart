@@ -6,6 +6,8 @@
 /// value, no widgets and no clock — `today` is always an explicit argument.
 library;
 
+import 'dart:math' as math;
+
 import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/features/calendar/planner_view_model.dart';
@@ -904,6 +906,148 @@ void main() {
       final year = buildYearModel(entries, today: today);
       expect(year.entries, isEmpty);
       expect(year.months.every((m) => m.cells.isEmpty), isTrue);
+    });
+  });
+
+  // The load chart's denominator (plan 06-05, spec §3.1). The chart scales its
+  // bars against this number, so its relationship to the week loads is an
+  // INVARIANT the model owes the widget — not an assumption the widget makes.
+  group('scheduledCount — the load chart\'s ceiling', () {
+    test('equals the number of supplements when every one carries a schedule',
+        () {
+      final model = buildCyclesModel(
+        [
+          StackEntry(supplement: supp('s1', 'Магній'), regimen: cyclic()),
+          StackEntry(
+            supplement: supp('s2', 'Креатин'),
+            regimen: cyclic(id: 'r2', supplementId: 's2'),
+          ),
+          StackEntry(
+            supplement: supp('s3', 'Омега-3'),
+            regimen: course(
+              id: 'r3',
+              supplementId: 's3',
+              end: DateTime.utc(2026, 9, 1),
+            ),
+          ),
+        ],
+        today: today,
+      );
+
+      expect(model.scheduledCount, 3);
+    });
+
+    test('a supplement with no schedule does not raise the ceiling', () {
+      final model = buildCyclesModel(
+        [
+          StackEntry(supplement: supp('s1', 'Магній'), regimen: cyclic()),
+          StackEntry(supplement: supp('s2', 'Креатин')), // fresh — no regimen
+        ],
+        today: today,
+      );
+
+      expect(model.scheduledCount, 1);
+      expect(model.scheduledCount, model.rows.length,
+          reason: 'the ceiling counts exactly the rows the loads are drawn '
+              'from — the same collection, never a second filter');
+    });
+
+    test('a paused supplement is counted exactly as the week loads count it '
+        '— it keeps its row, so it keeps its place in the ceiling', () {
+      final model = buildCyclesModel(
+        [
+          StackEntry(supplement: supp('s1', 'Магній'), regimen: cyclic()),
+          StackEntry(
+            supplement: supp('s2', 'Креатин'),
+            regimen: cyclic(id: 'r2', supplementId: 's2', paused: true),
+          ),
+        ],
+        today: today,
+      );
+
+      expect(model.scheduledCount, 2);
+      expect(model.weeks.every((w) => w.load <= model.scheduledCount), isTrue);
+    });
+
+    test('a stack where exactly one supplement is scheduled has ceiling 1, '
+        'and an active week reaches it', () {
+      final model = buildCyclesModel(
+        [
+          StackEntry(supplement: supp('s1', 'Магній'), regimen: cyclic()),
+        ],
+        today: today,
+      );
+
+      expect(model.scheduledCount, 1);
+      // A full bar for a stack of one is CORRECT: the chart's question is
+      // "how much of my stack is running at once", and the answer is "all of
+      // it" (spec §3.1). It is not a limit being hit.
+      expect(model.weeks.any((w) => w.load == model.scheduledCount), isTrue);
+    });
+
+    test('a stack where nothing carries a schedule has ceiling 0', () {
+      final model = buildCyclesModel(
+        [
+          StackEntry(supplement: supp('s1', 'Магній')),
+          StackEntry(supplement: supp('s2', 'Креатин')),
+        ],
+        today: today,
+      );
+
+      expect(model.scheduledCount, 0,
+          reason: 'the zero case is the one a later reader is most likely to '
+              'get wrong; the empty state must not be what hides it');
+    });
+
+    test('an empty stack has ceiling 0', () {
+      expect(buildCyclesModel(const [], today: today).scheduledCount, 0);
+    });
+
+    test('load <= scheduledCount holds for EVERY bucket of generated stacks',
+        () {
+      // Deterministic pseudo-random stacks: cadence, start offset, pause flag
+      // and schedule-bearing-ness all vary, so the invariant is proven over a
+      // space of models rather than one hand-picked fixture.
+      final rand = math.Random(20260817);
+      for (var trial = 0; trial < 40; trial++) {
+        final size = rand.nextInt(9); // 0..8 supplements
+        final entries = <StackEntry>[];
+        for (var i = 0; i < size; i++) {
+          final s = supp('s$i', 'S$i');
+          final hasRegimen = rand.nextInt(4) > 0; // ~1 in 4 has no schedule
+          if (!hasRegimen) {
+            entries.add(StackEntry(supplement: s));
+            continue;
+          }
+          final start = DateTime.utc(2026, 7, 1)
+              .add(Duration(days: rand.nextInt(120)));
+          entries.add(StackEntry(
+            supplement: s,
+            regimen: rand.nextBool()
+                ? cyclic(
+                    id: 'r$i',
+                    supplementId: 's$i',
+                    on: 1 + rand.nextInt(30),
+                    off: rand.nextInt(30),
+                    paused: rand.nextInt(5) == 0,
+                    start: start,
+                  )
+                : course(
+                    id: 'r$i',
+                    supplementId: 's$i',
+                    start: start,
+                    end: start.add(Duration(days: rand.nextInt(60))),
+                  ),
+          ));
+        }
+
+        final model = buildCyclesModel(entries, today: today);
+        for (final week in model.weeks) {
+          expect(week.load, lessThanOrEqualTo(model.scheduledCount),
+              reason: 'trial $trial: a bucket load exceeded the ceiling, so '
+                  'the chart could draw a bar above full height');
+        }
+      }
     });
   });
 }

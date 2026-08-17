@@ -1,23 +1,24 @@
 /// The concurrent-load chart for the Цикли segment (plan 04-03, UI-SPEC S6a
-/// item 3, P-9, DECIDED-2/3/10).
+/// item 3, P-9, DECIDED-3/10; neutralized by plan 06-05, spec §3.1).
 ///
 /// Eighteen or nineteen counted bars are not X/Y series data, so this is plain
-/// widgets — a `Row` of `Expanded` columns — with exactly one painter, for the
-/// dashed reference line. No charting package may be added (CLAUDE.md "What
-/// NOT to Use" rejects `fl_chart` by name).
+/// widgets — a `Row` of `Expanded` columns, and now no painter at all. No
+/// charting package may be added (CLAUDE.md "What NOT to Use" rejects
+/// `fl_chart` by name).
 ///
-/// ## What the colours mean here
+/// ## The chart states a shape, not a verdict
 ///
-/// `warn` means "at our editorial limit" and `risk` means "above our editorial
-/// limit". Neither ever means unsafe, and neither marks a destructive control
-/// — this screen has none (PLAN-04, the UI-SPEC's over-limit clause). The
-/// dashed line is the COMFORT reference, never a safety threshold, and it is
-/// the only line drawn: the limit needs no ink because it is already
-/// structural, being exactly where the main bar caps and the over-bar starts
-/// (DECIDED-2).
+/// Every bar carries the single neutral bar token at every height: one colour,
+/// no reference line and no over-segment, because there is no longer a limit
+/// to be over. What the chart shows is the PROFILE of the window — where the
+/// user's stack bunches up and where it thins out — and the reader is left to
+/// decide what to make of it.
+///
+/// The scale is the user's own stack: a bar's height is its week's load over
+/// [CyclesModel.scheduledCount]. The axis row's centre slot says so in words
+/// (`loadScaleCaption`), because a self-scaling chart whose denominator is
+/// invisible invites the reader to invent one — most likely a limit.
 library;
-
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -56,8 +57,8 @@ const double _axisGap = 7;
 /// Gap between two week columns (mockup line 338 `gap:3px`).
 const double _columnGap = 3;
 
-/// Full height of the main bar at the editorial limit (mockup line 905
-/// `Math.round(Math.min(w.load, MAX_SLOTS) / MAX_SLOTS * 38)`).
+/// Full height of a bar — drawn when the week's load equals the ceiling
+/// (mockup line 905's 38px, kept; its denominator is what changed).
 const double _barFullHeight = 38;
 
 /// Bar corner radius (mockup lines 342-343 `border-radius:2px`).
@@ -67,28 +68,32 @@ const double _barRadius = 2;
 /// in the chart and gives its tap target no visible anchor.
 const double _zeroStubHeight = 2;
 
-/// Height of the dashed reference line above the chart baseline (mockup line
-/// 339 `bottom:22.8px`) — 0.6 x 38px, which is exactly the comfort load.
-const double _thresholdOffset = 22.8;
-
-/// Dash geometry of that line (mockup line 339, `0 4px` on / `4px 8px` off).
-const double _dashOn = 4;
-const double _dashOff = 4;
-const double _thresholdWidth = 1;
-
 /// Header and axis type (mockup lines 335-336, 347). `.06em` of 10.5px is
 /// 0.63 logical pixels.
 const double _titleSize = 10.5;
 const double _titleTracking = 0.63;
 const double _axisSize = 10;
 
-/// The load chart card: a header, the columns under their comfort reference,
-/// and an axis row carrying the real bucket bounds.
+/// The load chart card: a header, the week columns, and an axis row carrying
+/// the real bucket bounds around the scale caption.
 class PlannerLoadChart extends ConsumerWidget {
-  const PlannerLoadChart({super.key, required this.model});
+  const PlannerLoadChart({
+    super.key,
+    required this.model,
+    required this.scheduledCount,
+  });
 
   /// The derived Цикли model — never built in `build()` (PF-10).
   final CyclesModel model;
+
+  /// The bars' denominator: how many supplements carry a schedule, passed in
+  /// from the screen off [CyclesModel.scheduledCount].
+  ///
+  /// The chart neither computes nor defaults it. A scale living in a widget is
+  /// a magic number waiting to be mistaken for a rule, and the invariant that
+  /// makes the geometry safe — `load <= scheduledCount` — is only provable
+  /// where both numbers are derived, which is the model.
+  final int scheduledCount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -154,34 +159,20 @@ class PlannerLoadChart extends ConsumerWidget {
           const SizedBox(height: _headerGap),
           SizedBox(
             height: _chartHeight + _chartHeadroom,
-            child: Stack(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (var i = 0; i < weeks.length; i++) ...[
-                      if (i > 0) const SizedBox(width: _columnGap),
-                      Expanded(
-                        child: _WeekColumn(
-                          index: i,
-                          week: weeks[i],
-                          selected: i == selected,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                // ONE dashed line, and it sits at the comfort height. Drawn
-                // last so it reads over the bars, exactly as the mockup's
-                // absolutely-positioned rule does.
-                const PositionedDirectional(
-                  key: ValueKey<String>('load-threshold'),
-                  start: 0,
-                  end: 0,
-                  bottom: _thresholdOffset,
-                  height: _thresholdWidth,
-                  child: CustomPaint(painter: _ThresholdLinePainter()),
-                ),
+                for (var i = 0; i < weeks.length; i++) ...[
+                  if (i > 0) const SizedBox(width: _columnGap),
+                  Expanded(
+                    child: _WeekColumn(
+                      index: i,
+                      week: weeks[i],
+                      selected: i == selected,
+                      scheduledCount: scheduledCount,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -195,9 +186,11 @@ class PlannerLoadChart extends ConsumerWidget {
                 align: TextAlign.start,
               ),
               _AxisLabel(
-                // Names both numbers and nothing else — "межа" and "комфорт"
-                // are the ONLY labels either reference gets (DECIDED-2).
-                text: l10n.loadAxisLegend(editorialLimit, comfortLoad),
+                // REPLACED, never removed: the bars scale against the user's
+                // own scheduled stack, and a scale the reader cannot see is a
+                // scale the reader will guess at. The caption states what a
+                // full bar means and judges nothing.
+                text: l10n.loadScaleCaption,
                 align: TextAlign.center,
               ),
               _AxisLabel(
@@ -247,11 +240,15 @@ class _WeekColumn extends ConsumerWidget {
     required this.index,
     required this.week,
     required this.selected,
+    required this.scheduledCount,
   });
 
   final int index;
   final WeekLoad week;
   final bool selected;
+
+  /// The bars' denominator — see [PlannerLoadChart.scheduledCount].
+  final int scheduledCount;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -260,21 +257,28 @@ class _WeekColumn extends ConsumerWidget {
     final range = DateFormat.MMMd(locale);
     final load = week.load;
 
-    // Verbatim from the mockup (lines 904-906): the main bar is the load
-    // capped at the limit, and everything above the limit becomes a
-    // proportional over-bar. `risk` here means "above OUR editorial limit".
+    // The week's load over the scheduled stack, times the full-bar height.
+    //
+    // No cap, no clamp, no clipping and no over-segment — and none is missing.
+    // `load` counts the SCHEDULED supplements overlapping this week and
+    // [scheduledCount] counts all of them, both from the same collection, so
+    // `load <= scheduledCount` holds by construction (asserted in
+    // planner_view_model_test.dart over generated stacks). A bar therefore can
+    // never exceed `_barFullHeight`, and a second bar above it would be
+    // drawing a state that cannot occur.
+    //
+    // The two edge values are correct by design, not bugs to be guarded:
+    //
+    //  * ceiling 1 — a stack of one draws a FULL bar in every week that one
+    //    supplement is active. The chart's question is "how much of my stack
+    //    is running at once"; the answer is "all of it". Nothing is being
+    //    exceeded.
+    //  * ceiling 0 — nothing carries a schedule, so the planner renders its
+    //    existing empty state and this chart is never built. The division is
+    //    unreachable, which is why there is no zero guard here: a guard would
+    //    be dead code implying the empty state might not hold.
     final mainHeight =
-        (math.min(load, editorialLimit) / editorialLimit * _barFullHeight)
-            .roundToDouble();
-    final overHeight = load > editorialLimit
-        ? ((load - editorialLimit) / editorialLimit * _barFullHeight)
-            .roundToDouble()
-        : 0.0;
-    final Color barColor = load <= comfortLoad
-        ? BqColors.loadBar
-        : load <= editorialLimit
-            ? BqColors.warn
-            : BqColors.risk;
+        (load / scheduledCount * _barFullHeight).roundToDouble();
 
     // The bucket's Monday, never the column's position: the bucket list is
     // rebuilt from the clock, and an index outlives the list it indexed
@@ -288,8 +292,10 @@ class _WeekColumn extends ConsumerWidget {
       label: l10n.weekBarSemantics(
         '${range.format(week.bucket.start)} – '
         '${range.format(week.bucket.endInclusive)}',
-        // Same pre-formatted slot count the week-detail card renders (WR-05).
-        l10n.weekLoadLabel(load, l10n.slotsCount(editorialLimit)),
+        // The count itself, pre-formatted and declined by its own plural key
+        // (WR-05). It names no denominator, because there is no limit to
+        // measure the week against — "4 з 4 речовин" would be a tautology.
+        l10n.substancesCount(load),
       ),
       excludeSemantics: true,
       // The action lives on THIS node, not on the GestureDetector below it:
@@ -313,23 +319,12 @@ class _WeekColumn extends ConsumerWidget {
                 start: 0,
                 end: 0,
                 bottom: 0,
-                // No `top`, so the bars keep their intrinsic height and an
-                // extreme over-limit week grows upward instead of throwing.
+                // No `top`: the bar keeps its intrinsic height, and it cannot
+                // outgrow the chart area because it cannot outgrow full
+                // height.
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (overHeight > 0)
-                      Container(
-                        key: ValueKey<String>('load-over-$index'),
-                        height: overHeight,
-                        decoration: const BoxDecoration(
-                          color: BqColors.risk,
-                          borderRadius: BorderRadiusDirectional.only(
-                            topStart: Radius.circular(_barRadius),
-                            topEnd: Radius.circular(_barRadius),
-                          ),
-                        ),
-                      ),
                     if (load == 0)
                       Container(
                         key: ValueKey<String>('load-stub-$index'),
@@ -345,9 +340,12 @@ class _WeekColumn extends ConsumerWidget {
                       Container(
                         key: ValueKey<String>('load-main-$index'),
                         height: mainHeight,
-                        decoration: BoxDecoration(
-                          color: barColor,
-                          borderRadius: const BorderRadius.all(
+                        decoration: const BoxDecoration(
+                          // ONE bar colour, at every height. The bar's height
+                          // is the whole message; colour would add a verdict
+                          // the chart no longer makes.
+                          color: BqColors.loadBar,
+                          borderRadius: BorderRadius.all(
                             Radius.circular(_barRadius),
                           ),
                         ),
@@ -361,31 +359,4 @@ class _WeekColumn extends ConsumerWidget {
       ),
     );
   }
-}
-
-/// The 4px-on / 4px-off comfort reference.
-///
-/// There is no dashed-line drawing anywhere else in this codebase, so this is
-/// written straight from the spec: a 1px horizontal run of alternating dashes
-/// in `thresholdDash`.
-class _ThresholdLinePainter extends CustomPainter {
-  const _ThresholdLinePainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = BqColors.thresholdDash
-      ..strokeWidth = size.height;
-    final y = size.height / 2;
-    for (var x = 0.0; x < size.width; x += _dashOn + _dashOff) {
-      canvas.drawLine(
-        Offset(x, y),
-        Offset(math.min(x + _dashOn, size.width), y),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ThresholdLinePainter oldDelegate) => false;
 }

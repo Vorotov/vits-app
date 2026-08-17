@@ -25,6 +25,7 @@ import 'package:boostque/features/calendar/today_screen.dart';
 import 'package:boostque/core/widgets/bq_nav_bar.dart';
 import 'package:boostque/core/widgets/bq_segmented.dart';
 import 'package:boostque/features/calendar/planner_gantt.dart';
+import 'package:boostque/features/calendar/planner_load_chart.dart';
 import 'package:boostque/features/calendar/planner_providers.dart';
 import 'package:boostque/features/calendar/planner_screen.dart';
 import 'package:boostque/features/calendar/planner_year_grid.dart';
@@ -1218,7 +1219,9 @@ void main() {
       // hardcoded "1 серп" / "30 лис" (M6).
       expect(find.text('ОДНОЧАСНЕ НАВАНТАЖЕННЯ'), findsOneWidget);
       expect(find.text('по тижнях'), findsOneWidget);
-      expect(find.text('межа 5 · комфорт 3'), findsOneWidget);
+      // The axis centre names the SCALE, not a limit (plan 06-05).
+      expect(find.text('повний стовпчик — увесь стек'), findsOneWidget);
+      expect(find.text('межа 5 · комфорт 3'), findsNothing);
       final axis = DateFormat.MMMd('uk');
       expect(find.text(axis.format(model.weeks.first.bucket.start)),
           findsOneWidget);
@@ -1229,32 +1232,35 @@ void main() {
       await tearDownTree(tester, container);
     });
 
-    testWidgets('every band draws its own bar: comfort, at the limit, and a '
-        'capped main bar with a proportional over-bar (UI-SPEC banding)',
-        (tester) async {
+    testWidgets('every band draws one bar, scaled against the SCHEDULED '
+        'STACK and never against a limit (plan 06-05)', (tester) async {
       usePhoneSurface(tester);
       final container = makeContainer();
       await openBands(tester, container);
 
-      // Bucket 1 — load 3: the quiet comfort tone, round(3/5*38) = 23.
-      expect(fillOf(tester, 'load-main-1'), BqColors.loadBar);
+      // Seven supplements carry a schedule, so the ceiling is 7 — the bars
+      // divide by the user's own stack, not by an editorial number.
+      expect(container.read(cyclesModelProvider).value!.scheduledCount, 7);
+
+      // Bucket 1 — load 3: round(3/7*38) = 16.
       expect(tester.getSize(find.byKey(const ValueKey('load-main-1'))).height,
-          23);
-      expect(find.byKey(const ValueKey('load-over-1')), findsNothing);
+          16);
 
-      // Bucket 2 — load 4: at our editorial limit, round(4/5*38) = 30.
-      expect(fillOf(tester, 'load-main-2'), BqColors.warn);
+      // Bucket 2 — load 4: round(4/7*38) = 22.
       expect(tester.getSize(find.byKey(const ValueKey('load-main-2'))).height,
-          30);
+          22);
 
-      // Bucket 3 — load 7: the main bar caps at 38 and the excess becomes a
-      // proportional over-bar, round(2/5*38) = 15.
-      expect(fillOf(tester, 'load-main-3'), BqColors.risk);
+      // Bucket 3 — load 7: the whole stack overlaps, so the bar is FULL. It
+      // is not capped and nothing is drawn above it; a full bar is the
+      // chart's way of saying "all of it", not "too much".
       expect(tester.getSize(find.byKey(const ValueKey('load-main-3'))).height,
           38);
-      expect(fillOf(tester, 'load-over-3'), BqColors.risk);
-      expect(tester.getSize(find.byKey(const ValueKey('load-over-3'))).height,
-          15);
+
+      // One colour, at every height.
+      for (final i in const [1, 2, 3]) {
+        expect(fillOf(tester, 'load-main-$i'), BqColors.loadBar,
+            reason: 'bar $i must carry the single neutral bar token');
+      }
 
       await tearDownTree(tester, container);
     });
@@ -1347,8 +1353,11 @@ void main() {
       final node = tester.getSemantics(
         find.byKey(const ValueKey('load-week-2')),
       );
-      expect(node.label, contains('4 з 5 слотів'),
-          reason: 'a pre-formatted weekLoadLabel inside weekBarSemantics');
+      expect(node.label, contains('4 речовини'),
+          reason: 'a pre-formatted substancesCount inside weekBarSemantics — '
+              'the count itself, with no denominator to compare it against');
+      expect(node.label, isNot(contains('слот')),
+          reason: 'the label names no limit any more (plan 06-05)');
       expect(node.label, contains('серп.'), reason: 'the week range');
       // The action must sit on THIS node — `excludeSemantics` drops every
       // descendant action, which is the WR-02 bug shape.
@@ -1365,24 +1374,166 @@ void main() {
       await tearDownTree(tester, container);
     });
 
-    testWidgets('exactly one dashed reference line renders, at the comfort '
-        'height (DECIDED-2)', (tester) async {
+    testWidgets('NO reference line and NO over-bar renders anywhere in the '
+        'planner tree (plan 06-05, inverted from DECIDED-2)', (tester) async {
       usePhoneSurface(tester);
       final container = makeContainer();
       await openBands(tester, container);
 
-      expect(find.byKey(const ValueKey('load-threshold')), findsOneWidget,
-          reason: 'the 5 limit is drawn structurally, as the cap of the main '
-              'bar — a second line there would be redundant chrome');
+      expect(find.byKey(const ValueKey('load-threshold')), findsNothing,
+          reason: 'the dashed comfort reference is gone: there is no comfort '
+              'band left for it to mark');
 
-      // 22.8px above the chart baseline, which is the bottom of a column —
-      // 0.6 x 38px, the height of a load-3 bar (DECIDED-2).
-      final line = tester.getRect(find.byKey(const ValueKey('load-threshold')));
-      final column = tester.getRect(find.byKey(const ValueKey('load-week-0')));
-      expect(column.bottom - line.bottom, closeTo(22.8, 0.1));
-      expect(line.height, 1);
+      final model = container.read(cyclesModelProvider).value!;
+      for (var i = 0; i < model.weeks.length; i++) {
+        expect(find.byKey(ValueKey<String>('load-over-$i')), findsNothing,
+            reason: 'load <= scheduledCount by construction, so no week can '
+                'have anything above its bar');
+      }
 
       await tearDownTree(tester, container);
+    });
+
+    testWidgets('a stack of ONE draws a FULL bar in the week it is active — '
+        'correct by design, not a bug (plan 06-05)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      // One scheduled supplement: ceiling 1. A reader meeting this for the
+      // first time will want to file it as "the chart is maxed out"; it is
+      // not. The chart asks "how much of my stack is running at once", and
+      // with a stack of one the honest answer in an active week is "all of
+      // it". There is no limit to be at, and nothing above the bar.
+      await openBands(tester, container, startsOnAugust: const [5]);
+
+      expect(container.read(cyclesModelProvider).value!.scheduledCount, 1);
+      expect(tester.getSize(find.byKey(const ValueKey('load-main-2'))).height,
+          38);
+      expect(fillOf(tester, 'load-main-2'), BqColors.loadBar);
+      expect(find.byKey(const ValueKey('load-over-2')), findsNothing);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('four loads against a ceiling of four rise strictly, and the '
+        'largest is exactly the full bar (plan 06-05)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      // Four supplements starting a week apart, none ending early: bucket 1
+      // holds one, bucket 2 two, bucket 3 three, bucket 4 four. Proving four
+      // increasing steps ending at 38 is what shows the denominator is the
+      // ceiling — a single fixture can look right under the wrong divisor.
+      await openBands(tester, container, startsOnAugust: const [3, 10, 17, 24]);
+
+      final model = container.read(cyclesModelProvider).value!;
+      expect(model.scheduledCount, 4);
+
+      final heights = <double>[];
+      for (var i = 1; i <= 4; i++) {
+        expect(model.weeks[i].load, i, reason: 'fixture: bucket $i holds $i');
+        heights.add(
+          tester.getSize(find.byKey(ValueKey<String>('load-main-$i'))).height,
+        );
+      }
+
+      for (var i = 1; i < heights.length; i++) {
+        expect(heights[i], greaterThan(heights[i - 1]),
+            reason: 'a heavier week must draw a taller bar');
+      }
+      expect(heights.last, 38,
+          reason: 'load == ceiling is exactly the full bar height');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('EVERY bar in a mixed-load chart resolves the same single bar '
+        'token (plan 06-05)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      await openBands(tester, container);
+
+      // Across the whole chart in ONE pump, not a spot check: a surviving
+      // colour rule would show up on exactly the weeks a spot check misses.
+      final bars = find.byWidgetPredicate(
+        (w) =>
+            w is Container &&
+            w.key is ValueKey<String> &&
+            (w.key! as ValueKey<String>).value.startsWith('load-main-'),
+      );
+      expect(bars, findsWidgets);
+      for (final bar in tester.widgetList<Container>(bars)) {
+        expect((bar.decoration! as BoxDecoration).color, BqColors.loadBar,
+            reason: '${bar.key} broke the one-colour rule');
+      }
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('a stack where NOTHING carries a schedule renders the empty '
+        'state and NO chart at all (plan 06-05, T-06-12)', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer();
+      // Two supplements, no regimens: ceiling 0. The division that would be
+      // undefined is unreachable because the chart is never built — which is
+      // why the widget carries no zero guard.
+      final supplements = container.read(supplementRepoProvider);
+      for (var i = 0; i < 2; i++) {
+        await supplements.upsert(
+          Supplement(
+            id: 'n$i',
+            name: 'Без графіка $i',
+            doseText: '1 капс.',
+            colorValue: 0xFF6B6FA8,
+            note: '',
+          ),
+        );
+      }
+      await openPlanner(tester, container);
+      await pumpUntil(
+        tester,
+        () => find.byType(PlannerLoadChart).evaluate().isNotEmpty ||
+            emptyTitle.evaluate().isNotEmpty,
+        'the planner body',
+      );
+
+      expect(container.read(cyclesModelProvider).value!.scheduledCount, 0);
+      expect(find.byType(PlannerLoadChart), findsNothing,
+          reason: 'ABSENCE is the assertion: no chart means no division by a '
+              'zero ceiling, and no guard branch to get wrong');
+      expect(byKeyPrefix('load-week-'), findsNothing);
+      expect(emptyTitle, findsOneWidget,
+          reason: 'the planner\'s existing empty state is what renders');
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('the axis centre carries the scale caption, mono 10, in both '
+        'locales (plan 06-05, T-06-14)', (tester) async {
+      for (final (locale, caption) in const [
+        ('uk', 'повний стовпчик — увесь стек'),
+        ('en', 'full bar = your whole stack'),
+      ]) {
+        usePhoneSurface(tester);
+        final container = makeContainer();
+        await seedBands(container);
+        await openPlanner(tester, container, locale: locale);
+        await pumpUntil(
+          tester,
+          () => byKeyPrefix('load-week-').evaluate().isNotEmpty,
+          'the load chart columns',
+        );
+
+        final label = tester.widget<Text>(find.text(caption));
+        expect(label.style!.fontSize, 10, reason: '$locale: axis type is 10');
+        expect(label.style!.fontFamily, 'JetBrains Mono',
+            reason: '$locale: the axis row is mono throughout');
+        // The slot the caption occupies used to name a limit. (The summary
+        // chip still does until plan 06-06 — this asserts the AXIS ROW, not
+        // the whole screen.)
+        expect(find.text('межа 5 · комфорт 3'), findsNothing);
+        expect(find.text('limit 5 · comfort 3'), findsNothing);
+
+        await tearDownTree(tester, container);
+      }
     });
 
     testWidgets('selecting a week writes nothing (Interaction Contract 5, '
