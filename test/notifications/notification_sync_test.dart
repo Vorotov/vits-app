@@ -18,6 +18,7 @@ import 'dart:io';
 
 import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/l10n/gen/app_localizations.dart';
+import 'package:boostque/core/notifications/notification_constants.dart';
 import 'package:boostque/core/notifications/notification_copy.dart';
 import 'package:boostque/core/notifications/notification_locale.dart';
 import 'package:boostque/core/notifications/notification_permission.dart';
@@ -907,6 +908,118 @@ void main() {
             'test in this file still green, because they hold it open '
             'themselves.',
       );
+    });
+  });
+
+  group('an application already in flight (the dropped-edit race)', () {
+    // Reported from a real device: set a dose to 08:00, edit it to 09:00, save
+    // — the app shows 09:00 everywhere afterwards, but the phone keeps firing
+    // at 08:00. Every layer beneath this one was verified correct while chasing
+    // it: the repository updates the slot in place, a live `watchDay`
+    // subscriber re-emits the new time, and `reconcile` cancels an id it no
+    // longer wants. What was wrong was above them — the application carrying
+    // the edit was never run.
+    //
+    // The window only exists when the seam takes time to answer, which on a
+    // device it always does (every call is a platform round-trip) and in a host
+    // test it never does. That is why the whole phase shipped green.
+    testWidgets('an edit that lands during one is applied, not dropped',
+        (tester) async {
+      regimens = [
+        daily(slots: [slot(480)])
+      ];
+      await start(tester);
+
+      final oldId = notificationIdFor(day: null, minutesFromMidnight: 480);
+      final newId = notificationIdFor(day: null, minutesFromMidnight: 540);
+      expect(
+        scheduler.calls
+            .where((c) => c.method == scheduleDailyCall)
+            .map((c) => c.id),
+        contains(oldId),
+        reason: 'precondition: the 08:00 repeat is armed',
+      );
+
+      // The operating system is now holding it, which is what makes the stale
+      // reminder cancellable at all.
+      scheduler.held = [
+        PendingNotification(
+          id: oldId,
+          title: notificationTitle(uk),
+          body: notificationBody(
+              locale: uk, doseCount: 1, minutesFromMidnight: 480),
+          payload: doseTapPayload,
+        ),
+      ];
+      scheduler.calls.clear();
+
+      // A routine trigger — a resume, a permission refresh, a midnight roll —
+      // starts an application, which parks on the platform.
+      scheduler.pendingGate = Completer<void>();
+      emit(regimens);
+      await settle(tester);
+
+      // WHILE it is parked, the user saves 08:00 -> 09:00. That application
+      // reads its regimens at its own start, so the parked one cannot carry
+      // this edit.
+      regimens = [
+        daily(slots: [slot(540)])
+      ];
+      emit(regimens);
+      await settle(tester);
+
+      // The platform answers.
+      scheduler.pendingGate!.complete();
+      scheduler.pendingGate = null;
+      await settle(tester);
+      await settle(tester);
+
+      expect(
+        scheduler.calls
+            .where((c) => c.method == scheduleDailyCall)
+            .map((c) => c.id),
+        contains(newId),
+        reason: 'the 09:00 reminder the user actually asked for must be armed; '
+            'without coalescing, the edit\'s application is discarded on the '
+            'in-flight check and never retried, so this is empty',
+      );
+      expect(
+        scheduler.calls.where((c) => c.method == cancelCall).map((c) => c.id),
+        contains(oldId),
+        reason: 'and the 08:00 one the user moved away from must be gone — it '
+            'is the one that keeps firing on the phone while every screen in '
+            'the app shows 09:00',
+      );
+    });
+
+    testWidgets('a burst during one application costs ONE re-derivation',
+        (tester) async {
+      regimens = [
+        daily(slots: [slot(480)])
+      ];
+      await start(tester);
+      final before = applications();
+
+      scheduler.pendingGate = Completer<void>();
+      emit(regimens);
+      await settle(tester);
+
+      // Five more triggers arrive while the first is parked.
+      for (var i = 0; i < 5; i++) {
+        emit(regimens);
+        await settle(tester);
+      }
+
+      scheduler.pendingGate!.complete();
+      scheduler.pendingGate = null;
+      await settle(tester);
+      await settle(tester);
+
+      // The parked one, plus exactly one coalesced re-derivation for the five.
+      expect(applications() - before, 2,
+          reason: 'one remembered request is enough however many triggers '
+              'arrive: the re-run reads current state and reconciles against '
+              'what the platform holds, so it repairs all of them at once');
     });
   });
 }

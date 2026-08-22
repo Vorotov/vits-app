@@ -11,6 +11,8 @@
 /// window, and editing a gate to reuse a helper is how a gate stops being one.
 library;
 
+import 'dart:async';
+
 import 'package:boostque/core/notifications/notification_scheduler.dart';
 
 /// One call the seam received, flattened to the fields a test asserts on.
@@ -77,6 +79,12 @@ class RecordingScheduler extends NotificationScheduler {
   /// Every call, in order.
   final List<SchedulerCall> calls = <SchedulerCall>[];
 
+  /// When set, [pending] parks on it, holding one application in flight for as
+  /// long as the test wants. The seam's other calls answer instantly in a host
+  /// test, so without this the in-flight window has zero width and the
+  /// coalescing behaviour around it cannot be observed at all.
+  Completer<void>? pendingGate;
+
   /// Run after a [scheduleOnce] or [scheduleDaily] is recorded, so a test can
   /// capture what the SERVICE would have derived at that exact moment (the
   /// instant, in the zone current when the call happened).
@@ -129,6 +137,11 @@ class RecordingScheduler extends NotificationScheduler {
   @override
   Future<List<PendingNotification>> pending() async {
     calls.add(SchedulerCall(method: pendingCall));
+    // Parks the application here when a test has armed the gate, recreating the
+    // only thing a host test otherwise cannot have: a platform that takes real
+    // time to answer. Null by default, so every existing test is unaffected.
+    final gate = pendingGate;
+    if (gate != null) await gate.future;
     return held;
   }
 

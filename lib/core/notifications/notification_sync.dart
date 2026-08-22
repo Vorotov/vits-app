@@ -47,6 +47,26 @@ class NotificationSync extends Notifier<int> {
   Timer? _debounce;
   AppLifecycleListener? _lifecycle;
   bool _inFlight = false;
+
+  /// A trigger arrived while an application was still in flight.
+  ///
+  /// Dropping such a trigger loses a real edit. Every call this controller
+  /// makes to the seam is a platform round-trip — `isEnabled`, `pending`, then
+  /// one `cancel` or `schedule` per changed reminder — so an application stays
+  /// in flight for as long as the operating system takes to answer, which on a
+  /// device is long enough for a save to land inside that window. The
+  /// application already running read its regimens BEFORE the save, so it
+  /// cannot carry the edit; if the edit's own application is discarded, the
+  /// reminder the user just moved is never re-derived and the OS keeps holding
+  /// the old one. The app then disagrees with the phone: the editor shows the
+  /// new time because that comes straight from the database, while the
+  /// notification still fires at the old one.
+  ///
+  /// This cannot be reproduced by a host test that lets the seam answer
+  /// instantly — the window does not exist — which is why it survived the whole
+  /// phase. The regression test parks `pending()` on a gate to recreate it.
+  bool _requestedWhileInFlight = false;
+
   int _applications = 0;
 
   @override
@@ -153,7 +173,16 @@ class NotificationSync extends Notifier<int> {
   /// Builds the plan, renders it, reconciles it against what the platform is
   /// holding, and applies the difference.
   Future<void> _apply() async {
-    if (!ref.mounted || _inFlight) return;
+    if (!ref.mounted) return;
+    // Coalesce rather than drop: remember that something changed and re-derive
+    // once the in-flight application has finished. One remembered request is
+    // enough however many triggers arrive, because the re-run reads current
+    // state and `reconcile` is a difference against what the platform actually
+    // holds — it repairs whatever the dropped triggers would have done.
+    if (_inFlight) {
+      _requestedWhileInFlight = true;
+      return;
+    }
 
     // The precondition, read as a VALUE. Nothing may be scheduled before the
     // timezone database is loaded: before setLocalLocation runs, a zoned value
@@ -280,6 +309,13 @@ class NotificationSync extends Notifier<int> {
       );
     } finally {
       _inFlight = false;
+      // Re-arm through the debounce rather than recursing: a burst that arrives
+      // during a slow application then costs one further re-derivation, not one
+      // per trigger, and the timer is cancelled on dispose like any other.
+      if (_requestedWhileInFlight) {
+        _requestedWhileInFlight = false;
+        if (ref.mounted) _request();
+      }
     }
   }
 }
