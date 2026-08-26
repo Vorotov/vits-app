@@ -384,6 +384,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notMarkedLabel => 'not marked';
 
   @override
+  String get plannedLabel => 'planned';
+
+  @override
   String doseCycleChip(int n, int m) {
     return 'dose $n of $m';
   }

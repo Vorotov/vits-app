@@ -3636,6 +3636,179 @@ void main() {
       await tearDownTree(tester, container);
     });
   });
+
+  // --- Future days are not markable (v1.2) ---
+  //
+  // The week strip deliberately keeps future days INSIDE the current week
+  // selectable (E-10), so a day that has not happened yet is reachable and
+  // renders its doses. What it must never do is let one be marked: `DoseRow`
+  // is the app's only `setStatus` call site, so these tests assert against the
+  // RAW database row and against the semantics tree — the two ways a status
+  // could actually be written.
+  group('a future day refuses every mark', () {
+    // Thursday 13 Aug 2026; Saturday the 15th is future and in the SAME week,
+    // so the strip can reach it.
+    final pinnedToday = DateTime.utc(2026, 8, 13);
+    final twoDaysLater = DateTime.utc(2026, 8, 15);
+
+    const supplement = Supplement(
+      id: 's1',
+      name: 'Магній',
+      doseText: '',
+      colorValue: 0xFF6B6FA8,
+      note: '',
+    );
+
+    /// Selects the future day and waits for its single dose row plus a live
+    /// view of that day's raw log table.
+    Future<(Finder, List<IntakeLog> Function(), StreamSubscription<void>)>
+        pumpFutureDay(
+      WidgetTester tester,
+      ProviderContainer container,
+    ) async {
+      await tester.pumpWidget(app(container));
+      final row = find.text('Магній');
+      await pumpUntil(tester, () => row.evaluate().isNotEmpty, 'today\'s row');
+
+      container.read(selectedDayProvider.notifier).select(twoDaysLater);
+      var raw = <IntakeLog>[];
+      final sub = rawLogsFor(twoDaysLater).listen((v) => raw = v);
+      await pumpUntil(
+        tester,
+        () => raw.length == 1 && find.text('Субота').evaluate().isNotEmpty,
+        'the future day to render and materialize its log',
+      );
+      return (row, () => raw, sub);
+    }
+
+    testWidgets('uk: tapping a future dose writes nothing', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(alwaysActive());
+
+      final (row, raw, sub) = await pumpFutureDay(tester, container);
+      expect(raw().single.status, DoseStatus.pending);
+
+      await tester.tap(row);
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+
+      expect(raw().single.status, DoseStatus.pending,
+          reason: 'a day that has not happened cannot be marked taken');
+      expect(tester.takeException(), isNull);
+
+      sub.cancel();
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: long-pressing a future dose opens no action sheet',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(alwaysActive());
+
+      final (row, raw, sub) = await pumpFutureDay(tester, container);
+
+      await tester.longPress(row);
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+      }
+
+      expect(find.text('Позначити прийнято'), findsNothing,
+          reason: 'the sheet is the labelled path to the same write');
+      expect(find.text('Позначити пропущено'), findsNothing);
+      expect(raw().single.status, DoseStatus.pending);
+      expect(tester.takeException(), isNull);
+
+      sub.cancel();
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a future row exposes NO custom semantics action — the '
+        'screen-reader path is closed too', (tester) async {
+      usePhoneSurface(tester);
+      final handle = tester.ensureSemantics();
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(alwaysActive());
+
+      final (row, raw, sub) = await pumpFutureDay(tester, container);
+
+      final node = tester.getSemantics(
+        find.ancestor(of: row, matching: find.byType(DoseRow)),
+      );
+      expect(node.getSemanticsData().customSemanticsActionIds ?? const [],
+          isEmpty,
+          reason: 'accessibility parity cuts both ways: if the gesture is '
+              'gone the labelled action must be gone with it');
+      expect(raw().single.status, DoseStatus.pending);
+      expect(tester.takeException(), isNull);
+
+      sub.cancel();
+      handle.dispose();
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: a future row states WHY it is inert, in neutral words',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(alwaysActive());
+
+      final (_, raw, sub) = await pumpFutureDay(tester, container);
+
+      expect(find.text('заплановано'), findsOneWidget,
+          reason: 'a dead row that looks identical to a live one is a worse '
+              'bug than the one being fixed');
+      expect(find.text('не позначено'), findsNothing,
+          reason: 'the PAST-day chip must never leak onto a future day');
+      expect(find.text('не прийнято вчасно'), findsNothing,
+          reason: 'overdue is today-gated and carries the warn palette');
+      expect(raw().single.status, DoseStatus.pending);
+      expect(tester.takeException(), isNull);
+
+      sub.cancel();
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: back on today the SAME dose is markable again — the gate '
+        'is the day, not the row', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(alwaysActive());
+
+      final (row, _, sub) = await pumpFutureDay(tester, container);
+      sub.cancel();
+
+      container.read(selectedDayProvider.notifier).followToday();
+      var raw = <IntakeLog>[];
+      final todaySub = rawLogsFor(pinnedToday).listen((v) => raw = v);
+      await pumpUntil(
+        tester,
+        () => raw.length == 1 && find.text('Сьогодні').evaluate().isNotEmpty,
+        'the selection to return to today',
+      );
+
+      await tester.tap(row);
+      await pumpUntil(
+        tester,
+        () => raw.single.status == DoseStatus.taken,
+        'the tap to persist on today',
+      );
+
+      expect(find.text('заплановано'), findsNothing);
+      expect(tester.takeException(), isNull);
+
+      todaySub.cancel();
+      await tearDownTree(tester, container);
+    });
+  });
+
 }
 
 /// The settings gear's `IconButton`, scoped through its glyph so the finder

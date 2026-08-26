@@ -105,6 +105,7 @@
   "overdueLabel": "не прийнято вчасно",
   "skippedLabel": "пропущено",
   "notMarkedLabel": "не позначено",
+  "plannedLabel": "заплановано",
   "doseCycleChip": "доза {n} з {m}",
   "ringSemantics": "{total, plural, one{{taken} з {total} дози прийнято} few{{taken} з {total} доз прийнято} many{{taken} з {total} доз прийнято} other{{taken} з {total} доз прийнято}}",
   "markTaken": "Позначити прийнято",

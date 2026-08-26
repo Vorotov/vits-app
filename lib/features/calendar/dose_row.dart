@@ -1,11 +1,19 @@
-/// One materialized dose row — the five exhaustive visual states and the
+/// One materialized dose row — the six exhaustive visual states and the
 /// app's ONLY `setStatus` call site (plan 03-04, UI-SPEC S4 row table,
 /// DECIDED-2/3/5, T-03-02 / T-03-12 / T-03-13 / T-03-14).
 ///
-/// Exactly one of five states renders per row, resolved in a fixed order from
-/// the pure helpers: missed -> taken -> skipped -> overdue -> pending. Overdue
-/// and missed are mutually exclusive by construction — `isOverdue` is gated on
-/// the view being today and `isMissed` on the day being strictly before today.
+/// Exactly one of six states renders per row, resolved in a fixed order from
+/// the pure helpers: future -> missed -> taken -> skipped -> overdue ->
+/// pending. Overdue and missed are mutually exclusive by construction —
+/// `isOverdue` is gated on the view being today and `isMissed` on the day
+/// being strictly before today — and `future` precedes both, so the three
+/// day-derived states partition the calendar with no overlap.
+///
+/// `future` is the one INERT state (v1.2): the week strip deliberately keeps
+/// future days of the current week reachable, but a day that has not happened
+/// cannot be marked. Because this file is the app's only `setStatus` call
+/// site, dropping the gestures AND the custom semantics actions here closes
+/// the write completely — there is no second path to guard.
 ///
 /// The destructive palette is never referenced in this file (Phase 3 adds no
 /// destructive action), and the warn palette is reachable only from the overdue
@@ -33,7 +41,7 @@ import 'package:boostque/features/calendar/dose_action_sheet.dart';
 
 /// The five exhaustive row states of the S4 table. No sixth combination may
 /// render, and no two may render at once.
-enum _RowState { missed, taken, skipped, overdue, pending }
+enum _RowState { future, missed, taken, skipped, overdue, pending }
 
 /// A single dose row: one tap applies the DECIDED-2 tap transition, one long
 /// press opens the labelled action sheet (wired in Task 3 of this plan).
@@ -133,6 +141,11 @@ class _DoseRowState extends ConsumerState<DoseRow> {
   /// Resolution order is the whole guarantee that exactly one state renders.
   _RowState _resolveState() {
     final dose = widget.dose;
+    // FIRST, before every status branch: a day that has not happened cannot
+    // be marked, whatever the stored status says. Resolving it ahead of
+    // `taken`/`skipped` means no historical row and no background write can
+    // talk a future row back into an interactive state.
+    if (isFutureDay(widget.day, today: widget.today)) return _RowState.future;
     if (isMissed(dose, viewedDay: widget.day, today: widget.today)) {
       return _RowState.missed;
     }
@@ -188,6 +201,20 @@ class _DoseRowState extends ConsumerState<DoseRow> {
           rowFill: BqColors.surface,
           rowBorder: BqColors.warnBorder,
         ),
+      // A future dose is inert, so it must not wear the live pending visual —
+      // an untappable row that looks tappable is its own defect. Muted name
+      // and faint circle, but no strikethrough and no warn colour: nothing
+      // has gone wrong, the day simply has not arrived.
+      _RowState.future => (
+          circleFill: BqColors.surfaceAlt,
+          circleBorder: BqColors.inputBorder,
+          glyph: null,
+          glyphColor: BqColors.ink,
+          nameColor: BqColors.textSecondary,
+          struck: false,
+          rowFill: BqColors.surfaceAlt,
+          rowBorder: BqColors.cardBorder,
+        ),
       // A missed dose keeps the LIVE pending visual (DECIDED-3): no warn, no
       // strikethrough, no dead-grey name — marking it late is a legitimate
       // correction and the row stays tappable.
@@ -204,6 +231,11 @@ class _DoseRowState extends ConsumerState<DoseRow> {
     };
 
     final stateChip = switch (state) {
+      _RowState.future => (
+          l10n.plannedLabel,
+          BqColors.textSecondary,
+          BqColors.chip,
+        ),
       _RowState.overdue => (l10n.overdueLabel, BqColors.warn, BqColors.warnBg),
       _RowState.skipped => (
           l10n.skippedLabel,
@@ -241,14 +273,17 @@ class _DoseRowState extends ConsumerState<DoseRow> {
     // Accessibility parity (DECIDED-2): every action the sheet offers is also
     // a labelled custom action here, filtered by the same transition table —
     // nothing on this row is reachable by gesture alone.
+    // A future row offers none of them: accessibility parity cuts both ways —
+    // if the gesture is gone the labelled action must go with it, or the
+    // screen-reader path becomes a way to write what the tap cannot.
     final actions = <CustomSemanticsAction, VoidCallback>{
-      if (dose.status != DoseStatus.taken)
+      if (state != _RowState.future && dose.status != DoseStatus.taken)
         CustomSemanticsAction(label: l10n.markTaken): () =>
             _apply(DoseStatus.taken),
-      if (dose.status != DoseStatus.skipped)
+      if (state != _RowState.future && dose.status != DoseStatus.skipped)
         CustomSemanticsAction(label: l10n.markSkipped): () =>
             _apply(DoseStatus.skipped),
-      if (dose.status != DoseStatus.pending)
+      if (state != _RowState.future && dose.status != DoseStatus.pending)
         CustomSemanticsAction(label: l10n.undoMark): () =>
             _apply(DoseStatus.pending),
     };
@@ -259,11 +294,20 @@ class _DoseRowState extends ConsumerState<DoseRow> {
         customSemanticsActions: actions,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: _onTap,
-          onLongPress: _onLongPress,
-          onTapDown: (_) => setState(() => _pressed = true),
-          onTapUp: (_) => setState(() => _pressed = false),
-          onTapCancel: () => setState(() => _pressed = false),
+          // Null callbacks rather than a guard inside them: a future row is
+          // not a row whose handlers decline, it is a row with no handlers,
+          // so the pressed-state border never flashes a promise either.
+          onTap: state == _RowState.future ? null : _onTap,
+          onLongPress: state == _RowState.future ? null : _onLongPress,
+          onTapDown: state == _RowState.future
+              ? null
+              : (_) => setState(() => _pressed = true),
+          onTapUp: state == _RowState.future
+              ? null
+              : (_) => setState(() => _pressed = false),
+          onTapCancel: state == _RowState.future
+              ? null
+              : () => setState(() => _pressed = false),
           child: Container(
             // 13/14 row padding; the whole row is the tap target and is
             // >= 50px tall by construction (Interaction 8).

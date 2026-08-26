@@ -495,6 +495,10 @@
   "@notMarkedLabel": {
     "description": "Dose-row chip for an unmarked dose on a PAST day (DECIDED-3, invented). Deliberately not 'skipped': the row is still `pending`, so the app does not know what happened — this states only what is true and carries no blame (TRACK-03)"
   },
+  "plannedLabel": "planned",
+  "@plannedLabel": {
+    "description": "Dose-row chip for a dose on a FUTURE day (v1.2). The row is inert — a day that has not happened cannot be marked — and this chip is what stops it from reading as a live row that silently ignores taps. Deliberately not 'not marked': nothing is expected of the user yet, so the word states a schedule, not an omission (TRACK-03 neutrality)"
+  },
   "doseCycleChip": "dose {n} of {m}",
   "@doseCycleChip": {
     "description": "Dose-row chip naming this dose's position among that regimen's doses on the day; rendered only when m > 1, bare numerals, no plural (mockup line 608)",

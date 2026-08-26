@@ -115,6 +115,21 @@ bool isMissed(
     d.status == DoseStatus.pending &&
     dateOnly(viewedDay).isBefore(dateOnly(today));
 
+/// The mirror of the missed rule (v1.2): a day strictly AFTER [today] has not
+/// happened yet, so nothing on it may be marked.
+///
+/// Deliberately day-level, not dose-level — future-ness is a property of the
+/// calendar day and holds whatever a dose's status is, so no combination of
+/// stored statuses can talk a row out of it. Both dates are normalized via
+/// [dateOnly], exactly as [isMissed] does, and this library still never reads
+/// the clock: [today] arrives as a parameter.
+///
+/// The boundary is strict on purpose. Today is NOT future, so a 21:00 dose
+/// stays tickable at 10:00 — taking a dose early, or marking one before bed,
+/// is legitimate. Only a day that has not arrived is refused.
+bool isFutureDay(DateTime viewedDay, {required DateTime today}) =>
+    dateOnly(viewedDay).isAfter(dateOnly(today));
+
 /// Overdue applies on today only (P-5, DECIDED-5): a pending dose whose slot
 /// time is strictly before [nowMinutes].
 ///

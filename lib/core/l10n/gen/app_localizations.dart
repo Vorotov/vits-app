@@ -728,6 +728,12 @@ abstract class AppLocalizations {
   /// **'not marked'**
   String get notMarkedLabel;
 
+  /// Dose-row chip for a dose on a FUTURE day (v1.2). The row is inert — a day that has not happened cannot be marked — and this chip is what stops it from reading as a live row that silently ignores taps. Deliberately not 'not marked': nothing is expected of the user yet, so the word states a schedule, not an omission (TRACK-03 neutrality)
+  ///
+  /// In en, this message translates to:
+  /// **'planned'**
+  String get plannedLabel;
+
   /// Dose-row chip naming this dose's position among that regimen's doses on the day; rendered only when m > 1, bare numerals, no plural (mockup line 608)
   ///
   /// In en, this message translates to:

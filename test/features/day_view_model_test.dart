@@ -232,6 +232,57 @@ void main() {
     });
   });
 
+  group('isFutureDay — the mirror of the missed rule (v1.2)', () {
+    final today = DateTime.utc(2026, 8, 15);
+    final yesterday = DateTime.utc(2026, 8, 14);
+    final tomorrow = DateTime.utc(2026, 8, 16);
+
+    test('a strictly later calendar day -> future', () {
+      expect(isFutureDay(tomorrow, today: today), isTrue);
+      expect(
+        isFutureDay(today.add(const Duration(days: 40)), today: today),
+        isTrue,
+      );
+    });
+
+    test('today itself is NOT future — the boundary that keeps a later dose '
+        'of today tickable', () {
+      expect(isFutureDay(today, today: today), isFalse);
+    });
+
+    test('a past day is not future', () {
+      expect(isFutureDay(yesterday, today: today), isFalse);
+    });
+
+    test('non-date-only inputs are normalized through dateOnly', () {
+      expect(
+        isFutureDay(
+          DateTime(2026, 8, 15, 23, 45),
+          today: DateTime(2026, 8, 15, 0, 5),
+        ),
+        isFalse,
+        reason: 'same calendar day either side of the wall clock',
+      );
+      expect(
+        isFutureDay(
+          DateTime(2026, 8, 16, 0, 5),
+          today: DateTime(2026, 8, 15, 23, 45),
+        ),
+        isTrue,
+        reason: 'the calendar day decides, never the elapsed hours',
+      );
+    });
+
+    test('future and missed are mutually exclusive by construction', () {
+      for (final day in [yesterday, today, tomorrow]) {
+        final bothHold = isFutureDay(day, today: today) &&
+            isMissed(dose(logId: 'l1', minutes: 480),
+                viewedDay: day, today: today);
+        expect(bothHold, isFalse, reason: 'day $day claimed both states');
+      }
+    });
+  });
+
   group('isOverdue — today only (DECIDED-5, P-5)', () {
     test('today, pending, slot time strictly past -> overdue', () {
       final d = dose(logId: 'l1', minutes: 480);

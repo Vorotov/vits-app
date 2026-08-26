@@ -393,6 +393,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get notMarkedLabel => 'не позначено';
 
   @override
+  String get plannedLabel => 'заплановано';
+
+  @override
   String doseCycleChip(int n, int m) {
     return 'доза $n з $m';
   }
