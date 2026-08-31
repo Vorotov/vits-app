@@ -55,7 +55,6 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -170,8 +169,7 @@ class SettingsScreen extends StatelessWidget {
               child: const LanguagePicker(),
             ),
             const _RemindersSection(),
-            // Debug builds only — see [_DebugResetRow].
-            if (kDebugMode) const _DebugResetRow(),
+            const _ShowIntroAgainRow(),
           ],
         ),
       ),
@@ -373,18 +371,21 @@ class _OpenSystemSettingsRow extends StatelessWidget {
 /// Puts the first-run intro and every dismissed hint back, then leaves
 /// Settings so the intro is the next thing on screen.
 ///
-/// Rendered ONLY under [kDebugMode]. It exists because the alternative way to
-/// re-test onboarding on a device is deleting the app, which deletes the
-/// user's stack with it — a test that costs real data is a test nobody runs
-/// twice. It is a real, localized row rather than a hidden gesture: a secret
-/// long-press on a version number is undiscoverable to anyone who did not
-/// write it, and this build is the only one that has the row at all.
+/// Present in EVERY build, debug and release alike. It started as a
+/// debug-only testing affordance, but gating it meant the only way to see the
+/// intro again on a real device was deleting the app — which deletes the
+/// user's stack with it. A row that costs no data is worth having in the
+/// shipped build too: "show me that again" is an ordinary thing to want from
+/// a settings screen, and it destroys nothing.
+///
+/// It writes nothing but the two first-run keys. Supplements, regimens and
+/// intake logs are untouched — this is not a reset of the app.
 ///
 /// A private widget in this file, not a third file under the settings
 /// feature: sign-off condition 25 forbids one, and the feature's source glob
 /// expects exactly two files.
-class _DebugResetRow extends ConsumerWidget {
-  const _DebugResetRow();
+class _ShowIntroAgainRow extends ConsumerWidget {
+  const _ShowIntroAgainRow();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
