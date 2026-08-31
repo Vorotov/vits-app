@@ -66,9 +66,18 @@ void main() {
 
   late BoostqueDb db;
 
-  setUp(() {
+  late SharedPreferences seededPrefs;
+
+  setUp(() async {
     // LocaleController loads its persisted override from SharedPreferences.
-    SharedPreferences.setMockInitialValues({});
+    // The one-time hints are pre-dismissed: every case here models a user
+    // past first run, and the mark-a-dose hint would otherwise sit between
+    // the week strip and the day body in every layout assertion. It has its
+    // own suite (first_run_hints_test.dart).
+    SharedPreferences.setMockInitialValues({
+      'first_run_hints_seen': <String>['hint_cycle', 'hint_mark_dose'],
+    });
+    seededPrefs = await SharedPreferences.getInstance();
   });
 
   /// Provider container over an in-memory database; callers seed through the
@@ -100,7 +109,7 @@ void main() {
         if (today != null) todayProvider.overrideWith(() => _FixedToday(today)),
         if (nowMinutes != null)
           nowMinutesProvider.overrideWith((ref) => Stream.value(nowMinutes)),
-        if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs),
+        sharedPreferencesProvider.overrideWithValue(prefs ?? seededPrefs),
       ],
     );
   }
@@ -1518,6 +1527,8 @@ void main() {
         'surfaces markFailed once (T-03-13)', (tester) async {
       usePhoneSurface(tester);
       final container = ProviderContainer(overrides: [
+        // TodayScreen reads the dismissed-hint set since v1.2.
+        sharedPreferencesProvider.overrideWithValue(seededPrefs),
         dbProvider.overrideWith((ref) {
           final database = BoostqueDb.forTesting(NativeDatabase.memory());
           ref.onDispose(database.close);
@@ -1884,6 +1895,8 @@ void main() {
       // the long-press timeout to elapse mid-flight — the Phase-2
       // double-activation pattern, applied across two different gestures.
       final container = ProviderContainer(overrides: [
+        // TodayScreen reads the dismissed-hint set since v1.2.
+        sharedPreferencesProvider.overrideWithValue(seededPrefs),
         dbProvider.overrideWith((ref) {
           final database = BoostqueDb.forTesting(NativeDatabase.memory());
           ref.onDispose(database.close);
@@ -2756,6 +2769,8 @@ void main() {
         'retry, and never a stack trace (T-03-16)', (tester) async {
       usePhoneSurface(tester);
       final container = ProviderContainer(overrides: [
+        // TodayScreen reads the dismissed-hint set since v1.2.
+        sharedPreferencesProvider.overrideWithValue(seededPrefs),
         dbProvider.overrideWith((ref) {
           final database = BoostqueDb.forTesting(NativeDatabase.memory());
           ref.onDispose(database.close);
@@ -2871,6 +2886,8 @@ void main() {
         // subtypes, so the app's real failure mode is the retried one seeded
         // here; adding a `retry:` line would restore the blind spot.
         final container = ProviderContainer(overrides: [
+          // TodayScreen reads the dismissed-hint set since v1.2.
+          sharedPreferencesProvider.overrideWithValue(seededPrefs),
           dbProvider.overrideWith((ref) {
             final database = BoostqueDb.forTesting(NativeDatabase.memory());
             ref.onDispose(database.close);
@@ -3359,7 +3376,7 @@ void main() {
       final uk = lookupAppLocalizations(ukLocale);
       final en = lookupAppLocalizations(enLocale);
 
-      SharedPreferences.setMockInitialValues({'app_locale': 'uk'});
+      SharedPreferences.setMockInitialValues({'app_locale': 'uk', 'first_run_hints_seen': <String>['hint_cycle', 'hint_mark_dose'],});
       final prefs = await SharedPreferences.getInstance();
       final container = ProviderContainer(overrides: [
         dbProvider.overrideWith((ref) {
@@ -3418,7 +3435,7 @@ void main() {
       final uk = lookupAppLocalizations(ukLocale);
       final en = lookupAppLocalizations(enLocale);
 
-      SharedPreferences.setMockInitialValues({'app_locale': 'uk'});
+      SharedPreferences.setMockInitialValues({'app_locale': 'uk', 'first_run_hints_seen': <String>['hint_cycle', 'hint_mark_dose'],});
       final prefs = await SharedPreferences.getInstance();
       // NOTE: no `retry:` override anywhere in this container. The ABSENCE of
       // it is the point: Riverpod's default backoff is LIVE across the flip,

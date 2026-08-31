@@ -109,8 +109,17 @@ void main() {
     note: '',
   );
 
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
+  late SharedPreferences seededPrefs;
+
+  setUp(() async {
+    // The one-time cycle hint is pre-dismissed: every case here models a user
+    // past first run, and the hint would otherwise sit above the sliders in
+    // every structural and matrix assertion. It has its own suite
+    // (first_run_hints_test.dart).
+    SharedPreferences.setMockInitialValues({
+      'first_run_hints_seen': <String>['hint_cycle', 'hint_mark_dose'],
+    });
+    seededPrefs = await SharedPreferences.getInstance();
   });
 
   /// A supplement whose name carries no Cyrillic, for the matrix cases only.
@@ -131,10 +140,12 @@ void main() {
   /// Creates the provider container over an in-memory database and seeds
   /// the supplement through the repository BEFORE the screen pumps.
   ///
-  /// [prefs] is only needed by the propagation test, which drives the language
-  /// through [localeControllerProvider]; the controller reads its stored
-  /// override synchronously through [sharedPreferencesProvider], which throws
-  /// unless overridden (plan 05-01, P-4 Option A).
+  /// [prefs] overrides the store for the propagation test, which drives the
+  /// language through [localeControllerProvider]; every other container gets
+  /// the suite's seeded instance. The override is no longer optional: since
+  /// v1.2 the schedule panel reads the dismissed-hint set from the same
+  /// store, and [sharedPreferencesProvider] throws unless overridden
+  /// (plan 05-01, P-4 Option A).
   Future<ProviderContainer> makeContainer(
     WidgetTester tester, {
     Supplement seed = supplement,
@@ -147,7 +158,7 @@ void main() {
           ref.onDispose(db.close);
           return db;
         }),
-        if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs),
+        sharedPreferencesProvider.overrideWithValue(prefs ?? seededPrefs),
       ],
     );
     // Keep the stack graph warm (Riverpod 3 pauses unlistened providers).
@@ -562,6 +573,8 @@ void main() {
             ref.onDispose(db.close);
             return db;
           }),
+          // The schedule panel reads the dismissed-hint set since v1.2.
+          sharedPreferencesProvider.overrideWithValue(seededPrefs),
           regimenRepoProvider.overrideWithValue(_FailingRegimenRepo()),
         ],
       );
@@ -805,7 +818,7 @@ void main() {
     final uk = lookupAppLocalizations(ukLocale);
     final en = lookupAppLocalizations(enLocale);
 
-    SharedPreferences.setMockInitialValues({'app_locale': 'uk'});
+    SharedPreferences.setMockInitialValues({'app_locale': 'uk', 'first_run_hints_seen': <String>['hint_cycle', 'hint_mark_dose'],});
     final prefs = await SharedPreferences.getInstance();
     final container = await makeContainer(
       tester,
@@ -965,7 +978,7 @@ void main() {
       WidgetTester tester, {
       RegimenRepository? regimenRepo,
     }) async {
-      SharedPreferences.setMockInitialValues(<String, Object>{});
+      SharedPreferences.setMockInitialValues(<String, Object>{'first_run_hints_seen': <String>['hint_cycle', 'hint_mark_dose'],});
       final prefs = await SharedPreferences.getInstance();
       final container = ProviderContainer(
         overrides: [

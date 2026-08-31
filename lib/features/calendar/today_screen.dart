@@ -34,6 +34,8 @@ import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/tokens.dart';
+import 'package:boostque/core/widgets/bq_hint_card.dart';
+import 'package:boostque/features/onboarding/first_run_hints.dart';
 import 'package:boostque/core/today_controller.dart';
 import 'package:boostque/features/calendar/calendar_providers.dart';
 import 'package:boostque/features/calendar/day_block_section.dart';
@@ -66,6 +68,23 @@ class TodayScreen extends ConsumerWidget {
             // scale). The strip sits OUTSIDE the scroll view, like the header.
             const SizedBox(height: BqSpace.md),
             const WeekStrip(),
+            // The mark-a-dose hint, at the one moment it is actionable: a day
+            // that HAS doses is on screen. It never shows on an empty day,
+            // where there would be nothing to tap (v1.2 path A).
+            if (doses case AsyncData(value: final list)
+                when list.isNotEmpty &&
+                    showsHint(
+                        ref.watch(firstRunHintsProvider), BqHint.markDose))
+              Padding(
+                padding:
+                    const EdgeInsetsDirectional.fromSTEB(20, BqSpace.md, 20, 0),
+                child: BqHintCard(
+                  text: context.l10n.hintMarkDose,
+                  onDismiss: () => ref
+                      .read(firstRunHintsProvider.notifier)
+                      .dismiss(BqHint.markDose),
+                ),
+              ),
             Expanded(child: _DayBody(doses: doses, day: day)),
           ],
         ),

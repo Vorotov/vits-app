@@ -372,8 +372,15 @@ bool _isStableDomainId(Literal l) => const {
 /// keys name a fact the app has to remember across launches, and neither is
 /// ever rendered.
 bool _isPreferencesKey(Literal l) =>
-    const {'app_locale', 'notification_permission_asked', 'onboarding_seen'}
-        .contains(l.value);
+    const {
+      'app_locale',
+      'notification_permission_asked',
+      'onboarding_seen',
+      'first_run_hints_seen',
+      // The BqHint enum's stable ids — storage values, never rendered.
+      'hint_cycle',
+      'hint_mark_dose',
+    }.contains(l.value);
 
 bool _isLocaleTag(Literal l) => l.enclosingCall == 'Locale';
 
@@ -460,7 +467,10 @@ const stringLiteralAllowlist = <({
         'user tries, which is the nagging the approved spec forbids. '
         "'onboarding_seen' records that the first-launch intro was shown "
         '(ONBO-03); translating it would replay onboarding once per '
-        'language switch',
+        'language switch. \'first_run_hints_seen\' and the \'hint_*\' ids it '
+        'holds record which one-time contextual hints the user has already '
+        'dismissed; translating an id would resurrect every dismissed hint '
+        'the first time the language changed',
     allows: _isPreferencesKey,
   ),
   (

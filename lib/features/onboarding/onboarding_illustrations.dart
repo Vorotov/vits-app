@@ -1,10 +1,9 @@
-/// The two onboarding illustrations (spec D-9): miniatures built from the
+/// The onboarding illustration (spec D-9): a miniature built from the
 /// app's own surfaces with existing tokens — no bundled image assets, no new
 /// tokens, and no text, so nothing here needs localizing.
 ///
-/// They teach the real UI: page 1 shows what a dose row looks like ticked and
-/// unticked; page 2 shows the on/off week rhythm the planner draws. They are
-/// miniatures that SHARE tokens with the real widgets, not copies of them —
+/// It teaches the real UI: what a dose row looks like ticked and unticked. A
+/// miniature that SHARES tokens with the real widget, not a copy of it —
 /// if a dose row is restyled they read as slightly dated, not broken (the
 /// spec's accepted drift risk).
 ///
@@ -44,42 +43,7 @@ class OnboardingDosesIllustration extends StatelessWidget {
   }
 }
 
-/// Page 2: six equal blocks alternating on-week (solid accent) and off-week
-/// (the gantt's planned hatch tone) — the cycle idea in one row.
-class OnboardingCycleIllustration extends StatelessWidget {
-  const OnboardingCycleIllustration({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: context.l10n.onboardingIllustrationSemantics2,
-      child: ExcludeSemantics(
-        child: _IllustrationCard(
-          child: Row(
-            children: [
-              for (var i = 0; i < 6; i++) ...[
-                if (i > 0) const SizedBox(width: 4),
-                Expanded(
-                  child: Container(
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: i.isEven
-                          ? BqColors.accent
-                          : BqColors.plannedHatchStrong,
-                      borderRadius: BorderRadius.circular(BqRadii.chip),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The shared frame both illustrations sit in: the app's card surface.
+/// The frame the illustration sits in: the app's card surface.
 class _IllustrationCard extends StatelessWidget {
   const _IllustrationCard({required this.child});
 

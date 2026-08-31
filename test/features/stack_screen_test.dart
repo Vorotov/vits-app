@@ -58,19 +58,29 @@ void main() {
     note: '',
   );
 
-  setUp(() {
+  late SharedPreferences seededPrefs;
+
+  setUp(() async {
     // LocaleController loads its persisted override from SharedPreferences.
-    SharedPreferences.setMockInitialValues({});
+    // The one-time hints are pre-dismissed: every case here models a user
+    // past first run, and since v1.2 the regimen editor this screen pushes
+    // into renders the cycle hint from the same store. The hints have their
+    // own suite (first_run_hints_test.dart).
+    SharedPreferences.setMockInitialValues({
+      'first_run_hints_seen': <String>['hint_cycle', 'hint_mark_dose'],
+    });
+    seededPrefs = await SharedPreferences.getInstance();
   });
 
   /// Provider container over an in-memory database; callers seed through
   /// the repositories before pumping. Passing [today] pins the shared calendar
   /// clock so card statuses are asserted against a fixed day (IN-06).
-  /// [prefs] is only needed by the one test that drives the language through
-  /// [localeControllerProvider] — the controller reads its stored override
-  /// synchronously through [sharedPreferencesProvider], which throws unless
-  /// overridden (plan 05-01, P-4 Option A). The Stack screen itself never
-  /// reaches it, which is why every other container below omits it.
+  /// [prefs] overrides the store for the one test that drives the language
+  /// through [localeControllerProvider]; every other container gets the
+  /// suite's seeded instance. The override is no longer optional: since v1.2
+  /// the regimen editor this screen pushes into reads the dismissed-hint set
+  /// from the same store, and [sharedPreferencesProvider] throws unless
+  /// overridden (plan 05-01, P-4 Option A).
   ProviderContainer makeContainer({DateTime? today, SharedPreferences? prefs}) {
     final container = ProviderContainer(
       overrides: [
@@ -80,7 +90,7 @@ void main() {
           return db;
         }),
         if (today != null) todayProvider.overrideWith(() => _FixedToday(today)),
-        if (prefs != null) sharedPreferencesProvider.overrideWithValue(prefs),
+        sharedPreferencesProvider.overrideWithValue(prefs ?? seededPrefs),
       ],
     );
     // Keep the stack graph warm (Riverpod 3 pauses unlistened providers).
@@ -1170,7 +1180,7 @@ void main() {
     final uk = lookupAppLocalizations(const Locale('uk'));
     final en = lookupAppLocalizations(const Locale('en'));
 
-    SharedPreferences.setMockInitialValues({'app_locale': 'uk'});
+    SharedPreferences.setMockInitialValues({'app_locale': 'uk', 'first_run_hints_seen': <String>['hint_cycle', 'hint_mark_dose'],});
     final prefs = await SharedPreferences.getInstance();
     final container = makeContainer(
       today: DateTime.utc(2026, 8, 10),
@@ -1269,7 +1279,7 @@ void main() {
     testWidgets('activating the gear through SemanticsAction.tap PUSHES the '
         'Settings route — not a coordinate tap', (tester) async {
       usePhoneSurface(tester);
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues({'first_run_hints_seen': <String>['hint_cycle', 'hint_mark_dose'],});
       final prefs = await SharedPreferences.getInstance();
       final container = makeContainer(prefs: prefs);
       final l10n = lookupAppLocalizations(const Locale('uk'));

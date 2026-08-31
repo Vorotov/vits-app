@@ -884,10 +884,6 @@
   "@onboardingSkip": {
     "description": "Text button in the top trailing corner of both onboarding pages. Leaves the intro without opening the add sheet; sets the same seen flag as the final CTA (D-7/D-8), so onboarding never comes back after it"
   },
-  "onboardingNext": "Next",
-  "@onboardingNext": {
-    "description": "Primary CTA on onboarding page 1 — advances to page 2. Full-width button pinned above the bottom SafeArea"
-  },
   "onboardingAddFirst": "Add your first supplement",
   "@onboardingAddFirst": {
     "description": "Primary CTA on onboarding page 2 — marks onboarding seen and opens the existing add-supplement sheet through the app's single add entry point (D-10). Cancelling that sheet is fine: the flag stays set"
@@ -900,20 +896,20 @@
   "@onboardingPage1Body": {
     "description": "Body of onboarding page 1: the daily loop (plan → see → mark). Names the Сьогодні/Today tab the way the nav bar does. Describes scheduling behavior only — never a benefit, dosage or safety claim"
   },
-  "onboardingPage2Title": "Cycles and breaks",
-  "@onboardingPage2Title": {
-    "description": "Title of onboarding page 2 — the one differentiating idea: on/off week cycles. Describes scheduling, not physiology"
-  },
-  "onboardingPage2Body": "Set on-weeks and breaks — the app works out which days need a dose and which don't.",
-  "@onboardingPage2Body": {
-    "description": "Body of onboarding page 2: the app computes which calendar days are on and which are off. No claim about WHY one would cycle — that would be a physiological claim the copy gate forbids"
-  },
   "onboardingIllustrationSemantics1": "Example dose list: one marked taken, one pending",
   "@onboardingIllustrationSemantics1": {
     "description": "Screen-reader label for page 1's decorative illustration (a token-built miniature of two dose rows). The visual is ExcludeSemantics'd; this one sentence replaces it"
   },
-  "onboardingIllustrationSemantics2": "Example cycle: on-weeks alternate with breaks",
-  "@onboardingIllustrationSemantics2": {
-    "description": "Screen-reader label for page 2's decorative illustration (an alternating on/off week strip). The visual is ExcludeSemantics'd; this one sentence replaces it"
+  "hintDismiss": "Got it",
+  "@hintDismiss": {
+    "description": "Dismiss control on a one-time contextual hint card. Permanent: the hint never returns after it. Phrased as the user's own acknowledgement rather than as a command like Close, because the card asks nothing else of them"
+  },
+  "hintCycle": "A cycle is on-weeks plus a break. Set them with the sliders below and the app works out which days need a dose.",
+  "@hintCycle": {
+    "description": "One-time hint shown inside the regimen editor's schedule panel, at the moment the cycle sliders are first on screen. Explains the one non-obvious idea in the product where it actually lives, instead of on an intro screen the user saw before they had a regimen. Describes scheduling only — never why one would cycle, which would be a physiological claim"
+  },
+  "hintMarkDose": "Tap a dose to mark it taken. Long-press for the other options.",
+  "@hintMarkDose": {
+    "description": "One-time hint shown on Сьогодні above the first day that actually has doses, so it arrives only once the action it describes is possible. Names both gestures the dose row supports"
   }
 }

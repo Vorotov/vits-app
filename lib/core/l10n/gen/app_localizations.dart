@@ -1093,12 +1093,6 @@ abstract class AppLocalizations {
   /// **'Skip'**
   String get onboardingSkip;
 
-  /// Primary CTA on onboarding page 1 — advances to page 2. Full-width button pinned above the bottom SafeArea
-  ///
-  /// In en, this message translates to:
-  /// **'Next'**
-  String get onboardingNext;
-
   /// Primary CTA on onboarding page 2 — marks onboarding seen and opens the existing add-supplement sheet through the app's single add entry point (D-10). Cancelling that sheet is fine: the flag stays set
   ///
   /// In en, this message translates to:
@@ -1117,29 +1111,29 @@ abstract class AppLocalizations {
   /// **'Plan what to take and mark what you\'ve taken — Today shows only what\'s needed today.'**
   String get onboardingPage1Body;
 
-  /// Title of onboarding page 2 — the one differentiating idea: on/off week cycles. Describes scheduling, not physiology
-  ///
-  /// In en, this message translates to:
-  /// **'Cycles and breaks'**
-  String get onboardingPage2Title;
-
-  /// Body of onboarding page 2: the app computes which calendar days are on and which are off. No claim about WHY one would cycle — that would be a physiological claim the copy gate forbids
-  ///
-  /// In en, this message translates to:
-  /// **'Set on-weeks and breaks — the app works out which days need a dose and which don\'t.'**
-  String get onboardingPage2Body;
-
   /// Screen-reader label for page 1's decorative illustration (a token-built miniature of two dose rows). The visual is ExcludeSemantics'd; this one sentence replaces it
   ///
   /// In en, this message translates to:
   /// **'Example dose list: one marked taken, one pending'**
   String get onboardingIllustrationSemantics1;
 
-  /// Screen-reader label for page 2's decorative illustration (an alternating on/off week strip). The visual is ExcludeSemantics'd; this one sentence replaces it
+  /// Dismiss control on a one-time contextual hint card. Permanent: the hint never returns after it. Phrased as the user's own acknowledgement rather than as a command like Close, because the card asks nothing else of them
   ///
   /// In en, this message translates to:
-  /// **'Example cycle: on-weeks alternate with breaks'**
-  String get onboardingIllustrationSemantics2;
+  /// **'Got it'**
+  String get hintDismiss;
+
+  /// One-time hint shown inside the regimen editor's schedule panel, at the moment the cycle sliders are first on screen. Explains the one non-obvious idea in the product where it actually lives, instead of on an intro screen the user saw before they had a regimen. Describes scheduling only — never why one would cycle, which would be a physiological claim
+  ///
+  /// In en, this message translates to:
+  /// **'A cycle is on-weeks plus a break. Set them with the sliders below and the app works out which days need a dose.'**
+  String get hintCycle;
+
+  /// One-time hint shown on Сьогодні above the first day that actually has doses, so it arrives only once the action it describes is possible. Names both gestures the dose row supports
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a dose to mark it taken. Long-press for the other options.'**
+  String get hintMarkDose;
 }
 
 class _AppLocalizationsDelegate

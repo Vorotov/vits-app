@@ -35,6 +35,8 @@ import 'package:boostque/core/notifications/notification_permission.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
+import 'package:boostque/core/widgets/bq_hint_card.dart';
+import 'package:boostque/features/onboarding/first_run_hints.dart';
 import 'package:boostque/core/widgets/bq_segmented.dart';
 import 'package:boostque/features/stack/regimen_editor_controller.dart';
 
@@ -289,7 +291,7 @@ class _Eyebrow extends StatelessWidget {
 
 /// The surface panel: date fields + sliders (cyclic) or start/end date
 /// fields (course), followed by the 28-bar preview strip and summary.
-class _PeriodicityPanel extends StatelessWidget {
+class _PeriodicityPanel extends ConsumerWidget {
   const _PeriodicityPanel({
     required this.draft,
     required this.controller,
@@ -318,7 +320,7 @@ class _PeriodicityPanel extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     return Container(
       width: double.infinity,
@@ -332,6 +334,19 @@ class _PeriodicityPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // The cycle hint, at the ONE moment it is relevant: the sliders
+          // that define a cycle are on screen and the user has not set one
+          // before. Inline, so it pushes the panel down rather than covering
+          // it; dismissed for good on tap (v1.2 path A).
+          if (draft.kind == RegimenKind.cyclic &&
+              showsHint(ref.watch(firstRunHintsProvider), BqHint.cycle)) ...[
+            BqHintCard(
+              text: l10n.hintCycle,
+              onDismiss: () =>
+                  ref.read(firstRunHintsProvider.notifier).dismiss(BqHint.cycle),
+            ),
+            const SizedBox(height: BqSpace.md),
+          ],
           if (draft.kind == RegimenKind.cyclic) ...[
             _DateField(
               label: l10n.startLabel,

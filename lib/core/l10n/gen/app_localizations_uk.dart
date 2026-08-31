@@ -655,9 +655,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get onboardingSkip => 'Пропустити';
 
   @override
-  String get onboardingNext => 'Далі';
-
-  @override
   String get onboardingAddFirst => 'Додати першу добавку';
 
   @override
@@ -668,17 +665,17 @@ class AppLocalizationsUk extends AppLocalizations {
       'Плануйте, що приймати, і відмічайте прийняте — Сьогодні показує лише те, що потрібно саме сьогодні.';
 
   @override
-  String get onboardingPage2Title => 'Цикли й перерви';
-
-  @override
-  String get onboardingPage2Body =>
-      'Задайте тижні прийому та перерви — застосунок сам порахує, у які дні доза потрібна, а в які ні.';
-
-  @override
   String get onboardingIllustrationSemantics1 =>
       'Приклад списку доз: одну відмічено, одна очікує';
 
   @override
-  String get onboardingIllustrationSemantics2 =>
-      'Приклад циклу: тижні прийому чергуються з перервами';
+  String get hintDismiss => 'Зрозуміло';
+
+  @override
+  String get hintCycle =>
+      'Цикл — це тижні прийому та перерви. Задайте їх повзунками нижче, і застосунок сам порахує, у які дні доза потрібна.';
+
+  @override
+  String get hintMarkDose =>
+      'Торкніться дози, щоб відмітити прийом. Довге натискання — інші варіанти.';
 }

@@ -130,6 +130,10 @@ const plannerKeyPrefixes = <String>[
   // key, because an intro screen is exactly where a well-meaning rewrite
   // would sneak in an efficacy promise. Same mechanism, wider surface.
   'onboarding',
+  // Same reasoning for the one-time contextual hints that replaced the
+  // second intro page: a hint sits closer to the user's real decision than
+  // any intro screen did, so it needs the ban MORE, not less.
+  'hint',
 ];
 
 /// Planner-rendered keys no prefix catches, because they are SHARED with
@@ -197,14 +201,13 @@ Map<String, String> plannerCopy(AppLocalizations l10n) {
     'weekBarSemantics': l10n.weekBarSemantics('R', 'L'),
     'monthCardSemantics': l10n.monthCardSemantics('M', 'C'),
     'onboardingSkip': l10n.onboardingSkip,
-    'onboardingNext': l10n.onboardingNext,
     'onboardingAddFirst': l10n.onboardingAddFirst,
     'onboardingPage1Title': l10n.onboardingPage1Title,
     'onboardingPage1Body': l10n.onboardingPage1Body,
-    'onboardingPage2Title': l10n.onboardingPage2Title,
-    'onboardingPage2Body': l10n.onboardingPage2Body,
     'onboardingIllustrationSemantics1': l10n.onboardingIllustrationSemantics1,
-    'onboardingIllustrationSemantics2': l10n.onboardingIllustrationSemantics2,
+    'hintDismiss': l10n.hintDismiss,
+    'hintCycle': l10n.hintCycle,
+    'hintMarkDose': l10n.hintMarkDose,
   };
 }
 
