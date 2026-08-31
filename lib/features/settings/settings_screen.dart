@@ -55,6 +55,7 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -62,6 +63,8 @@ import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/notifications/notification_permission.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
+import 'package:boostque/features/onboarding/first_run_hints.dart';
+import 'package:boostque/features/onboarding/onboarding_controller.dart';
 import 'package:boostque/features/settings/language_picker.dart';
 
 /// The Settings screen (UI-SPEC S7).
@@ -167,6 +170,8 @@ class SettingsScreen extends StatelessWidget {
               child: const LanguagePicker(),
             ),
             const _RemindersSection(),
+            // Debug builds only — see [_DebugResetRow].
+            if (kDebugMode) const _DebugResetRow(),
           ],
         ),
       ),
@@ -357,6 +362,68 @@ class _OpenSystemSettingsRow extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Puts the first-run intro and every dismissed hint back, then leaves
+/// Settings so the intro is the next thing on screen.
+///
+/// Rendered ONLY under [kDebugMode]. It exists because the alternative way to
+/// re-test onboarding on a device is deleting the app, which deletes the
+/// user's stack with it — a test that costs real data is a test nobody runs
+/// twice. It is a real, localized row rather than a hidden gesture: a secret
+/// long-press on a version number is undiscoverable to anyone who did not
+/// write it, and this build is the only one that has the row at all.
+///
+/// A private widget in this file, not a third file under the settings
+/// feature: sign-off condition 25 forbids one, and the feature's source glob
+/// expects exactly two files.
+class _DebugResetRow extends ConsumerWidget {
+  const _DebugResetRow();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(top: BqSpace.lg),
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: BqColors.surface,
+          border: Border.all(color: BqColors.cardBorder),
+          borderRadius: BorderRadius.circular(BqRadii.card),
+        ),
+        child: InkWell(
+          onTap: () async {
+            // Hints first, then the intro: flipping the intro flag rebuilds
+            // the gate under this route, and doing it last means the whole
+            // reset has already landed when it does.
+            await ref.read(firstRunHintsProvider.notifier).reset();
+            await ref.read(onboardingSeenProvider.notifier).reset();
+            if (!context.mounted) return;
+            // Leaving Settings reveals the gate's new branch — the intro.
+            Navigator.of(context).pop();
+          },
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 15, 16, 15),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    context.l10n.debugResetOnboarding,
+                    style: const TextStyle(fontSize: 15, color: BqColors.ink),
+                  ),
+                ),
+                const Icon(
+                  Icons.refresh,
+                  size: 18,
+                  color: BqColors.textSecondary,
+                ),
+              ],
             ),
           ),
         ),

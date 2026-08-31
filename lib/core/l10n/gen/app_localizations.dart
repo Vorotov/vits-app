@@ -1134,6 +1134,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap a dose to mark it taken. Long-press for the other options.'**
   String get hintMarkDose;
+
+  /// Row in Settings that clears the onboarding seen-flag and every dismissed hint, so they can be seen again. Rendered ONLY in debug builds (kDebugMode) — it exists so the intro can be re-tested on a device without a reinstall, which would delete the user's data. It is localized like any other row because it is a real, visible row in the build that has it
+  ///
+  /// In en, this message translates to:
+  /// **'Reset intro and hints'**
+  String get debugResetOnboarding;
 }
 
 class _AppLocalizationsDelegate

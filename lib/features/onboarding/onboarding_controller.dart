@@ -71,6 +71,14 @@ class OnboardingController extends Notifier<bool> {
       );
     }
   }
+
+  /// Puts the intro back, for testing it on a device without reinstalling
+  /// (which would take the user's data with it). Reachable ONLY from the
+  /// debug-build row in Settings.
+  Future<void> reset() async {
+    state = false;
+    await ref.read(sharedPreferencesProvider)?.remove(_prefsKey);
+  }
 }
 
 /// App-lifetime state — intentionally NOT autoDispose, like the locale

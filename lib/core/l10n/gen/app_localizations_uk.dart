@@ -678,4 +678,7 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get hintMarkDose =>
       'Торкніться дози, щоб відмітити прийом. Довге натискання — інші варіанти.';
+
+  @override
+  String get debugResetOnboarding => 'Скинути вступ і підказки';
 }

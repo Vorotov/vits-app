@@ -10,6 +10,7 @@ library;
 import 'dart:io';
 
 import 'package:drift/native.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -1098,6 +1099,12 @@ void main() {
 
     /// Every string the language half of this screen renders, derived rather
     /// than transcribed — the set the screen showed BEFORE this plan.
+    ///
+    /// [l10n.debugResetOnboarding] is in the set because the test binding runs
+    /// in DEBUG, where the reset row exists. It is `kDebugMode`-gated, so no
+    /// shipped build renders it — the claim this assertion makes about the
+    /// product surface is unchanged, and stating the row here is what keeps
+    /// the assertion exact rather than loosened to a superset.
     Set<String> languageOnlyText(AppLocalizations l10n) => <String>{
           l10n.settingsTitle,
           l10n.settingsLanguageTitle,
@@ -1105,6 +1112,7 @@ void main() {
           for (final locale in AppLocalizations.supportedLocales)
             lookupAppLocalizations(locale).languageName,
           '✓',
+          if (kDebugMode) l10n.debugResetOnboarding,
         };
 
     testWidgets(

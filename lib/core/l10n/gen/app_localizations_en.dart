@@ -660,4 +660,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get hintMarkDose =>
       'Tap a dose to mark it taken. Long-press for the other options.';
+
+  @override
+  String get debugResetOnboarding => 'Reset intro and hints';
 }

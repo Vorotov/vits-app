@@ -89,6 +89,13 @@ class FirstRunHints extends Notifier<Set<String>> {
       );
     }
   }
+
+  /// Brings every hint back — the debug-build companion to
+  /// `OnboardingController.reset`.
+  Future<void> reset() async {
+    state = <String>{};
+    await ref.read(sharedPreferencesProvider)?.remove(_prefsKey);
+  }
 }
 
 final firstRunHintsProvider =
