@@ -52,6 +52,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 Deferred to future release. Tracked but not in current roadmap.
 
+### Scheduling
+
+- **FREQ-01**: User can schedule a dose on a weekly rhythm — specific weekdays ("Mon/Thu") or N times per week — not only every day of an on-week. Today `Regimen` is day-granular (`onDays`/`offDays` counted in days) and every on-day fires every `DoseSlot`, so "twice a week" cannot be expressed at all. Needs a new field on `Regimen`, a `cycle_math` change, and an editor control; the Cycles gantt and Year matrix both read off the same math and would follow for free.
+
 ### Reminders & Surfaces
 
 - **NOTF-01**: User receives local notifications for scheduled doses (first post-v1 priority — materialized IntakeLog rows make this cheap)
