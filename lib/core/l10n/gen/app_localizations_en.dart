@@ -663,4 +663,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get debugResetOnboarding => 'Reset intro and hints';
+
+  @override
+  String get onboardingPage2Title => 'The calendar sees it all at once';
+
+  @override
+  String get onboardingPage2Body =>
+      'Plan your doses and tick off what you have taken, then use the calendar to see where you are, what overlaps with what, and when the next break starts.';
+
+  @override
+  String get onboardingIllustrationSemantics2 =>
+      'Example calendar: three supplements whose on-weeks partly overlap';
+
+  @override
+  String get onboardingNext => 'Next';
 }

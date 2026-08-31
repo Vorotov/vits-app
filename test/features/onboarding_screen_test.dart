@@ -1,10 +1,10 @@
-/// Widget tests for the ONE-page intro (v1.2 path A, ONBO-01): what it
+/// Widget tests for the two-page intro (v1.2 path A, ONBO-01): what each page
 /// renders, the Skip and CTA contracts, and the bilingual render matrix at
 /// every supported text scale.
 ///
-/// It was two pages until the onboarding research pass — see the screen's own
-/// library doc for the evidence. The cycle explanation moved to a contextual
-/// hint in the regimen editor, covered by first_run_hints_test.dart.
+/// The page count has moved twice — see the screen's own library doc for why.
+/// The mechanics of cycles are NOT here: they are a contextual hint in the
+/// regimen editor, covered by first_run_hints_test.dart.
 library;
 
 import 'package:flutter/material.dart';
@@ -65,21 +65,34 @@ void main() {
     return container;
   }
 
-  testWidgets('renders the title, the body, the CTA and Skip — and no '
-      'second page', (tester) async {
+  testWidgets('page 1 renders the product line, Далі and Пропустити',
+      (tester) async {
     await tester.pumpWidget(screenApp());
     await tester.pumpAndSettle();
 
     expect(find.text('Ваш стек, день за днем'), findsOneWidget);
-    expect(find.text('Додати першу добавку'), findsOneWidget);
+    expect(find.text('Далі'), findsOneWidget);
     expect(find.text('Пропустити'), findsOneWidget);
+    expect(find.text('Додати першу добавку'), findsNothing,
+        reason: 'the CTA names the NEXT tap, and on page 1 that is a page '
+            'turn — a button promising to add a supplement that instead '
+            'scrolls is the label lying about itself');
+  });
 
-    // The deck is GONE, asserted as an absence: a Next control or a PageView
-    // would mean the multi-page shape came back, which is the shape the
-    // research pass removed.
+  testWidgets('page 2 is the calendar page and carries the add-first CTA',
+      (tester) async {
+    await tester.pumpWidget(screenApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Далі'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Календар бачить усе разом'), findsOneWidget);
+    expect(find.text('Додати першу добавку'), findsOneWidget);
     expect(find.text('Далі'), findsNothing);
-    expect(find.byType(PageView), findsNothing,
-        reason: 'one page, no swipe surface — a deck of one is still a deck');
+    expect(find.text('Пропустити'), findsOneWidget,
+        reason: 'Skip is on EVERY page (D-8) — an intro whose escape hatch '
+            'disappears on the last page is the pattern at its worst');
   });
 
   testWidgets('Skip marks seen and never arms the one-shot', (tester) async {
@@ -101,6 +114,8 @@ void main() {
     await tester.pumpWidget(screenApp(container: container));
     await tester.pumpAndSettle();
 
+    await tester.tap(find.text('Далі'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Додати першу добавку'));
     await tester.pumpAndSettle();
 
@@ -108,14 +123,21 @@ void main() {
     expect(container.read(pendingFirstAddProvider), isTrue);
   });
 
-  group('render matrix — both locales, every scale', () {
+  group('render matrix — both pages, both locales, every scale', () {
     for (final locale in bqLocaleMatrix) {
       for (final scale in bqTextScaleMatrix) {
-        testWidgets('$locale @ ${scale}x renders clean', (tester) async {
+        testWidgets('$locale @ ${scale}x renders both pages clean',
+            (tester) async {
           await tester.pumpWidget(screenApp(
             locale: locale,
             textScaler: TextScaler.linear(scale),
           ));
+          await tester.pumpAndSettle();
+
+          expect(tester.takeException(), isNull, reason: overflowReason);
+          if (locale == 'en') expectNoCyrillicWhileEn(tester);
+
+          await tester.tap(find.text(locale == 'uk' ? 'Далі' : 'Next'));
           await tester.pumpAndSettle();
 
           expect(tester.takeException(), isNull, reason: overflowReason);

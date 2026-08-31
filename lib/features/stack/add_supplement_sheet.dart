@@ -41,6 +41,11 @@ Future<void> showAddSupplementSheet(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    // Without this a full-height sheet runs under the status bar and its
+    // close control ends up a few pixels from the clock — reachable in a
+    // screenshot, awkward with a thumb. SafeArea keeps the whole sheet below
+    // the inset, which is what gives the close target room to breathe.
+    useSafeArea: true,
     backgroundColor: BqColors.paper,
     builder: (_) => const _AddSupplementSheet(),
   );
@@ -210,13 +215,27 @@ class _AddSupplementSheetState extends ConsumerState<_AddSupplementSheet> {
                       ),
                     ),
                   ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(
-                      l10n.close,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: BqColors.accent,
+                  // A 44x44 glyph, not a 13px text label: the label was a
+                  // ~40x18 target pinned to the top edge of the sheet, which
+                  // is the hardest place on the screen to hit. The ARB key
+                  // survives as the semantics label, so assistive technology
+                  // still hears the word rather than an icon name.
+                  Semantics(
+                    button: true,
+                    label: l10n.close,
+                    excludeSemantics: true,
+                    onTap: () => Navigator.of(context).pop(),
+                    child: IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      constraints: const BoxConstraints.tightFor(
+                        width: 44,
+                        height: 44,
+                      ),
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(
+                        Icons.close,
+                        size: 20,
+                        color: BqColors.textSecondary,
                       ),
                     ),
                   ),

@@ -99,6 +99,8 @@ void main() {
     await tester.pumpWidget(gateApp());
     await pumpFrames(tester);
 
+    await tester.tap(find.text('Далі'));
+    await pumpFrames(tester);
     await tester.tap(find.text('Додати першу добавку'));
     await pumpFrames(tester);
 
@@ -134,6 +136,8 @@ void main() {
     await tester.pumpWidget(gateApp());
     await pumpFrames(tester);
 
+    await tester.tap(find.text('Далі'));
+    await pumpFrames(tester);
     await tester.tap(find.text('Додати першу добавку'));
     await pumpFrames(tester);
     expect(find.text('Вручну'), findsOneWidget);
@@ -177,6 +181,8 @@ void main() {
         );
 
     await tester.pumpWidget(app());
+    await pumpFrames(tester);
+    await tester.tap(find.text('Далі'));
     await pumpFrames(tester);
     await tester.tap(find.text('Додати першу добавку'));
     await pumpFrames(tester);

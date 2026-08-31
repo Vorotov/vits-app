@@ -915,5 +915,21 @@
   "debugResetOnboarding": "Reset intro and hints",
   "@debugResetOnboarding": {
     "description": "Row in Settings that clears the onboarding seen-flag and every dismissed hint, so they can be seen again. Rendered ONLY in debug builds (kDebugMode) — it exists so the intro can be re-tested on a device without a reinstall, which would delete the user's data. It is localized like any other row because it is a real, visible row in the build that has it"
+  },
+  "onboardingPage2Title": "The calendar sees it all at once",
+  "@onboardingPage2Title": {
+    "description": "Title of onboarding page 2, about the Календар tab. Says what the screen is FOR — seeing the whole plan together — rather than naming the tab"
+  },
+  "onboardingPage2Body": "Plan your doses and tick off what you have taken, then use the calendar to see where you are, what overlaps with what, and when the next break starts.",
+  "@onboardingPage2Body": {
+    "description": "Body of onboarding page 2. Names the three questions the planner answers: current position, overlap between regimens, and the next break. Describes what the screen SHOWS — never whether an overlap is good or bad, which would be an interaction claim the copy gate forbids"
+  },
+  "onboardingIllustrationSemantics2": "Example calendar: three supplements whose on-weeks partly overlap",
+  "@onboardingIllustrationSemantics2": {
+    "description": "Screen-reader label for page 2's decorative illustration (three rows of alternating on/off week blocks). The visual is ExcludeSemantics'd; this one sentence replaces it"
+  },
+  "onboardingNext": "Next",
+  "@onboardingNext": {
+    "description": "Primary CTA on onboarding page 1 — advances to page 2. The same button becomes onboardingAddFirst on the last page, so the label always states what the next tap does"
   }
 }

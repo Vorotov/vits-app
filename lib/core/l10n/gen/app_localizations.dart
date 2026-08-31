@@ -1140,6 +1140,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reset intro and hints'**
   String get debugResetOnboarding;
+
+  /// Title of onboarding page 2, about the Календар tab. Says what the screen is FOR — seeing the whole plan together — rather than naming the tab
+  ///
+  /// In en, this message translates to:
+  /// **'The calendar sees it all at once'**
+  String get onboardingPage2Title;
+
+  /// Body of onboarding page 2. Names the three questions the planner answers: current position, overlap between regimens, and the next break. Describes what the screen SHOWS — never whether an overlap is good or bad, which would be an interaction claim the copy gate forbids
+  ///
+  /// In en, this message translates to:
+  /// **'Plan your doses and tick off what you have taken, then use the calendar to see where you are, what overlaps with what, and when the next break starts.'**
+  String get onboardingPage2Body;
+
+  /// Screen-reader label for page 2's decorative illustration (three rows of alternating on/off week blocks). The visual is ExcludeSemantics'd; this one sentence replaces it
+  ///
+  /// In en, this message translates to:
+  /// **'Example calendar: three supplements whose on-weeks partly overlap'**
+  String get onboardingIllustrationSemantics2;
+
+  /// Primary CTA on onboarding page 1 — advances to page 2. The same button becomes onboardingAddFirst on the last page, so the label always states what the next tap does
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get onboardingNext;
 }
 
 class _AppLocalizationsDelegate

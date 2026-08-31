@@ -681,4 +681,18 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get debugResetOnboarding => 'Скинути вступ і підказки';
+
+  @override
+  String get onboardingPage2Title => 'Календар бачить усе разом';
+
+  @override
+  String get onboardingPage2Body =>
+      'Плануйте прийоми й відмічайте зроблене, а на календарі дивіться, де ви зараз, що з чим збігається і коли починається наступна перерва.';
+
+  @override
+  String get onboardingIllustrationSemantics2 =>
+      'Приклад календаря: три добавки, тижні прийому подекуди збігаються';
+
+  @override
+  String get onboardingNext => 'Далі';
 }
