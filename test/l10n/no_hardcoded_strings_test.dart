@@ -372,7 +372,8 @@ bool _isStableDomainId(Literal l) => const {
 /// keys name a fact the app has to remember across launches, and neither is
 /// ever rendered.
 bool _isPreferencesKey(Literal l) =>
-    const {'app_locale', 'notification_permission_asked'}.contains(l.value);
+    const {'app_locale', 'notification_permission_asked', 'onboarding_seen'}
+        .contains(l.value);
 
 bool _isLocaleTag(Literal l) => l.enclosingCall == 'Locale';
 
@@ -456,7 +457,10 @@ const stringLiteralAllowlist = <({
         'asked for permission to post reminders — the one fact neither '
         'platform API can answer for the app (07-RESEARCH 6.1, 6.2) — and '
         'translating it would make the app ask again in every language the '
-        'user tries, which is the nagging the approved spec forbids',
+        'user tries, which is the nagging the approved spec forbids. '
+        "'onboarding_seen' records that the first-launch intro was shown "
+        '(ONBO-03); translating it would replay onboarding once per '
+        'language switch',
     allows: _isPreferencesKey,
   ),
   (

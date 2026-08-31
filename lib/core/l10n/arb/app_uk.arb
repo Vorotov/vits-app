@@ -163,5 +163,14 @@
   "doseReminderTitle": "Час прийому",
   "doseReminderBody": "{time} · {count, plural, one{{count} прийом} few{{count} прийоми} many{{count} прийомів} other{{count} прийоми}}",
   "doseChannelName": "Нагадування про прийом",
-  "doseChannelDescription": "Одне нагадування на кожен час прийому у вашому розкладі."
+  "doseChannelDescription": "Одне нагадування на кожен час прийому у вашому розкладі.",
+  "onboardingSkip": "Пропустити",
+  "onboardingNext": "Далі",
+  "onboardingAddFirst": "Додати першу добавку",
+  "onboardingPage1Title": "Ваш стек, день за днем",
+  "onboardingPage1Body": "Плануйте, що приймати, і відмічайте прийняте — Сьогодні показує лише те, що потрібно саме сьогодні.",
+  "onboardingPage2Title": "Цикли й перерви",
+  "onboardingPage2Body": "Задайте тижні прийому та перерви — застосунок сам порахує, у які дні доза потрібна, а в які ні.",
+  "onboardingIllustrationSemantics1": "Приклад списку доз: одну відмічено, одна очікує",
+  "onboardingIllustrationSemantics2": "Приклад циклу: тижні прийому чергуються з перервами"
 }

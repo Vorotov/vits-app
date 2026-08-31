@@ -650,4 +650,35 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get doseChannelDescription =>
       'Одне нагадування на кожен час прийому у вашому розкладі.';
+
+  @override
+  String get onboardingSkip => 'Пропустити';
+
+  @override
+  String get onboardingNext => 'Далі';
+
+  @override
+  String get onboardingAddFirst => 'Додати першу добавку';
+
+  @override
+  String get onboardingPage1Title => 'Ваш стек, день за днем';
+
+  @override
+  String get onboardingPage1Body =>
+      'Плануйте, що приймати, і відмічайте прийняте — Сьогодні показує лише те, що потрібно саме сьогодні.';
+
+  @override
+  String get onboardingPage2Title => 'Цикли й перерви';
+
+  @override
+  String get onboardingPage2Body =>
+      'Задайте тижні прийому та перерви — застосунок сам порахує, у які дні доза потрібна, а в які ні.';
+
+  @override
+  String get onboardingIllustrationSemantics1 =>
+      'Приклад списку доз: одну відмічено, одна очікує';
+
+  @override
+  String get onboardingIllustrationSemantics2 =>
+      'Приклад циклу: тижні прийому чергуються з перервами';
 }

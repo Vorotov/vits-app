@@ -125,6 +125,11 @@ const plannerKeyPrefixes = <String>[
   'month',
   'emptyPlanner',
   'gantt',
+  // Not planner copy, but under the same ban: the onboarding spec
+  // (2026-08-26) extends this gate's vocabulary rules to every onboarding
+  // key, because an intro screen is exactly where a well-meaning rewrite
+  // would sneak in an efficacy promise. Same mechanism, wider surface.
+  'onboarding',
 ];
 
 /// Planner-rendered keys no prefix catches, because they are SHARED with
@@ -191,6 +196,15 @@ Map<String, String> plannerCopy(AppLocalizations l10n) {
     'yearLegendEntrySemantics': l10n.yearLegendEntrySemantics('N', 'P'),
     'weekBarSemantics': l10n.weekBarSemantics('R', 'L'),
     'monthCardSemantics': l10n.monthCardSemantics('M', 'C'),
+    'onboardingSkip': l10n.onboardingSkip,
+    'onboardingNext': l10n.onboardingNext,
+    'onboardingAddFirst': l10n.onboardingAddFirst,
+    'onboardingPage1Title': l10n.onboardingPage1Title,
+    'onboardingPage1Body': l10n.onboardingPage1Body,
+    'onboardingPage2Title': l10n.onboardingPage2Title,
+    'onboardingPage2Body': l10n.onboardingPage2Body,
+    'onboardingIllustrationSemantics1': l10n.onboardingIllustrationSemantics1,
+    'onboardingIllustrationSemantics2': l10n.onboardingIllustrationSemantics2,
   };
 }
 

@@ -1086,6 +1086,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'One reminder for each dose time in your schedule.'**
   String get doseChannelDescription;
+
+  /// Text button in the top trailing corner of both onboarding pages. Leaves the intro without opening the add sheet; sets the same seen flag as the final CTA (D-7/D-8), so onboarding never comes back after it
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get onboardingSkip;
+
+  /// Primary CTA on onboarding page 1 — advances to page 2. Full-width button pinned above the bottom SafeArea
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get onboardingNext;
+
+  /// Primary CTA on onboarding page 2 — marks onboarding seen and opens the existing add-supplement sheet through the app's single add entry point (D-10). Cancelling that sheet is fine: the flag stays set
+  ///
+  /// In en, this message translates to:
+  /// **'Add your first supplement'**
+  String get onboardingAddFirst;
+
+  /// Title of onboarding page 1 — what the app is: a stack you plan and tick off daily. Plain product language, no medical or efficacy claims (copy gate applies to all onboarding keys)
+  ///
+  /// In en, this message translates to:
+  /// **'Your stack, day by day'**
+  String get onboardingPage1Title;
+
+  /// Body of onboarding page 1: the daily loop (plan → see → mark). Names the Сьогодні/Today tab the way the nav bar does. Describes scheduling behavior only — never a benefit, dosage or safety claim
+  ///
+  /// In en, this message translates to:
+  /// **'Plan what to take and mark what you\'ve taken — Today shows only what\'s needed today.'**
+  String get onboardingPage1Body;
+
+  /// Title of onboarding page 2 — the one differentiating idea: on/off week cycles. Describes scheduling, not physiology
+  ///
+  /// In en, this message translates to:
+  /// **'Cycles and breaks'**
+  String get onboardingPage2Title;
+
+  /// Body of onboarding page 2: the app computes which calendar days are on and which are off. No claim about WHY one would cycle — that would be a physiological claim the copy gate forbids
+  ///
+  /// In en, this message translates to:
+  /// **'Set on-weeks and breaks — the app works out which days need a dose and which don\'t.'**
+  String get onboardingPage2Body;
+
+  /// Screen-reader label for page 1's decorative illustration (a token-built miniature of two dose rows). The visual is ExcludeSemantics'd; this one sentence replaces it
+  ///
+  /// In en, this message translates to:
+  /// **'Example dose list: one marked taken, one pending'**
+  String get onboardingIllustrationSemantics1;
+
+  /// Screen-reader label for page 2's decorative illustration (an alternating on/off week strip). The visual is ExcludeSemantics'd; this one sentence replaces it
+  ///
+  /// In en, this message translates to:
+  /// **'Example cycle: on-weeks alternate with breaks'**
+  String get onboardingIllustrationSemantics2;
 }
 
 class _AppLocalizationsDelegate

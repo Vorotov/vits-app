@@ -632,4 +632,35 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get doseChannelDescription =>
       'One reminder for each dose time in your schedule.';
+
+  @override
+  String get onboardingSkip => 'Skip';
+
+  @override
+  String get onboardingNext => 'Next';
+
+  @override
+  String get onboardingAddFirst => 'Add your first supplement';
+
+  @override
+  String get onboardingPage1Title => 'Your stack, day by day';
+
+  @override
+  String get onboardingPage1Body =>
+      'Plan what to take and mark what you\'ve taken — Today shows only what\'s needed today.';
+
+  @override
+  String get onboardingPage2Title => 'Cycles and breaks';
+
+  @override
+  String get onboardingPage2Body =>
+      'Set on-weeks and breaks — the app works out which days need a dose and which don\'t.';
+
+  @override
+  String get onboardingIllustrationSemantics1 =>
+      'Example dose list: one marked taken, one pending';
+
+  @override
+  String get onboardingIllustrationSemantics2 =>
+      'Example cycle: on-weeks alternate with breaks';
 }
