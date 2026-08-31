@@ -21,7 +21,6 @@ import 'package:boostque/core/db/database.dart' show BoostqueDb;
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/providers.dart';
 import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/features/onboarding/onboarding_controller.dart';
 import 'package:boostque/features/onboarding/onboarding_gate.dart';
 import 'package:boostque/features/onboarding/onboarding_screen.dart';
 

@@ -10,7 +10,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   testWidgets('app boots inside ProviderScope and renders a MaterialApp',
       (tester) async {
-    SharedPreferences.setMockInitialValues({});
+    // `onboarding_seen`: this test boots a RETURNING user into the shell;
+    // the first-launch (onboarding) branch has its own suite
+    // (onboarding_gate_test.dart).
+    SharedPreferences.setMockInitialValues({'onboarding_seen': true});
     // Since plan 05-01 LocaleController seeds itself synchronously from
     // sharedPreferencesProvider, which throws unless overridden — every scope
     // that pumps BoostqueApp must hand it a resolved instance (P-4 Option A).

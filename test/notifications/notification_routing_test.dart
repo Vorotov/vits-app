@@ -58,7 +58,11 @@ void main() {
 
   setUp(() async {
     // LocaleController seeds itself synchronously from this store (P-4).
-    SharedPreferences.setMockInitialValues({});
+    // `onboarding_seen`: a launch payload can only exist for a user who
+    // saved a regimen long after onboarding, so the cold-start frames are a
+    // returning user's — an empty store would (correctly) paint the intro
+    // instead of the shell and fail every frame-one assertion below.
+    SharedPreferences.setMockInitialValues({'onboarding_seen': true});
     prefs = await SharedPreferences.getInstance();
   });
 

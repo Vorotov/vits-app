@@ -112,7 +112,14 @@ void main() {
   /// the synchronous seed [sharedPreferencesProvider] hands to
   /// `LocaleController.build()` (P-4 Option A).
   Future<SharedPreferences> seedPrefs(Map<String, Object> values) async {
-    SharedPreferences.setMockInitialValues(values);
+    // `onboarding_seen` rides along under every case: these suites model a
+    // returning user reaching Settings through the shell, and BoostqueApp
+    // now opens through the onboarding gate. First-launch behaviour is
+    // onboarding_gate_test.dart's job.
+    SharedPreferences.setMockInitialValues({
+      'onboarding_seen': true,
+      ...values,
+    });
     return SharedPreferences.getInstance();
   }
 

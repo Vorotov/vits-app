@@ -84,7 +84,7 @@ Explicitly excluded. Documented to prevent scope creep.
 | Social sharing of health data | Privacy risk, no user value for this product |
 | Guilt-based streaks / aggressive reminders | Documented alert-fatigue and uninstall driver; conflicts with cycle-off weeks |
 | Auto-adjusting "smart" reminders | Opaque behavior erodes trust |
-| Onboarding flow, quality scores | Mockup v0.1 explicitly excludes; revisit post-v1 |
+| Quality scores | Mockup v0.1 explicitly excludes (this row originally also covered the onboarding flow; that half was revisited 2026-08-26 per the spec `docs/superpowers/specs/2026-08-26-boostque-onboarding-design.md` and shipped as ONBO-01..03 in v1.2 — quality scores stay out) |
 | Treating the 5-substance limit as a safety threshold | It is an editorial tracking-comfort rule; presenting it as medical invites store-review and liability problems |
 
 ## Decisions Locked During Definition
@@ -169,3 +169,22 @@ Requested after the first hands-on session with the shipped v1 build.
 - Unmapped: 0 ✓
 
 *v1.1 requirements defined: 2026-08-17*
+
+---
+
+# v1.2 Requirements
+
+Source: `docs/superpowers/specs/2026-08-26-boostque-onboarding-design.md` (approved 2026-08-31).
+Amends the former "Onboarding flow, quality scores" Out-of-Scope row — this is that revisit; quality scores remain out.
+
+## Onboarding (ONBO)
+
+- [x] **ONBO-01** — On first launch the user sees a two-screen introduction explaining the daily loop and the cycle model, skippable from either screen, in the resolved app language
+- [x] **ONBO-02** — Completing the introduction hands the user directly into adding their first supplement, through the app's single add entry point; cancelling that leaves the user on the Stack screen with onboarding already marked seen
+- [x] **ONBO-03** — The introduction is shown once. A store that cannot be read or written never traps the user in it, and never blocks launch
+
+**Coverage:**
+
+- v1.2 requirements: 3 total (ONBO-01..03)
+- Mapped to phases: 3 (see ROADMAP.md Phase 8)
+- Unmapped: 0 ✓

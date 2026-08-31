@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boostque/app_shell.dart';
+import 'package:boostque/features/onboarding/onboarding_gate.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/l10n/locale_controller.dart';
 import 'package:boostque/core/notifications/notification_locale.dart';
@@ -168,7 +168,12 @@ class BoostqueApp extends ConsumerWidget {
       // is what keeps the whole notification bootstrap behind the first frame
       // (FLAG-3): the resolved locale is what starts it.
       builder: (context, child) => NotificationLocaleObserver(child: child!),
-      home: const AppShell(),
+      // The onboarding gate, not the shell directly: on a first launch it
+      // renders the two-page intro, afterwards it IS the shell (spec D-2).
+      // The seen flag reads synchronously off the prefs instance resolved
+      // above, so this line adds zero awaits — the two launch gates above
+      // runApp stay untouched.
+      home: const OnboardingGate(),
     );
   }
 }

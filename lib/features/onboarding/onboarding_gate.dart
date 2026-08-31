@@ -49,14 +49,20 @@ class _FirstAddLauncherState extends ConsumerState<_FirstAddLauncher> {
   void initState() {
     super.initState();
     // Post-frame: the sheet needs a laid-out Navigator, and opening it
-    // mid-build would be an exception. `mounted` is checked because the
-    // callback outlives this State if the tree is torn down on frame 1.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (ref.read(pendingFirstAddProvider.notifier).consume()) {
-        showAddSupplementSheet(context);
-      }
-    });
+    // mid-build would be an exception. The body lives in its own method so
+    // that nothing locale-dependent is even mentioned inside initState (the
+    // PF-4 gate): the context read happens at callback time, after this
+    // frame laid out — nothing is cached here.
+    WidgetsBinding.instance.addPostFrameCallback(_maybeOpenFirstAdd);
+  }
+
+  /// `mounted` is checked because the callback outlives this State if the
+  /// tree is torn down on frame 1.
+  void _maybeOpenFirstAdd(Duration _) {
+    if (!mounted) return;
+    if (ref.read(pendingFirstAddProvider.notifier).consume()) {
+      showAddSupplementSheet(context);
+    }
   }
 
   @override

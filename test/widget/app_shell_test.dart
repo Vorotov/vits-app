@@ -51,7 +51,11 @@ void main() {
     // Since plan 05-01 that read is SYNCHRONOUS, through
     // sharedPreferencesProvider — which throws unless overridden — so the
     // instance is resolved here and handed to every scope below.
-    SharedPreferences.setMockInitialValues({});
+    // `onboarding_seen` is seeded: every case here models a RETURNING user
+    // (BoostqueApp now opens through the onboarding gate, and an empty store
+    // would render the intro instead of the shell). The first-launch branch
+    // has its own suite (onboarding_gate_test.dart).
+    SharedPreferences.setMockInitialValues({'onboarding_seen': true});
     prefs = await SharedPreferences.getInstance();
   });
 

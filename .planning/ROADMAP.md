@@ -225,3 +225,35 @@ Plans:
 |-------|----------------|--------|-----------|
 | 6. Shell & Simplification | 6/6 | Complete — verified 5/5, 13/13 review findings fixed | 2026-08-17 |
 | 7. Dose Reminders | 0/6 | Planned — 6 plans across 5 waves | - |
+
+---
+
+# Milestone v1.2
+
+Spec: `docs/superpowers/specs/2026-08-26-boostque-onboarding-design.md`
+
+- [x] **Phase 8: Onboarding** - A two-page first-launch intro (daily loop, cycle idea) gated on a persisted seen-flag, handing off into the existing add-supplement sheet
+
+### Phase 8: Onboarding
+
+**Goal**: A first-time user is told what the app is and what a cycle means, then lands directly in adding their first supplement — once, skippably, and never at the cost of launch reliability.
+**Depends on**: Phase 6 (shell, add sheet); independent of Phase 7
+**Requirements**: ONBO-01, ONBO-02, ONBO-03
+**Success Criteria** (what must be TRUE):
+
+  1. A fresh install shows the two-page intro before the shell; every later launch goes straight to the shell
+  2. Skip works from either page; the final CTA opens the add-supplement sheet exactly once, through the same entry point as the FAB
+  3. An unopenable prefs store, a corrupt stored value, or a failed write never traps the user in onboarding and never blocks launch (seen-wins degradation)
+  4. Both pages render clean in uk and en at text scale 1.0/1.6/2.0; onboarding copy sits under the same forbidden-vocabulary gate as planner copy; illustrations are token-built with no bundled assets
+  5. `main()` still performs exactly two awaits before runApp — both launch gates stay green
+
+**Plans**: 1 plan (superpowers flow: spec -> plan -> inline TDD execution)
+
+Plans:
+- [x] docs/superpowers/plans/2026-08-31-onboarding.md — controller, copy, illustrations, screen, gate, main() wiring
+
+## v1.2 Progress
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 8. Onboarding | 1/1 | Complete — full suite green, device pass pending | 2026-08-31 |
