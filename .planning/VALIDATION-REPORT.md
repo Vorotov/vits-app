@@ -71,6 +71,7 @@ real tests; deleting the hook now fails five.
 | TRACK-04's DST safety proven by construction, never executed off UTC | **CLOSED** — full suite green under `Europe/Kyiv` and `Pacific/Auckland` |
 | Cold-start / async `main()` recorded as unmitigated | **CLOSED (record was stale)** — `l10n_device_test.dart` launches through the real `main()`; genuine `am force-stop` + relaunch on Android and a real install+launch on iOS both proven, with wiped-container controls |
 | Release builds signed with the debug keystore | **OPEN — pre-release blocker for you.** Asserted in `platform_config_test.dart` so it cannot be forgotten; needs a keystore only you can create. Harmless until distribution. |
+| Medical-claim vocabulary and full-locale render coverage were only ever checked in `uk` + `en`, while the app now ships seven languages | **OPEN — pre-release step for you: run `flutter test test_release/`.** Both checks are too slow and too noisy for the everyday loop, and one of them goes red for an editorial reason rather than a code one, so they live in a sibling directory a bare `flutter test` does not run. `test_release/copy_safety_all_locales_test.dart` scans the planner/onboarding/hint surface in all seven languages against per-language stem lists; `test_release/locale_matrix_all_test.dart` renders every main screen in all seven at text scales 1.0/1.6/2.0, Arabic under real RTL. Green as of this entry. See `test_release/README.md`. |
 
 ---
 
@@ -96,5 +97,7 @@ real tests; deleting the hook now fails five.
 All 23 v1 requirements are delivered and independently re-verified against source.
 The daily loop — plan, see, mark taken — runs correctly on both platforms, in both
 languages, from a real cold start, and stays correct across DST transitions, year
-boundaries, schedule edits, pauses, and deletions. The one item standing between this
-build and a store submission is the signing key.
+boundaries, schedule edits, pauses, and deletions. Two items stand between this build and
+a store submission: the signing key, and one command — `flutter test test_release/` —
+which is the seven-language copy and render gate the everyday suite deliberately does not
+run.
