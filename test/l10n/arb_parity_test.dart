@@ -75,17 +75,41 @@ Set<String> metadataKeys(Map<String, dynamic> arb) =>
 /// requires every plural message to declare it as the final fallback, and in
 /// languages like Ukrainian no integer ever selects it — only fractions do, so
 /// probing alone would wrongly conclude it is unnecessary.
+///
+/// ALL SIX CLDR categories are passed, not just the four Ukrainian and English
+/// happen to need. `Intl.pluralLogic` resolves an undeclared category by
+/// falling back (`zero ?? other`, `two ?? few ?? other`), so a probe that
+/// omitted `zero:` and `two:` could never observe them: Arabic selects ZERO at
+/// n=0 and TWO at n=2, yet the four-argument probe reported
+/// `{one, few, many, other}` for it and this gate would have accepted an
+/// Arabic ARB carrying no `zero{}` and no `two{}` — exactly the
+/// silently-wrong grammar the file exists to catch.
+///
+/// `Intl.pluralLogic` with `useExplicitNumberCases: false`, NOT the friendlier
+/// `Intl.plural`, is what makes that work. By default `intl` short-circuits —
+/// "if there's an explicit case for the exact number, we use it. This is not
+/// strictly in accord with the CLDR rules" (intl 0.20.3, `intl.dart:348-358`)
+/// — and returns `zero`/`one`/`two` for n = 0/1/2 in EVERY language before it
+/// ever consults a rule. Passing all six categories to `Intl.plural` therefore
+/// reports `{zero, one, two, other}` for English and Chinese and
+/// `{zero, one, two, few, many}` for Ukrainian: six arguments, and a probe
+/// measuring `intl`'s convenience behaviour instead of CLDR. Only the flag
+/// turns the short-circuit off, and only `pluralLogic` exposes it. The pins at
+/// the bottom of this file hold the derivation to all of that.
 Set<String> requiredPluralCategories(String languageCode) {
   final categories = <String>{'other'};
   for (var n = 0; n <= 100; n++) {
     categories.add(
-      Intl.plural(
+      Intl.pluralLogic(
         n,
         locale: languageCode,
+        zero: 'zero',
         one: 'one',
+        two: 'two',
         few: 'few',
         many: 'many',
         other: 'other',
+        useExplicitNumberCases: false,
       ),
     );
   }
@@ -289,6 +313,26 @@ void main() {
       {'one', 'other'},
       reason: 'English needs exactly two; a derivation that returned more '
           'would demand forms the template has no reason to carry',
+    );
+    expect(
+      requiredPluralCategories('ar'),
+      {'zero', 'one', 'two', 'few', 'many', 'other'},
+      reason: 'Arabic is the language that proves the probe passes ALL SIX '
+          'category names. Its rule selects ZERO at 0 and TWO at 2, but '
+          '`Intl.pluralLogic` falls back (`zero ?? other`, `two ?? few ?? '
+          'other`) when a category is not passed — so a probe missing `zero:` '
+          'or `two:` returns {one, few, many, other} here and the gate above '
+          'stops requiring the two forms Arabic actually inflects. This pin, '
+          'not a comment, is what keeps the probe complete',
+    );
+    expect(
+      requiredPluralCategories('zh'),
+      {'other'},
+      reason: 'Chinese has exactly one form, and it is the opposite guard to '
+          'Arabic: a derivation that over-reported would demand `one{}` and '
+          '`few{}` blocks of a translator whose language has no such '
+          'distinction, and the only way to satisfy it would be to write the '
+          'same sentence six times',
     );
   });
 }

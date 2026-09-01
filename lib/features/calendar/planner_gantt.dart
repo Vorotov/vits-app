@@ -20,7 +20,11 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+// `hide TextDirection`: `intl` exports a TextDirection of its own (an LTR/RTL
+// value object for its Bidi helpers) that collides with `dart:ui`'s enum —
+// the one `Directionality` speaks and the row painter mirrors on. Only
+// `DateFormat` is wanted from here.
+import 'package:intl/intl.dart' hide TextDirection;
 
 import 'package:boostque/core/l10n/casing.dart';
 import 'package:boostque/core/l10n/l10n.dart';
@@ -282,7 +286,10 @@ class _GanttLegend extends StatelessWidget {
                 slug: 'planned',
                 label: l10n.legendPlanned,
                 swatch: CustomPaint(
-                  painter: const _HatchSwatchPainter(),
+                  painter: _HatchSwatchPainter(
+                    mirrored:
+                        Directionality.of(context) == TextDirection.rtl,
+                  ),
                   child: const DecoratedBox(
                     decoration: BoxDecoration(
                       border: Border.fromBorderSide(
@@ -359,11 +366,17 @@ const double _hatchPeriod = _hatchStroke * 2;
 /// Fills [rrect] with the planned ink: the weak wash under 4px-on/4px-off
 /// diagonals, clipped so the hatch never bleeds past the shape.
 ///
+/// [mirrored] flips the diagonals' slope for an RTL tree, so the texture is a
+/// true mirror of the LTR chart rather than the one part of it that kept its
+/// handedness. Purely cosmetic — a repeating 45-degree stripe reads the same
+/// either way — but it costs one sign, and the legend swatch takes the same
+/// flag so the two can never disagree about what "planned" looks like (WR-06).
+///
 /// ONE definition, two callers. The legend's whole job is to say "this ink
 /// means planned", so the swatch and the segment are a correctness pair rather
 /// than a duplication: written twice, changing the stroke in one leaves the
 /// legend describing something the chart no longer draws (WR-06).
-void _paintHatch(Canvas canvas, RRect rrect) {
+void _paintHatch(Canvas canvas, RRect rrect, {bool mirrored = false}) {
   final bounds = rrect.outerRect;
   canvas.save();
   canvas.clipRRect(rrect);
@@ -371,14 +384,16 @@ void _paintHatch(Canvas canvas, RRect rrect) {
   final hatch = Paint()
     ..color = BqColors.plannedHatchStrong
     ..strokeWidth = _hatchStroke;
+  final rise = mirrored ? -bounds.height : bounds.height;
   // The diagonals start one height to the left and end one height past the
-  // right edge, so the clipped shape is covered corner to corner.
+  // right edge, so the clipped shape is covered corner to corner — an overhang
+  // wide enough for either slope.
   for (var x = bounds.left - bounds.height;
       x < bounds.right + bounds.height;
       x += _hatchPeriod) {
     canvas.drawLine(
       Offset(x, bounds.bottom),
-      Offset(x + bounds.height, bounds.top),
+      Offset(x + rise, bounds.top),
       hatch,
     );
   }
@@ -388,7 +403,11 @@ void _paintHatch(Canvas canvas, RRect rrect) {
 /// The planned swatch's hatch — the same ink the planned segments carry, at
 /// swatch scale, from the same helper.
 class _HatchSwatchPainter extends CustomPainter {
-  const _HatchSwatchPainter();
+  const _HatchSwatchPainter({required this.mirrored});
+
+  /// Whether the tree is RTL, so the swatch's diagonals lean the same way the
+  /// chart's do.
+  final bool mirrored;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -398,11 +417,13 @@ class _HatchSwatchPainter extends CustomPainter {
         Offset.zero & size,
         const Radius.circular(_swatchRadius),
       ),
+      mirrored: mirrored,
     );
   }
 
   @override
-  bool shouldRepaint(_HatchSwatchPainter oldDelegate) => false;
+  bool shouldRepaint(_HatchSwatchPainter oldDelegate) =>
+      oldDelegate.mirrored != mirrored;
 }
 
 /// One supplement's row: its name above its painted track.
@@ -488,7 +509,12 @@ class GanttRowBar extends StatelessWidget {
             SizedBox(
               height: _trackHeight,
               child: CustomPaint(
-                painter: _GanttRowPainter(segments: row.segments),
+                painter: _GanttRowPainter(
+                  segments: row.segments,
+                  // A canvas has no reading direction of its own, so the one
+                  // the tree is in has to be handed to it — see the painter.
+                  textDirection: Directionality.of(context),
+                ),
               ),
             ),
           ],
@@ -499,16 +525,40 @@ class GanttRowBar extends StatelessWidget {
 }
 
 /// A `chip` track carrying solid active and hatched planned segments.
+///
+/// The x mapping is MIRRORED under RTL, in the painter, rather than by
+/// wrapping the track in a `Transform.scale(scaleX: -1)`. Two reasons. A
+/// transform mirrors everything the subtree paints, including the hatch and
+/// (were one ever added) any glyph, so the escape hatch is a second transform
+/// nested back the other way — the shape of bug this fix exists to remove. And
+/// the geometry a widget test reads back is the geometry the painter computed:
+/// a mirrored offset is a number this class owns, while a flipped canvas is a
+/// matrix a test would have to re-apply by hand to say anything about where a
+/// bar actually is.
+///
+/// Everything else on this chart already flips: the month header labels
+/// (`_MonthScale`'s `Row`), the month gridlines and the today marker
+/// (`PositionedDirectional`). Before this, the painted track alone ran
+/// left-to-right under a right-to-left header, so in Arabic and Urdu every bar
+/// pointed at the wrong month — a chart stating something false, not a
+/// cosmetic slip.
 class _GanttRowPainter extends CustomPainter {
-  const _GanttRowPainter({required this.segments});
+  const _GanttRowPainter({required this.segments, required this.textDirection});
 
-  /// Fractional left/right pairs plus their kind — the ONLY thing this painter
-  /// draws from, which is why [shouldRepaint] compares nothing else. The list
-  /// arrives from the cached model, so a new list means a genuinely new model.
+  /// Fractional left/right pairs plus their kind. The list arrives from the
+  /// cached model, so a new list means a genuinely new model.
   final List<GanttSegment> segments;
+
+  /// The tree's reading direction, read from `Directionality` by the row.
+  ///
+  /// Painted, therefore compared in [shouldRepaint]: a locale switch from `en`
+  /// to `ar` changes no segment fraction at all, so without this the mirrored
+  /// track would keep the old handedness until something else forced a repaint.
+  final TextDirection textDirection;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final rtl = textDirection == TextDirection.rtl;
     final track = RRect.fromRectAndRadius(
       Offset.zero & size,
       const Radius.circular(_trackRadius),
@@ -518,11 +568,18 @@ class _GanttRowPainter extends CustomPainter {
     canvas.drawRRect(track, Paint()..color = BqColors.chip);
 
     for (final s in segments) {
-      final left = s.startFraction * size.width;
       final width = math.max(
         _minSegmentWidth,
         (s.endFraction - s.startFraction) * size.width,
       );
+      // The band's EARLIER edge is anchored and the band grows away from it —
+      // rightward in LTR, leftward in RTL. Anchoring the same edge in both
+      // directions is what keeps `_minSegmentWidth` honest: a widened one-day
+      // run still begins on the day it belongs to instead of sliding a pixel
+      // or two into the previous one.
+      final left = rtl
+          ? size.width - s.startFraction * size.width - width
+          : s.startFraction * size.width;
       final rrect = RRect.fromRectAndRadius(
         Rect.fromLTWH(left, 0, width, size.height),
         const Radius.circular(_trackRadius),
@@ -535,7 +592,7 @@ class _GanttRowPainter extends CustomPainter {
 
       // The same ink, from the same helper, as the legend's planned swatch —
       // the legend cannot describe a hatch the chart does not draw (WR-06).
-      _paintHatch(canvas, rrect);
+      _paintHatch(canvas, rrect, mirrored: rtl);
 
       canvas.drawRRect(
         rrect.deflate(0.5),
@@ -549,5 +606,6 @@ class _GanttRowPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_GanttRowPainter oldDelegate) =>
-      oldDelegate.segments != segments;
+      oldDelegate.segments != segments ||
+      oldDelegate.textDirection != textDirection;
 }

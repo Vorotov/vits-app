@@ -49,9 +49,14 @@ const String cyrillicLeakReason =
 /// 1. `Українська` — a language's own endonym. The language picker renders
 ///    every shipped language in its OWN script (`languageName`, P-2), so the
 ///    Ukrainian row reads "Українська" no matter which language is active;
-///    translating it would defeat the point of an endonym. This is the only
-///    entry today.
-const List<String> cyrillicAllowlist = <String>['Українська'];
+///    translating it would defeat the point of an endonym.
+/// 2. `Русский` — the same rule, for Russian. Correct copy, not a leak: once
+///    `app_ru.arb` ships, any English-locale test that renders the picker sees
+///    this row in Cyrillic and would trip the sweep on a string that is right.
+///    Listed for the endonym reason ONLY — a Russian message anywhere outside
+///    the picker is still a leak, and the sweep still catches it, because
+///    matching is whole-string.
+const List<String> cyrillicAllowlist = <String>['Українська', 'Русский'];
 
 /// The text scales every render matrix in this repository sweeps.
 ///
@@ -79,6 +84,32 @@ final RegExp _cyrillic = RegExp(r'[Ѐ-ӿ]');
 ///
 /// Call this ONLY in cases where English is the active language — in a
 /// Ukrainian case it would fail on every correct string.
+///
+/// WHAT THIS DOES NOT COVER. The name says Cyrillic and English, and both
+/// halves are limits, not incidental detail:
+///
+/// * It runs only while `en` is active. Every shipped language is a possible
+///   ACTIVE language and so a possible victim of a leak, and this sweep
+///   inspects exactly one of them — a Ukrainian string surfacing on the
+///   Spanish build is invisible here, and so is an English one surfacing
+///   anywhere. Widening it is not a matter of relaxing this function: a
+///   general sweep needs a per-language script expectation, which the ARBs do
+///   not carry today.
+/// * It detects Cyrillic and nothing else. Latin-script leaks between English
+///   and Spanish, French or Portuguese are the likeliest of all — same script,
+///   same alphabet, no probe possible — and Devanagari, Bengali, Arabic and
+///   Han leaks are all equally undetected. Cyrillic is caught because it is
+///   cheap to catch, not because it is the risk.
+/// * With Russian shipped it can no longer tell a Ukrainian leak from correct
+///   Russian: both are Cyrillic, the regex is one block, and the allowlist
+///   matches whole strings, so `Русский` is exempt while a genuine Ukrainian
+///   sentence on an English screen and a genuine Russian one are the same
+///   signal to this code.
+///
+/// So: a green sweep means "no unexpected Cyrillic reached an English tree in
+/// the cases that call it". It is not evidence that the screen is fully
+/// translated, and it never was — that claim belongs to the ARB parity gate in
+/// `test/l10n/arb_parity_test.dart`, which reads every file.
 ///
 /// Note on user data: names the user typed or that were copied onto a
 /// `Supplement` row at add-time are NOT localized copy and never re-localize
