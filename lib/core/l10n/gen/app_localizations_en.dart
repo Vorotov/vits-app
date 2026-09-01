@@ -33,22 +33,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String substancesCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count substances',
-      one: '$count substance',
+      other: '$countString substances',
+      one: '$countString substance',
     );
     return '$_temp0';
   }
 
   @override
   String weeksCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count weeks',
-      one: '$count week',
+      other: '$countString weeks',
+      one: '$countString week',
     );
     return '$_temp0';
   }
@@ -58,17 +66,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String stackSummary(int total, int active) {
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+    final intl.NumberFormat activeNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String activeString = activeNumberFormat.format(active);
+
     String _temp0 = intl.Intl.pluralLogic(
       total,
       locale: localeName,
-      other: '$total supplements',
-      one: '$total supplement',
+      other: '$totalString supplements',
+      one: '$totalString supplement',
     );
     String _temp1 = intl.Intl.pluralLogic(
       active,
       locale: localeName,
-      other: '$active active',
-      one: '$active active',
+      other: '$activeString active',
+      one: '$activeString active',
     );
     return '$_temp0 · $_temp1';
   }
@@ -182,11 +197,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String slotsPerDay(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count times per day',
-      one: '$count time per day',
+      other: '$countString times per day',
+      one: '$countString time per day',
     );
     return '$_temp0';
   }
@@ -201,7 +220,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String slotIntervalNote(int h, int m) {
-    return 'Smallest interval — $h h $m min.';
+    final intl.NumberFormat hNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String hString = hNumberFormat.format(h);
+    final intl.NumberFormat mNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String mString = mNumberFormat.format(m);
+
+    return 'Smallest interval — $hString h $mString min.';
   }
 
   @override
@@ -371,7 +399,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String blockProgress(int done, int total) {
-    return '$done of $total';
+    final intl.NumberFormat doneNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String doneString = doneNumberFormat.format(done);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
+    return '$doneString of $totalString';
   }
 
   @override
@@ -388,16 +424,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String doseCycleChip(int n, int m) {
-    return 'dose $n of $m';
+    final intl.NumberFormat nNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String nString = nNumberFormat.format(n);
+    final intl.NumberFormat mNumberFormat = intl.NumberFormat.decimalPattern(
+      localeName,
+    );
+    final String mString = mNumberFormat.format(m);
+
+    return 'dose $nString of $mString';
   }
 
   @override
   String ringSemantics(int taken, int total) {
+    final intl.NumberFormat takenNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String takenString = takenNumberFormat.format(taken);
+    final intl.NumberFormat totalNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String totalString = totalNumberFormat.format(total);
+
     String _temp0 = intl.Intl.pluralLogic(
       total,
       locale: localeName,
-      other: '$taken of $total doses taken',
-      one: '$taken of $total dose taken',
+      other: '$takenString of $totalString doses taken',
+      one: '$takenString of $totalString dose taken',
     );
     return '$_temp0';
   }
@@ -475,22 +527,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String monthsCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count months',
-      one: '$count month',
+      other: '$countString months',
+      one: '$countString month',
     );
     return '$_temp0';
   }
 
   @override
   String periodsCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count periods',
-      one: '$count period',
+      other: '$countString periods',
+      one: '$countString period',
     );
     return '$_temp0';
   }
@@ -617,11 +677,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String doseReminderBody(int count, String time) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count doses',
-      one: '$count dose',
+      other: '$countString doses',
+      one: '$countString dose',
     );
     return '$time · $_temp0';
   }
