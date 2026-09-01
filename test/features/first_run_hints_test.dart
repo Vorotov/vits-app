@@ -184,8 +184,8 @@ void main() {
 
       expect(find.byType(BqHintCard), findsOneWidget);
       expect(
-        find.text('Торкніться дози, щоб відмітити прийом. Довге натискання — '
-            'інші варіанти.'),
+        find.text('Торкніться дози, щоб відмітити прийом. Натисніть і '
+            'утримуйте, щоб побачити інші варіанти.'),
         findsOneWidget,
       );
 

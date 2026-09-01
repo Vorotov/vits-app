@@ -544,7 +544,7 @@ void main() {
           reason: 'save button label switches to the paused variant');
       expect(
         find.text(
-          'Цикл збережеться в стеку зі статусом «пауза» — '
+          'Цикл збережеться в стеку зі статусом «пауза», '
           'у календарі його не буде.',
         ),
         findsOneWidget,
@@ -645,7 +645,7 @@ void main() {
           reason: 'dialog title carries the supplement name');
       expect(
         find.text(
-          'Розклад і майбутні дози буде видалено. Історію прийому збережемо.',
+          'Видалення прибирає розклад і майбутні дози. Історія прийому залишається.',
         ),
         findsOneWidget,
         reason: 'dialog body states history is kept',

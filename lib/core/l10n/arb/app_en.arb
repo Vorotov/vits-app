@@ -90,7 +90,7 @@
   "@emptyStackTitle": {
     "description": "Empty-state heading on the Stack screen, below the still-visible CTA"
   },
-  "emptyStackBody": "Add your first supplement with the + button — from the catalog or manually.",
+  "emptyStackBody": "Add your first supplement with the + button: from the catalog or manually.",
   "@emptyStackBody": {
     "description": "Empty-state body on the Stack screen. Names the + ACTION rather than a screen corner ('bottom right'), so it stays true under RTL and if the floating button ever moves (plan 06-04)"
   },
@@ -122,7 +122,7 @@
   "@searchCatalogHint": {
     "description": "Hint text of the catalog search input"
   },
-  "noResultsCatalog": "Nothing found in the catalog. Add this supplement manually.",
+  "noResultsCatalog": "Nothing in the catalog matches. Add this supplement manually.",
   "@noResultsCatalog": {
     "description": "Catalog search empty-result copy — rewritten with no label-scanning promise (D3/PF-5)"
   },
@@ -178,7 +178,7 @@
   "@noBreak": {
     "description": "Break slider value label when the break length is zero"
   },
-  "cycleSummaryCyclic": "{on} on, then {off} off — repeats until you turn it off",
+  "cycleSummaryCyclic": "{on} on, then {off} off. Repeats until you turn it off.",
   "@cycleSummaryCyclic": {
     "description": "Cycle preview summary for a cyclic regimen with a break; placeholders are pre-formatted weeksCount strings",
     "placeholders": {
@@ -190,7 +190,7 @@
       }
     }
   },
-  "cycleSummaryCyclicNoBreak": "{on} on without a break — repeats until you turn it off",
+  "cycleSummaryCyclicNoBreak": "{on} on without a break. Repeats until you turn it off.",
   "@cycleSummaryCyclicNoBreak": {
     "description": "Cycle preview summary for a cyclic regimen without a break; placeholder is a pre-formatted weeksCount string",
     "placeholders": {
@@ -286,7 +286,7 @@
       }
     }
   },
-  "saveHintPaused": "The cycle is saved to your stack as paused — it won't appear in the calendar.",
+  "saveHintPaused": "The cycle is saved to your stack as paused, so it won't appear in the calendar.",
   "@saveHintPaused": {
     "description": "Centered helper under the footer buttons while the draft is paused"
   },
@@ -299,7 +299,7 @@
       }
     }
   },
-  "deleteConfirmBody": "Its schedule and future doses will be removed. Your intake history is kept.",
+  "deleteConfirmBody": "Deleting removes the schedule and future doses. Your intake history stays.",
   "@deleteConfirmBody": {
     "description": "Delete confirmation dialog body stating that intake history is kept"
   },
@@ -734,7 +734,7 @@
   "@emptyPlannerTitle": {
     "description": "Planner empty-state heading, rendered on BOTH segments (invented — the mockup has no empty state)"
   },
-  "emptyPlannerBody": "Add a supplement on the Stack tab — its cycles will appear here.",
+  "emptyPlannerBody": "Add a supplement on the Stack tab and its cycles will appear here.",
   "@emptyPlannerBody": {
     "description": "Planner empty-state body when the stack is empty; names the Stack tab rather than linking to it — the nav bar is the affordance"
   },
@@ -892,7 +892,7 @@
   "@onboardingPage1Title": {
     "description": "Title of onboarding page 1 — what the app is: a stack you plan and tick off daily. Plain product language, no medical or efficacy claims (copy gate applies to all onboarding keys)"
   },
-  "onboardingPage1Body": "Plan what to take and mark what you've taken — Today shows only what's needed today.",
+  "onboardingPage1Body": "Plan what to take and mark what you've taken. Today shows only what's needed today.",
   "@onboardingPage1Body": {
     "description": "Body of onboarding page 1: the daily loop (plan → see → mark). Names the Сьогодні/Today tab the way the nav bar does. Describes scheduling behavior only — never a benefit, dosage or safety claim"
   },
@@ -908,7 +908,7 @@
   "@hintCycle": {
     "description": "One-time hint shown inside the regimen editor's schedule panel, at the moment the cycle sliders are first on screen. Explains the one non-obvious idea in the product where it actually lives, instead of on an intro screen the user saw before they had a regimen. Describes scheduling only — never why one would cycle, which would be a physiological claim"
   },
-  "hintMarkDose": "Tap a dose to mark it taken. Long-press for the other options.",
+  "hintMarkDose": "Tap a dose to mark it taken. Press and hold for the other options.",
   "@hintMarkDose": {
     "description": "One-time hint shown on Сьогодні above the first day that actually has doses, so it arrives only once the action it describes is possible. Names both gestures the dose row supports"
   },
@@ -920,7 +920,7 @@
   "@onboardingPage2Title": {
     "description": "Title of onboarding page 2, about the Календар tab. Says what the screen is FOR — seeing the whole plan together — rather than naming the tab"
   },
-  "onboardingPage2Body": "Plan your doses and tick off what you have taken, then use the calendar to see where you are, what overlaps with what, and when the next break starts.",
+  "onboardingPage2Body": "The calendar shows where you are in each cycle, what overlaps with what, and when the next break starts.",
   "@onboardingPage2Body": {
     "description": "Body of onboarding page 2. Names the three questions the planner answers: current position, overlap between regimens, and the next break. Describes what the screen SHOWS — never whether an overlap is good or bad, which would be an interaction claim the copy gate forbids"
   },

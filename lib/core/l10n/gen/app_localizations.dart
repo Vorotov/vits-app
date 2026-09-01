@@ -209,7 +209,7 @@ abstract class AppLocalizations {
   /// Empty-state body on the Stack screen. Names the + ACTION rather than a screen corner ('bottom right'), so it stays true under RTL and if the floating button ever moves (plan 06-04)
   ///
   /// In en, this message translates to:
-  /// **'Add your first supplement with the + button — from the catalog or manually.'**
+  /// **'Add your first supplement with the + button: from the catalog or manually.'**
   String get emptyStackBody;
 
   /// Stack list AsyncValue.error copy — raw exception text is never user-visible
@@ -257,7 +257,7 @@ abstract class AppLocalizations {
   /// Catalog search empty-result copy — rewritten with no label-scanning promise (D3/PF-5)
   ///
   /// In en, this message translates to:
-  /// **'Nothing found in the catalog. Add this supplement manually.'**
+  /// **'Nothing in the catalog matches. Add this supplement manually.'**
   String get noResultsCatalog;
 
   /// Label for the required supplement name field in the manual add form
@@ -341,13 +341,13 @@ abstract class AppLocalizations {
   /// Cycle preview summary for a cyclic regimen with a break; placeholders are pre-formatted weeksCount strings
   ///
   /// In en, this message translates to:
-  /// **'{on} on, then {off} off — repeats until you turn it off'**
+  /// **'{on} on, then {off} off. Repeats until you turn it off.'**
   String cycleSummaryCyclic(String on, String off);
 
   /// Cycle preview summary for a cyclic regimen without a break; placeholder is a pre-formatted weeksCount string
   ///
   /// In en, this message translates to:
-  /// **'{on} on without a break — repeats until you turn it off'**
+  /// **'{on} on without a break. Repeats until you turn it off.'**
   String cycleSummaryCyclicNoBreak(String on);
 
   /// Cycle preview summary for a one-time course; placeholders are locale-formatted dates
@@ -437,7 +437,7 @@ abstract class AppLocalizations {
   /// Centered helper under the footer buttons while the draft is paused
   ///
   /// In en, this message translates to:
-  /// **'The cycle is saved to your stack as paused — it won\'t appear in the calendar.'**
+  /// **'The cycle is saved to your stack as paused, so it won\'t appear in the calendar.'**
   String get saveHintPaused;
 
   /// Delete confirmation dialog title; placeholder is the supplement name
@@ -449,7 +449,7 @@ abstract class AppLocalizations {
   /// Delete confirmation dialog body stating that intake history is kept
   ///
   /// In en, this message translates to:
-  /// **'Its schedule and future doses will be removed. Your intake history is kept.'**
+  /// **'Deleting removes the schedule and future doses. Your intake history stays.'**
   String get deleteConfirmBody;
 
   /// SnackBar shown when a save/add/delete write to the database fails; the screen stays open so no draft data is lost (WR-04)
@@ -964,7 +964,7 @@ abstract class AppLocalizations {
   /// Planner empty-state body when the stack is empty; names the Stack tab rather than linking to it — the nav bar is the affordance
   ///
   /// In en, this message translates to:
-  /// **'Add a supplement on the Stack tab — its cycles will appear here.'**
+  /// **'Add a supplement on the Stack tab and its cycles will appear here.'**
   String get emptyPlannerBody;
 
   /// Planner empty-state body when supplements exist but none has a regimen (DECIDED-7) — a user who owns supplements is never told to go add one
@@ -1108,7 +1108,7 @@ abstract class AppLocalizations {
   /// Body of onboarding page 1: the daily loop (plan → see → mark). Names the Сьогодні/Today tab the way the nav bar does. Describes scheduling behavior only — never a benefit, dosage or safety claim
   ///
   /// In en, this message translates to:
-  /// **'Plan what to take and mark what you\'ve taken — Today shows only what\'s needed today.'**
+  /// **'Plan what to take and mark what you\'ve taken. Today shows only what\'s needed today.'**
   String get onboardingPage1Body;
 
   /// Screen-reader label for page 1's decorative illustration (a token-built miniature of two dose rows). The visual is ExcludeSemantics'd; this one sentence replaces it
@@ -1132,7 +1132,7 @@ abstract class AppLocalizations {
   /// One-time hint shown on Сьогодні above the first day that actually has doses, so it arrives only once the action it describes is possible. Names both gestures the dose row supports
   ///
   /// In en, this message translates to:
-  /// **'Tap a dose to mark it taken. Long-press for the other options.'**
+  /// **'Tap a dose to mark it taken. Press and hold for the other options.'**
   String get hintMarkDose;
 
   /// Row in Settings that clears the onboarding seen-flag and every dismissed hint, so they can be seen again. Rendered ONLY in debug builds (kDebugMode) — it exists so the intro can be re-tested on a device without a reinstall, which would delete the user's data. It is localized like any other row because it is a real, visible row in the build that has it
@@ -1150,7 +1150,7 @@ abstract class AppLocalizations {
   /// Body of onboarding page 2. Names the three questions the planner answers: current position, overlap between regimens, and the next break. Describes what the screen SHOWS — never whether an overlap is good or bad, which would be an interaction claim the copy gate forbids
   ///
   /// In en, this message translates to:
-  /// **'Plan your doses and tick off what you have taken, then use the calendar to see where you are, what overlaps with what, and when the next break starts.'**
+  /// **'The calendar shows where you are in each cycle, what overlaps with what, and when the next break starts.'**
   String get onboardingPage2Body;
 
   /// Screen-reader label for page 2's decorative illustration (three rows of alternating on/off week blocks). The visual is ExcludeSemantics'd; this one sentence replaces it

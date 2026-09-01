@@ -96,7 +96,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyStackBody =>
-      'Add your first supplement with the + button — from the catalog or manually.';
+      'Add your first supplement with the + button: from the catalog or manually.';
 
   @override
   String get stackLoadError => 'Couldn\'t load your stack. Try again.';
@@ -121,7 +121,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noResultsCatalog =>
-      'Nothing found in the catalog. Add this supplement manually.';
+      'Nothing in the catalog matches. Add this supplement manually.';
 
   @override
   String get nameLabel => 'Name';
@@ -164,12 +164,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String cycleSummaryCyclic(String on, String off) {
-    return '$on on, then $off off — repeats until you turn it off';
+    return '$on on, then $off off. Repeats until you turn it off.';
   }
 
   @override
   String cycleSummaryCyclicNoBreak(String on) {
-    return '$on on without a break — repeats until you turn it off';
+    return '$on on without a break. Repeats until you turn it off.';
   }
 
   @override
@@ -232,7 +232,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get saveHintPaused =>
-      'The cycle is saved to your stack as paused — it won\'t appear in the calendar.';
+      'The cycle is saved to your stack as paused, so it won\'t appear in the calendar.';
 
   @override
   String deleteConfirmTitle(String name) {
@@ -241,7 +241,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteConfirmBody =>
-      'Its schedule and future doses will be removed. Your intake history is kept.';
+      'Deleting removes the schedule and future doses. Your intake history stays.';
 
   @override
   String get saveFailed => 'Couldn\'t save. Try again.';
@@ -548,7 +548,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emptyPlannerBody =>
-      'Add a supplement on the Stack tab — its cycles will appear here.';
+      'Add a supplement on the Stack tab and its cycles will appear here.';
 
   @override
   String get emptyPlannerBodyNoRegimen =>
@@ -644,7 +644,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingPage1Body =>
-      'Plan what to take and mark what you\'ve taken — Today shows only what\'s needed today.';
+      'Plan what to take and mark what you\'ve taken. Today shows only what\'s needed today.';
 
   @override
   String get onboardingIllustrationSemantics1 =>
@@ -659,7 +659,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hintMarkDose =>
-      'Tap a dose to mark it taken. Long-press for the other options.';
+      'Tap a dose to mark it taken. Press and hold for the other options.';
 
   @override
   String get debugResetOnboarding => 'Reset intro and hints';
@@ -669,7 +669,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingPage2Body =>
-      'Plan your doses and tick off what you have taken, then use the calendar to see where you are, what overlaps with what, and when the next break starts.';
+      'The calendar shows where you are in each cycle, what overlaps with what, and when the next break starts.';
 
   @override
   String get onboardingIllustrationSemantics2 =>

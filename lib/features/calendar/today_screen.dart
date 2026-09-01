@@ -68,23 +68,6 @@ class TodayScreen extends ConsumerWidget {
             // scale). The strip sits OUTSIDE the scroll view, like the header.
             const SizedBox(height: BqSpace.md),
             const WeekStrip(),
-            // The mark-a-dose hint, at the one moment it is actionable: a day
-            // that HAS doses is on screen. It never shows on an empty day,
-            // where there would be nothing to tap (v1.2 path A).
-            if (doses case AsyncData(value: final list)
-                when list.isNotEmpty &&
-                    showsHint(
-                        ref.watch(firstRunHintsProvider), BqHint.markDose))
-              Padding(
-                padding:
-                    const EdgeInsetsDirectional.fromSTEB(20, BqSpace.md, 20, 0),
-                child: BqHintCard(
-                  text: context.l10n.hintMarkDose,
-                  onDismiss: () => ref
-                      .read(firstRunHintsProvider.notifier)
-                      .dismiss(BqHint.markDose),
-                ),
-              ),
             Expanded(child: _DayBody(doses: doses, day: day)),
           ],
         ),
@@ -354,6 +337,26 @@ class _DayBodyState extends ConsumerState<_DayBody> {
         bottom: 84,
       ),
       children: [
+        // The mark-a-dose hint, at the one moment it is actionable: a day that
+        // HAS doses is on screen. It never shows on an empty day, where there
+        // would be nothing to tap.
+        //
+        // It lives INSIDE this ListView rather than in the screen's fixed
+        // column above the day body, and that placement is load-bearing: the
+        // outer column has no scroll, so a two-line card at textScaler 2.0
+        // overflowed it by 8px and the overflow reached the app's most-used
+        // screen. Here the card scrolls with the content it describes, which
+        // also means longer translations cannot reintroduce the same defect.
+        if (widget.doses case AsyncData(value: final list)
+            when list.isNotEmpty &&
+                showsHint(ref.watch(firstRunHintsProvider), BqHint.markDose)) ...[
+          BqHintCard(
+            text: l10n.hintMarkDose,
+            onDismiss: () =>
+                ref.read(firstRunHintsProvider.notifier).dismiss(BqHint.markDose),
+          ),
+          const SizedBox(height: BqSpace.md),
+        ],
         // Two rules, both matched on PROPERTIES so neither depends on which
         // arm a `when` happens to evaluate first:
         //

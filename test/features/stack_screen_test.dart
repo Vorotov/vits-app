@@ -425,7 +425,7 @@ void main() {
     await tester.pump();
 
     expect(
-      find.text('Нічого не знайшли в каталозі. Додайте цю добавку вручну.'),
+      find.text('У каталозі нічого не знайшлося. Додайте цю добавку вручну.'),
       findsOneWidget,
     );
     expect(find.text('Креатин моногідрат'), findsNothing);
@@ -446,7 +446,7 @@ void main() {
     expect(find.text('Стек порожній'), findsOneWidget);
     // The rewritten body (plan 06-04): it names the + ACTION, not a screen
     // corner, so it stays true under RTL and if the FAB ever moves.
-    expect(find.text('Додайте першу добавку кнопкою + — з каталогу або вручну.'),
+    expect(find.text('Додайте першу добавку кнопкою +: з каталогу або вручну.'),
         findsOneWidget);
 
     // The affordance the copy points at, asserted as the FAB's OWN semantics

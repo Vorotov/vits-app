@@ -103,7 +103,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get emptyStackBody =>
-      'Додайте першу добавку кнопкою + — з каталогу або вручну.';
+      'Додайте першу добавку кнопкою +: з каталогу або вручну.';
 
   @override
   String get stackLoadError => 'Не вдалося завантажити стек. Спробуйте ще раз.';
@@ -128,7 +128,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get noResultsCatalog =>
-      'Нічого не знайшли в каталозі. Додайте цю добавку вручну.';
+      'У каталозі нічого не знайшлося. Додайте цю добавку вручну.';
 
   @override
   String get nameLabel => 'Назва';
@@ -171,12 +171,12 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String cycleSummaryCyclic(String on, String off) {
-    return '$on прийому, потім $off перерви — повторюється, поки не вимкнете';
+    return '$on прийому, потім $off перерви. Повторюється, поки не вимкнете.';
   }
 
   @override
   String cycleSummaryCyclicNoBreak(String on) {
-    return '$on прийому без перерви — повторюється, поки не вимкнете';
+    return '$on прийому без перерви. Повторюється, поки не вимкнете.';
   }
 
   @override
@@ -241,7 +241,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get saveHintPaused =>
-      'Цикл збережеться в стеку зі статусом «пауза» — у календарі його не буде.';
+      'Цикл збережеться в стеку зі статусом «пауза», у календарі його не буде.';
 
   @override
   String deleteConfirmTitle(String name) {
@@ -250,7 +250,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get deleteConfirmBody =>
-      'Розклад і майбутні дози буде видалено. Історію прийому збережемо.';
+      'Видалення прибирає розклад і майбутні дози. Історія прийому залишається.';
 
   @override
   String get saveFailed => 'Не вдалося зберегти. Спробуйте ще раз.';
@@ -563,7 +563,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get emptyPlannerBody =>
-      'Додайте добавку у вкладці «Стек» — її цикли з\'являться тут.';
+      'Додайте добавку у вкладці «Стек», і її цикли з\'являться тут.';
 
   @override
   String get emptyPlannerBodyNoRegimen =>
@@ -662,7 +662,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get onboardingPage1Body =>
-      'Плануйте, що приймати, і відмічайте прийняте — Сьогодні показує лише те, що потрібно саме сьогодні.';
+      'Плануйте, що приймати, і відмічайте прийняте. Сьогодні показує лише те, що потрібно саме сьогодні.';
 
   @override
   String get onboardingIllustrationSemantics1 =>
@@ -677,7 +677,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get hintMarkDose =>
-      'Торкніться дози, щоб відмітити прийом. Довге натискання — інші варіанти.';
+      'Торкніться дози, щоб відмітити прийом. Натисніть і утримуйте, щоб побачити інші варіанти.';
 
   @override
   String get debugResetOnboarding => 'Скинути вступ і підказки';
@@ -687,7 +687,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get onboardingPage2Body =>
-      'Плануйте прийоми й відмічайте зроблене, а на календарі дивіться, де ви зараз, що з чим збігається і коли починається наступна перерва.';
+      'На календарі видно, де ви зараз у циклі, що з чим збігається і коли починається наступна перерва.';
 
   @override
   String get onboardingIllustrationSemantics2 =>
