@@ -24,6 +24,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:boostque/core/domain/repositories.dart';
+import 'package:boostque/core/l10n/clock_format.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
@@ -203,10 +204,8 @@ class _TimeLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tod = TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
     return Text(
-      MaterialLocalizations.of(context)
-          .formatTimeOfDay(tod, alwaysUse24HourFormat: true),
+      formatClock(context, minutes),
       style: BqText.mono(
         size: 13,
         color: accented ? BqColors.accent : BqColors.ink,

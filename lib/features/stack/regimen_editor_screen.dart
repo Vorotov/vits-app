@@ -30,6 +30,7 @@ import 'package:intl/intl.dart';
 import 'package:boostque/core/domain/cycle_math.dart';
 import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/domain/repositories.dart';
+import 'package:boostque/core/l10n/clock_format.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/notifications/notification_permission.dart';
 import 'package:boostque/core/providers.dart';
@@ -637,13 +638,13 @@ class _SlotRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    // The picker still needs a TimeOfDay; the DISPLAY goes through the app's
+    // single clock formatter so every locale prints the same shape (PF-3).
     final tod = TimeOfDay(
       hour: slot.minutesFromMidnight ~/ 60,
       minute: slot.minutesFromMidnight % 60,
     );
-    // 24-h display, matching the picker's convention (PF-3).
-    final timeText = MaterialLocalizations.of(context)
-        .formatTimeOfDay(tod, alwaysUse24HourFormat: true);
+    final timeText = formatClock(context, slot.minutesFromMidnight);
     return Container(
       // Mockup-exact slot-row padding 11/13 (UI-SPEC spacing override).
       padding: const EdgeInsetsDirectional.symmetric(

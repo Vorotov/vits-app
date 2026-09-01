@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 
 import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/domain/repositories.dart';
+import 'package:boostque/core/l10n/clock_format.dart';
 import 'package:boostque/core/l10n/l10n.dart';
 import 'package:boostque/core/theme/theme.dart';
 import 'package:boostque/core/theme/tokens.dart';
@@ -40,12 +41,9 @@ class _DoseActionSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final tod = TimeOfDay(
-      hour: dose.slot.minutesFromMidnight ~/ 60,
-      minute: dose.slot.minutesFromMidnight % 60,
-    );
-    final time = MaterialLocalizations.of(context)
-        .formatTimeOfDay(tod, alwaysUse24HourFormat: true);
+    // Through the app's single clock formatter, so this sheet and the row it
+    // was opened from can never print the same dose time differently.
+    final time = formatClock(context, dose.slot.minutesFromMidnight);
 
     return SafeArea(
       top: false,

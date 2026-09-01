@@ -109,7 +109,15 @@ String formatReminderTime({
   required Locale locale,
   required int minutesFromMidnight,
 }) =>
-    DateFormat.Hm(locale.toString()).format(
+    // The literal 'HH:mm' pattern, NOT the `Hm` skeleton. A skeleton asks CLDR
+    // for that locale's idea of a 24-hour time, and CLDR does not agree across
+    // languages: en, uk and fr resolve to `HH:mm`, but Spanish resolves to
+    // `H:mm`, so a reminder at midnight arrived reading `0:00` in Spanish and
+    // `00:00` everywhere else. The app forces zero-padded 24-hour on every
+    // other time it displays, and a notification is the one surface the user
+    // cannot compare against another, so the inconsistency would have shipped
+    // invisibly. Pinning the pattern makes the rule the app's, not CLDR's.
+    DateFormat('HH:mm', locale.toString()).format(
       DateTime.utc(
         2000,
         1,
