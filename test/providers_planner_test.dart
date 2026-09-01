@@ -70,8 +70,15 @@ void main() {
     note: '',
   );
 
-  /// A 14-on/14-off cycle from the window's first day, with one 08:00 slot so
-  /// the materializing path has something real to create.
+  /// A 14-on/14-off cycle starting on 1 August, with one 08:00 slot so the
+  /// materializing path has something real to create.
+  ///
+  /// The start date stays where it is even though the window moved back a
+  /// month (owner change 2026-09-01, so the band now opens on 1 July): what
+  /// this file needs from it is that the pinned 13 August clock falls on an ON
+  /// day, which is what lets `materializeOneDay` create the rows the PF-2 gate
+  /// counts. Backdating it to the new window start would put 13 August in the
+  /// cycle's first OFF phase and the gate would compare two zeros.
   Regimen cyclicR1({bool paused = false}) => Regimen(
         id: 'r1',
         supplementId: 's1',
@@ -148,7 +155,10 @@ void main() {
     expect(model.rows[0].segments, isNotEmpty);
     expect(model.rows[1].segments, isEmpty,
         reason: 'a paused regimen keeps its row and renders a bare track');
-    expect(model.span, 122);
+    expect(model.span, 123,
+        reason: 'Jul..Oct 2026 = 31+31+30+31. The owner\'s 2026-09-01 shift '
+            'moved the band back a month, so the number the provider hands '
+            'the screen is no longer the mockup\'s Aug..Nov 122 (P-4)');
   });
 
   test('resolving the Cycles model creates NO IntakeLog rows (PF-2 / the '

@@ -8,6 +8,7 @@ library;
 
 import 'dart:math' as math;
 
+import 'package:boostque/core/domain/cycle_math.dart' show plannerWindow;
 import 'package:boostque/core/domain/models.dart';
 import 'package:boostque/core/domain/repositories.dart';
 import 'package:boostque/features/calendar/planner_view_model.dart';
@@ -63,9 +64,22 @@ Supplement supp(String id, String name) => Supplement(
 
 void main() {
   final today = DateTime.utc(2026, 8, 13);
-  final windowStart = DateTime.utc(2026, 8, 1);
-  final windowLast = DateTime.utc(2026, 11, 30);
-  const span = 122;
+
+  // DERIVED, never restated. These three used to be written out as 1 Aug /
+  // 30 Nov / 122 — the window `plannerWindow` returned for this clock before
+  // the owner moved the band back a month (2026-09-01: last month, this month
+  // and two ahead). A one-line product change then contradicted three literals
+  // that no longer described anything, and the pure-function tests below went
+  // red for a reason none of them is about. Read off the window itself and the
+  // NEXT shift cannot lie to this file; only the assertions that genuinely
+  // name a date have to move with it.
+  //
+  // For the pinned 13 August clock that is 1 Jul – 31 Oct 2026, span 123
+  // (31+31+30+31), with today at index 43.
+  final window = plannerWindow(today);
+  final windowStart = window.start;
+  final windowLast = window.endExclusive.subtract(const Duration(days: 1));
+  final span = window.span;
 
   group('activeRuns — the ONLY activity decision in the planner (PF-1)', () {
     test('a 14-on/14-off cycle coalesces into the exact cadence', () {
@@ -91,8 +105,11 @@ void main() {
       expect(runs.last.end, isNot(isNull));
       expect(runs.last.end.isAfter(windowLast), isFalse,
           reason: 'a run may never extend past the scanned window');
-      // 21 Nov starts the fifth on-phase, which would run to 4 Dec unclipped.
-      expect(runs.last.start, DateTime.utc(2026, 11, 21));
+      // 24 Oct starts the fourth on-phase of a cycle that began 1 August,
+      // which would run to 6 Nov unclipped. (It was 21 Nov -> 4 Dec against
+      // the old Aug..Nov window; the regimen did not move, the window's last
+      // day did.)
+      expect(runs.last.start, DateTime.utc(2026, 10, 24));
       expect(runs.last.end, windowLast);
     });
 
@@ -161,9 +178,10 @@ void main() {
     });
 
     test('fractions place a run at its true offset, end-inclusive', () {
-      final runs = [
-        DateRun(start: DateTime.utc(2026, 8, 1), end: DateTime.utc(2026, 8, 1))
-      ];
+      // A one-day run ON the window's first day — the position that makes
+      // startFraction 0.0 a real assertion. Written as `windowStart` rather
+      // than as a date, because that position is the whole fixture.
+      final runs = [DateRun(start: windowStart, end: windowStart)];
       final seg = ganttSegments(runs, windowStart, span, today).single;
       expect(seg.startFraction, 0.0);
       expect(seg.endFraction, closeTo(1 / span, 1e-9),
@@ -215,15 +233,21 @@ void main() {
     });
 
     test('carries the derived window, never an assumed 122', () {
+      // A February clock opens the window in JANUARY: Jan..Apr 2027 =
+      // 31+28+31+30 = 120 days. Before the shift the same clock produced
+      // Feb..May, which also sums to 120 — the same span from four different
+      // months, which is exactly why the BOUNDS are asserted here and not the
+      // number alone. Still never the mockup's 122.
       final model = buildCyclesModel(const [], today: DateTime.utc(2027, 2, 10));
-      expect(model.windowStart, DateTime.utc(2027, 2, 1));
-      expect(model.windowEndExclusive, DateTime.utc(2027, 6, 1));
+      expect(model.windowStart, DateTime.utc(2027, 1, 1));
+      expect(model.windowEndExclusive, DateTime.utc(2027, 5, 1));
       expect(model.span, 120);
     });
 
     test('month columns come from real month lengths and sum to 1.0', () {
       final model = buildCyclesModel(const [], today: today);
-      expect(model.months.map((m) => m.days), [31, 30, 31, 30]);
+      // Jul, Aug, Sep, Oct — the shifted window's own four months.
+      expect(model.months.map((m) => m.days), [31, 31, 30, 31]);
       expect(
         model.months.fold<double>(0, (sum, m) => sum + m.fraction),
         closeTo(1.0, 1e-9),
@@ -231,8 +255,10 @@ void main() {
     });
 
     test('todayIndex is today\'s offset into the window', () {
-      expect(buildCyclesModel(const [], today: today).todayIndex, 12,
-          reason: '13 August is the 13th day, index 12');
+      expect(buildCyclesModel(const [], today: today).todayIndex, 43,
+          reason: '13 August is the 44th day of a window that opens on '
+              '1 July, index 43 — the whole of that first month is now '
+              'history behind the marker, which is what the owner asked for');
     });
 
     test('currentWeekIndex names the bucket CONTAINING today, in the model '
@@ -243,17 +269,33 @@ void main() {
       expect(bucket.start.isAfter(today), isFalse);
       expect(bucket.endInclusive.isBefore(today), isFalse);
       // 13 August 2026 is a Thursday; its Monday is 10 August, which is the
-      // third full Monday week of a window whose buckets open on 27 July.
+      // seventh full Monday week of a window whose buckets open on 29 June
+      // (1 July 2026 is a Wednesday).
       expect(bucket.start, DateTime.utc(2026, 8, 10));
-      expect(model.currentWeekIndex, 2);
+      expect(model.currentWeekIndex, 6);
     });
 
-    test('currentWeekIndex resolves in the bucket that spills BEFORE the '
-        'window, which is where the summary chip reads its number (WR-02, '
-        'CR-01)', () {
-      // 2 August 2026 is a Sunday: today falls in the first calendar week of
-      // the month, which starts six days before the window. This is the only
-      // half of CR-01 the summary chip itself can hit.
+    // WHAT THIS TEST USED TO PROVE, AND WHY IT CANNOT ANY MORE. With a window
+    // that opened at today's month it pinned today (2 August 2026, a Sunday)
+    // inside BUCKET 0 — the bucket that begins six days before a window
+    // starting 1 August — and asserted the summary chip reported a load earned
+    // entirely on those pre-window days. That edge is now unreachable by
+    // construction: the window opens on the first of LAST month (owner change
+    // 2026-09-01), so today is never fewer than 28 days into the band and the
+    // chip's own bucket can no longer leave the window at either end.
+    //
+    // The spill itself is still real and still proven — the group below drives
+    // bucket 0 and the last bucket directly, which is where CR-01 lives now.
+    // What survives HERE is the half the chip can still hit: its number is a
+    // claim about a WHOLE Monday week, including the days of that week which
+    // fall in a different month column from today's, which is exactly what an
+    // implementation that clipped the week to the month would under-report.
+    test('currentWeekIndex names the FULL Monday week the chip is standing '
+        'in, days in the previous month column included (WR-02, CR-01)', () {
+      // 2 August 2026 is a Sunday, so the week the chip names runs
+      // 27 July – 2 August: five of its seven days sit in the window's JULY
+      // column and only two in August. The course is active on exactly those
+      // five, so a load of 1 can only come from counting them.
       final model = buildCyclesModel(
         [
           StackEntry(
@@ -267,7 +309,9 @@ void main() {
         today: DateTime.utc(2026, 8, 2),
       );
 
-      expect(model.currentWeekIndex, 0);
+      expect(model.currentWeekIndex, greaterThan(0),
+          reason: 'today can no longer fall in bucket 0 — the window opens a '
+              'month before it, which is the note above made executable');
       expect(model.weeks[model.currentWeekIndex].bucket.start,
           DateTime.utc(2026, 7, 27));
       expect(model.weeks[model.currentWeekIndex].load, 1,
@@ -277,12 +321,11 @@ void main() {
   });
 
   group('weekBuckets — full Monday weeks (DECIDED-3)', () {
-    final buckets =
-        weekBuckets(windowStart, DateTime.utc(2026, 12, 1));
+    final buckets = weekBuckets(windowStart, window.endExclusive);
 
     test('starts on the Monday on or before the window start', () {
-      // 1 August 2026 is a Saturday; its Monday is 27 July.
-      expect(buckets.first.start, DateTime.utc(2026, 7, 27));
+      // 1 July 2026 is a Wednesday; its Monday is 29 June.
+      expect(buckets.first.start, DateTime.utc(2026, 6, 29));
     });
 
     test('ends with the week containing the window\'s last day', () {
@@ -298,7 +341,7 @@ void main() {
       }
     });
 
-    test('the Aug-to-Nov window produces 18 or 19 buckets', () {
+    test('the Jul-to-Oct window produces 18 or 19 buckets', () {
       expect(buckets.length, anyOf(18, 19));
     });
 
@@ -313,7 +356,7 @@ void main() {
   group('weekLoads — a supplement counts ONCE per bucket (P-6)', () {
     final magnesium = supp('s1', 'Магній');
     final creatine = supp('s2', 'Креатин');
-    final buckets = weekBuckets(windowStart, DateTime.utc(2026, 12, 1));
+    final buckets = weekBuckets(windowStart, window.endExclusive);
 
     /// The bucket holding [day].
     int bucketOf(DateTime day) =>
@@ -411,12 +454,19 @@ void main() {
       '(DECIDED-3, CR-01)', () {
     final magnesium = supp('s1', 'Магній');
 
-    // 1 August 2026 is a Saturday, so bucket 0 runs 27 лип – 2 серп — six days
-    // of it lie BEFORE the window — and the last bucket runs 30 лис – 6 груд,
-    // six days of it AFTER. DECIDED-3 accepts those bounds and mandates that
-    // the axis label shows the ACTUAL bucket dates, which makes the load a
-    // claim about those dates. Scanning activity over the window alone answers
-    // a different question than the label asks.
+    // The window for this clock is 1 лип – 31 жов. 1 July 2026 is a Wednesday,
+    // so bucket 0 runs 29 чер – 5 лип — two days of it lie BEFORE the window —
+    // and the last bucket runs 26 жов – 1 лис, one day of it AFTER. DECIDED-3
+    // accepts those bounds and mandates that the axis label shows the ACTUAL
+    // bucket dates, which makes the load a claim about those dates. Scanning
+    // activity over the window alone answers a different question than the
+    // label asks.
+    //
+    // The spill is narrower than the six days the old Aug..Nov window happened
+    // to give (1 August was a Saturday), because how far a Monday week hangs
+    // off a month boundary is a property of the calendar, not of the fixture.
+    // Two days and one day are still a spill, and the courses below are seeded
+    // to live on exactly those days and nowhere else.
     final earlyAugust = DateTime.utc(2026, 8, 2);
 
     test('a course active only on the PRE-window days of bucket 0 counts', () {
@@ -424,9 +474,13 @@ void main() {
         [
           StackEntry(
             supplement: magnesium,
+            // 29–30 June: bucket 0's pre-window days, and ONLY those. The
+            // fixture moved back with the window (it was 27–31 July against a
+            // band opening 1 August); left where it was it would sit inside
+            // the window and prove nothing about the spill.
             regimen: course(
-              start: DateTime.utc(2026, 7, 27),
-              end: DateTime.utc(2026, 7, 31),
+              start: DateTime.utc(2026, 6, 29),
+              end: DateTime.utc(2026, 6, 30),
             ),
           ),
         ],
@@ -434,12 +488,12 @@ void main() {
       );
 
       final first = model.weeks.first;
-      expect(first.bucket.start, DateTime.utc(2026, 7, 27));
-      expect(first.bucket.endInclusive, DateTime.utc(2026, 8, 2));
+      expect(first.bucket.start, DateTime.utc(2026, 6, 29));
+      expect(first.bucket.endInclusive, DateTime.utc(2026, 7, 5));
       expect(first.load, 1,
-          reason: 'the bucket is LABELLED 27 лип – 2 серп, so its load is a '
+          reason: 'the bucket is LABELLED 29 чер – 5 лип, so its load is a '
               'claim about those seven days — the supplement is genuinely '
-              'active on five of them');
+              'active on two of them, both before the window opens');
       expect(first.entries.single.supplement.id, 's1',
           reason: 'the week detail lists the names behind the number, so an '
               'absent entry is a supplement the card silently denies');
@@ -451,9 +505,11 @@ void main() {
         [
           StackEntry(
             supplement: magnesium,
+            // 1 November is the last bucket's ONLY post-window day; the
+            // course starts there and runs on past the chart.
             regimen: course(
-              start: DateTime.utc(2026, 12, 1),
-              end: DateTime.utc(2026, 12, 20),
+              start: DateTime.utc(2026, 11, 1),
+              end: DateTime.utc(2026, 11, 20),
             ),
           ),
         ],
@@ -461,10 +517,11 @@ void main() {
       );
 
       final last = model.weeks.last;
-      expect(last.bucket.start, DateTime.utc(2026, 11, 30));
-      expect(last.bucket.endInclusive, DateTime.utc(2026, 12, 6));
+      expect(last.bucket.start, DateTime.utc(2026, 10, 26));
+      expect(last.bucket.endInclusive, DateTime.utc(2026, 11, 1));
       expect(last.load, 1,
-          reason: 'the course overlaps six of that bucket\'s seven days');
+          reason: 'the course overlaps exactly one of that bucket\'s seven '
+              'days, and that one day is outside the window');
     });
 
     test('the PAINTED geometry stays window-scoped — a run lying entirely '
@@ -473,9 +530,11 @@ void main() {
         [
           StackEntry(
             supplement: magnesium,
+            // The same 29–30 June course as the first case: inside bucket 0,
+            // outside the window.
             regimen: course(
-              start: DateTime.utc(2026, 7, 27),
-              end: DateTime.utc(2026, 7, 31),
+              start: DateTime.utc(2026, 6, 29),
+              end: DateTime.utc(2026, 6, 30),
             ),
           ),
         ],
@@ -800,7 +859,16 @@ void main() {
 
     test('offDays zero produces ONE continuous run to the window edge', () {
       final model = buildCyclesModel(
-        [StackEntry(supplement: magnesium, regimen: cyclic(on: 30, off: 0))],
+        [
+          StackEntry(
+            supplement: magnesium,
+            // Started ON the window's first day: that is the position the
+            // fixture holds, and the only one from which a full-width segment
+            // is the correct answer. It moved back a month with the window
+            // (the helper's default 1 August is now a month INTO the band).
+            regimen: cyclic(on: 30, off: 0, start: windowStart),
+          ),
+        ],
         today: today,
       );
 

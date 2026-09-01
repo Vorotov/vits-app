@@ -113,16 +113,33 @@ DateTime addMonths(DateTime d, int months) =>
 /// month-length table anywhere (PF-3).
 int daysInMonth(DateTime d) => DateTime.utc(d.year, d.month + 1, 0).day;
 
-/// The planner window: `[first of today's month, +4 months)` (04-RESEARCH P-4).
+/// The planner window: `[first of LAST month, +4 months)` — the previous
+/// month, the current one, and two ahead (owner change 2026-09-01; was
+/// `[first of today's month, +4)` in 04-RESEARCH P-4).
+///
+/// The step back is the whole point of the change. A window that opens at
+/// today's month draws a cycle with no history: on the 2nd of a month the
+/// user sees two days of context, and the break they have just come out of —
+/// the thing that explains what the current on-week even is — sits one pixel
+/// off the left edge. Four months is still four months, so nothing about the
+/// layout, the gridlines or the load chart's arithmetic changes; the band
+/// just starts a month earlier.
+///
+/// Two consequences worth naming rather than discovering:
+/// - **Today is now strictly inside the band, never on its first day.** The
+///   "you are here" marker always has something behind it.
+/// - **A January today opens the window in the PREVIOUS year.** That is what
+///   `plannerRangeSubtitleCrossYear` has always been for; before this change
+///   the cross-year case was only reachable from October onward.
 ///
 /// [span] is derived from the two real month boundaries and is **120..123
-/// days** depending on the start month (Feb..May 2027 = 120; Jul..Oct = 123).
+/// days** depending on the start month (Feb..May = 120; Jul..Oct = 123).
 /// Never assume the mockup's 122 — that is the Aug..Nov figure only, and
 /// hardcoding it would misplace every gridline in eight months of the year.
 ({DateTime start, DateTime endExclusive, int span}) plannerWindow(
   DateTime today,
 ) {
-  final start = firstOfMonth(today);
+  final start = addMonths(firstOfMonth(today), -1);
   final endExclusive = addMonths(start, 4);
   return (
     start: start,

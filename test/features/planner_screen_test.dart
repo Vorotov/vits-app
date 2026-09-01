@@ -218,6 +218,27 @@ void main() {
     return model.weeks[index].bucket.start;
   }
 
+  /// The index of the load-chart bucket CONTAINING [day].
+  ///
+  /// Same rule as [bucketStart] read the other way round: bands are seeded by
+  /// date, so a test that wants "the column the 5 August courses start in" has
+  /// to ask the model which column that is. The owner's 2026-09-01 window
+  /// change is why this exists rather than a literal — moving the band back a
+  /// month moved every bucket four places along the array (it opens on 29 June
+  /// now, not 27 July), and a hardcoded `load-main-1` does not fail, it
+  /// quietly starts naming a different week.
+  int bandOf(ProviderContainer container, DateTime day) {
+    final model = switch (container.read(cyclesModelProvider)) {
+      AsyncData(:final value) => value,
+      _ => fail('the Цикли model has not resolved yet'),
+    };
+    final index = model.weeks.indexWhere(
+      (w) => !w.bucket.start.isAfter(day) && !w.bucket.endInclusive.isBefore(day),
+    );
+    if (index < 0) fail('no load bucket contains $day');
+    return index;
+  }
+
   void usePhoneSurface(WidgetTester tester) {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3.0;
@@ -248,6 +269,16 @@ void main() {
     fail('Timed out waiting for $what');
   }
 
+  /// A 14-on/14-off cycle from 1 August, which is an ON day for the pinned
+  /// 13 August clock.
+  ///
+  /// The start date deliberately did NOT move with the window (owner change
+  /// 2026-09-01 — the band is last month, this month and two ahead). Backdating
+  /// it to the new window start, 1 July, would put 13 August in the cycle's
+  /// second OFF phase, and the PF-2 gate above needs the Today page to
+  /// materialize a real row before it can prove the planner adds none. Today
+  /// landing on an on-day is load-bearing here; the cycle beginning exactly at
+  /// the window's left edge never was.
   Regimen cyclic(String id, String supplementId, {bool paused = false}) =>
       Regimen(
         id: id,
@@ -282,13 +313,20 @@ void main() {
   );
 
   /// Seeds one course per start date so the load chart lands a week in every
-  /// band at a KNOWN bucket index.
+  /// band at a KNOWN calendar week.
   ///
-  /// The window for the pinned 13 August clock runs 1 Aug – 30 Nov, and the
-  /// Monday buckets covering it start on 27 July (DECIDED-3). So:
-  /// bucket 0 = 27 Jul–2 Aug (nothing has started: load 0),
-  /// bucket 1 = 3–9 Aug (load 3), bucket 2 = 10–16 Aug (load 4, and it
-  /// contains today), bucket 3 = 17–23 Aug (load 7).
+  /// The window for the pinned 13 August clock runs 1 Jul – 31 Oct, and the
+  /// Monday buckets covering it start on 29 June (DECIDED-3). The start dates
+  /// are deliberately left where they are: what each band means is a claim
+  /// about a week relative to TODAY, and today did not move. The bucket
+  /// INDICES did — four places along the array, because the band now opens
+  /// four Mondays earlier:
+  /// buckets 0–4 = 29 Jun–2 Aug (nothing has started: load 0),
+  /// bucket 5 = 3–9 Aug (load 3), bucket 6 = 10–16 Aug (load 4, and it
+  /// contains today), bucket 7 = 17–23 Aug (load 7).
+  ///
+  /// Which is why nothing below writes those numbers down: [bandOf] resolves
+  /// a column from the date it was seeded on.
   Future<void> seedBands(
     ProviderContainer container, {
     List<int> startsOnAugust = const [5, 5, 5, 10, 17, 17, 17],
@@ -511,8 +549,8 @@ void main() {
       expect(find.text('Цикли'), findsOneWidget);
       expect(find.text('Рік'), findsOneWidget);
       // The window subtitle, pinned exactly: uk standalone (nominative) month
-      // names for the Aug-Nov window around the pinned clock (PF-4).
-      expect(find.text('серпень — листопад 2026'), findsOneWidget);
+      // names for the Jul-Oct window around the pinned clock (PF-4).
+      expect(find.text('липень — жовтень 2026'), findsOneWidget);
       expect(find.byType(GanttRowBar), findsWidgets,
           reason: 'Цикли is the default segment (index 1)');
 
@@ -522,14 +560,14 @@ void main() {
       expect(find.text('2026 · 12 місяців'), findsOneWidget,
           reason: 'the Рік subtitle names the year and a pre-formatted month '
               'count');
-      expect(find.text('серпень — листопад 2026'), findsNothing);
+      expect(find.text('липень — жовтень 2026'), findsNothing);
       expect(find.byType(GanttRowBar), findsNothing,
           reason: 'the Цикли body is gone, not merely covered');
 
       await tester.tap(find.text('Цикли'));
       await tester.pump();
 
-      expect(find.text('серпень — листопад 2026'), findsOneWidget);
+      expect(find.text('липень — жовтень 2026'), findsOneWidget);
       expect(find.byType(GanttRowBar), findsWidgets);
 
       await tearDownTree(tester, container);
@@ -538,7 +576,12 @@ void main() {
     testWidgets('a window crossing 31 December renders the cross-year '
         'subtitle with BOTH years (E-8)', (tester) async {
       usePhoneSurface(tester);
-      final container = makeContainer(clock: DateTime.utc(2026, 10, 15));
+      // A NOVEMBER clock now opens the same 1 Oct 2026 – 31 Jan 2027 window
+      // the October clock used to (owner change 2026-09-01: the band starts a
+      // month back). The fixture moved one month forward so the window under
+      // test — and the string it must produce — are unchanged; an October
+      // clock would now give Sep–Dec, which crosses nothing.
+      final container = makeContainer(clock: DateTime.utc(2026, 11, 15));
       await seed(container);
       await openPlanner(tester, container);
 
@@ -858,7 +901,7 @@ void main() {
 
       expect(find.text('Планувальник'), findsOneWidget);
       expect(find.byType(BqSegmented), findsOneWidget);
-      expect(find.text('серпень — листопад 2026'), findsOneWidget,
+      expect(find.text('липень — жовтень 2026'), findsOneWidget,
           reason: 'the subtitle is clock-derived and never waits on the stack');
       expect(find.byType(CircularProgressIndicator), findsNothing,
           reason: 'a local-DB stream resolves within a frame; a spinner would '
@@ -962,9 +1005,21 @@ void main() {
       final label = tester.getSemantics(find.byType(GanttRowBar).first).label;
       expect(label, startsWith('Магній бісглицинат, 2 тижні / 2 тижні, '),
           reason: 'name, then the shared schedule description');
-      expect(label, endsWith('періодів'),
+      // FOUR periods, not the five the pre-shift window drew: a 14/14 cycle
+      // starting 1 August now has 92 days of band behind it instead of 122,
+      // and the fifth on-phase falls off the right-hand end. The count is the
+      // thing that changed here, not the fixture — the regimen is untouched
+      // and the window's tail moved back a month underneath it. (Which uk
+      // plural form each count takes is proven exhaustively in
+      // `test/l10n/plurals_test.dart`; what this asserts is that the label
+      // CLOSES with that pre-formatted count.)
+      expect(label, endsWith('періоди'),
           reason: 'closing with a pre-formatted periodsCount — the count of '
               'painted runs is the information the canvas carries');
+      expect(label, endsWith('4 періоди'),
+          reason: 'and it is the real number of painted runs, spelled out so '
+              'a future window change cannot slide past a plural form that '
+              'happens to still match');
 
       // A paused regimen paints a BARE TRACK and the legend turns that into
       // one word — both purely visual (DECIDED-7). The row therefore says the
@@ -1041,20 +1096,20 @@ void main() {
         'the gantt rows',
       );
 
-      // The Aug-Nov window around the pinned clock, in the STANDALONE
+      // The Jul-Oct window around the pinned clock, in the STANDALONE
       // (nominative) abbreviated forms — `LLL`, never `MMM` and never a table.
+      expect(find.text('ЛИП.'), findsOneWidget);
       expect(find.text('СЕРП.'), findsOneWidget);
       expect(find.text('ВЕР.'), findsOneWidget);
       expect(find.text('ЖОВТ.'), findsOneWidget);
-      expect(find.text('ЛИСТ.'), findsOneWidget);
       expect(byKeyPrefix('gantt-month-'), findsNWidgets(4));
 
       // Window order, read off the keyed slots rather than the tree order.
       for (final (index, label) in <(int, String)>[
-        (0, 'СЕРП.'),
-        (1, 'ВЕР.'),
-        (2, 'ЖОВТ.'),
-        (3, 'ЛИСТ.'),
+        (0, 'ЛИП.'),
+        (1, 'СЕРП.'),
+        (2, 'ВЕР.'),
+        (3, 'ЖОВТ.'),
       ]) {
         expect(
           tester.widget<Text>(find.byKey(ValueKey('gantt-month-$index'))).data,
@@ -1077,12 +1132,16 @@ void main() {
         'the gantt rows',
       );
 
+      // The shifted window is Jul, Aug, Sep, Oct — so the 30-day month is
+      // slot 2, not slot 1. The comparison moved one column to the right with
+      // the band; comparing slots 0 and 1 would now put two 31-day months
+      // against each other and assert nothing.
       final august =
-          tester.getSize(find.byKey(const ValueKey('gantt-month-0'))).width;
-      final september =
           tester.getSize(find.byKey(const ValueKey('gantt-month-1'))).width;
-      final october =
+      final september =
           tester.getSize(find.byKey(const ValueKey('gantt-month-2'))).width;
+      final october =
+          tester.getSize(find.byKey(const ValueKey('gantt-month-3'))).width;
 
       expect(august, greaterThan(september),
           reason: 'August has 31 days and September 30 — fixed quarter '
@@ -1111,28 +1170,43 @@ void main() {
           reason: 'today is inside the window by construction, so the marker '
               'always renders — there is no absent branch');
 
-      // The boundaries sit at the cumulative REAL day fractions of a 122-day
-      // window — 31/122, 61/122, 92/122 — never at 0.25 / 0.50 / 0.75.
+      // The boundaries sit at the cumulative REAL day fractions of the
+      // 123-day Jul..Oct window — 31/123, 62/123, 92/123 — read off the
+      // model's own span rather than a literal, because a literal is exactly
+      // what the owner's window shift falsified here.
+      final span = container.read(cyclesModelProvider).value!.span;
+      expect(span, 123, reason: '31 + 31 + 30 + 31');
+
       final track = tester.getRect(find.byType(GanttRowBar).first);
       double fractionOf(int i) =>
           (tester.getRect(byKeyPrefix('gantt-gridline-').at(i)).left -
               track.left) /
           track.width;
-      expect(fractionOf(0), closeTo(31 / 122, 0.002));
-      expect(fractionOf(1), closeTo(61 / 122, 0.002));
-      expect(fractionOf(2), closeTo(92 / 122, 0.002));
-      // 31/122 is 0.2541, not 0.25 — the middle boundary happens to land on
-      // 0.5 for THIS window (31 + 30 = 61 of 122), which is exactly why the
-      // outer two are the ones that prove the columns are not quarters.
-      expect(fractionOf(0), isNot(closeTo(0.25, 0.002)));
-      expect(fractionOf(2), isNot(closeTo(0.75, 0.002)));
+      expect(fractionOf(0), closeTo(31 / span, 0.002));
+      expect(fractionOf(1), closeTo(62 / span, 0.002));
+      expect(fractionOf(2), closeTo(92 / span, 0.002));
 
-      // (todayIndex + 0.5) / span for the pinned 13 August clock.
+      // THE COLUMNS ARE MONTHS, NOT QUARTERS — asserted as an ordering rather
+      // than as a distance from 0.25/0.75. This window's four months are
+      // 31/31/30/31, so its boundaries land within 0.002 of the quarter marks
+      // and "is not close to 0.25" would now pass on a rounding margin. The
+      // gaps BETWEEN boundaries are the same claim made sharply: September is
+      // one day narrower than August, and a quartered track has no narrow
+      // month at all.
+      expect(fractionOf(1) - fractionOf(0), closeTo(31 / span, 0.002));
+      expect(fractionOf(2) - fractionOf(1), closeTo(30 / span, 0.002));
+      expect(fractionOf(1) - fractionOf(0),
+          greaterThan(fractionOf(2) - fractionOf(1)),
+          reason: 'the August column is strictly wider than the September '
+              'one — under fixed quarters every gap is identical');
+
+      // (todayIndex + 0.5) / span for the pinned 13 August clock: 13 August is
+      // 43 days into a window that opens on 1 July.
       final marker = tester.getRect(find.byKey(const ValueKey(
         'gantt-today-marker',
       )));
       expect((marker.left - track.left) / track.width,
-          closeTo(12.5 / 122, 0.002));
+          closeTo(43.5 / span, 0.002));
       expect(marker.height, greaterThan(0),
           reason: 'the rules span the full height of the row stack');
 
@@ -1289,22 +1363,26 @@ void main() {
       // divide by the user's own stack, not by an editorial number.
       expect(container.read(cyclesModelProvider).value!.scheduledCount, 7);
 
-      // Bucket 1 — load 3: round(3/7*38) = 16.
-      expect(tester.getSize(find.byKey(const ValueKey('load-main-1'))).height,
-          16);
+      // The three seeded bands, addressed by the week they were seeded into.
+      final firstWave = bandOf(container, DateTime.utc(2026, 8, 5));
+      final secondWave = bandOf(container, DateTime.utc(2026, 8, 10));
+      final thirdWave = bandOf(container, DateTime.utc(2026, 8, 17));
 
-      // Bucket 2 — load 4: round(4/7*38) = 22.
-      expect(tester.getSize(find.byKey(const ValueKey('load-main-2'))).height,
-          22);
+      // 3–9 Aug — load 3: round(3/7*38) = 16.
+      double barHeight(int i) =>
+          tester.getSize(find.byKey(ValueKey<String>('load-main-$i'))).height;
+      expect(barHeight(firstWave), 16);
 
-      // Bucket 3 — load 7: the whole stack overlaps, so the bar is FULL. It
+      // 10–16 Aug — load 4: round(4/7*38) = 22.
+      expect(barHeight(secondWave), 22);
+
+      // 17–23 Aug — load 7: the whole stack overlaps, so the bar is FULL. It
       // is not capped and nothing is drawn above it; a full bar is the
       // chart's way of saying "all of it", not "too much".
-      expect(tester.getSize(find.byKey(const ValueKey('load-main-3'))).height,
-          38);
+      expect(barHeight(thirdWave), 38);
 
       // One colour, at every height.
-      for (final i in const [1, 2, 3]) {
+      for (final i in [firstWave, secondWave, thirdWave]) {
         expect(fillOf(tester, 'load-main-$i'), BqColors.loadBar,
             reason: 'bar $i must carry the single neutral bar token');
       }
@@ -1324,7 +1402,7 @@ void main() {
       expect(find.byKey(const ValueKey('load-main-0')), findsNothing,
           reason: 'the stub stands IN PLACE of a zero-height bar');
 
-      expect(container.read(resolvedWeekIndexProvider), 2,
+      expect(container.read(resolvedWeekIndexProvider), bandOf(container, today),
           reason: 'the default follows the bucket containing today');
       await tester.tap(find.byKey(const ValueKey('load-week-0')));
       await tester.pump();
@@ -1370,18 +1448,22 @@ void main() {
           )
           .opacity;
 
-      expect(opacityOf(2), 1.0, reason: 'today\'s week is the default');
-      expect(opacityOf(3), 0.5);
+      final todaysWeek = bandOf(container, today);
+      final densest = bandOf(container, DateTime.utc(2026, 8, 17));
 
-      await tester.tap(find.byKey(const ValueKey('load-week-3')));
+      expect(opacityOf(todaysWeek), 1.0,
+          reason: 'today\'s week is the default');
+      expect(opacityOf(densest), 0.5);
+
+      await tester.tap(find.byKey(ValueKey<String>('load-week-$densest')));
       await tester.pump();
 
-      expect(opacityOf(3), 1.0);
-      expect(opacityOf(2), 0.5);
+      expect(opacityOf(densest), 1.0);
+      expect(opacityOf(todaysWeek), 0.5);
       // Selection is the feedback; no ripple (Interaction Contract 11).
       expect(
         find.descendant(
-          of: find.byKey(const ValueKey('load-week-3')),
+          of: find.byKey(ValueKey<String>('load-week-$densest')),
           matching: find.byType(InkWell),
         ),
         findsNothing,
@@ -1397,8 +1479,9 @@ void main() {
       final container = makeContainer();
       await openBands(tester, container);
 
+      // The bucket containing today: selected by default, and load 4.
       final node = tester.getSemantics(
-        find.byKey(const ValueKey('load-week-2')),
+        find.byKey(ValueKey<String>('load-week-${bandOf(container, today)}')),
       );
       expect(node.label, contains('4 речовини'),
           reason: 'a pre-formatted substancesCount inside weekBarSemantics — '
@@ -1413,7 +1496,9 @@ void main() {
         isSemantics(isButton: true, isSelected: true, hasTapAction: true),
       );
       expect(
-        tester.getSemantics(find.byKey(const ValueKey('load-week-4'))),
+        tester.getSemantics(find.byKey(ValueKey<String>(
+          'load-week-${bandOf(container, DateTime.utc(2026, 8, 17))}',
+        ))),
         isSemantics(isButton: true, isSelected: false, hasTapAction: true),
       );
 
@@ -1453,10 +1538,14 @@ void main() {
       await openBands(tester, container, startsOnAugust: const [5]);
 
       expect(container.read(cyclesModelProvider).value!.scheduledCount, 1);
-      expect(tester.getSize(find.byKey(const ValueKey('load-main-2'))).height,
-          38);
-      expect(fillOf(tester, 'load-main-2'), BqColors.loadBar);
-      expect(find.byKey(const ValueKey('load-over-2')), findsNothing);
+      // The week containing today, in which the single course is running.
+      final active = bandOf(container, today);
+      expect(
+        tester.getSize(find.byKey(ValueKey<String>('load-main-$active'))).height,
+        38,
+      );
+      expect(fillOf(tester, 'load-main-$active'), BqColors.loadBar);
+      expect(find.byKey(ValueKey<String>('load-over-$active')), findsNothing);
 
       await tearDownTree(tester, container);
     });
@@ -1474,9 +1563,14 @@ void main() {
       final model = container.read(cyclesModelProvider).value!;
       expect(model.scheduledCount, 4);
 
+      // One supplement joins per week from 3 August, so the week starting
+      // 3 Aug holds one, 10 Aug two, 17 Aug three and 24 Aug four — addressed
+      // by those dates, not by an index that moves when the window does.
       final heights = <double>[];
-      for (var i = 1; i <= 4; i++) {
-        expect(model.weeks[i].load, i, reason: 'fixture: bucket $i holds $i');
+      for (var load = 1; load <= 4; load++) {
+        final i = bandOf(container, DateTime.utc(2026, 8, 3 + 7 * (load - 1)));
+        expect(model.weeks[i].load, load,
+            reason: 'fixture: bucket $i holds $load');
         heights.add(
           tester.getSize(find.byKey(ValueKey<String>('load-main-$i'))).height,
         );
@@ -1813,7 +1907,10 @@ void main() {
       final container = makeContainer();
       await openBands(tester, container);
 
-      await tester.tap(find.byKey(const ValueKey('load-week-3')));
+      // The 17–23 August bucket, where all seven courses overlap.
+      await tester.tap(find.byKey(ValueKey<String>(
+        'load-week-${bandOf(container, DateTime.utc(2026, 8, 17))}',
+      )));
       await tester.pump();
 
       expect(find.text('7 речовин'), findsOneWidget);
@@ -1845,7 +1942,9 @@ void main() {
       for (final locale in const ['uk', 'en']) {
         final container = makeContainer();
         await openBands(tester, container, locale: locale);
-        await tester.tap(find.byKey(const ValueKey('load-week-3')));
+        await tester.tap(find.byKey(ValueKey<String>(
+          'load-week-${bandOf(container, DateTime.utc(2026, 8, 17))}',
+        )));
         await tester.pump();
 
         for (final excluded in const [

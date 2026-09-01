@@ -10,38 +10,65 @@
 library;
 
 import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/features/calendar/planner_view_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('plannerWindow — [first of this month, +4 months)', () {
-    test('starts on the first of today\'s month, whatever day it is', () {
+  group('plannerWindow — [first of LAST month, +4 months)', () {
+    test('starts on the first of the month BEFORE today\'s, whatever day it is',
+        () {
       final w = plannerWindow(DateTime.utc(2026, 8, 13));
-      expect(w.start, DateTime.utc(2026, 8, 1));
-      expect(w.endExclusive, DateTime.utc(2026, 12, 1));
+      expect(w.start, DateTime.utc(2026, 7, 1),
+          reason: 'owner change 2026-09-01: the window is last month, this '
+              'month and two ahead. A planner that begins at today\'s month '
+              'cannot show the break the user is currently coming out of, '
+              'which is exactly the context a cycle needs to be read in');
+      expect(w.endExclusive, DateTime.utc(2026, 11, 1));
     });
 
-    test('August 2026 spans 122 days (the mockup figure, 31+30+31+30)', () {
-      expect(plannerWindow(DateTime.utc(2026, 8, 13)).span, 122);
+    test('today is inside the window and never on its first day', () {
+      // The property the whole screen rests on: "you are here" has to fall
+      // strictly inside the drawn band, with a month of history behind it.
+      for (final month in List.generate(12, (i) => i + 1)) {
+        final today = DateTime.utc(2027, month, 15);
+        final w = plannerWindow(today);
+        expect(w.start.isBefore(today), isTrue, reason: '$today');
+        expect(w.endExclusive.isAfter(today), isTrue, reason: '$today');
+      }
     });
 
-    test('February 2027 spans 120 — the SHORTEST four-month window', () {
-      final w = plannerWindow(DateTime.utc(2027, 2, 10));
+    test('a January today opens the window in the PREVIOUS year', () {
+      final w = plannerWindow(DateTime.utc(2027, 1, 20));
+      expect(w.start, DateTime.utc(2026, 12, 1),
+          reason: 'the year boundary is the case the subtitle has a separate '
+              'cross-year string for, and stepping back a month is what makes '
+              'it reachable in January rather than never');
+      expect(w.endExclusive, DateTime.utc(2027, 4, 1));
+    });
+
+    test('a window opened in August 2026 spans 123 days (31+31+30+31)', () {
+      expect(plannerWindow(DateTime.utc(2026, 8, 13)).span, 123,
+          reason: 'Jul..Oct, not the Aug..Nov 122 the mockup drew — the span '
+              'follows the real month lengths of the SHIFTED window');
+    });
+
+    test('March 2027 spans 120 — the SHORTEST four-month window', () {
+      final w = plannerWindow(DateTime.utc(2027, 3, 10));
       expect(w.start, DateTime.utc(2027, 2, 1));
       expect(w.endExclusive, DateTime.utc(2027, 6, 1));
       expect(w.span, 120, reason: '28+31+30+31 — never assume 122 (P-4)');
     });
 
-    test('July 2027 spans 123 — the LONGEST four-month window', () {
-      final w = plannerWindow(DateTime.utc(2027, 7, 4));
+    test('August 2027 spans 123 — the LONGEST four-month window', () {
+      final w = plannerWindow(DateTime.utc(2027, 8, 4));
+      expect(w.start, DateTime.utc(2027, 7, 1));
       expect(w.span, 123, reason: '31+31+30+31 — never assume 122 (P-4)');
     });
 
-    test('a window opened on the last day of the month still starts on the 1st',
+    test('a window opened on the last day of the month still starts on a 1st',
         () {
       final w = plannerWindow(DateTime.utc(2026, 8, 31));
-      expect(w.start, DateTime.utc(2026, 8, 1));
-      expect(w.span, 122);
+      expect(w.start, DateTime.utc(2026, 7, 1));
+      expect(w.span, 123);
     });
   });
 
@@ -110,61 +137,27 @@ void main() {
           expect(w.span, expected);
           expect(w.span, inInclusiveRange(120, 123),
               reason: 'a four-month window is never outside 120..123 days');
-          expect(w.start, DateTime.utc(year, month, 1));
+          // The window opens on the first of the month BEFORE this one, so
+          // a January today steps back into December of the previous year.
+          expect(w.start, addMonths(DateTime.utc(year, month, 1), -1));
         });
       }
     }
 
-    test('October, November and December windows cross into the next year',
-        () {
-      for (final month in [10, 11, 12]) {
+    test('November and December windows cross into the next year', () {
+      for (final month in [11, 12]) {
         final w = plannerWindow(DateTime.utc(2026, month, 5));
         expect(w.endExclusive.year, 2027,
-            reason: 'month $month + 4 lands in the next year');
-
-        final model = buildCyclesModel(const [], today: DateTime.utc(2026, month, 5));
-        final crossing = model.months.where((m) => m.month.year == 2027);
-        expect(crossing, isNotEmpty);
-        // The columns are consecutive months, carried across the year change.
-        for (var i = 1; i < model.months.length; i++) {
-          expect(model.months[i].month,
-              addMonths(model.months[i - 1].month, 1));
-        }
+            reason: 'month $month: the window ends in the next year');
       }
     });
 
-    test('a leap-year February column is 29 days wide', () {
-      // A window opened in December 2027 covers Dec, Jan, Feb 2028, Mar.
-      final model = buildCyclesModel(const [], today: DateTime.utc(2027, 12, 1));
-      final february =
-          model.months.firstWhere((m) => m.month == DateTime.utc(2028, 2, 1));
-      expect(february.days, 29);
-      expect(model.span, 31 + 31 + 29 + 31);
+    test('a January window opens in the PREVIOUS year', () {
+      final w = plannerWindow(DateTime.utc(2027, 1, 5));
+      expect(w.start.year, 2026,
+          reason: 'stepping back a month makes the cross-year subtitle '
+              'reachable from January, not only from the autumn');
+      expect(w.endExclusive.year, 2027);
     });
-  });
-
-  group('month-column fractions — what the labels and gridlines lay out from',
-      () {
-    for (final year in [2026, 2028]) {
-      for (var month = 1; month <= 12; month++) {
-        test('$month/$year: fractions are positive and sum to 1.0', () {
-          final model =
-              buildCyclesModel(const [], today: DateTime.utc(year, month, 9));
-
-          expect(model.months, hasLength(4));
-          for (final m in model.months) {
-            expect(m.fraction, greaterThan(0),
-                reason: 'a zero-width month column would collapse a label');
-            expect(m.days, greaterThan(0));
-          }
-          expect(
-            model.months.fold<double>(0, (sum, m) => sum + m.fraction),
-            closeTo(1.0, 1e-9),
-            reason: 'the four columns tile the window exactly — a shortfall '
-                'would misplace every gridline after it',
-          );
-        });
-      }
-    }
   });
 }

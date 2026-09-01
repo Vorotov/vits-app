@@ -78,10 +78,16 @@ void main() {
   // unpinned one would move every fraction this file measures.
   final today = DateTime.utc(2026, 8, 13);
 
-  // One course running 5 August to 30 September — comfortably inside the
-  // 1 Aug – 30 Nov window, and firmly in its EARLIER half, which is what makes
+  // One course running 5 July to 30 August — comfortably inside the
+  // 1 Jul – 31 Oct window, and firmly in its EARLIER half, which is what makes
   // "the bar is on the same side as the first month" a real claim rather than
   // a coincidence about a bar that spans everything.
+  //
+  // The dates moved back one month with the window itself (owner change
+  // 2026-09-01: the band is now last month, this month and two ahead). Left on
+  // 5 Aug – 30 Sep they would have straddled the MIDDLE of the shifted band,
+  // and "the early half" — the whole point of the fixture — would have stopped
+  // being true of them.
   const supplement = Supplement(
     id: 's1',
     name: 'Magnesium',
@@ -93,8 +99,8 @@ void main() {
     id: 'r1',
     supplementId: 's1',
     kind: RegimenKind.course,
-    startDate: DateTime.utc(2026, 8, 5),
-    endDate: DateTime.utc(2026, 9, 30),
+    startDate: DateTime.utc(2026, 7, 5),
+    endDate: DateTime.utc(2026, 8, 30),
     onDays: 0,
     offDays: 0,
     paused: false,
@@ -157,7 +163,7 @@ void main() {
             'painter drew a different number of rects the indices below stop '
             'meaning what they say');
     expect(ltrFirstMonth.dx, lessThan(ltrLastMonth.dx),
-        reason: 'the LTR baseline: August reads before November');
+        reason: 'the LTR baseline: July reads before October');
 
     await tester.pumpWidget(host(TextDirection.rtl));
     await tester.pumpAndSettle();
@@ -197,10 +203,10 @@ void main() {
     }
 
     // 4. The claim the whole file exists for: the bar sits under the months it
-    //    belongs to. The course starts 5 August, five days into a four-month
+    //    belongs to. The course starts 5 July, five days into a four-month
     //    window, so its bar belongs at the END the first month label is at —
     //    the left in LTR, the right in RTL. A painter that ignored direction
-    //    would put it on the left in both, i.e. under November.
+    //    would put it on the left in both, i.e. under October.
     final ltrBar = ltrBars[1].outerRect;
     final rtlBar = rtlBars[1].outerRect;
     expect(ltrBar.center.dx, lessThan(trackWidth / 2),
@@ -208,9 +214,9 @@ void main() {
             'half, which in LTR is the left half');
     expect(rtlBar.center.dx, greaterThan(trackWidth / 2),
         reason: 'THE BUG. In RTL the early half of the window is the RIGHT '
-            'half — that is where the August label is. A bar left of centre '
-            'here is drawn under November while the header above it says '
-            'August, so an Arabic or Urdu reader is told a cycle runs in a '
+            'half — that is where the July label is. A bar left of centre '
+            'here is drawn under October while the header above it says '
+            'July, so an Arabic or Urdu reader is told a cycle runs in a '
             'month it does not');
   });
 
@@ -233,8 +239,9 @@ void main() {
     await tester.pumpAndSettle();
     final rtlMarker = markerCentre();
 
-    // 13 August is 12 days into a ~122-day window: hard left in LTR, hard
-    // right in RTL, and the two offsets sum to the track's width.
+    // 13 August is 43 days into the 123-day 1 Jul – 31 Oct window: left of
+    // centre in LTR, right of centre in RTL, and the two offsets sum to the
+    // track's width.
     expect(ltrMarker.dx, lessThan(gantt.center.dx));
     expect(rtlMarker.dx, greaterThan(gantt.center.dx));
     expect(
