@@ -102,7 +102,7 @@ void main() {
   });
 
   group('groupIntoBlocks (DECIDED-1, M5)', () {
-    test('only non-empty blocks, in block order, earliest real slot time', () {
+    test('only non-empty blocks, in block order, input order kept', () {
       final doses = [
         dose(logId: 'l1', minutes: 570), // 09:30 morning
         dose(logId: 'l2', minutes: 660, regimenId: 'r2'), // 11:00 morning
@@ -119,11 +119,13 @@ void main() {
       expect(blocks[0].blockIndex, 0);
       expect(blocks[1].blockIndex, 3);
       expect(
-        blocks[0].earliestMinutes,
-        570,
-        reason: 'the earliest REAL slot time, not the 08:00 anchor (M5)',
+        blocks[0].doses.map((d) => d.slot.minutesFromMidnight),
+        [570, 660],
+        reason: 'a block carries every real slot time it holds — since v1.2 '
+            'each of them heads its own rows, so none may be dropped or '
+            'collapsed into a single block time (M5)',
       );
-      expect(blocks[1].earliestMinutes, 1350);
+      expect(blocks[1].doses.map((d) => d.slot.minutesFromMidnight), [1350]);
       expect(blocks[0].doses.map((d) => d.logId), [
         'l1',
         'l2',
@@ -140,12 +142,144 @@ void main() {
           dose(logId: 'day', minutes: 720, regimenId: 'r3'),
         ]);
         expect(blocks.map((b) => b.blockIndex), [0, 1, 3]);
-        expect(blocks.map((b) => b.earliestMinutes), [480, 720, 1320]);
+        expect(
+          blocks.map((b) => b.doses.single.slot.minutesFromMidnight),
+          [480, 720, 1320],
+        );
       },
     );
 
     test('empty day yields no blocks', () {
       expect(groupIntoBlocks(const []), isEmpty);
+    });
+  });
+
+  // -------------------------------------------------------------------
+  // Sub-grouping a block by exact slot time (v1.2). The block header used
+  // to print ONE time — the block's earliest real slot — which silently
+  // filed a 09:05 dose under an "08:20" heading. The time now belongs to
+  // the rows, so the grouping that produces it is asserted here rather
+  // than inferred from a rendered widget.
+  // -------------------------------------------------------------------
+  group('groupByTime (v1.2 per-time sub-grouping)', () {
+    test('two doses at the SAME minute collapse into ONE group', () {
+      final groups = groupByTime([
+        dose(logId: 'l1', minutes: 480),
+        dose(logId: 'l2', minutes: 480, regimenId: 'r2', supplementId: 's2'),
+      ]);
+
+      expect(groups, hasLength(1),
+          reason: 'one printed time, two rows under it — the whole point of '
+              'moving the time off the block header');
+      expect(groups.single.minutes, 480);
+      expect(groups.single.doses.map((d) => d.logId), ['l1', 'l2'],
+          reason: 'input order preserved inside a group');
+    });
+
+    test('different minutes inside one block make separate groups', () {
+      final groups = groupByTime([
+        dose(logId: 'l1', minutes: 500), // 08:20
+        dose(logId: 'l2', minutes: 545, regimenId: 'r2'), // 09:05
+      ]);
+
+      expect(groups.map((g) => g.minutes), [500, 545],
+          reason: '08:20 and 09:05 are two headings, not one');
+      expect(groups.map((g) => g.doses.single.logId), ['l1', 'l2']);
+    });
+
+    test('groups ascend regardless of input order', () {
+      final groups = groupByTime([
+        dose(logId: 'late', minutes: 660),
+        dose(logId: 'early', minutes: 480, regimenId: 'r2'),
+        dose(logId: 'mid', minutes: 545, regimenId: 'r3'),
+      ]);
+
+      expect(groups.map((g) => g.minutes), [480, 545, 660],
+          reason: 'the renderer prints groups in list order, so ordering is '
+              'this function’s responsibility — not the caller’s');
+      expect(groups.map((g) => g.doses.single.logId), [
+        'early',
+        'mid',
+        'late',
+      ]);
+    });
+
+    test('a single dose still yields exactly one group', () {
+      final groups = groupByTime([dose(logId: 'only', minutes: 1140)]);
+
+      expect(groups, hasLength(1));
+      expect(groups.single.minutes, 1140);
+      expect(groups.single.doses.single.logId, 'only');
+    });
+
+    test('an empty list yields no groups', () {
+      expect(groupByTime(const []), isEmpty);
+    });
+
+    test('minute precision is exact — 08:00 and 08:01 do not merge', () {
+      final groups = groupByTime([
+        dose(logId: 'l1', minutes: 480),
+        dose(logId: 'l2', minutes: 481, regimenId: 'r2'),
+      ]);
+
+      expect(groups.map((g) => g.minutes), [480, 481],
+          reason: 'the grouping key is the exact minutesFromMidnight, with no '
+              'rounding or tolerance window anywhere');
+    });
+  });
+
+  // -------------------------------------------------------------------
+  // Where the accent lives now that the time moved off the header. The
+  // old rule accented the current block's ONE header time; the day still
+  // gets exactly one accented time, but it is now the next time actually
+  // due, which the old rule could not express (a 09:30/11:00 morning at
+  // 10:00 accented the 09:30 that had already gone by).
+  // -------------------------------------------------------------------
+  group('accentedTimeMinutes (v1.2)', () {
+    List<TimeGroup> morning() => groupByTime([
+          dose(logId: 'a', minutes: 570), // 09:30
+          dose(logId: 'b', minutes: 660, regimenId: 'r2'), // 11:00
+        ]);
+
+    test('nothing is accented outside the current block', () {
+      expect(
+        accentedTimeMinutes(morning(), isCurrentBlock: false, nowMinutes: 600),
+        isNull,
+        reason: 'isCurrentBlock is already false on every non-today view, so '
+            'no accent is reachable off today',
+      );
+    });
+
+    test('the earliest time NOT yet passed carries the accent', () {
+      expect(
+        accentedTimeMinutes(morning(), isCurrentBlock: true, nowMinutes: 600),
+        660,
+        reason: '10:00: the 09:30 group is behind the user, 11:00 is next',
+      );
+    });
+
+    test('a time exactly at now is still due, so it takes the accent', () {
+      expect(
+        accentedTimeMinutes(morning(), isCurrentBlock: true, nowMinutes: 570),
+        570,
+        reason: 'the >= boundary matches _blockHasPassed’s strict <',
+      );
+    });
+
+    test('a block whose every time has passed accents nothing', () {
+      expect(
+        accentedTimeMinutes(morning(), isCurrentBlock: true, nowMinutes: 1200),
+        isNull,
+        reason: 'unreachable through currentBlockIndex — such a block is not '
+            'current — but the function stays total rather than throwing',
+      );
+    });
+
+    test('an empty group list accents nothing', () {
+      expect(
+        accentedTimeMinutes(const [], isCurrentBlock: true, nowMinutes: 600),
+        isNull,
+      );
     });
   });
 

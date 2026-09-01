@@ -6,12 +6,18 @@
 /// reads the clock itself; `nowMinutes` and `viewingToday` arrive as
 /// parameters. Empty blocks never reach here: `groupIntoBlocks` omits them.
 ///
-/// The header time is the block's EARLIEST REAL slot time (M5): printing the
-/// mockup's 08:00 anchor above a 09:30-only morning would be false
-/// information. The header's three text children each carry a one-third-of-row
-/// ceiling and ellipsize, so no combination of a long label, a long tag and a
-/// large accessibility text scale can overflow the row — the divider between
-/// them absorbs the slack, but it was never what made the row safe (WR-04).
+/// The header carries NO time since v1.2. It used to print one — the block's
+/// earliest real slot time — which is only ever right for a block whose doses
+/// all share a minute: a morning holding 08:20 and 09:05 filed both rows under
+/// an "08:20" heading that was false for the second one. The blocks are wide
+/// (Ранок alone is 00:00-11:59), so the block is the coarse container and the
+/// TIME is the fine one; each distinct minute now prints its own small heading
+/// above its own rows (`groupByTime`), while the block label still appears
+/// exactly once. The header's two remaining text children each carry a
+/// one-half-of-row ceiling and ellipsize, so no combination of a long label, a
+/// long tag and a large accessibility text scale can overflow the row — the
+/// divider between them absorbs the slack, but it was never what made the row
+/// safe (WR-04).
 library;
 
 import 'package:flutter/material.dart';
@@ -55,7 +61,9 @@ class DayBlockSection extends ConsumerWidget {
   final int nowMinutes;
 
   /// Whether this block is `currentBlockIndex` — already null on any
-  /// non-today view, so the accent time can never appear off today.
+  /// non-today view, so no accented time can appear off today. Since v1.2 it
+  /// no longer decides the accent by itself: it only opens the door for
+  /// `accentedTimeMinutes`, which picks WHICH of this block's times leads.
   final bool isCurrentBlock;
 
   @override
@@ -63,14 +71,15 @@ class DayBlockSection extends ConsumerWidget {
     final l10n = context.l10n;
     final today = ref.watch(todayProvider);
 
-    final tod = TimeOfDay(
-      hour: block.earliestMinutes ~/ 60,
-      minute: block.earliestMinutes % 60,
+    final groups = groupByTime(block.doses);
+    // At most ONE time on the whole day renders accented, and never off today
+    // — see `accentedTimeMinutes` for why the accent moved from the block's
+    // earliest time to the next time actually due.
+    final accented = accentedTimeMinutes(
+      groups,
+      isCurrentBlock: isCurrentBlock,
+      nowMinutes: nowMinutes,
     );
-    // 24-hour everywhere (UI-SPEC locked), same call shape as the Phase-2
-    // slot rows so both screens print a time identically.
-    final timeText = MaterialLocalizations.of(context)
-        .formatTimeOfDay(tod, alwaysUse24HourFormat: true);
 
     final label = switch (block.blockIndex) {
       0 => l10n.blockMorning,
@@ -85,35 +94,25 @@ class DayBlockSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Every text-bearing child of the header gets a hard ceiling of one
-          // third of the row (WR-04). `Expanded` on the divider protects the
-          // DIVIDER, not the row: three non-flexible children overflowed by
-          // 65px at textScaler 2.0, and a long enough label or tag did the
-          // same at scale 1.0. Three ceilings that sum to the row width minus
-          // its gaps make that arithmetically impossible, while leaving the
-          // mockup layout untouched at scale 1.0 — every child is far below
-          // its ceiling there, so the divider still absorbs all the slack.
+          // Every text-bearing child of the header gets a hard ceiling of a
+          // fraction of the row (WR-04). `Expanded` on the divider protects
+          // the DIVIDER, not the row: non-flexible children overflowed by 65px
+          // at textScaler 2.0, and a long enough label or tag did the same at
+          // scale 1.0. Ceilings that sum to the row width minus its gaps make
+          // that arithmetically impossible, while leaving the mockup layout
+          // untouched at scale 1.0 — every child is far below its ceiling
+          // there, so the divider still absorbs all the slack. Dropping the
+          // time from this row left two text children and two gaps, so the
+          // share is a half rather than the old third; the arithmetic, not the
+          // number, is what keeps the row safe.
           LayoutBuilder(
             builder: (context, constraints) {
-              const gaps = 30.0; // the three 10px gaps
+              const gaps = 20.0; // the two 10px gaps
               final ceiling = constraints.maxWidth.isFinite
-                  ? ((constraints.maxWidth - gaps) / 3).clamp(0.0, 4000.0)
+                  ? ((constraints.maxWidth - gaps) / 2).clamp(0.0, 4000.0)
                   : double.infinity;
               return Row(
                 children: [
-                  ConstrainedBox(
-                    constraints: BoxConstraints(maxWidth: ceiling),
-                    child: Text(
-                      timeText,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: BqText.mono(
-                        size: 13,
-                        color: isCurrentBlock ? BqColors.accent : BqColors.ink,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
                   ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: ceiling),
                     child: Text(
@@ -151,18 +150,66 @@ class DayBlockSection extends ConsumerWidget {
             },
           ),
           const SizedBox(height: 9),
-          for (final (i, dose) in block.doses.indexed) ...[
-            if (i > 0) const SizedBox(height: 7),
-            DoseRow(
-              dose: dose,
-              dayDoses: dayDoses,
-              day: day,
-              today: today,
-              viewingToday: viewingToday,
-              nowMinutes: nowMinutes,
+          for (final (g, group) in groups.indexed) ...[
+            // Groups after the first get a wider gap than the 7px between
+            // sibling rows, so a time label binds visually to the rows BELOW
+            // it rather than floating between two groups. Claude's-discretion
+            // spacing: the mockup only ever drew one time per block, so it has
+            // no value for this.
+            if (g > 0) const SizedBox(height: 12),
+            _TimeLabel(
+              minutes: group.minutes,
+              accented: group.minutes == accented,
             ),
+            const SizedBox(height: 7),
+            for (final (i, dose) in group.doses.indexed) ...[
+              if (i > 0) const SizedBox(height: 7),
+              DoseRow(
+                dose: dose,
+                dayDoses: dayDoses,
+                day: day,
+                today: today,
+                viewingToday: viewingToday,
+                nowMinutes: nowMinutes,
+              ),
+            ],
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// The heading above the rows scheduled at one exact minute (v1.2).
+///
+/// Keeps the type the block header used to print the time in — mono 13, the
+/// same call shape as the Phase-2 slot rows — so both screens still render a
+/// time identically and this reads as the old header time moved down, not as a
+/// new kind of label. 24-hour everywhere (UI-SPEC locked).
+///
+/// The string is `MaterialLocalizations.formatTimeOfDay`, i.e. locale data,
+/// not copy: there is nothing here for a translator to write, so this widget
+/// adds no ARB key. It is deliberately NOT width-constrained — the column
+/// stretches it to the full body width and it holds five glyphs, so it has
+/// room to grow at any accessibility text scale.
+class _TimeLabel extends StatelessWidget {
+  const _TimeLabel({required this.minutes, required this.accented});
+
+  /// Minutes since midnight, straight from the group's real slot time.
+  final int minutes;
+
+  /// Whether this is the day's ONE accented time (`accentedTimeMinutes`).
+  final bool accented;
+
+  @override
+  Widget build(BuildContext context) {
+    final tod = TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60);
+    return Text(
+      MaterialLocalizations.of(context)
+          .formatTimeOfDay(tod, alwaysUse24HourFormat: true),
+      style: BqText.mono(
+        size: 13,
+        color: accented ? BqColors.accent : BqColors.ink,
       ),
     );
   }

@@ -41,24 +41,22 @@ int blockIndexOf(int minutesFromMidnight) {
 
 /// One non-empty time block of a rendered day.
 ///
-/// [earliestMinutes] is the earliest REAL slot time present in the block —
-/// never the block's boundary value and never the mockup anchor (M5): a
-/// 09:30-only morning printing an 08:00 header would be false information.
+/// Carries no time of its own since v1.2. It used to expose the block's
+/// earliest real slot minute because the block HEADER printed exactly one
+/// time, but a single printed time is only ever right for a block whose doses
+/// all share a minute: a morning holding 08:20 and 09:05 filed both rows under
+/// an "08:20" heading that was false for the second one. The time moved down to
+/// the rows — see [groupByTime] — and a field documented as "what the header
+/// prints" would now describe something nothing prints, so it is gone rather
+/// than left behind to mislead the next reader.
 class DayBlock {
   /// Index into [blockStartsMinutes].
   final int blockIndex;
 
-  /// Earliest `slot.minutesFromMidnight` actually present in this block.
-  final int earliestMinutes;
-
   /// The block's doses, in the input list's slot-time order.
   final List<DayDose> doses;
 
-  const DayBlock({
-    required this.blockIndex,
-    required this.earliestMinutes,
-    required this.doses,
-  });
+  const DayBlock({required this.blockIndex, required this.doses});
 }
 
 /// Groups a day's doses into non-empty blocks, ordered by block index.
@@ -78,13 +76,55 @@ List<DayBlock> groupIntoBlocks(List<DayDose> doses) {
   final indices = byBlock.keys.toList()..sort();
   return [
     for (final i in indices)
-      DayBlock(
-        blockIndex: i,
-        earliestMinutes: byBlock[i]!
-            .map((d) => d.slot.minutesFromMidnight)
-            .reduce((a, b) => a < b ? a : b),
-        doses: List.unmodifiable(byBlock[i]!),
-      ),
+      DayBlock(blockIndex: i, doses: List.unmodifiable(byBlock[i]!)),
+  ];
+}
+
+/// The doses of one block that share a single wall-clock minute.
+///
+/// [minutes] is a REAL `slot.minutesFromMidnight` taken from the doses in
+/// [doses] — never a block boundary and never one of the mockup's 08:00 /
+/// 13:00 / 19:00 / 22:00 anchors, which are Phase-2 editor defaults rather
+/// than anything to print above rows that do not sit at them (M5).
+class TimeGroup {
+  /// The exact minute every dose in [doses] is scheduled for.
+  final int minutes;
+
+  /// The doses at [minutes], in the input list's order.
+  final List<DayDose> doses;
+
+  const TimeGroup({required this.minutes, required this.doses});
+}
+
+/// Sub-groups ONE block's doses by their exact [DoseSlot.minutesFromMidnight],
+/// ascending (v1.2).
+///
+/// The four blocks are wide — Ранок alone spans 00:00-11:59 — so a block is a
+/// coarse container, not a time. Printing one time per block was therefore
+/// wrong the moment a block held two different slot times: two supplements at
+/// 08:20 and 09:05 both sat under a single "08:20" heading, which states
+/// something false about the 09:05 dose. Each distinct minute now gets its own
+/// small heading above its own rows, and the block keeps its ONE label.
+///
+/// The key is the raw minute with no rounding and no tolerance window: two
+/// doses group together when the user scheduled them at the same time and at
+/// no other time, so 08:00 and 08:01 stay two headings. Anything looser would
+/// have to invent a heading time that matches neither dose.
+///
+/// Ordering is this function's job, not the caller's: the renderer walks the
+/// returned list in order, and `watchDay`'s slot-time order is an input
+/// guarantee this function deliberately does not lean on.
+List<TimeGroup> groupByTime(List<DayDose> blockDoses) {
+  final byMinute = <int, List<DayDose>>{};
+  for (final d in blockDoses) {
+    byMinute
+        .putIfAbsent(d.slot.minutesFromMidnight, () => <DayDose>[])
+        .add(d);
+  }
+  final minutes = byMinute.keys.toList()..sort();
+  return [
+    for (final m in minutes)
+      TimeGroup(minutes: m, doses: List.unmodifiable(byMinute[m]!)),
   ];
 }
 
@@ -222,6 +262,40 @@ int? currentBlockIndex(
 /// strictly, so a dose exactly at [nowMinutes] is still due.
 bool _blockHasPassed(DayBlock block, int nowMinutes) =>
     block.doses.every((d) => d.slot.minutesFromMidnight < nowMinutes);
+
+/// The one time heading inside a block that renders in the accent color, or
+/// null when the block carries no accent (v1.2).
+///
+/// Where the accent belongs had to be re-decided when the time moved off the
+/// block header. The old rule accented the current block's single header time,
+/// i.e. its EARLIEST dose — which, in a morning holding 09:30 and 11:00 at
+/// 10:00, pointed the eye at a time that had already gone by, because
+/// [currentBlockIndex] calls a block current while ANY of its doses is still
+/// ahead. Sub-grouping makes a sharper answer available, so the accent now
+/// marks the earliest heading that has not passed: the next time actually due.
+///
+/// Two properties of the old treatment are kept deliberately. Exactly one time
+/// on the whole day is accented, because [isCurrentBlock] is true for at most
+/// one block; and no accent is reachable off today, because
+/// [currentBlockIndex] returns null for every non-today view, which is what
+/// makes [isCurrentBlock] false there (TRACK-03 neutrality).
+///
+/// The `>=` boundary mirrors [_blockHasPassed]'s strict `<`: a dose exactly at
+/// [nowMinutes] is still due, so its heading is the one that leads. A current
+/// block always holds at least one such heading — that is what made it current
+/// — so the null tail is unreachable through [currentBlockIndex]; it exists so
+/// the function is total for any [groups]/[nowMinutes] pair a caller hands it.
+int? accentedTimeMinutes(
+  List<TimeGroup> groups, {
+  required bool isCurrentBlock,
+  required int nowMinutes,
+}) {
+  if (!isCurrentBlock) return null;
+  for (final g in groups) {
+    if (g.minutes >= nowMinutes) return g.minutes;
+  }
+  return null;
+}
 
 /// Day-progress ring counts (DECIDED-7, mockup formula): `taken` against
 /// every dose of the day, with `skipped` counted as not-taken.

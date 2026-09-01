@@ -813,8 +813,8 @@ void main() {
       await tearDownTree(tester, container);
     });
 
-    testWidgets('uk: the block header shows the EARLIEST REAL slot time, not '
-        'the mockup anchor (M5)', (tester) async {
+    testWidgets('uk: a block with two different slot times prints a time label '
+        'per time, ascending, under ONE block label (v1.2)', (tester) async {
       usePhoneSurface(tester);
       final container = makeContainer(today: pinnedToday, nowMinutes: 600);
       await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
@@ -830,19 +830,89 @@ void main() {
         'the morning block header',
       );
 
-      expect(find.text('09:30'), findsOneWidget,
-          reason: 'the header time is the earliest slot actually in the block');
+      expect(find.text('09:30'), findsOneWidget);
+      expect(find.text('11:00'), findsOneWidget,
+          reason: 'the 11:00 dose used to sit under a 09:30 heading, which '
+              'stated something false about it — every distinct slot time in '
+              'the block now heads its own rows');
       expect(find.text('08:00'), findsNothing,
           reason: "printing the mockup's 08:00 anchor above a 09:30 block "
               'would be false information (M5)');
-      expect(find.text('11:00'), findsNothing,
-          reason: 'only the earliest slot time heads the block');
+      expect(find.text('Ранок'), findsOneWidget,
+          reason: 'the BLOCK label stays one per block — only the time '
+              'sub-divides');
+      expect(
+        tester.getTopLeft(find.text('09:30')).dy <
+            tester.getTopLeft(find.text('11:00')).dy,
+        isTrue,
+        reason: 'times ascend down the block',
+      );
       expect(tester.takeException(), isNull);
 
       await tearDownTree(tester, container);
     });
 
-    testWidgets('uk: on today ONLY the current block header time is accented',
+    testWidgets('uk: two doses at the SAME minute share ONE time label (v1.2)',
+        (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(supplementRepoProvider).upsert(supp('s2', 'Цинк'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+          ]));
+      await container.read(regimenRepoProvider).upsert(reg('r2', 's2', const [
+            DoseSlot(id: 'sl2', minutesFromMidnight: 480, doseLabel: ''),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('Цинк').evaluate().isNotEmpty,
+        'both dose rows',
+      );
+
+      expect(find.text('08:00'), findsOneWidget,
+          reason: 'one time, two rows under it — a per-row time would repeat '
+              '08:00 twice for no information');
+      expect(find.byType(DoseRow), findsNWidgets(2));
+      expect(find.text('Ранок'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: inside the current block the accent marks the NEXT time '
+        'due, not the earliest one (v1.2)', (tester) async {
+      usePhoneSurface(tester);
+      // 10:00, morning holding 09:30 and 11:00: the block is current because
+      // 11:00 is still ahead, and 11:00 is what the user has left to do.
+      final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+      await container.read(supplementRepoProvider).upsert(supp('s1', 'Магній'));
+      await container.read(regimenRepoProvider).upsert(reg('r1', 's1', const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 570, doseLabel: ''),
+            DoseSlot(id: 'sl2', minutesFromMidnight: 660, doseLabel: ''),
+          ]));
+
+      await tester.pumpWidget(app(container));
+      await pumpUntil(
+        tester,
+        () => find.text('11:00').evaluate().isNotEmpty,
+        'both time labels of the morning block',
+      );
+
+      expect(tester.widget<Text>(find.text('11:00')).style?.color,
+          BqColors.accent,
+          reason: 'the next time actually due leads the day (P-5)');
+      expect(tester.widget<Text>(find.text('09:30')).style?.color, BqColors.ink,
+          reason: 'the old rule accented the block\'s EARLIEST time, which '
+              'here had already gone by');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: on today ONLY the current block\'s time label is accented',
         (tester) async {
       usePhoneSurface(tester);
       // 10:00: the 09:30 morning block has fully passed, the 19:00 evening
@@ -874,7 +944,7 @@ void main() {
       await tearDownTree(tester, container);
     });
 
-    testWidgets('uk: on a NON-today day no header time is accented',
+    testWidgets('uk: on a NON-today day no time label is accented',
         (tester) async {
       usePhoneSurface(tester);
       final container = makeContainer(today: pinnedToday, nowMinutes: 600);
@@ -3130,6 +3200,65 @@ void main() {
 
         await tearDownTree(tester, container);
       });
+    }
+
+    // The v1.2 sub-grouping puts MORE text into a block — one heading per
+    // distinct minute, on top of the header and the rows. WR-04 was found on
+    // exactly this axis, so the multi-time shape gets its own sweep, in both
+    // locales: Ukrainian block labels and meal tags run ~30% longer than the
+    // English ones, and only one of the two can be the widest.
+    Regimen twoTimes() => Regimen(
+          id: 'r1',
+          supplementId: 's1',
+          kind: RegimenKind.cyclic,
+          startDate: DateTime.utc(2020, 1, 1),
+          endDate: null,
+          onDays: 1,
+          offDays: 0,
+          paused: false,
+          slots: const [
+            DoseSlot(id: 'sl1', minutesFromMidnight: 500, doseLabel: ''),
+            DoseSlot(id: 'sl2', minutesFromMidnight: 545, doseLabel: ''),
+          ],
+        );
+
+    for (final locale in const ['uk', 'en']) {
+      for (final scale in <double>[1.0, 1.6, 2.0]) {
+        testWidgets(
+            '$locale: a block with TWO time labels renders without '
+            'overflowing at textScaler $scale (v1.2, WR-04)', (tester) async {
+          usePhoneSurface(tester);
+          final container = makeContainer(today: pinnedToday, nowMinutes: 600);
+          await container
+              .read(supplementRepoProvider)
+              .upsert(supp('Магній бісглицинат'));
+          await container.read(regimenRepoProvider).upsert(twoTimes());
+
+          await tester.pumpWidget(app(
+            container,
+            locale: locale,
+            textScaler: TextScaler.linear(scale),
+          ));
+          await pumpUntil(
+            tester,
+            () => find.text('09:05').evaluate().isNotEmpty,
+            'the second time label at textScaler $scale in $locale',
+          );
+          for (var i = 0; i < 10; i++) {
+            await tester.pump(const Duration(milliseconds: 20));
+          }
+
+          expect(find.text('08:20'), findsOneWidget);
+          expect(find.text('09:05'), findsOneWidget,
+              reason: 'both headings survive the scale — a heading that '
+                  'vanished would take its rows\' time with it');
+          expect(tester.takeException(), isNull,
+              reason: 'the time labels must grow down the column, never '
+                  'overflow the row they sit in');
+
+          await tearDownTree(tester, container);
+        });
+      }
     }
 
     testWidgets('the reserved strip extent grows with the text scaler and is '
