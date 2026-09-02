@@ -1,7 +1,11 @@
 # Boostque onboarding — design
 
 **Date:** 2026-08-26
-**Status:** approved for planning
+**Status:** approved for planning — **built as written, then partly superseded
+on 2026-08-31.** D-1 and the *Screens* section no longer describe the shipped
+app. Nothing below is edited: it is the record of what was approved on
+2026-08-26. What replaced it, and the evidence that forced it, is the last
+section of this file, *What shipped*.
 **Milestone:** v1.2
 **Supersedes:** the REQUIREMENTS.md "Out of Scope" row *"Onboarding flow,
 quality scores — Mockup v0.1 explicitly excludes; revisit post-v1"*. This
@@ -205,3 +209,106 @@ apply to any of them; ARB parity does, and is enforced automatically.
 | The gate adds a frame-1 branch to a launch path with two enforced await gates. | The flag reads off the already-resolved store; the change is the single `home:` line at `main.dart:171`. Verification names the two gates explicitly. |
 | Illustrations built from real surfaces could drift from the real widgets. | Accepted. They are miniatures using shared tokens, not copies of the widgets — if a dose row is restyled, the miniature reads as slightly dated, not broken. A test would over-couple two things that are allowed to differ. |
 | An empty stack after a cancelled add sheet is still an empty first impression. | Accepted and out of scope. The Stack empty state already exists (`emptyStackTitle`/`emptyStackBody`) and points at the FAB. |
+
+
+---
+
+# What shipped
+
+**Written 2026-09-02, after Phase 8 shipped.** Everything above is left exactly
+as it was approved on 2026-08-26, because it was built that way first — the
+deck exists in `056ccf0`..`6d6f512`. This section records what replaced part of
+it on 2026-08-31, and the evidence that forced the replacement. Where the two
+disagree, this section is the app.
+
+## What forced it
+
+The deck was built, then read against the research rather than shipped on the
+strength of D-1. Nielsen Norman Group's 70-participant test of app intros found
+that participants who read an intro tutorial rated the **same** tasks *harder*
+afterwards — 4.92 against 5.49 of 7 — with no gain in task success and no gain
+in speed. NN/g's coach-mark guidance fails the same way for the same reason: a
+sequence fired at session start explains things before the user has any use for
+them.
+
+The finding is not "intros are bad". It is that explanation detached from the
+moment of need makes a simple product feel complicated — which is the exact
+risk for an app whose one non-obvious idea (cycles) cannot even be acted on
+until the user is inside a regimen editor.
+
+Owner decision 2026-08-31: **path A** — no overlays, no spotlight, no dimming,
+no blocking, no sequence. The intro shrinks to what only an intro can say, and
+everything else moves to the moment its subject appears.
+
+## Decision delta
+
+| Superseded | What shipped instead | Why |
+|---|---|---|
+| **D-1** — two explain screens: the daily loop, then the cycle model. | **D-1a** — two pages: page 1 the daily loop, **page 2 what the Календар answers**. The cycle model is not in the intro at all. | The research above. It went two pages → one (`677b582`) → two again (`b49f4e7`), and the count kept being revisited because the real question was *which* page earns its place, not how many. |
+| **Screens § Page 2 — the cycle idea**, with the on/off week-strip illustration. | **Page 2 — the calendar.** Title: «Календар бачить усе разом» / "The calendar sees it all at once". Body names the three questions the planner answers — where you are in each cycle, what overlaps with what, when the next break starts. Illustration: three supplements whose on-weeks partly overlap (`OnboardingCalendarIllustration`). | A contextual hint cannot answer "why is there a calendar tab": a hint on Календар only fires once the user opens Календар, and nothing before that point gives them a reason to. This is the one thing the intro can say that no hint reaches. |
+| *(nothing — this is new)* | **D-11** — two one-time **inline contextual hints**, rendered by `BqHintCard` (`lib/core/widgets/bq_hint_card.dart`), state in `lib/features/onboarding/first_run_hints.dart`. | Path A. The card takes its place in the layout: nothing is dimmed, nothing is blocked, nothing steals focus, and dismissing is one tap and permanent. A hint the user ignores costs one glance. |
+| | **D-12** — each hint appears where and when its subject first appears. `BqHint.cycle` renders inside the regimen editor's schedule panel, and only while the draft is cyclic — the sliders that define a cycle are on screen. `BqHint.markDose` renders on Сьогодні, and only on a day whose dose list is non-empty. | An explanation of marking a dose on a day with no doses describes an action the user cannot take; an explanation of cycles before a regimen exists is the deck's failure in miniature. |
+| | **D-13** — hint storage repeats D-5/D-6 exactly: `.get()` with a type check, never `getStringList`; an unreadable store, or a value of the wrong type, means **every hint is already dismissed**. | Same reasoning as D-5, applied to a set: a hint whose dismissal cannot be remembered returns forever, which is worse than never showing it. |
+| | **D-14** — a Settings row restores the intro **and** every dismissed hint, **in every build**. It writes only the two first-run preference keys; supplements, regimens and intake logs are untouched. | It was `kDebugMode`-gated on `9f14fcc` and shipped everywhere on `fa67879`: the only other way to see the intro again on a real device is deleting the app, and that takes the user's stack with it. "Show me that again" is an ordinary thing to want from a settings screen. |
+
+**The *Non-goals* list survives intact.** The hints are not coach marks: no
+overlay, no spotlight, no sequence, and nothing fires at session start. Each is
+an inline note beside the thing it describes.
+
+**D-2 through D-10 all still hold**, unchanged and in the shipped code: the
+gate widget, the `onboarding_seen` key, zero extra awaits before `runApp`,
+seen-wins degradation, `.get()` over `getBool()`, the flag set on leaving
+whether or not a supplement is added, Skip on every page, token-built
+illustrations with no bundled assets, and the single `showAddSupplementSheet`
+entry point.
+
+## Files, as built
+
+Beyond the *Files* table above:
+
+| File | Status |
+|---|---|
+| `lib/features/onboarding/first_run_hints.dart` | New. `BqHint` (`cycle`, `markDose`), the `FirstRunHints` notifier over the persisted id set, and `showsHint(dismissed, hint)`. |
+| `lib/core/widgets/bq_hint_card.dart` | New. The accent-tinted inline note with a real 44px dismiss target. A core widget, not an onboarding one: two features render it. |
+| `lib/features/calendar/today_screen.dart` | Modified — renders the `markDose` hint **inside** the day body's `ListView`. |
+| `lib/features/stack/regimen_editor_screen.dart` | Modified — renders the `cycle` hint at the top of the schedule panel. |
+| `lib/features/settings/settings_screen.dart` | Modified — `_ShowIntroAgainRow`, a private widget in the same file. |
+
+`AppShell` is still not modified. The constraint held.
+
+**New ARB keys beyond the spec's list:** `hintDismiss`, `hintCycle`,
+`hintMarkDose`, `debugResetOnboarding` (the Settings row — the key name is a
+leftover from when the row was debug-only; the row itself ships everywhere).
+`onboardingPage2Title`, `onboardingPage2Body` and
+`onboardingIllustrationSemantics2` survived the redesign as keys and were
+rewritten for the calendar. All of them sit under the copy-safety vocabulary
+gate, which since 2026-09-01 runs across all seven shipped locales in
+`test_release/copy_safety_all_locales_test.dart`.
+
+**One divergence worth naming:** the *State* section above says `markSeen`
+writes the pref, then arms the one-shot, then flips its state. The shipped
+order is arm → flip → write: the flip must not precede the arm (the gate would
+rebuild into the shell branch and consume an unarmed one-shot), and the write
+must not precede the flip (the user would wait on a disk write to leave a
+screen). The invariant the spec was protecting is the one that shipped.
+
+## Two defects the redesign surfaced
+
+- **The hints did not disappear when dismissed.** Both call sites watched
+  `firstRunHintsProvider.notifier`, which rebuilds only when the notifier
+  *instance* changes; dismissing updated the set and left the card on screen.
+  Both now go through `showsHint(ref.watch(firstRunHintsProvider), …)` — the
+  set, which is the thing that actually changes. Caught by the hint suite
+  before any device saw it.
+- **The `markDose` hint overflowed Сьогодні by 8px at textScaler 2.0.** It sat
+  in the screen's fixed column above the day body, which does not scroll, and a
+  longer sentence from the copy pass made it two lines. It now lives inside the
+  day body's scrollable list, so a longer translation cannot reintroduce the
+  same defect on the app's most-used screen.
+
+## Requirements delta
+
+- **ONBO-01** is amended in REQUIREMENTS.md: the second page explains the
+  calendar, not the cycle model.
+- **ONBO-04** (the contextual hints) and **ONBO-05** (the Settings restore row)
+  are added there. ONBO-02 and ONBO-03 shipped as written.

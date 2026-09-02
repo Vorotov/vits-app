@@ -3,12 +3,43 @@ status: in_progress
 phase: 07-dose-reminders
 source: [07-06-PLAN.md, 07-RESEARCH.md §9.5, 07-UI-SPEC.md §12 backstops]
 started: 2026-08-17T00:00:00Z
-updated: 2026-08-17T00:00:00Z
+updated: 2026-09-02T00:00:00Z
 ---
 
 ## Current Test
 
-1 — awaiting a human on device (Android automated half is green; iOS needs one tap)
+1 — still awaiting a human on device (Android automated half is green; iOS needs
+one tap). Unchanged since 2026-08-17: entries 1-8 and 10 have not been executed
+on either platform.
+
+## What the device has actually seen since (recorded 2026-09-02)
+
+Two things are true at once here, and conflating them would be the whole point
+of this file undone.
+
+**True:** release builds have been produced and installed on the owner's
+physical iPhone repeatedly through v1.2, and the owner confirms the app works —
+it launches, the stack, Сьогодні and Календар all behave, and the daily loop is
+usable in real use on real hardware. `VALIDATION-REPORT.md`'s "physical
+hardware untested — simulator and emulator only" line was written 2026-08-16 and
+is out of date for the app in general (it is left standing there; this is the
+newer record). It is also more device evidence than this phase had on
+2026-08-17.
+
+**Not true:** none of the entries below has been executed. Ordinary use of the
+app is not a run of this list. Nobody has watched for a reminder at its
+scheduled minute, timed one under Doze, read one on a lock screen at the largest
+text size, checked the Android channel row before and after a language switch,
+observed the permission dialog's sequencing on a fresh install, tapped a
+delivered reminder cold, or restarted a device to see reminders survive it.
+Each of those is a specific observation with a specific expected result, and an
+unexecuted entry stays unexecuted no matter how much the app is used around it.
+
+Nor does general use answer entry 0's iOS half. The permission prompt appears
+once per install, at the first regimen save, and no run has recorded answering
+it — so the pre-step is still open, and everything gated behind it is still
+blocked. If the prompt *was* answered on one of those installs, the fix is to
+record which build and when, right here; an unrecorded grant is not evidence.
 
 ## Regression — the v1 device suite, after Phase 7
 
@@ -54,8 +85,13 @@ harness itself installs. Granting against a separately-installed APK is lost whe
 first observed working, having been un-runnable for its author. Sequence that
 works: `flutter build apk --debug` → `adb install -r` → `pm grant` → run the test.
 
-**iOS — NOT DONE, and it is a human step.** Confirmed empirically rather than
-assumed: `xcrun simctl privacy` has no notifications service (its list is
+**iOS — NOT DONE, and it is a human step.** Still not done as of 2026-09-02,
+after a run of v1.2 in which release builds were installed on a physical iPhone
+several times: no run recorded answering the prompt, and an unrecorded grant is
+not one.
+
+Confirmed empirically rather than assumed: `xcrun simctl privacy` has no
+notifications service (its list is
 calendar / contacts / location / photos / media-library / microphone / motion /
 reminders / siri), so there is no shell route. Driving the prompt from a
 throwaway harness put the dialog on screen and left `requestPermission()`

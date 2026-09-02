@@ -84,7 +84,7 @@ Explicitly excluded. Documented to prevent scope creep.
 | Social sharing of health data | Privacy risk, no user value for this product |
 | Guilt-based streaks / aggressive reminders | Documented alert-fatigue and uninstall driver; conflicts with cycle-off weeks |
 | Auto-adjusting "smart" reminders | Opaque behavior erodes trust |
-| Quality scores | Mockup v0.1 explicitly excludes (this row originally also covered the onboarding flow; that half was revisited 2026-08-26 per the spec `docs/superpowers/specs/2026-08-26-boostque-onboarding-design.md` and shipped as ONBO-01..03 in v1.2 — quality scores stay out) |
+| Quality scores | Mockup v0.1 explicitly excludes (this row originally also covered the onboarding flow; that half was revisited 2026-08-26 per the spec `docs/superpowers/specs/2026-08-26-boostque-onboarding-design.md` and shipped as ONBO-01..05 in v1.2 — quality scores stay out) |
 | Treating the 5-substance limit as a safety threshold | It is an editorial tracking-comfort rule; presenting it as medical invites store-review and liability problems |
 
 ## Decisions Locked During Definition
@@ -154,6 +154,14 @@ Requested after the first hands-on session with the shipped v1 build.
 - [ ] **NOTIF-05** — Settings shows whether reminders are allowed and offers a control that opens the OS notification settings — the only recovery path after an iOS denial (owner decision 2026-08-17, DECIDED-9a; no magnitude, no toggle, no priming sheet)
 - [ ] **NOTIF-04** — Reminders re-derive whenever regimens change (create/edit/pause/delete), on app resume, and remain correct across midnight and DST transitions
 
+All five are **implemented and merged** — Phase 7's six plans executed on
+2026-08-17 and the code, the pure plan and its gates live in `lib/notifications/`
+and `test/notifications/`. The boxes stay open because what would close them is a
+device pass that is not finished: Android's automated half is green (the OS was
+observed holding a request the app derived), the iOS half is blocked on a human
+tapping **Allow**, and the delivery entries have not been run. See
+`.planning/phases/07-dose-reminders/07-UAT.md`.
+
 ## Experience (UX)
 
 - [x] **UX-01** — A floating add-supplement button appears on all three tabs and nowhere else; the Stack screen's full-width add button is removed and its empty state repointed
@@ -174,17 +182,47 @@ Requested after the first hands-on session with the shipped v1 build.
 
 # v1.2 Requirements
 
-Source: `docs/superpowers/specs/2026-08-26-boostque-onboarding-design.md` (approved 2026-08-31).
+Source: `docs/superpowers/specs/2026-08-26-boostque-onboarding-design.md` (approved 2026-08-31;
+its D-1 and *Screens* sections superseded 2026-08-31 by the research pass recorded in that file's
+*What shipped* section).
 Amends the former "Onboarding flow, quality scores" Out-of-Scope row — this is that revisit; quality scores remain out.
 
 ## Onboarding (ONBO)
 
-- [x] **ONBO-01** — On first launch the user sees a two-screen introduction explaining the daily loop and the cycle model, skippable from either screen, in the resolved app language
+- [x] **ONBO-01** — On first launch the user sees a two-page introduction — the daily loop, then what the Календар answers — skippable from either page, in the resolved app language. *(Amended 2026-08-31: the spec's second page explained the cycle model. Nielsen Norman Group's 70-participant test found an intro deck left users rating the same tasks harder — 4.92 vs 5.49 of 7 — with no gain in success or speed, so the cycle explanation moved to where a cycle exists, ONBO-04. The calendar page stayed because no contextual hint can answer "why is there a calendar tab": a hint there fires only after the user has already opened it.)*
 - [x] **ONBO-02** — Completing the introduction hands the user directly into adding their first supplement, through the app's single add entry point; cancelling that leaves the user on the Stack screen with onboarding already marked seen
 - [x] **ONBO-03** — The introduction is shown once. A store that cannot be read or written never traps the user in it, and never blocks launch
+- [x] **ONBO-04** — One-time inline hints explain a feature at the moment its subject first appears: the cycle idea inside the regimen editor's schedule panel while a cyclic schedule is on screen, and marking a dose on Сьогодні only on a day that actually has doses. Nothing is dimmed, blocked or focus-stolen; dismissing is one tap and permanent; an unreadable or corrupt store means every hint is already dismissed *(added 2026-08-31)*
+- [x] **ONBO-05** — Settings carries a row, in every build, that brings the introduction and every dismissed hint back. It writes only the two first-run preference keys — supplements, regimens and intake history are untouched *(added 2026-08-31)*
+
+## Daily Tracking (TRACK, continued)
+
+Shipped during the v1.2 run with no prior requirement; recorded here so the behaviour is traceable.
+
+- [x] **TRACK-05** — No dose on a day that has not arrived can be marked. A future day's rows are inert on every path — tap, long-press and the assistive-technology actions alike — and carry a neutral `planned` chip so an inert row never reads as a live one. Today is not future: a 21:00 dose stays markable at 10:00
+- [x] **TRACK-06** — Every distinct dose time inside a time block carries its own label; the block label (Ранок / День / Вечір / Ніч) appears once. Doses sharing a minute share a heading, and the accent marks the next time actually due rather than the block's earliest
+
+## Localization (L10N, continued)
+
+- [x] **L10N-05** — The app ships in seven locales: English (the fallback), Ukrainian, Spanish, French, Arabic, Hindi and Chinese (Simplified). Each carries the plural categories CLDR requires of it, every screen renders one numeral system and one clock shape throughout, and the planner draws correctly under right-to-left. Adding an eighth is still one ARB file
 
 **Coverage:**
 
-- v1.2 requirements: 3 total (ONBO-01..03)
-- Mapped to phases: 3 (see ROADMAP.md Phase 8)
+- v1.2 requirements: 8 total (ONBO-01..05, TRACK-05, TRACK-06, L10N-05) — ONBO-04/05 added and ONBO-01 amended 2026-08-31 after the research pass; TRACK-05, TRACK-06 and L10N-05 recorded 2026-09-02 for work that shipped without one
+- Mapped to phases: 8 (see ROADMAP.md phases 8-9)
 - Unmapped: 0 ✓
+
+## v1.2 Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| ONBO-01 | Phase 8 | Complete (amended) |
+| ONBO-02 | Phase 8 | Complete |
+| ONBO-03 | Phase 8 | Complete |
+| ONBO-04 | Phase 8 | Complete |
+| ONBO-05 | Phase 8 | Complete |
+| TRACK-05 | Phase 3, amended in v1.2 | Complete |
+| TRACK-06 | Phase 3, amended in v1.2 | Complete |
+| L10N-05 | Phase 9 | Complete — one eyes-on Arabic RTL pass on a device still outstanding |
+
+*v1.2 requirements defined: 2026-08-26; amended 2026-08-31; extended 2026-09-02*

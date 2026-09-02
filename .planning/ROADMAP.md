@@ -4,6 +4,8 @@
 
 Boostque ships as five phases moving from a themed, localized, database-backed app skeleton to the complete daily supplement-tracking loop. Phase 1 builds the foundation everything else depends on (project shell, DST-safe cycle math, sync-ready local database) without yet exposing any tracked feature. Phase 2 lets a user build their supplement stack and configure regimens. Phase 3 delivers the core value — today's doses, grouped and checkable, correct across cycle boundaries — and is where the full plan-see-mark-taken loop first runs end-to-end on both iOS and Android. Phase 4 adds the Cycles gantt and Year matrix, the product's structural differentiator, once there's real regimen data to visualize. Phase 5 closes the loop on localization: verifying every screen built in Phases 2-4 is genuinely bilingual and wiring the in-app language override. Toolchain setup (CocoaPods/Java/Android SDK) is already complete and is not part of this roadmap.
 
+That is v1. Two milestones follow it, each with its own section below: v1.1 (Phases 6-7 — shell simplification and dose reminders) and v1.2 (Phases 8-9 — onboarding, then five more languages and the pre-release test gate).
+
 ## Phases
 
 **Phase Numbering:**
@@ -97,6 +99,12 @@ Plans:
 
 **UI hint**: yes
 
+**Amended in v1.2** (2026-09-01, no plan — direct commits): a future day now
+refuses every mark, on the tap path and the assistive-technology path alike
+(TRACK-05, `9fc0d69`), and each distinct dose time inside a block carries its
+own label with the accent on the next time actually due rather than the block's
+earliest (TRACK-06, `d0097a3`).
+
 ### Phase 4: Planner Views
 
 **Goal**: A user can see the shape of their supplement schedule over time — overlapping cycles, concurrent load, and a full year of coverage — framed as an editorial tracking aid, never medical guidance.
@@ -120,6 +128,13 @@ Plans:
 - [x] 04-05-PLAN.md — Phase-close invariants: text-scale matrix, assistive-tech activation, read-only + PLAN-04 gates (wave 5)
 
 **UI hint**: yes
+
+**Amended in v1.2** (2026-09-01, owner change, `fc7bfd3`): the Цикли window is
+now `[first of LAST month, +4 months)` — same four-month width, band shifted
+back one month. A window opening at today's month draws a cycle with no
+history: on the 2nd of a month the break the user has just come out of sits one
+pixel off the left edge. Today is now strictly inside the band, and a January
+clock opens the window in the previous year.
 
 ### Phase 5: Localization & Settings
 
@@ -166,7 +181,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 Spec: `docs/superpowers/specs/2026-08-17-boostque-v1.1-design.md`
 
 - [x] **Phase 6: Shell & Simplification** - Slim three-tab navigation with settings moved out, a floating add button everywhere, and the editorial substance limit removed
-- [ ] **Phase 7: Dose Reminders** - Local notifications on iOS and Android, grouped per time-of-day, correct across cycles, DST and platform limits
+- [~] **Phase 7: Dose Reminders** - Local notifications on iOS and Android, grouped per time-of-day, correct across cycles, DST and platform limits (all six plans executed 2026-08-17; the device pass is unfinished, so the phase is not closed)
 
 ### Phase 6: Shell & Simplification
 
@@ -210,12 +225,19 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Tracer: both platforms build with the three packages, the pure plan and the timezone boundary, the plugin behind a mockable seam, one real notification on the wire (wave 1)
-- [ ] 07-02-PLAN.md — The pure plan complete: the daily-repeat tier, a budget that cannot drop a repeat, and reconcile (wave 2)
-- [ ] 07-03-PLAN.md — Tab index lifted into Riverpod; a tapped reminder opens Сьогодні, warm and on frame 1 from cold (wave 2)
-- [ ] 07-04-PLAN.md — Localized copy with its plural forms and length budgets, and one debounced sync over six triggers (wave 3)
-- [ ] 07-05-PLAN.md — Permission asked once at first save, and the Settings state row with its route to the OS settings (wave 4)
-- [ ] 07-06-PLAN.md — Phase-close absence gates, the behavioural privacy and budget proofs, the device pass (wave 5)
+- [x] 07-01-PLAN.md — Tracer: both platforms build with the three packages, the pure plan and the timezone boundary, the plugin behind a mockable seam, one real notification on the wire (wave 1)
+- [x] 07-02-PLAN.md — The pure plan complete: the daily-repeat tier, a budget that cannot drop a repeat, and reconcile (wave 2)
+- [x] 07-03-PLAN.md — Tab index lifted into Riverpod; a tapped reminder opens Сьогодні, warm and on frame 1 from cold (wave 2)
+- [x] 07-04-PLAN.md — Localized copy with its plural forms and length budgets, and one debounced sync over six triggers (wave 3)
+- [x] 07-05-PLAN.md — Permission asked once at first save, and the Settings state row with its route to the OS settings (wave 4)
+- [x] 07-06-PLAN.md — Phase-close absence gates, the behavioural privacy and budget proofs, the device pass (wave 5)
+
+**Not closed.** Every plan executed and every automated gate is green, but
+criterion 1 (a reminder actually arrives) and criterion 5's "observed once on
+each platform" are device-only and unfinished: Android's automated half passed
+on emulator-5554 — the OS was seen holding a request the app derived — while the
+iOS half is blocked on a human tapping **Allow**, which has no shell equivalent.
+`.planning/phases/07-dose-reminders/07-UAT.md` is the live record.
 
 **UI hint**: yes
 
@@ -224,36 +246,84 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 6. Shell & Simplification | 6/6 | Complete — verified 5/5, 13/13 review findings fixed | 2026-08-17 |
-| 7. Dose Reminders | 0/6 | Planned — 6 plans across 5 waves | - |
+| 7. Dose Reminders | 6/6 | Executed — automated gates green, device pass unfinished | - |
 
 ---
 
 # Milestone v1.2
 
 Spec: `docs/superpowers/specs/2026-08-26-boostque-onboarding-design.md`
+(its D-1 and *Screens* sections superseded 2026-08-31 — see that file's
+*What shipped* section)
 
-- [x] **Phase 8: Onboarding** - A two-page first-launch intro (daily loop, cycle idea) gated on a persisted seen-flag, handing off into the existing add-supplement sheet
+- [x] **Phase 8: Onboarding** - A two-page first-launch intro (the daily loop, then what the calendar answers) plus one-time inline hints where their subject lives, gated on a persisted seen-flag, restorable from Settings
+- [x] **Phase 9: Languages & the Release Gate** - Five more languages behind the same one-ARB-file contract, the cross-locale defects that only bite once a third language ships, and a pre-production test gate that sweeps all of them
 
 ### Phase 8: Onboarding
 
-**Goal**: A first-time user is told what the app is and what a cycle means, then lands directly in adding their first supplement — once, skippably, and never at the cost of launch reliability.
+**Goal**: A first-time user is told what the app is and what the calendar is for, then lands directly in adding their first supplement — and everything else is explained at the moment its subject first appears, not before.
 **Depends on**: Phase 6 (shell, add sheet); independent of Phase 7
-**Requirements**: ONBO-01, ONBO-02, ONBO-03
+**Requirements**: ONBO-01, ONBO-02, ONBO-03, ONBO-04, ONBO-05
 **Success Criteria** (what must be TRUE):
 
-  1. A fresh install shows the two-page intro before the shell; every later launch goes straight to the shell
+  1. A fresh install shows the two-page intro before the shell — page 1 the daily loop, page 2 what the Календар answers; every later launch goes straight to the shell
   2. Skip works from either page; the final CTA opens the add-supplement sheet exactly once, through the same entry point as the FAB
-  3. An unopenable prefs store, a corrupt stored value, or a failed write never traps the user in onboarding and never blocks launch (seen-wins degradation)
-  4. Both pages render clean in uk and en at text scale 1.0/1.6/2.0; onboarding copy sits under the same forbidden-vocabulary gate as planner copy; illustrations are token-built with no bundled assets
-  5. `main()` still performs exactly two awaits before runApp — both launch gates stay green
+  3. An unopenable prefs store, a corrupt stored value, or a failed write never traps the user in onboarding and never blocks launch (seen-wins degradation) — and the hint store degrades the same way, to "everything already dismissed"
+  4. The cycle idea is explained inside the regimen editor's schedule panel while a cyclic schedule is on screen, and marking a dose is explained on Сьогодні only on a day that has doses. Both are inline cards: nothing is dimmed, blocked or focus-stolen, and one tap dismisses for good
+  5. Settings restores the intro and every hint, in every build, writing nothing but the two first-run keys
+  6. Both pages and both hints render clean in uk and en at text scale 1.0/1.6/2.0; onboarding and hint copy sit under the same forbidden-vocabulary gate as planner copy; illustrations are token-built with no bundled assets
+  7. `main()` still performs exactly two awaits before runApp — both launch gates stay green
 
-**Plans**: 1 plan (superpowers flow: spec -> plan -> inline TDD execution)
+**Amended mid-phase, 2026-08-31.** The two explain screens of the spec's D-1
+were built (`056ccf0`..`6d6f512`), then read against the research: NN/g's
+70-participant test found an intro deck left participants rating the *same*
+tasks harder — 4.92 against 5.49 of 7 — with no gain in task success or speed,
+and coach marks fired at session start fail the same way, because the
+explanation arrives before the user has any use for it. The owner chose path A:
+no overlays, no spotlight, no blocking. Criteria 4 and 5 above are new;
+criterion 1 changed because the cycle page left the intro (`677b582`) and a
+calendar page took its place (`b49f4e7`) — a hint on Календар can only fire
+after the user has already opened Календар, so that one question is the thing
+only an intro can answer.
+
+**Plans**: 1 plan (superpowers flow: spec -> plan -> inline TDD execution), then the redesign as direct commits
 
 Plans:
 - [x] docs/superpowers/plans/2026-08-31-onboarding.md — controller, copy, illustrations, screen, gate, main() wiring
+
+### Phase 9: Languages & the Release Gate
+
+**Goal**: The app ships in seven languages without a ragged screen anywhere, and the checks that prove it run before a production build instead of on every edit.
+**Depends on**: Phase 5 (the one-ARB-file contract), Phase 8 (onboarding and hint copy are part of the swept surface)
+**Requirements**: L10N-05 (and the standing L10N-01..04 contract, re-proved across seven locales)
+**Success Criteria** (what must be TRUE):
+
+  1. The app resolves and renders en (the fallback), uk, es, fr, ar, hi and zh, each ARB fully translated, with no code change required by any of them
+  2. Each locale carries the plural categories CLDR actually requires of it — the derived gate sees Arabic's `zero` and `two`, and Chinese's lone `other`, rather than reporting whatever `Intl.plural`'s explicit-number shortcut falls back to
+  3. No screen mixes numeral systems: every int placeholder formats through `decimalPattern`, so a ring's visible counter and its accessibility label agree in Arabic-Indic digits
+  4. Every clock the app or a notification prints has the same shape in every locale — zero-padded 24-hour, pinned in one place rather than asked of CLDR, which gives Spanish `H:mm` and everyone else `HH:mm`
+  5. The Cycles gantt draws in the reading direction of the locale
+  6. `flutter test test_release/` sweeps the planner/onboarding/hint surface in all shipped locales against per-language forbidden-vocabulary stem lists, and renders every main screen in all of them at text scale 1.0/1.6/2.0 with Arabic under real RTL — while a bare `flutter test` stays exactly as fast and as uk+en as it was
+
+**Plans**: none — shipped as direct commits (`2e0e6d4`, `0061e4c`, `abf8bd8`, `0d65a35`, `d3d286d`, `89a6084`, `92ee39b`)
+
+**Five of the nine new languages shipped.** The gates were hardened against
+nine (`d3d286d`); Portuguese, Russian, Bengali and Urdu were then cut mid-flight
+(owner, 2026-09-01). Their forbidden-vocabulary stem lists were captured but
+their ARB files were never written, so nothing of them is in the repository.
+Seven locales ship — six languages besides English, which is the owner's own
+count of it — and the locale list is derived from `lib/core/l10n/arb/`, so an
+eighth is swept the day its ARB lands.
+
+**No new fonts were bundled**, and that is a decision rather than an omission.
+Instrument Sans covers 343 codepoints, Latin only — it has no Cyrillic, so
+Ukrainian has always rendered through the platform's own font, which is exactly
+how the approved mockup renders it too. The new scripts do the same. Bundling
+CJK alone would add 10+ MB to the app for one language.
 
 ## v1.2 Progress
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 8. Onboarding | 1/1 | Complete — full suite green, device pass pending | 2026-08-31 |
+| 8. Onboarding | 1/1 | Complete — redesigned mid-phase (path A); full suite green | 2026-08-31 |
+| 9. Languages & the Release Gate | n/a (direct commits) | Complete — one eyes-on Arabic RTL device pass still outstanding | 2026-09-01 |
