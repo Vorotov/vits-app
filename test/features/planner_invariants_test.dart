@@ -152,8 +152,8 @@ void main() {
         '6, T-04-21, the WR-06 lesson)', () {
       const forbidden = <String, String>{
         'dayDosesProvider': 'the MATERIALIZING day provider — reading it once '
-            'per rendered day would write a log row per slot per day across a '
-            '122-day window (WR-06 at pager scale)',
+            'per rendered day would write a log row per slot per day across '
+            'a four-month window (WR-06 at pager scale)',
         'dayDosesReadOnlyProvider': 'even the read-only day provider is out of '
             'bounds: the planner projects from `isActiveOn`, and a second '
             'source of daily truth is how the two screens start disagreeing',

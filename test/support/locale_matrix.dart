@@ -50,13 +50,7 @@ const String cyrillicLeakReason =
 ///    every shipped language in its OWN script (`languageName`, P-2), so the
 ///    Ukrainian row reads "Українська" no matter which language is active;
 ///    translating it would defeat the point of an endonym.
-/// 2. `Русский` — the same rule, for Russian. Correct copy, not a leak: once
-///    `app_ru.arb` ships, any English-locale test that renders the picker sees
-///    this row in Cyrillic and would trip the sweep on a string that is right.
-///    Listed for the endonym reason ONLY — a Russian message anywhere outside
-///    the picker is still a leak, and the sweep still catches it, because
-///    matching is whole-string.
-const List<String> cyrillicAllowlist = <String>['Українська', 'Русский'];
+const List<String> cyrillicAllowlist = <String>['Українська'];
 
 /// The text scales every render matrix in this repository sweeps.
 ///
@@ -102,7 +96,7 @@ final RegExp _cyrillic = RegExp(r'[Ѐ-ӿ]');
 ///   cheap to catch, not because it is the risk.
 /// * With Russian shipped it can no longer tell a Ukrainian leak from correct
 ///   Russian: both are Cyrillic, the regex is one block, and the allowlist
-///   matches whole strings, so `Русский` is exempt while a genuine Ukrainian
+///   matches whole strings, so an endonym is exempt while a genuine Ukrainian
 ///   sentence on an English screen and a genuine Russian one are the same
 ///   signal to this code.
 ///

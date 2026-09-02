@@ -260,8 +260,11 @@ void main() {
       final weekSub = container.listen(selectedWeekProvider, (_, _) {});
       addTearDown(weekSub.close);
 
-      // Bucket 0 opens on 27 July, six days before the August window — it is
-      // gone entirely once the window starts in September.
+      // Bucket 0 opens before the window's own first day — the Monday of
+      // the week the band starts in — and is gone entirely once the band
+      // moves on. Dates are not spelled out here because the window has
+      // shifted once already (2026-09-01) and a spelled-out July would be
+      // the third comment to go stale.
       container
           .read(selectedWeekProvider.notifier)
           .select(before.weeks.first.bucket.start);

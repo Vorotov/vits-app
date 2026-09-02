@@ -726,7 +726,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Tap a dose to mark it taken. Press and hold for the other options.';
 
   @override
-  String get debugResetOnboarding => 'Reset intro and hints';
+  String get settingsShowIntroAgain => 'Reset intro and hints';
 
   @override
   String get onboardingPage2Title => 'The calendar sees it all at once';

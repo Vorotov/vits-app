@@ -702,7 +702,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get hintMarkDose => '点按某一项即可标记为已服用。长按可查看其他选项。';
 
   @override
-  String get debugResetOnboarding => '重置引导和提示';
+  String get settingsShowIntroAgain => '重置引导和提示';
 
   @override
   String get onboardingPage2Title => '日历把一切一次看全';

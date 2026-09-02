@@ -729,7 +729,8 @@ class AppLocalizationsEs extends AppLocalizations {
       'Toca una dosis para marcarla como tomada. Mantén pulsado para ver las demás opciones.';
 
   @override
-  String get debugResetOnboarding => 'Restablecer la introducción y las pistas';
+  String get settingsShowIntroAgain =>
+      'Restablecer la introducción y las pistas';
 
   @override
   String get onboardingPage2Title => 'El calendario lo ve todo a la vez';

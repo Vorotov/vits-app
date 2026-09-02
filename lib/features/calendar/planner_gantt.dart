@@ -58,9 +58,9 @@ const double _cardPadBottom = 14;
 
 /// Narrowest a segment may ever paint.
 ///
-/// A one-day run in a 122-day window is 0.82 of a percent — under 3px on a
-/// ~340px track, and rounding can collapse it to nothing at all. A cycle the
-/// user really has must never render as an empty track (PF-6).
+/// A one-day run in a four-month window is about 0.8 of a percent — under 3px
+/// on a ~340px track, and rounding can collapse it to nothing at all. A cycle
+/// the user really has must never render as an empty track (PF-6).
 const double _minSegmentWidth = 2;
 
 /// Gap between the month-label row and the chart (mockup line 301

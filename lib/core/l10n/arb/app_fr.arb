@@ -172,7 +172,7 @@
   "hintDismiss": "J'ai compris",
   "hintCycle": "Un cycle, ce sont des semaines de prise plus un repos. Réglez-les avec les curseurs ci-dessous et l'application calcule quels jours comportent une dose.",
   "hintMarkDose": "Touchez une dose pour la marquer comme prise. Appuyez longuement pour les autres options.",
-  "debugResetOnboarding": "Réinitialiser l'intro et les astuces",
+  "settingsShowIntroAgain": "Réinitialiser l'intro et les astuces",
   "onboardingPage2Title": "Le calendrier voit tout en même temps",
   "onboardingPage2Body": "Le calendrier montre où vous en êtes dans chaque cycle, ce qui se chevauche avec quoi et quand commence le prochain repos.",
   "onboardingIllustrationSemantics2": "Exemple de calendrier : trois compléments dont les semaines de prise se chevauchent en partie",

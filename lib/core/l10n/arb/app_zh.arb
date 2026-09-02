@@ -172,7 +172,7 @@
   "hintDismiss": "知道了",
   "hintCycle": "一个周期由服用的若干周加上一段间歇组成。用下面的滑块设置它们，应用会算出哪些日子需要服用。",
   "hintMarkDose": "点按某一项即可标记为已服用。长按可查看其他选项。",
-  "debugResetOnboarding": "重置引导和提示",
+  "settingsShowIntroAgain": "重置引导和提示",
   "onboardingPage2Title": "日历把一切一次看全",
   "onboardingPage2Body": "日历显示你在每个周期中的位置、哪些内容相互重叠，以及下一段间歇何时开始。",
   "onboardingIllustrationSemantics2": "日历示例：三种补剂的服用周数部分重叠",

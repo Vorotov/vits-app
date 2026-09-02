@@ -1145,11 +1145,11 @@ abstract class AppLocalizations {
   /// **'Tap a dose to mark it taken. Press and hold for the other options.'**
   String get hintMarkDose;
 
-  /// Row in Settings that clears the onboarding seen-flag and every dismissed hint, so they can be seen again. Rendered ONLY in debug builds (kDebugMode) — it exists so the intro can be re-tested on a device without a reinstall, which would delete the user's data. It is localized like any other row because it is a real, visible row in the build that has it
+  /// Row in Settings that clears the onboarding seen-flag and every dismissed hint, so they can be seen again. Ships in EVERY build, debug and release alike. It started as a debug-only testing affordance, but gating it meant the only way to see the intro again on a device was deleting the app, which deletes the user's stack with it. It writes nothing but the two first-run keys: supplements, regimens and intake logs are untouched, so this is not a reset of the app
   ///
   /// In en, this message translates to:
   /// **'Reset intro and hints'**
-  String get debugResetOnboarding;
+  String get settingsShowIntroAgain;
 
   /// Title of onboarding page 2, about the Календар tab. Says what the screen is FOR — seeing the whole plan together — rather than naming the tab
   ///

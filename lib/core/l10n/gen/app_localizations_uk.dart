@@ -744,7 +744,7 @@ class AppLocalizationsUk extends AppLocalizations {
       'Торкніться дози, щоб відмітити прийом. Натисніть і утримуйте, щоб побачити інші варіанти.';
 
   @override
-  String get debugResetOnboarding => 'Скинути вступ і підказки';
+  String get settingsShowIntroAgain => 'Скинути вступ і підказки';
 
   @override
   String get onboardingPage2Title => 'Календар бачить усе разом';

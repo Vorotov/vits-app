@@ -725,7 +725,7 @@ class AppLocalizationsHi extends AppLocalizations {
       'खुराक को लिया हुआ चिह्नित करने के लिए उस पर टैप करें। बाकी विकल्पों के लिए दबाकर रखें।';
 
   @override
-  String get debugResetOnboarding => 'परिचय और संकेत रीसेट करें';
+  String get settingsShowIntroAgain => 'परिचय और संकेत रीसेट करें';
 
   @override
   String get onboardingPage2Title => 'कैलेंडर सब कुछ एक साथ देखता है';

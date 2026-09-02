@@ -415,7 +415,7 @@ class _ShowIntroAgainRow extends ConsumerWidget {
               children: [
                 Expanded(
                   child: Text(
-                    context.l10n.debugResetOnboarding,
+                    context.l10n.settingsShowIntroAgain,
                     style: const TextStyle(fontSize: 15, color: BqColors.ink),
                   ),
                 ),

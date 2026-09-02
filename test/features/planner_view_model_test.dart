@@ -777,7 +777,8 @@ void main() {
 
     test('a regimen starting AFTER the window still contributes month cells '
         'inside the calendar year (E-8)', () {
-      // The window is Aug..Nov 2026; this course starts in December.
+      // The window is Jul..Oct 2026 (it opens a month before today since
+      // the 2026-09-01 shift); this course starts in December, well past it.
       final entry = StackEntry(
         supplement: magnesium,
         regimen: course(

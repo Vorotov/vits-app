@@ -1099,7 +1099,7 @@ void main() {
     /// Every string the language half of this screen renders, derived rather
     /// than transcribed — the set the screen showed BEFORE this plan.
     ///
-    /// [l10n.debugResetOnboarding] is in the set because the show-intro-again
+    /// [l10n.settingsShowIntroAgain] is in the set because the show-intro-again
     /// row ships in every build. Naming it here is what keeps the assertion
     /// EXACT rather than loosened to a superset — the point of this test is
     /// that the reminders section adds nothing while its answer is unknown,
@@ -1111,7 +1111,7 @@ void main() {
           for (final locale in AppLocalizations.supportedLocales)
             lookupAppLocalizations(locale).languageName,
           '✓',
-          l10n.debugResetOnboarding,
+          l10n.settingsShowIntroAgain,
         };
 
     testWidgets(

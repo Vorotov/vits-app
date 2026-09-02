@@ -726,7 +726,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Touchez une dose pour la marquer comme prise. Appuyez longuement pour les autres options.';
 
   @override
-  String get debugResetOnboarding => 'Réinitialiser l\'intro et les astuces';
+  String get settingsShowIntroAgain => 'Réinitialiser l\'intro et les astuces';
 
   @override
   String get onboardingPage2Title => 'Le calendrier voit tout en même temps';

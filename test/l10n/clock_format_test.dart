@@ -30,6 +30,17 @@ void main() {
 
   /// Midnight, a single-digit morning hour, and the last minute of the day —
   /// the three places a padding or wrap bug shows up.
+  ///
+  /// The expectations are ASCII, and that is an assumption worth naming
+  /// rather than a claim about every language: all seven SHIPPED locales
+  /// default to Latin digits in CLDR, so `formatClockIn` returns ASCII for
+  /// each of them today. `clock_format.dart` deliberately keeps the locale in
+  /// play so a language whose default numbering system is not Latin renders
+  /// its own digits — `ar_EG`, `fa` and `bn` are the obvious ones. Adding any
+  /// of those turns these cases red, and that redness is the DESIGN QUESTION
+  /// surfacing ("do our times read in local digits?"), not a defect to be
+  /// patched away. Answer it, then split this into a shape assertion and a
+  /// per-locale digit assertion.
   const cases = <int, String>{0: '00:00', 480: '08:00', 1439: '23:59'};
 
   group('formatClockIn', () {

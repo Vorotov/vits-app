@@ -759,7 +759,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'المس الجرعة لتسجيل تناولها. اضغط مطولًا لبقية الخيارات.';
 
   @override
-  String get debugResetOnboarding => 'إعادة ضبط المقدمة والتلميحات';
+  String get settingsShowIntroAgain => 'إعادة ضبط المقدمة والتلميحات';
 
   @override
   String get onboardingPage2Title => 'التقويم يرى كل شيء دفعة واحدة';

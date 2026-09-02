@@ -10,6 +10,7 @@
 library;
 
 import 'package:boostque/core/domain/cycle_math.dart';
+import 'package:boostque/features/calendar/planner_view_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -25,14 +26,18 @@ void main() {
       expect(w.endExclusive, DateTime.utc(2026, 11, 1));
     });
 
-    test('today is inside the window and never on its first day', () {
-      // The property the whole screen rests on: "you are here" has to fall
-      // strictly inside the drawn band, with a month of history behind it.
+    test('today always has a WHOLE month of band behind it', () {
+      // The property the shift exists for. `start.isBefore(today)` was true
+      // under the old window too, so asserting only that would leave this
+      // test green if the shift were reverted — it has to name the month.
       for (final month in List.generate(12, (i) => i + 1)) {
         final today = DateTime.utc(2027, month, 15);
         final w = plannerWindow(today);
-        expect(w.start.isBefore(today), isTrue, reason: '$today');
+        expect(w.start, addMonths(firstOfMonth(today), -1), reason: '$today');
         expect(w.endExclusive.isAfter(today), isTrue, reason: '$today');
+        // At least 28 days of history, whatever the previous month's length.
+        expect(today.difference(w.start).inDays, greaterThanOrEqualTo(28 + 14),
+            reason: '$today: a full previous month plus the day-of-month');
       }
     });
 
@@ -150,6 +155,47 @@ void main() {
         expect(w.endExclusive.year, 2027,
             reason: 'month $month: the window ends in the next year');
       }
+    });
+  });
+
+  group('month-column fractions — what the labels and gridlines lay out from',
+      () {
+    // Restored after the window shift: this group was dropped when the file's
+    // tail was rewritten, and the only trace was an "unused import" warning
+    // that got silenced instead of investigated. It asserts something the
+    // span sweep above does NOT — that the four columns TILE the window with
+    // no gap, which is what every gridline after a shortfall depends on.
+    for (final year in [2026, 2028]) {
+      for (var month = 1; month <= 12; month++) {
+        test('$month/$year: fractions are positive and sum to 1.0', () {
+          final model =
+              buildCyclesModel(const [], today: DateTime.utc(year, month, 9));
+
+          expect(model.months, hasLength(4));
+          for (final m in model.months) {
+            expect(m.fraction, greaterThan(0),
+                reason: 'a zero-width month column would collapse a label');
+            expect(m.days, greaterThan(0));
+          }
+          expect(
+            model.months.fold<double>(0, (sum, m) => sum + m.fraction),
+            closeTo(1.0, 1e-9),
+            reason: 'the four columns tile the window exactly — a shortfall '
+                'would misplace every gridline after it',
+          );
+        });
+      }
+    }
+
+    test('a leap February column carries 29 days inside the cycles model', () {
+      // The window opened in March 2028 starts in February — the leap month
+      // is a real column, not an edge case reached only by daysInMonth().
+      final model = buildCyclesModel(const [],
+          today: DateTime.utc(2028, 3, 9));
+      final february =
+          model.months.firstWhere((m) => m.month == DateTime.utc(2028, 2, 1));
+      expect(february.days, 29);
+      expect(model.span, 29 + 31 + 30 + 31);
     });
   });
 }
