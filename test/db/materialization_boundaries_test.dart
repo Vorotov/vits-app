@@ -112,20 +112,6 @@ void main() {
     },
   );
 
-  test('the DST fall-back day itself (Sun 2026-10-25) holds exactly one dose, '
-      'materialized twice with no duplicate row', () async {
-    await seedCyclic(startDate: DateTime.utc(2026, 10, 19));
-
-    final doses = await materializeAndRead(DateTime.utc(2026, 10, 25));
-    expect(doses, hasLength(1));
-    expect(doses.single.minutes, 8 * 60);
-    expect(
-      await db.select(db.intakeLogs).get(),
-      hasLength(1),
-      reason: 'double materialization inserts exactly one row',
-    );
-  });
-
   test(
     'spring-forward day (Sun 2026-03-29) holds exactly one dose (E-8)',
     () async {

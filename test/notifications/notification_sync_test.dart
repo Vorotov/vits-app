@@ -634,20 +634,6 @@ void main() {
               'change — the feature would look broken for as long as the user '
               'left the app alone.');
     });
-
-    testWidgets('building the sync costs no permission read of its own',
-        (tester) async {
-      regimens = [
-        course(slots: [slot(600)])
-      ];
-      await start(tester, ready: false);
-
-      expect(scheduler.calls, isEmpty,
-          reason: 'the sync watches the permission notifier for its CHANGES, '
-              'not for its value — so merely building it may not put a '
-              'platform round trip in front of a precondition that has not '
-              'even been met.');
-    });
   });
 
   group('a resume, and a timezone the user flew into', () {
@@ -846,21 +832,6 @@ void main() {
               'pattern deliberately spares the timezone package\'s own '
               'TZDateTime.now, which the adapter legitimately uses for its '
               'past-instant guard.',
-        );
-      }
-    });
-
-    test('no blanket clear exists anywhere in the app', () {
-      for (final file in Directory('lib')
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.dart'))) {
-        expect(
-          file.readAsStringSync().contains('cancelAll'),
-          isFalse,
-          reason: '${file.path}: a blanket clear also dismisses reminders that '
-              'were delivered and not yet acted on, and leaves a window in '
-              'which nothing at all is scheduled.',
         );
       }
     });

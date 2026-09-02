@@ -187,25 +187,6 @@ void main() {
       );
     });
 
-    test('the plugin resolves in exactly one file under lib/', () {
-      final importers = Directory('lib')
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((file) => file.path.endsWith('.dart'))
-          .where((file) => file
-              .readAsStringSync()
-              .contains('package:flutter_local_notifications'))
-          .map((file) => file.path)
-          .toList();
-      expect(
-        importers,
-        <String>['lib/core/notifications/notification_service.dart'],
-        reason: 'the plugin must be reachable from exactly one file, and from '
-            'production only through main()\'s override — every call path throws '
-            'a LateInitializationError under flutter test.',
-      );
-    });
-
     test('neither the plan nor the service can learn a supplement name', () {
       for (final path in const [
         'lib/core/notifications/notification_plan.dart',

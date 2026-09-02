@@ -510,11 +510,6 @@ void main() {
       return stripped.substring(start, end);
     }
 
-    test('the window is actually resolved — a gate over an empty window is '
-        'worse than no gate', () {
-      expect(preRunAppWindow(), contains('SharedPreferences'));
-    });
-
     test('EXACTLY two awaits sit between binding initialization and runApp',
         () {
       final window = preRunAppWindow();

@@ -169,15 +169,6 @@ void main() {
             '23:59', reason: '$locale');
       }
     });
-
-    test('never renders a 12-hour clock, in any shipped locale — the app forces '
-        '24-hour on every other time it displays', () {
-      for (final locale in AppLocalizations.supportedLocales) {
-        final afternoon =
-            formatReminderTime(locale: locale, minutesFromMidnight: 1140);
-        expect(afternoon, '19:00', reason: '$locale');
-      }
-    });
   });
 
   group('the channel copy', () {

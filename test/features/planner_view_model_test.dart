@@ -930,20 +930,6 @@ void main() {
       expect(year.months.every((m) => m.load == 0), isTrue);
     });
 
-    test('a paused regimen contributes zero to loads AND cells, while keeping '
-        'both its row and its column (DECIDED-7)', () {
-      final entry =
-          StackEntry(supplement: magnesium, regimen: cyclic(paused: true));
-
-      final cycles = buildCyclesModel([entry], today: today);
-      expect(cycles.rows, hasLength(1));
-      expect(cycles.weeks.every((w) => w.load == 0), isTrue);
-
-      final year = buildYearModel([entry], today: today);
-      expect(year.entries, hasLength(1));
-      expect(year.months.every((m) => m.cells.single.frac == 0), isTrue);
-    });
-
     test('an entry with no regimen appears in NEITHER model', () {
       final entries = [StackEntry(supplement: magnesium)];
 

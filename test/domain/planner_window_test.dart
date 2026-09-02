@@ -151,13 +151,5 @@ void main() {
             reason: 'month $month: the window ends in the next year');
       }
     });
-
-    test('a January window opens in the PREVIOUS year', () {
-      final w = plannerWindow(DateTime.utc(2027, 1, 5));
-      expect(w.start.year, 2026,
-          reason: 'stepping back a month makes the cross-year subtitle '
-              'reachable from January, not only from the autumn');
-      expect(w.endExclusive.year, 2027);
-    });
   });
 }

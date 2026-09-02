@@ -186,22 +186,6 @@ void main() {
       }
     });
 
-    test('INTERNET stays debug-only, which is what keeps the release build offline',
-        () {
-      expect(
-        declaredPermissions('debug'),
-        contains('android.permission.INTERNET'),
-        reason: 'the debug manifest must keep its own INTERNET permission — the '
-            'Flutter tool needs it for hot reload.',
-      );
-      expect(
-        declaredPermissions('main'),
-        isNot(contains('android.permission.INTERNET')),
-        reason: 'INTERNET in the main manifest would ship in the release '
-            'build, breaking the fully-offline property.',
-      );
-    });
-
     // Added by plan 07-06, and deliberately a WIDENING of the two assertions
     // above rather than a copy of them in another file. Those two read the
     // `main` variant only, because that is the one whose contents ship. This

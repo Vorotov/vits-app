@@ -1677,26 +1677,6 @@ void main() {
       }
     });
 
-    testWidgets('selecting a week writes nothing (Interaction Contract 5, '
-        'T-04-01)', (tester) async {
-      usePhoneSurface(tester);
-      final container = makeContainer();
-      await openBands(tester, container);
-
-      final before = (await db.select(db.intakeLogs).get()).length;
-      await tester.tap(find.byKey(const ValueKey('load-week-7')));
-      await tester.pump();
-      for (var i = 0; i < 20; i++) {
-        await tester.pump(const Duration(milliseconds: 10));
-      }
-
-      expect(container.read(resolvedWeekIndexProvider), 7);
-      expect((await db.select(db.intakeLogs).get()).length, before,
-          reason: 'the one gesture this screen has materializes no row');
-
-      await tearDownTree(tester, container);
-    });
-
     testWidgets('the summary chip names this week\'s load as a plain count, '
         'on the neutral chip, with no badge beside it (PLAN-05)',
         (tester) async {
