@@ -120,21 +120,369 @@ Boostque is a mobile supplement stack planner and tracker for iOS and Android, b
 
 ## Conventions
 
-Conventions not yet established. Will populate as patterns emerge during development.
+Every rule below is one the code actually follows. Where a test enforces it,
+the test is named; where nothing does, it says so. Counts were measured.
+
+### Where a decision is written down
+
+Load-bearing decisions live in **library-level doc comments on the file that
+implements them**, not in a separate document: `lib/core/providers.dart` (the
+Riverpod dispose policy), `lib/core/l10n/clock_format.dart` (why the time
+pattern is pinned), `lib/core/domain/models.dart` (the time-type split),
+`lib/features/onboarding/first_run_hints.dart` (why there is no tour),
+`lib/core/db/database.dart` (the sync-ready column contract). Changing one of
+those behaviours means changing its doc comment in the same commit. Comments
+cite decision ids (D-nn), review findings (CR-nn / WR-nn) and plan numbers —
+keep that habit; it is how a later reader finds the argument.
+
+### Domain and dates
+
+- `lib/core/domain/` (`models.dart`, `cycle_math.dart`, `repositories.dart`)
+  imports nothing outside `dart:core`. No Flutter, no Drift, no I/O.
+- Cycle math is **clock-free**: `isActiveOn(regimen, day)` is handed the day.
+  The one sanctioned wall-clock read in the app is `TodayController.now`
+  (`lib/core/today_controller.dart`, injectable so the midnight rollover is
+  testable at all). Screens read `todayProvider`; nothing calls
+  `DateTime.now()` per build.
+- Date-only values are always `DateTime.utc(y, m, d)` via `dateOnly()`.
+  `dayDosesProvider` and `dayDosesReadOnlyProvider` assert their family key is
+  normalized — a non-normalized key silently forks the cache into a phantom
+  day.
+- Never derive "tomorrow" by adding 24 hours. `nextLocalMidnight()` builds
+  `DateTime(y, m, d + 1)` so a 23- or 25-hour DST day absorbs correctly.
+- Drift stores `DateTime` as ISO-8601 text
+  (`build.yaml: store_date_time_values_as_text: true`) so UTC values read back
+  with `isUtc == true`. Flipping that flag breaks date-only equality
+  everywhere.
+
+### Providers
+
+- Providers are **hand-written** (`Provider`, `StreamProvider`,
+  `NotifierProvider`). There is no `@riverpod` codegen in `lib/`, and neither
+  `riverpod_generator` nor `riverpod_lint` is installed — whatever the stack
+  section above recommends. `build_runner` drives Drift only.
+- The dispose policy is decided once, in `lib/core/providers.dart`'s header:
+  repository and stream providers are app-lifetime (NOT autoDispose);
+  screen-scoped state may be autoDispose. Do not re-litigate it per provider.
+- `sharedPreferencesProvider` is `Provider<SharedPreferences?>` whose body
+  **throws unless overridden**. `main()` overrides it with the instance
+  resolved before `runApp`; every test whose tree reaches it must do the same.
+  The throw is the point — a missed harness fails loudly instead of silently
+  losing the user's language override. The nullable type is also deliberate:
+  `null` means the store could not be opened at all, which must cost the
+  language override and nothing else.
+- Combining two async sources uses an explicit **error → value → loading**
+  precedence evaluated across BOTH sources (`stackEntriesProvider`), never a
+  nested `when`. Riverpod 3 reports a failing stream as an `AsyncLoading` that
+  carries the error, so a nested `when` discards an error sitting in whichever
+  source is evaluated second.
+- A retry path invalidates the **stream** providers, not the derivation
+  (`retryStack`): invalidation propagates to dependents, never to
+  dependencies, so a retry aimed at a derived `Provider` is a button that
+  cannot work.
+
+### Widgets watch STATE, never `.notifier`
+
+Watch `ref.watch(someProvider)` when you render from its value.
+`ref.watch(someProvider.notifier)` rebuilds only when the notifier INSTANCE
+changes, which it does not. This shipped as a real defect: dismissing a
+first-run hint updated the set and left the card on screen. The shape to copy
+is `showsHint(ref.watch(firstRunHintsProvider), BqHint.markDose)` — the set is
+the argument, so the dependency is the thing that actually changes — with
+`.notifier` reached only through `ref.read` to call `dismiss()`.
+
+### Reading untrusted SharedPreferences
+
+One stance, followed by all three stores (`lib/core/l10n/locale_controller.dart`,
+`lib/features/onboarding/first_run_hints.dart`,
+`lib/features/onboarding/onboarding_controller.dart`):
+
+1. Read with `prefs.get(key)` and type-check the result. Never
+   `getString` / `getBool` / `getStringList` — they are unguarded downcasts, so
+   a wrong-typed value throws inside `build()` and parks the provider in a
+   permanent error state that survives restarts.
+2. Sanitize against something DERIVED (the shipped locale tags come from
+   `AppLocalizations.supportedLocales`; hint ids come from the `BqHint` enum).
+   Never pass a stored value through.
+3. Degrade toward the safe direction. An unopenable or corrupt store means
+   "follow the system language" and "every hint already seen" — a hint that
+   cannot be permanently dismissed would reappear forever, which is worse than
+   never showing it.
+4. Writes set in-memory state FIRST and persist after, so the change is on the
+   next frame. A write failure is swallowed, reported via
+   `FlutterError.reportError`, and never surfaced to the user — it costs one
+   launch of amnesia. A `false` return from `setString` / `setStringList` /
+   `remove` is reported exactly like a throw; letting either escape would make
+   an unhandled root-zone error out of a stance whose whole point is silence.
+
+Covered by `test/l10n/locale_controller_test.dart`,
+`test/l10n/cold_start_degradation_test.dart`,
+`test/features/first_run_hints_test.dart`,
+`test/features/onboarding_controller_test.dart`.
+
+### `main()` is gated at exactly two awaits
+
+Only the `SharedPreferences` resolution and the notification launch-details
+read may be awaited between `WidgetsFlutterBinding.ensureInitialized()` and
+`runApp` — both because their answers must exist by frame one. Two tests
+enforce it:
+
+- `test/notifications/notification_routing_test.dart` — "EXACTLY two awaits sit
+  between binding initialization and runApp" counts them.
+- `test/notifications/notification_bootstrap_test.dart` — "no zone load, no
+  plugin initialization and no channel creation appears before the first frame"
+  is a needle gate over the same window.
+
+Neither await may throw out of `main()`: both are wrapped, reported to the
+crash logger and degraded, because an escaping error there means `runApp` is
+never called and the user stares at the launch screen forever.
+
+### i18n
+
+Seven locales ship: **en** (the template ARB, the only file carrying `@`
+metadata, and the fallback), **ar**, **es**, **fr**, **hi**, **uk**, **zh** —
+177 keys each. `preferred-supported-locales: [en]` in `l10n.yaml` is what makes
+English `supportedLocales.first`; without that line gen-l10n sorts
+alphabetically and the fallback moves the day an earlier-sorting ARB lands.
+
+Adding a language is **one ARB file and no code change**. There is no
+`switch (languageCode)` anywhere; the shipped set is derived from the arb
+directory in every representation that names it.
+
+Gates in `test/l10n/`, all on the everyday `flutter test`:
+
+| Gate | File |
+|---|---|
+| Full ARB key parity; metadata in the template only; each language's required plural categories derived from CLDR through `Intl.pluralLogic(useExplicitNumberCases: false)` — Arabic needs all six, Chinese only `other` | `arb_parity_test.dart` |
+| Rendered plural output at 1 / 2 / 5 / 11 / 21 | `plurals_test.dart` |
+| Zero hardcoded user-visible strings in `lib/`: a widget-position gate plus a classification gate over every literal that still has two or more letters once `$interpolations` are stripped | `no_hardcoded_strings_test.dart` |
+| One ARB and no code change: generated list == arb dir == the controller's allowlist == the picker's display names | `new_language_contract_test.dart` |
+| System-locale resolution and the English fallback, asserted on rendered copy rather than on a `Locale` object | `locale_resolution_test.dart` |
+| Casing goes through `bqUpperCase` (Turkish/Azeri dotted-i is the one documented exception to Dart's locale-independent default) | `casing_test.dart` |
+| Ukrainian standalone vs format month names — every planner month stands without a day number, so all of them need the nominative | `month_names_test.dart` |
+| Zero-padded 24-hour clock in every shipped locale, UI and notification body | `clock_format_test.dart` |
+| No safety / interaction / pharmacological vocabulary, and no naming of a limit, threshold or verdict, in planner copy (uk + en) | `planner_copy_safety_test.dart` |
+| The preferences store fails and the app still launches | `cold_start_degradation_test.dart` |
+
+One clock formatter: `formatClock(context, minutes)` and
+`formatClockIn(locale, minutes)` in `lib/core/l10n/clock_format.dart`. The
+pattern `HH:mm` is **pinned, not asked of CLDR**: `alwaysUse24HourFormat` only
+chooses between a locale's 12- and 24-hour patterns, and Spanish's 24-hour
+pattern is `H:mm`, which printed `8:00` beside `08:00` in the same column. The
+locale is still passed, so a language whose numbering system is not Latin
+renders its own digits — the SHAPE is fixed, the script is not.
+
+Int placeholders declare `"format": "decimalPattern"` in the template so a raw
+`$count` cannot put ASCII digits next to `NumberFormat`-rendered Arabic-Indic
+ones on the same screen.
+
+### The release-only gate
+
+```
+flutter test test_release/
+```
+
+Run it before a production build. Nothing else runs it: `flutter test` with no
+arguments reads `test/` only, so the sibling directory IS the mechanism — a
+tag or a config filter could be switched off in one line. 41 tests: the
+medical-vocabulary sweep across all seven languages, and every main screen in
+all seven languages at text scales 1.0 / 1.6 / 2.0, with Arabic under real
+locale-derived RTL (the only whole-screen RTL coverage in the repository).
+Read `test_release/README.md` before touching it; in particular, never turn a
+red cell green by dropping a language, a scale or a vocabulary stem.
+
+### Platform config is asserted, not documented
+
+`test/platform_config_test.dart` pins what nothing else can see: no manifest
+variant opts out of OS backup, the Android main manifest declares **exactly**
+`RECEIVE_BOOT_COMPLETED`, INTERNET is declared by `debug` and `profile` and by
+nothing else, no variant declares an exact-alarm permission, both plugin
+receivers are declared non-exported, core-library desugaring is on with its
+runtime, the iOS notification-centre delegate is wired and `Info.plist` stays
+bare. One test deliberately asserts a **known release blocker** — release
+builds still sign with the debug keystore. When a real keystore is wired up,
+flip that expectation to `isFalse` so the test starts guarding the real config.
+Do not delete it.
+
+### Testing
+
+The suite is **1089 tests in `test/` plus 41 in `test_release/`** (measured, not
+estimated) and `flutter analyze` is clean. Keep both true.
+
+- Widget tests run against a real in-memory Drift database behind the
+  repository providers, seeded through the repositories before the tree pumps.
+  `mocktail` is available and used sparingly; the real database is the house
+  default.
+- **Never `pumpAndSettle` a tree that holds a live timer** — the Today screen's
+  minute ticker, `TodayController`'s midnight `Timer` (which the app shell
+  keeps alive for the whole session), or Drift's retry backoff. It either hangs
+  to `flutter_test`'s 10-minute timeout or waits out the backoff and passes for
+  the wrong reason. Use a bounded loop instead: `pumpUntil(tester, condition,
+  what)` or a fixed `for` of `tester.pump(const Duration(milliseconds: 10))`.
+  `pumpAndSettle` survives in a handful of app-shell and navigation tests only
+  because no such timer is mounted in those trees; that is not permission.
+- **Never `await` a Drift stream subscription's `cancel()`** inside a
+  `testWidgets` body — it deadlocks against the fake-async zone. The house form
+  is `// ignore: unawaited_futures` then `sub.cancel();`, followed by a pump.
+- **Never `await stream.first`** (or any un-pumped Drift future) inside
+  `testWidgets`, for the same reason: observe pump-driven through a `listen`.
+  Plain `test()` bodies are outside the fake-async zone and do await `.first`
+  freely (`test/db/schedule_edit_reconcile_test.dart`).
+- Tear down explicitly: pump an empty tree, pump, `container.dispose()`, pump
+  twice more (`tearDownTree` in `test/features/today_screen_test.dart`). A
+  pending midnight timer otherwise fails the test at teardown.
+- **Seed `SharedPreferences` in any test that pumps `BoostqueApp` or a screen
+  that reads first-run state**:
+  `SharedPreferences.setMockInitialValues({'onboarding_seen': true, ...})`
+  (add `'first_run_hints_seen'` when the screen carries a hint) and override
+  `sharedPreferencesProvider`. Forget it and the intro or a hint card appears
+  in the middle of an unrelated assertion.
+  `test/features/first_run_hints_test.dart` is the one suite that deliberately
+  does NOT seed them away.
+- A new screen gets its bilingual render matrix at textScaler 1.0 / 1.6 / 2.0
+  in the same commit, not after — copy the group shape from
+  `test/features/today_screen_test.dart`. Shared assertion helpers live in
+  `test/support/locale_matrix.dart`, the single deliberate exception to this
+  repo's self-contained-test house style.
+- Source gates strip comments before scanning, so a comment naming a forbidden
+  token cannot trip its own gate. Follow that when you write one.
+- Derive the thing under test (glob the ARB dir, parse the template, probe
+  CLDR) rather than hand-listing it. A hand-list goes stale silently, which is
+  the exact failure mode these gates exist to prevent.
+
+### Design and UI
+
+Anything user-visible goes through the `boostque-design` skill
+(`.claude/skills/boostque-design/SKILL.md`): token-only colour, ARB-only copy,
+directional padding, the copy constraints that carry liability. Load it before
+writing a widget.
 <!-- GSD:conventions-end -->
 
 <!-- GSD:architecture-start source:ARCHITECTURE.md -->
 
 ## Architecture
 
-Architecture not yet mapped. Follow existing patterns found in the codebase.
+### Layout
+
+```
+lib/
+  main.dart                  entrypoint: the two-await pre-runApp window, the provider
+                             overrides, MaterialApp, and the onboarding gate as `home`
+  app_shell.dart             bottom-nav shell (Стек / Сьогодні / Календар); Settings is a
+                             PUSHED route behind the gear, never a destination
+  core/
+    domain/                  PURE Dart — models.dart, cycle_math.dart, and the three
+                             repository INTERFACES in repositories.dart
+    db/                      database.dart (Drift schema) + drift_repositories.dart
+    providers.dart           the Riverpod graph: db, three repositories, the two streams,
+                             the derived stack list, day materialization
+    today_controller.dart    the app's single calendar clock (midnight Timer + resume)
+    selected_tab_controller.dart
+    l10n/                    arb/ (7 files), gen/ (generated — never hand-edit),
+                             l10n.dart, locale_controller.dart, clock_format.dart,
+                             casing.dart
+    theme/                   tokens.dart (the ONLY file with hex literals) + theme.dart
+    widgets/                 BqNavBar, BqAddFab, BqSegmented, BqSettingsGearRow, BqHintCard
+    notifications/           plan, scheduler, service, sync, copy, permission, locale
+                             observer, tz conversion, providers
+  features/
+    stack/                   stack list, add-supplement sheet, catalog, regimen editor
+    calendar/                today screen, week strip, dose row/sheet, and the planner
+                             (gantt, year grid, load chart, week/month detail)
+    onboarding/              two-page intro + gate, one-time contextual hints
+    settings/                settings screen, language picker
+```
+
+**Dependency rule:** `features/` may import `core/`; `core/` may never import
+`features/`. `todayProvider` lives in `core/` precisely because two features
+consume it. UI and state code depend only on the interfaces in
+`core/domain/repositories.dart`; the Drift implementations are wired in
+`core/providers.dart` and nowhere else, which is what keeps a future backend
+possible without touching a screen.
+
+### Data flow
+
+One direction, no imperative refresh anywhere:
+
+```
+Drift watch*() streams
+  → SupplementRepository / RegimenRepository / IntakeRepository (interfaces)
+    → supplementsStreamProvider, regimensStreamProvider
+      → derived providers (stackEntriesProvider, dayDosesProvider, the planner
+        window providers)
+        → widgets
+```
+
+A regimen add / edit / pause / resume / delete re-emits on the regimens stream,
+and every dependent re-runs — including the day materialization, so the day
+rebuilds itself.
+
+### Persistence contract (sync-ready)
+
+Every table mixes in `SyncColumns`: a TEXT UUID primary key generated by the
+repository (`Uuid().v4()`, never a database default), `createdAt` / `updatedAt`
+true-UTC instants supplied explicitly by the writer, and a nullable `deletedAt`
+for soft deletes. No auto-increment keys, no hard deletes. Every list query
+orders by `createdAt` ascending with `id` as the lexicographic tiebreak — the
+same rule that is already documented as the future last-write-wins sync
+tiebreak. The schema is versioned under `drift_schemas/`. The database opens
+through `drift_flutter`'s `driftDatabase(name:)` so it lands in the OS-backed
+application-documents directory; that placement is what DATA-02's
+"survives a reinstall via device backup" guarantee rests on, and
+`test/platform_config_test.dart` asserts it.
+
+### Materialization
+
+`dayDosesProvider` is the single choke point: the ONLY production caller of
+`ensureLogsForDay` (an idempotent insert-or-ignore, so re-running it on every
+rebuild is free) and the only consumer of `watchDay`. `dayDosesReadOnlyProvider`
+exists so the week strip's 4px dot can read the same rows without creating
+them — reading that dot through the materializing provider once made a cosmetic
+detail the app's biggest writer, growing the database with pager travel rather
+than with user intent.
+
+### Notifications
+
+Local only. No network client, no serialization package, no endpoint anywhere
+in the app — the release manifest carries no INTERNET permission and
+`test/platform_config_test.dart` keeps it that way. `main()` reads the launch
+payload before the first frame and does nothing else notification-shaped; the
+timezone database load, the plugin's `initialize()` and the channel creation all
+sit behind the first frame, started by `notificationBootstrapProvider`.
+`BoostqueApp` watches that provider and `notificationSyncProvider` purely to
+keep them alive — an unlistened provider is PAUSED in this Riverpod version, so
+without the watch production would silently schedule nothing with every test
+still green. Scheduling uses `inexactAllowWhileIdle`: no exact-alarm
+permission, roughly 10–15 minutes of doze jitter accepted as a stated cost,
+which is why the reminder body restates the scheduled time.
+
+### Locale resolution
+
+`MaterialApp` resolves the locale from `AppLocalizations.supportedLocales`; the
+app deliberately passes **no** `localeResolutionCallback` (a hand-rolled one
+sees only the first entry of the device's ordered preference list).
+`localeControllerProvider` supplies the manual override, seeded synchronously
+so a stored language is on frame one. `NotificationLocaleObserver` sits in
+`MaterialApp.builder` — inside the localizations it observes and wrapping every
+route — so notification copy is built in the locale the UI is ACTUALLY
+rendering, observed rather than re-derived.
+
+### Design system
+
+The visual language is transcribed from the approved mockup
+(`claude_design_mockup/Boostque v0.1.dc.html`) into `lib/core/theme/tokens.dart`,
+which is the only file in the app permitted a hex literal; `theme.dart` is built
+exclusively from it. The full set of rules — including the ones a test enforces
+— is the `boostque-design` skill.
 <!-- GSD:architecture-end -->
 
 <!-- GSD:skills-start source:skills/ -->
 
 ## Project Skills
 
-No project skills found. Add skills to any of: `.claude/skills/`, `.agents/skills/`, `.cursor/skills/`, `.github/skills/`, or `.codex/skills/` with a `SKILL.md` index file.
+- **boostque-design** (`.claude/skills/boostque-design/SKILL.md`) — the design
+  system, the machine-enforced UI rules, and the copy constraints that carry
+  liability. Load it before writing or editing ANY user-visible Flutter UI.
 <!-- GSD:skills-end -->
 
 <!-- GSD:workflow-start source:GSD defaults -->
