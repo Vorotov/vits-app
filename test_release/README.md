@@ -1,6 +1,6 @@
 # `test_release/` — the pre-release gate
 
-Two checks that are worth running, and are not worth running on every edit.
+Three checks that are worth running, and are not worth running on every edit.
 
 ```
 flutter test test_release/
@@ -8,7 +8,7 @@ flutter test test_release/
 
 Run it **before a production build**. Nothing else runs it.
 
-## Why these two are not in `test/`
+## Why these are not in `test/`
 
 `flutter test` with no arguments runs `test/` and nothing else, so this
 directory is skipped by construction on the everyday loop — and picked up by
@@ -34,6 +34,14 @@ not a signal anyone should get mid-edit.
 The locale list is derived from `lib/core/l10n/arb/`, so an eighth language is
 swept the day its ARB lands. Its stem list is not derivable — a separate test
 here says so out loud when one is missing.
+
+**`legal_copy_safety_test.dart`** — the same idea over the published legal
+documents, `docs/legal/privacy.md` and `docs/legal/terms.md`: no health or
+medical vocabulary in any phrasing, and only known placeholders. The set of
+documents is derived (every undated `.md` in `docs/legal/`), so a research
+note keeps its date prefix or it gets swept. Its stem list is deliberately
+not the ARB gate's limit vocabulary: "limitation of liability" is legal
+English, not a dose claim.
 
 **`locale_matrix_all_test.dart`** — every main screen, in all seven languages,
 at text scales 1.0 / 1.6 / 2.0: Stack, Today, the planner in both segments

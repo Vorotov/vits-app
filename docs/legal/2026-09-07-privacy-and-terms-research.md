@@ -770,6 +770,16 @@ Both documents
 
 ## 9. Open decisions
 
+Decided 2026-09-07: (1) and (2) left out of the published text, to be added
+in the release that ships the SDK or the paywall; (3) governing law omitted
+for now, marked by an HTML comment in `terms.md`, to be added with the
+entity; (4) kept as "ask someone qualified when you are unsure", with the
+label and "any advice you have been given" carrying the deference; (5) 18
+everywhere; (6) "an independent team"; (7) English only. The drafts are
+`docs/legal/privacy.md` and `docs/legal/terms.md`; the gate is
+`test_release/legal_copy_safety_test.dart`. The original questions follow
+for the record.
+
 1. Subscription section: leave it out entirely (the app has none), or
    include Pawmi §11 in "may offer" form now. Recommendation: leave it out.
    A subscription section in a free app invites store review questions and

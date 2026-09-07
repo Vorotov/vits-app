@@ -217,6 +217,8 @@ Items acknowledged and carried forward rather than done:
 | Planner | Gantt label truncation at 14px week columns | Accepted for v1; measurements in `04-UAT.md` | 2026-08-16 |
 | Scheduling | FREQ-01 — weekly-rhythm dosing ("Mon/Thu", N times per week) | v2 backlog | 2026-08-31 |
 | Data | EXPT-01 — export/import | v2 backlog, early fast-follow | 2026-08-14 |
+| Legal | LEGAL-01 — the release that adds analytics, crash reporting or a subscription must extend `docs/legal/privacy.md` + `terms.md` (clause bank in `docs/legal/2026-09-07-privacy-and-terms-research.md` §7) and update both store privacy labels in the same release | Standing; blocks any SDK addition | 2026-09-07 |
+| Legal | Governing law and forum absent from `terms.md`; placeholders for name, email, website, nominal liability sum | Owner-only; add with the legal entity | 2026-09-07 |
 | Review | 6 Info-level review findings and 4 lower-severity security items | Documented, deliberately unfixed; none affect correctness or privacy | 2026-08-16 |
 
 ## Session Continuity
