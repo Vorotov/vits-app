@@ -41,8 +41,8 @@ see it, and we cannot recover it for you.
 
 Your device's backup may include the App's data. On iOS that is iCloud
 Backup; on Android it is Google's backup service. Those backups are governed
-by Apple's and Google's terms and by your device settings, not by this
-policy, and you control them in your device settings.
+by Apple's and Google's terms, not by this policy, and you control them in
+your device settings.
 
 ## What we receive
 
@@ -55,9 +55,9 @@ name or contact details and are collected under Apple's and Google's own
 terms.
 
 From you, if you write to us: the address you write from and whatever you
-put in the message. We use it only to answer you, on the basis of our
-legitimate interest in answering the people who write to us, and we keep it
-only as long as it takes to resolve the question and any follow-up.
+put in the message. We use it only to answer you. Our legal basis is our
+legitimate interest in replying to people who write to us. We keep the
+message as long as it takes to resolve the question and any follow-up.
 
 From the Website: [WEBSITE_DATA: state here whether the Website sets cookies
 or uses analytics; if it does neither, say "The Website sets no cookies and
@@ -90,9 +90,9 @@ California's CCPA/CPRA and comparable laws in other states), and with other
 local privacy laws that apply where our users are located.
 
 Because the App keeps your data on your device and we hold none of it, you
-exercise most rights yourself, directly in the App. You can view and edit
-every entry. You can delete an entry, or delete the App to remove everything
-it stores; remove the device backup too if you do not want a copy there. Your
+exercise most rights yourself, directly in the App: view and edit every
+entry, delete one, or delete the App to remove everything it stores. Remove
+the device backup too if you do not want a copy there. Your
 data sits in the App's private storage on your device, and the App does not
 yet have an export feature.
 

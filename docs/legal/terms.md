@@ -32,7 +32,7 @@ you are responsible for their use.
 ## 3. What the App is, and what it is not
 
 The App is a planning and tracking tool. It records what you decide to take,
-when you decide to take it, and whether you marked it as taken.
+when, and whether you marked it as taken.
 
 The App does not give advice of any kind. It does not suggest what to take,
 how much, how often, or whether to take anything at all. The catalog exists
