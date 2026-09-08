@@ -74,10 +74,8 @@ const legalAllowlist = <String>[
 const knownPlaceholders = <String>{
   '[APP_NAME]',
   '[CONTACT_EMAIL]',
-  '[WEBSITE_URL]',
   '[LAST_UPDATED]',
   '[NOMINAL_SUM]',
-  '[WEBSITE_DATA]',
 };
 
 final _datePrefix = RegExp(r'^\d{4}-\d{2}-\d{2}');

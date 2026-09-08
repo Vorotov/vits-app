@@ -12,10 +12,9 @@ what happens if that changes.
 
 This policy covers:
 
-- the [APP_NAME] mobile app on iOS and Android (the "App");
-- the website at [WEBSITE_URL] (the "Website"); and
-- the support address [CONTACT_EMAIL] (together with the App and the Website,
-  the "Services").
+- the [APP_NAME] mobile app on iOS and Android (the "App"); and
+- the support address [CONTACT_EMAIL] (together with the App, the
+  "Services").
 
 ## The short version
 
@@ -58,10 +57,6 @@ From you, if you write to us: the address you write from and whatever you
 put in the message. We use it only to answer you. Our legal basis is our
 legitimate interest in replying to people who write to us. We keep the
 message as long as it takes to resolve the question and any follow-up.
-
-From the Website: [WEBSITE_DATA: state here whether the Website sets cookies
-or uses analytics; if it does neither, say "The Website sets no cookies and
-uses no analytics."]
 
 ## What we do not do
 
@@ -118,9 +113,8 @@ us personal data, write to [CONTACT_EMAIL] and we will delete it.
 
 The App is distributed through the Apple App Store and Google Play, which
 have their own privacy policies covering what they collect when you download
-and update apps. The Website may link to third-party sites. Those services
-are governed by their own policies, not this one, and we are not responsible
-for them.
+and update apps. Those stores are governed by their own policies, not this
+one, and we are not responsible for them.
 
 ## Security
 
@@ -139,8 +133,8 @@ transfers.
 ## Changes to this policy
 
 When this policy changes, we update the date at the top. For changes that
-matter, we also show a notice in the App or on the Website, and where the law
-requires it we ask for your consent. If we ever add a service that receives
+matter, we also show a notice in the App, and where the law requires it we
+ask for your consent. If we ever add a service that receives
 data from the App, this policy and the App's store listings change in the
 same release, before that version ships.
 

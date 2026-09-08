@@ -10,10 +10,9 @@ individuals working from different countries (the "[APP_NAME] team", "we",
 "us", "our"). These Terms of Use (the "Terms") govern your access to and use
 of:
 
-- the [APP_NAME] mobile app on iOS and Android (the "App");
-- the website at [WEBSITE_URL] (the "Website"); and
-- any related support channels and content (together with the App and the
-  Website, the "Services").
+- the [APP_NAME] mobile app on iOS and Android (the "App"); and
+- any related support channels and content (together with the App, the
+  "Services").
 
 Please read these Terms before using the Services. By downloading,
 installing, accessing or otherwise using any part of the Services, you agree
@@ -64,7 +63,7 @@ tracking your own intake. You must not:
 
 - use the Services in any way that violates applicable law or regulation;
 - interfere with, disrupt, overload, or attempt to gain unauthorised access
-  to the Services or the systems behind the Website;
+  to the Services;
 - reverse engineer, decompile or attempt to extract the source code of the
   App, except where such restriction is prohibited by law;
 - use the Services to develop or train a competing product or service, or
@@ -92,8 +91,8 @@ team or our licensors.
 
 Subject to your compliance with these Terms, we grant you a limited,
 personal, non-exclusive, non-transferable, revocable licence to install and
-use the App on devices you own or control, and to use the Website, solely
-for your personal, non-commercial use.
+use the App on devices you own or control, solely for your personal,
+non-commercial use.
 
 You may not copy, modify, distribute, sell, lease, or create derivative works
 based on the Services or any part of them. All third-party trademarks shown
@@ -156,7 +155,7 @@ For the rights you have over the little we do hold, see the Privacy Policy.
 We may modify, update, suspend or discontinue any part of the Services, with
 or without notice, and we may update these Terms. When we make material
 changes to these Terms we update the "Last updated" date and, where
-appropriate, show a notice in the App or on the Website. Changes that affect
+appropriate, show a notice in the App. Changes that affect
 your rights take effect no less than 14 days after we give notice, or 30
 days where the law requires a longer period. Your continued use of the
 Services after updated Terms take effect constitutes acceptance. If you do
@@ -251,9 +250,8 @@ with a merger, acquisition, reorganisation or sale of the Services.
   of it.
 - Force majeure. We are not liable for delays or failures caused by events
   beyond our reasonable control.
-- Notices. We may give notice by a message in the App, by email if you have
-  written to us, or by a notice on the Website. You may contact us as set
-  out in Section 21.
+- Notices. We may give notice by a message in the App, or by email if you
+  have written to us. You may contact us as set out in Section 21.
 - Electronic agreement. By tapping a button labelled "Continue", "I agree"
   or similar, you agree to these Terms electronically, with the same effect
   as a signature.
