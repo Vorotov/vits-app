@@ -155,8 +155,65 @@ picking this up now has to know:
 
 ### Pending Todos
 
-**None in flight.** The three carried from v1 were closed on 2026-08-16 and are
-kept here because two of them are still load-bearing constraints:
+**SHIP-01 — RevenueCat plus a developer tip, for Shipaton 2026. In flight.
+Hard deadline 30 September 2026, 11:45pm PDT.**
+
+Full research, with every version, quote and citation:
+`docs/research/2026-09-09-revenuecat-shipaton.md`. Read §6 through §9 before
+starting — what follows is a pointer, not a substitute.
+
+*Decided:*
+
+- **iOS only.** Google Play's 12-testers-for-14-days rule plus up to 7 days of
+  production review does not fit the window. Android follows after the
+  hackathon.
+- **One consumable tip** ("support the developer"), not a subscription. Apple
+  permits developer tips outright (guideline 3.1.1) and an in-app purchase is
+  not obliged to deliver anything, so this needs no entitlement, no feature
+  gate, no Restore control and no reinstall edge case. Shipaton requires only
+  "at least one in-app or web purchase".
+- The word is **support** or **tip**, never **donate**: 3.2.2(iv) bans in-app
+  fundraising for charities and pushes such apps to collect outside the app.
+- RevenueCat Paywalls do not support consumables, so the tip screen is
+  hand-built from the design tokens with `purchases_flutter` alone.
+
+*Blocking, and none of it is code:*
+
+1. Apple Developer Program enrolment.
+2. **Paid Apps Agreement, banking and tax forms.** No in-app purchase can be
+   tested even in the sandbox until the bank status reads Clear, and the tax
+   forms appear only after the agreement is signed. It looks like paperwork; it
+   is a dependency.
+3. Final app name and bundle id — `com.boostque.dev` becomes permanent the
+   moment the App Store Connect record is created.
+
+*Code shape — all three follow patterns already in this tree:*
+
+- `Purchases.configure()` runs behind the first frame from a bootstrap provider
+  shaped like `notificationBootstrapProvider`. Its completion flag is
+  load-bearing, not decoration: calling any SDK method while configure is still
+  in flight throws `There is no singleton instance`.
+- A `PurchaseGateway` interface in `lib/core/purchases/` (not `core/domain/`,
+  which imports nothing outside `dart:core`), plugin-backed implementation
+  overridden in `main()` the way `notificationSchedulerProvider` is, so no test
+  ever touches a method channel.
+- Tip copy in all seven ARB files.
+
+*Required regardless of what is sold:*
+
+- **`test/platform_config_test.dart` will stay GREEN while its claim stops
+  being true.** `purchases-android`'s library manifest declares `INTERNET` and
+  `ACCESS_NETWORK_STATE` and they merge in at build time, but the test reads
+  the *source* manifests under `android/app/src/*/`. Fix it in the same commit
+  that adds the dependency; do not leave it passing.
+- LEGAL-01 below: both legal documents and the store privacy labels change in
+  the same release. Apple label becomes Purchases → Purchase History, purposes
+  Analytics and App Functionality, not linked to identity.
+- A new gate asserting the app never sets RevenueCat subscriber attributes, so
+  "your supplement data never leaves the device" stays true by construction
+  rather than by intention.
+
+**Closed, kept because two are still load-bearing constraints:**
 
 - Instrument Sans Cyrillic gap → LOCKED: keep the platform fallback. The
   approved HTML mockup renders Cyrillic through browser fallback, so matching
@@ -184,10 +241,11 @@ kept here because two of them are still load-bearing constraints:
 - **Arabic RTL has never been seen by a human on a device.** The
   `test_release/` sweep proves the tree laid out right-to-left and threw no
   layout exception; it cannot tell you whether the screen reads well.
-- Minor, in code another agent owns: the ARB key for the Settings restore row is
-  still named `debugResetOnboarding` and its `@` description still says the row
-  renders only in debug builds. The row ships everywhere (`fa67879`); the
-  description is stale, the behaviour is not.
+- **The app's offline claim is about to narrow.** SHIP-01 adds the first
+  network-capable dependency the app has ever had. The honest replacement claim
+  is that supplement data never leaves the device and the only traffic is the
+  purchase; `docs/legal/privacy.md` still says the app does not connect to the
+  internet at all.
 
 ## Waiting on a human
 
@@ -217,6 +275,7 @@ Items acknowledged and carried forward rather than done:
 | Planner | Gantt label truncation at 14px week columns | Accepted for v1; measurements in `04-UAT.md` | 2026-08-16 |
 | Scheduling | FREQ-01 — weekly-rhythm dosing ("Mon/Thu", N times per week) | v2 backlog | 2026-08-31 |
 | Data | EXPT-01 — export/import | v2 backlog, early fast-follow | 2026-08-14 |
+| Release | Android release, after Shipaton — the Play 12-testers-for-14-days clock can start any time; `purchases_ui_flutter` would raise minSdk 21 → 24 and `MainActivity` must extend `FlutterFragmentActivity` | Deferred past 2026-09-30 | 2026-09-09 |
 | Legal | LEGAL-01 — the release that adds analytics, crash reporting or a subscription must extend `docs/legal/privacy.md` + `terms.md` (clause bank in `docs/legal/2026-09-07-privacy-and-terms-research.md` §7) and update both store privacy labels in the same release | Standing; blocks any SDK addition | 2026-09-07 |
 | Legal | Governing law and forum absent from `terms.md`; placeholders for name, email, website, nominal liability sum | Owner-only; add with the legal entity | 2026-09-07 |
 | Review | 6 Info-level review findings and 4 lower-severity security items | Documented, deliberately unfixed; none affect correctness or privacy | 2026-08-16 |
