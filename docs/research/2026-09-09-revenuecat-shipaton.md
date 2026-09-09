@@ -242,78 +242,143 @@ the BetterMe auto-renewal notice). The sections that go stale on day one:
 `test_release/legal_copy_safety_test.dart` will keep the new text clean of
 health vocabulary; nothing checks it for accuracy, which is why LEGAL-01 exists.
 
-## 6. What to sell
+## 6. What to sell — a tip is enough, and it is the cheap path
 
-Constrained by §4: it must be an **auto-renewing subscription**, or anonymous
-users lose access on reinstall.
+The Shipaton requirement is generic. Verbatim: entrants must "create a working
+software application that uses the RevenueCat SDK to power **at least one
+in-app or web purchase**, or that serves ads through RevenueCat Ads." Nothing
+on the rules page requires the purchase to unlock anything, to be recurring, or
+to gate a feature. **A single consumable tip satisfies it.**
 
-**Recommendation: the planner.** Pro unlocks the Cycles and Year views;
-Stack, Today, marking doses and reminders stay free. This keeps CLAUDE.md's
-stated Core Value — "a user can see exactly what to take today and check it
-off" — entirely free, gates the part that is genuinely differentiated and
-already built, and needs no new data model. Export/import (EXPT-01, backlog)
-is the natural second Pro feature when it lands.
+### Apple permits developer tips explicitly
 
-**Avoid: a cap on how many supplements can be added.** This app deliberately
-removed a five-substance editorial limit for liability reasons, and
-`test/l10n/planner_copy_safety_test.dart` bans the words *limit*, *exceed*,
+Guideline 3.1.1, verbatim: "Apps may use in-app purchase currencies to enable
+customers to 'tip' the developer or digital content providers in the app." And
+an in-app purchase is not obliged to deliver anything — 3.1.1's "features or
+functionality" sentence is conditional ("**If** you want to unlock features or
+functionality within your app… you must use in-app purchase"). It compels IAP
+when you unlock; it does not compel unlocking.
+
+Three conditions come with that:
+
+- **It must go through IAP.** The non-IAP carve-out in 3.2.1(vii) is for gifts
+  from one *user to another user*, not to the app's own developer, and 3.1.3's
+  reader/person-to-person/physical-goods categories do not cover it. Rejections
+  in this area cluster entirely on money leaving through an external link — a
+  "Buy Me a Coffee" link and a Safari donation hand-off are both documented
+  rejections. An IAP tip jar being rejected *for being a tip jar* has no
+  corroborated case.
+- **The copy is load-bearing.** 3.2.2(iv) bans collecting funds for charities
+  and fundraisers inside the app unless you are an approved nonprofit; such
+  apps "must be free on the App Store and may only collect funds outside of the
+  app." So the word is **support** or **tip**, never **donate** or
+  **donation**. This app already treats copy as something that carries
+  liability; this is the same discipline pointed at a different guideline.
+- **Consumable is the product type**, because a tip should be repeatable.
+  Consumables are not restorable, which means 3.1.1's restore expectation
+  ("for any *restorable* in-app purchases") does not apply — **no Restore
+  control is needed**, and the anonymous-ID reinstall problem from §4
+  disappears with it. The only cost is attribution: a re-installing tipper is
+  counted as a new customer. The revenue still records.
+
+### What this removes from the build
+
+Against the subscription plan, a tip jar deletes: the entitlement state
+provider, every feature gate, the Restore row, the reinstall edge case, and all
+the widget tests that would have had to cover a locked and unlocked planner.
+What remains is the bootstrap provider, the gateway interface, and one screen.
+
+Two things it does **not** remove: everything in §5 (the INTERNET merge, the
+`platform_config_test.dart` fix, the legal documents, the privacy labels) is
+identical either way, because they follow from the SDK existing at all.
+
+### What it costs
+
+- **RevenueCat Paywalls do not support consumables.** RevenueCat staff
+  confirmed this and no changelog entry since adds it, so `purchases_ui_flutter`
+  is out and the tip screen is hand-built with `purchases_flutter` plus an
+  offering. For this app that is a gain rather than a loss: the screen is built
+  from the design tokens like everything else, which is the right answer for
+  the Design Award anyway.
+- **No entitlement, deliberately.** RevenueCat's own guidance is that attaching
+  a consumable to an entitlement makes it "report that entitlement as unlocked
+  (forever), even after one purchase." A tip gets an offering and a package and
+  no entitlement.
+- **The judge clause reads oddly.** The rules require that "the app must either
+  offer a free trial or the Entrant must include a promo code for judges to
+  unlock the in-app purchase and test all premium features." With no premium
+  features this is moot rather than unsatisfiable — the whole app is free — but
+  it presupposes gating, and the rules do not say how it is scored when there
+  is nothing to unlock. Worth a sentence in the Devpost write-up saying so
+  plainly rather than leaving a judge to wonder.
+- Monetization-judged categories (HAMM) are out. The two realistic targets,
+  the Design Award and #BuildInPublic, do not judge the business model.
+
+### The alternative, if a real product is wanted
+
+Pro unlocks the Cycles and Year planner; Stack, Today, marking doses and
+reminders stay free. It keeps CLAUDE.md's stated Core Value free and gates the
+part that is genuinely differentiated and already built. It must be an
+**auto-renewing subscription** (§4: anonymous restore covers nothing else), and
+it brings back the entitlement provider, the gates, the Restore row and their
+tests.
+
+**Avoid either way: a cap on how many supplements can be added.** This app
+deliberately removed a five-substance editorial limit for liability reasons,
+and `test/l10n/planner_copy_safety_test.dart` bans the words *limit*, *exceed*,
 *threshold*, *maximum* and *too many* from its copy. A free-tier cap would
 reintroduce exactly that vocabulary in an app about supplement intake, where
 "you have reached your limit" reads as a claim about the user's body rather
 than their plan. The gate would catch the words; it would not catch the idea.
 
-Shipaton also requires a **free trial or a promo code** so judges can reach
-premium features. An introductory free trial on the subscription satisfies
-this natively and is configured in App Store Connect, not in code.
+## 7. The hidden schedule blocker: Paid Apps Agreement
 
-## 7. Paywall: remote or custom
+Nothing can be sold — and **no in-app purchase can even be tested in the
+sandbox** — until the Paid Apps Agreement is in effect, banking information is
+entered, and tax forms are filed in App Store Connect. The order is forced: the
+tax forms only appear after the agreement is signed, and the bank account has
+to reach "Clear" status before purchases work.
 
-| | `purchases_ui_flutter` (remote) | Custom, built from the design tokens |
-|---|---|---|
-| Copy | Configured and localised in the RevenueCat dashboard | 7 ARB files, ~15–20 keys each |
-| Tests | None needed | New widget tests + rows in the seven-language render matrix |
-| Design | RevenueCat's templates | Matches the app exactly |
-| Requires | iOS 15+, an Offering with a paywall attached, a network fetch at display time | Offerings fetch only |
-| Time | Hours | Days |
-
-With 21 days and Apple review inside them, **ship the remote paywall.** Note
-the tension honestly: the Design Award is one of the two realistic prize
-categories for an app like this, and a stock paywall inside an otherwise
-carefully built interface is the seam a judge would notice. The dashboard
-templates take colours and fonts, so the gap can be narrowed without code. A
-custom paywall is the right follow-up, not the right first move.
+Activation is reported at roughly 24 hours once everything is complete
+(secondary source; Apple publishes no SLA), but bank verification and the tax
+form are the parts that stretch to days, and a non-US filer's W-8 is the usual
+delay. **This is day-one work, in parallel with Developer Program enrolment.**
+It is easy to miss because it looks like paperwork rather than a dependency,
+and it silently blocks every sandbox purchase test.
 
 ## 8. A 21-day shape
 
 Ordered by what blocks what, not by effort.
 
-1. **Today**: start Apple Developer Program enrolment if it is not already
-   done. Decide the app name and the bundle id — `com.boostque.dev` becomes
-   permanent the moment the App Store Connect record is created, and the `.dev`
-   suffix would be stuck on a shipping product.
-2. Create the App Store Connect record, the subscription group, the
-   auto-renewing product and its introductory free trial. Configure the
-   RevenueCat project, its entitlement, its offering and its paywall.
-3. Add `purchases_flutter` + `purchases_ui_flutter`. Write the
-   `PurchaseGateway` interface, the RevenueCat implementation, the bootstrap
-   provider and the entitlement provider. Override the gateway in `main()`.
-4. Gate the planner behind the entitlement; add the Restore row to Settings;
-   present the paywall from the locked state.
+1. **Today, in parallel**: (a) Apple Developer Program enrolment, if not
+   already done; (b) the Paid Apps Agreement, banking and tax forms from §7;
+   (c) decide the app name and bundle id — `com.boostque.dev` becomes permanent
+   the moment the App Store Connect record is created, and the `.dev` suffix
+   would be stuck on a shipping product.
+2. Create the App Store Connect record and the consumable tip product (or the
+   subscription group and its introductory trial, if going that route).
+   Configure the RevenueCat project, product, package and offering. No
+   entitlement for a tip.
+3. Add `purchases_flutter`. Write the `PurchaseGateway` interface, the
+   RevenueCat implementation, and the bootstrap provider. Override the gateway
+   in `main()`.
+4. Build the support screen from the design tokens, reached from Settings
+   alongside `_ShowIntroAgainRow`. Copy in all seven ARB files, and the word is
+   "support", never "donate".
 5. Fix `platform_config_test.dart` honestly, and add the no-attributes privacy
    gate. Keep `flutter test` and `flutter test test_release/` green.
 6. Update both legal documents, `.planning/STATE.md` LEGAL-01, and the Apple
-   privacy label. These ship together with the binary or the policy is false.
+   privacy label. These ship with the binary or the policy is false.
 7. Icon at 1024×1024, at least one screenshot at 1179×2556 with no device
    frame, demo video under two minutes on YouTube or Vimeo, Devpost write-up.
-8. Submit to review with slack for at least one rejection cycle.
+8. Submit with slack for at least one rejection cycle.
 
 ## 9. Open decisions
 
-1. App name and bundle id. Blocking everything in step 2, and irreversible.
-2. Price and period for the subscription, and the trial length.
-3. Planner-as-Pro, or a different split.
-4. Remote paywall for the ship, or custom.
-5. Whether to start the Play closed-testing clock now in parallel, so Android
+1. App name and bundle id. Blocking step 2, and irreversible.
+2. Tip jar or the planner subscription. Recommendation: tip, on this timeline.
+3. Tip tiers and prices, if a tip.
+4. Whether to start the Play closed-testing clock now in parallel, so Android
    can follow shortly after the hackathon rather than months later.
 
 ## Sources
@@ -335,7 +400,12 @@ SDK: [purchases_flutter](https://pub.dev/packages/purchases_flutter),
 [Paywalls](https://www.revenuecat.com/docs/tools/paywalls),
 [purchases-android manifest](https://github.com/RevenueCat/purchases-android/blob/main/purchases/src/main/AndroidManifest.xml),
 [purchases-android #637](https://github.com/RevenueCat/purchases-android/issues/637),
-[purchases-flutter #1090](https://github.com/RevenueCat/purchases-flutter/issues/1090).
+[purchases-flutter #1090](https://github.com/RevenueCat/purchases-flutter/issues/1090),
+[App Store Review Guidelines](https://developer.apple.com/app-store/review/guidelines/),
+[in-app purchase types](https://developer.apple.com/help/app-store-connect/reference/in-app-purchase-types/),
+[receiving payments](https://developer.apple.com/help/app-store-connect/getting-paid/overview-of-receiving-payments),
+[non-subscription purchases](https://www.revenuecat.com/docs/platform-resources/non-subscriptions),
+[entitlements](https://www.revenuecat.com/docs/getting-started/entitlements).
 
 ## Confidence notes
 
