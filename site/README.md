@@ -29,4 +29,13 @@ DNS at Spaceship: `A @ 45.159.220.17`, `A www 45.159.220.17`.
 Run `npm run preview`, then in another shell
 `npx lighthouse http://localhost:4321/ --preset=desktop --chrome-flags=--headless --output=json --output-path=/tmp/lh.json --quiet && node -e "const r=require('/tmp/lh.json').categories;console.log(Object.fromEntries(Object.entries(r).map(([k,v])=>[k,Math.round(v.score*100)])))"`.
 
-Last recorded: (filled in by Task 11)
+Last recorded: 2026-09-11, desktop preset, against `npx astro preview --port 4330`.
+
+| Page | Scheme | Performance | Accessibility | Best Practices | SEO |
+|---|---|---|---|---|---|
+| / | light | 100 | 100 | 100 | 100 |
+| / | dark | 100 | 100 | 100 | 100 |
+| /privacy | light | 100 | 100 | 100 | 100 |
+| /support | light | 100 | 100 | 100 | 100 |
+
+All four categories hit target (performance at least 95, the other three at 100) on every run. No failing audits to list.
