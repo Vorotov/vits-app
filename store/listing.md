@@ -185,6 +185,54 @@ a rule — nothing in the guidelines forbids it, and supplement trackers use pil
 iconography routinely. It is mitigated by keeping the category Lifestyle and the
 copy free of claims, both of which the rest of this file already does.
 
+## Uploading a build
+
+The bundle is `build/app/outputs/bundle/release/app-release.aab`, produced by
+`flutter build appbundle --release`. It is ~62MB, and ~92MB of its uncompressed
+158MB is `BUNDLE-METADATA` — native debug symbols and the ProGuard map, which
+Play keeps for crash symbolication and never ships to a device. The download
+size the console reports after upload is the real one.
+
+`pubspec.yaml` is at `1.0.0+1`. **Play rejects an upload whose versionCode is
+not higher than every previous one**, so the second upload needs
+`flutter build appbundle --release --build-number=2`, or a bump to the `+N` in
+pubspec.
+
+On the first upload Play offers Play App Signing — accept it. Google then holds
+the real signing key and `~/keys/vitomy-upload-keystore.jks` is only the upload
+key, which Google can reset if it is lost. The real one it could not.
+
+### First internal testing release
+
+Release name (internal only, 50 max):
+
+```
+1.0.0 (1) first internal build
+```
+
+Release notes — the language tags are part of the field:
+
+```
+<en-US>
+First internal build.
+
+Add what you take, set a schedule with on and off weeks, and check doses off on Today. Cycles and Year show how the schedules line up across the months.
+
+Reminders are local and never name what you take. Everything stays on the device: no account, no server.
+
+Known issue: the schedule editor's save button reads "Add and start cycle" even when you are editing a schedule that already exists.
+</en-US>
+```
+
+The known issue is named on purpose. This is an internal track; a tester who
+knows costs less than a bug report that rediscovers it.
+
+Internal testing takes up to 100 testers, is not subject to the
+12-testers-for-14-days rule that gates closed testing, and does not wait on
+review. The full store listing — feature graphic, screenshots, descriptions —
+is a production requirement, not an internal-testing one. The privacy policy
+URL is not: Play asks for a link, and an address does not substitute.
+
 ## Assets
 
 | Asset | Where | Status |

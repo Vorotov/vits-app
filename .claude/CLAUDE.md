@@ -294,6 +294,37 @@ locale-derived RTL (the only whole-screen RTL coverage in the repository).
 Read `test_release/README.md` before touching it; in particular, never turn a
 red cell green by dropping a language, a scale or a vocabulary stem.
 
+### Store assets are generated, never hand-edited
+
+Two scripts own everything a store listing needs, and a PNG edited by hand is
+how that stops being true.
+
+`tool/make_icons.py` builds every icon from one geometry: the fifteen iOS sizes
+(flattened to RGB — App Store Connect rejects an alpha channel outright), the
+five legacy Android mipmaps, an adaptive icon with a proper foreground /
+background split, and the loose 512 and 1024 files the two listings want. The
+mark is the approved V of two capsules, from the Claude Design project named in
+its docstring; colourway **3b** ships and **3a** is one argument away. Two
+numbers in it are load-bearing and documented in place: the capsule pivot is
+DERIVED as `(h - w/2)/h` so the two bottom caps coincide and the V closes to a
+point, and the Android adaptive scale is MEASURED from the rendered alpha
+against Android's 66-of-108dp safe circle rather than estimated from a bounding
+box.
+
+`tool/make_screenshots.sh` erases a 6.9" simulator, pins its status bar, runs
+`integration_test/store_screenshots_test.dart` and collects the listing
+screenshots at 1320x2868 through the same `bq_shot_*.request` watcher
+`data03_loop_test.dart` uses. That test seeds its stack through the
+repositories rather than the add sheet — the UI is the subject of the
+photograph there, not the thing under test — and deliberately puts one regimen
+deep inside its break, because a gantt with no break in it is a picture of a
+to-do list.
+
+Copy for both consoles, with character counts and the two decisions that carry
+weight (the category is Lifestyle, not Health & Fitness; the Apple privacy
+label is "Data Not Collected" only until the first SDK lands), is in
+`store/listing.md`.
+
 ### Platform config is asserted, not documented
 
 `test/platform_config_test.dart` pins what nothing else can see: no manifest

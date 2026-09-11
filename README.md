@@ -45,6 +45,17 @@ release signed with it can be impersonated by anyone.
 Google Play holds the app signing key; the file above is only the *upload*
 key, and Google can reset it if it is lost. Back it up anyway.
 
+## Store assets
+
+```sh
+python3 tool/make_icons.py          # every icon size, both platforms
+python3 tool/make_icons.py 3a       # ...in the other approved colourway
+tool/make_screenshots.sh            # listing screenshots from a 6.9" simulator
+```
+
+Both write generated files. Re-run a script rather than editing a PNG.
+Listing copy for both consoles is in `store/listing.md`.
+
 ## Where the rules live
 
 `.claude/CLAUDE.md` carries the conventions and architecture. Anything
