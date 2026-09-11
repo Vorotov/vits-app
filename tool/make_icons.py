@@ -38,7 +38,11 @@ SS = 4            # supersampling factor
 BASE = 1024       # output canvas
 ARTBOARD = 236.0  # the design document's own artboard; every constant is in it
 
-DEFAULT_VARIANT = "3a"
+# 3b ships. navy #4b5079 and ochre #b98a2e are BqSeriesColors.palette[7] and
+# palette[0] — the app's own supplement-tag colours — so the icon and the
+# interface read as one product. 3a is louder on a home screen, but no
+# surface that loud exists anywhere in the app. Decided 2026-09-11.
+DEFAULT_VARIANT = "3b"
 
 # --- geometry, transcribed from turn 3 of the design doc ------------------
 # Both capsules share one box and one pivot; only the rotation sign differs.
