@@ -10,6 +10,7 @@
   --accent-pressed: #3D4169;        /* BqColors.accentPressed */
   --hairline: rgb(23 23 27 / 0.08); /* BqColors.hairline */
   --shadow: 0 24px 60px -24px rgb(23 23 27 / 0.25);
+  --phone-border: #17171B;          /* the device chrome; ink in light, one step up from panel in dark */
 
   --font-sans: 'Instrument Sans Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
@@ -32,5 +33,6 @@
     --accent-pressed: #A3A8C8;
     --hairline: rgb(255 255 255 / 0.10);
     --shadow: 0 24px 60px -24px rgb(0 0 0 / 0.5);
+    --phone-border: #2A2A31;
   }
 }

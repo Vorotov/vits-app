@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node scripts/sync-screens.mjs",
     "dev": "astro dev",
+    "prebuild": "node scripts/sync-screens.mjs",
     "build": "astro build",
     "preview": "astro preview",
     "test": "node --test test/*.test.mjs",

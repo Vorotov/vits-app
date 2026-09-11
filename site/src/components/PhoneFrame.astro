@@ -1,0 +1,40 @@
+---
+import { Picture } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props { src: ImageMetadata; alt: string; priority?: boolean; class?: string }
+// ...rest carries the caller's scoped-style attribute (data-astro-cid-*). Astro
+// passes it as a prop and it only lands on the DOM if the component spreads it,
+// so without this a parent's rules for its own class silently never match.
+const { src, alt, priority = false, class: cls, ...rest } = Astro.props;
+---
+<figure class:list={['phone', cls]} {...rest}>
+  <Picture
+    src={src}
+    alt={alt}
+    widths={[360, 540, 720]}
+    sizes="(min-width: 1024px) 360px, 72vw"
+    formats={['avif', 'webp']}
+    width={1320}
+    height={2868}
+    loading={priority ? 'eager' : 'lazy'}
+    fetchpriority={priority ? 'high' : 'auto'}
+    decoding="async"
+  />
+</figure>
+
+<style>
+  /* The frame is a BORDER, not a background, so frames stacked on top of each
+     other (the scene in Task 7) stay transparent inside and only the screens
+     cross-fade. The border colour is its own token because --ink inverts in
+     dark mode and the device chrome must not. */
+  .phone {
+    margin: 0;
+    width: min(100%, 360px);
+    border: 10px solid var(--phone-border);
+    border-radius: var(--radius-panel);
+    background: transparent;
+    box-shadow: var(--shadow);
+  }
+  .phone :global(img) { width: 100%; height: auto; border-radius: var(--radius-screen); }
+</style>
