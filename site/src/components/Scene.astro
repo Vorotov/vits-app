@@ -74,6 +74,12 @@ const steps = [
   }
   .scene--pinned .scene__copy { display: grid; }
   .scene--pinned .scene__step { grid-area: 1 / 1; order: 0; }
+  /* The steps are hidden by opacity alone, so all three stay in the
+     accessibility tree and all three stay in the flow of the one cell they
+     share. Without this the transparent ones sit on top and eat the pointer.
+     Scene.ts moves `--active` to whichever step is currently the most opaque. */
+  .scene--pinned .scene__step { pointer-events: none; }
+  .scene--pinned .scene__step--active { pointer-events: auto; }
   .scene--pinned .scene__shots {
     display: grid; justify-self: center;
     border-radius: var(--radius-panel); box-shadow: var(--shadow);
