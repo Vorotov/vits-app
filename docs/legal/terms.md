@@ -217,7 +217,7 @@ of any law or the rights of a third party.
 ## 17. Disputes
 
 Informal resolution first. Before bringing any formal claim, please contact
-us at [CONTACT_EMAIL] so we can try to resolve the issue. Most concerns can
+us at support@vitomy.app so we can try to resolve the issue. Most concerns can
 be settled this way.
 
 Nothing in these Terms deprives you of the protection given to consumers by
@@ -264,4 +264,4 @@ version prevails.
 
 ## 21. Contact
 
-For questions, complaints, or legal and privacy notices: [CONTACT_EMAIL].
+For questions, complaints, or legal and privacy notices: support@vitomy.app.

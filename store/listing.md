@@ -89,9 +89,13 @@ supplement,vitamin,stack,tracker,planner,cycle,schedule,reminder,routine,intake,
 ```
 94 characters.
 
-**Support URL** — required, and the project has none yet. This is a blocker.
+**Support URL** — required, and still a blocker. App Store Connect takes a URL
+here, not an address: a `mailto:` is rejected, so `support@vitomy.app` does not
+close this field. It needs a page.
 **Marketing URL** — optional; leave blank until vitomy.app has a page.
 **Privacy Policy URL** — required. `docs/legal/privacy.md`, once hosted.
+**App Review contact** — `support@vitomy.app`. This one is private to Apple and
+is a separate field from the public Support URL.
 
 **Age rating** — the Terms of Use set eligibility at 18+, which is a contract
 term, not a content rating. The App Store questionnaire asks about content;
@@ -138,6 +142,10 @@ reminders survive a restart. No exact-alarm permission is declared.
 as Apple's above.
 
 **Privacy policy URL** — required. Same blocker.
+
+**Contact email** — `support@vitomy.app`. Play shows this publicly on the
+listing and it is the one required contact field, so Play needs no support
+page; only Apple does.
 
 ---
 

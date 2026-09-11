@@ -13,7 +13,7 @@ what happens if that changes.
 This policy covers:
 
 - the VitoMy mobile app on iOS and Android (the "App"); and
-- the support address [CONTACT_EMAIL] (together with the App, the
+- the support address support@vitomy.app (together with the App, the
   "Services").
 
 ## The short version
@@ -93,7 +93,7 @@ yet have an export feature.
 
 For the little we do hold (messages you send us), you can ask us to access,
 correct, delete or restrict it, object to our use of it, or complain to a
-data protection supervisory authority. Write to [CONTACT_EMAIL]. To verify a
+data protection supervisory authority. Write to support@vitomy.app. To verify a
 request we confirm that it comes from the address the original message came
 from. We respond within the time your local law sets.
 
@@ -107,7 +107,7 @@ made under your state's law, you may appeal by replying to our answer with
 
 The App is for adults. It is not directed at anyone under 18, and we do not
 knowingly collect data from anyone under 18. If you believe a child has sent
-us personal data, write to [CONTACT_EMAIL] and we will delete it.
+us personal data, write to support@vitomy.app and we will delete it.
 
 ## Third-party services
 
@@ -140,7 +140,7 @@ same release, before that version ships.
 
 ## Contact
 
-[CONTACT_EMAIL]
+support@vitomy.app
 
 ## Language
 

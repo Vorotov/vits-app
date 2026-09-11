@@ -69,13 +69,17 @@ const legalAllowlist = <String>[
   'Health Connect',
 ];
 
-/// Placeholders the documents may contain. A bracketed token outside this set
-/// is a typo that would ship into the published text as-is.
+/// Placeholders the documents may still contain. A bracketed token outside this
+/// set is either a typo or a regression, and either way would ship into the
+/// published text as-is.
+///
+/// The set SHRINKS as the documents are finished. `[APP_NAME]` was filled with
+/// VitoMy and `[CONTACT_EMAIL]` with the support address on 2026-09-11, so
+/// re-introducing either now fails here rather than reaching a store listing.
+/// Only add a name back if a document genuinely needs one again.
 const knownPlaceholders = <String>{
-  '[APP_NAME]',
-  '[CONTACT_EMAIL]',
-  '[LAST_UPDATED]',
-  '[NOMINAL_SUM]',
+  '[LAST_UPDATED]', // set on publication
+  '[NOMINAL_SUM]', // the liability floor; comes with the legal entity
 };
 
 final _datePrefix = RegExp(r'^\d{4}-\d{2}-\d{2}');
