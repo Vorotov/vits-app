@@ -1,4 +1,4 @@
-/// Platform-configuration invariants (DATA-02 backup half, release-signing safety).
+/// Platform-configuration invariants (DATA-02 backup half, release-signing safety, the iPhone-only device family).
 ///
 /// The milestone audit found that DATA-02's "a user's data survives an app
 /// reinstall via OS-level device backup" guarantee lived only in a doc comment
@@ -442,6 +442,53 @@ void main() {
           reason: 'android/app/build.gradle.kts assigns $key a string literal. '
               'Passwords belong in key.properties, which is gitignored; a '
               'literal here would be committed and is unrotatable once pushed.',
+        );
+      }
+    });
+  });
+
+  group('iOS device family — 1.0 ships iPhone-only', () {
+    // Decided 2026-09-11. App Store Connect demanded iPad 13-inch screenshots
+    // because Flutter's template declares both device families in the Runner
+    // target, and App Review tests on an iPad when the binary claims it.
+    // Nothing in this app has been laid out or tested for a tablet — every
+    // render sweep in `test/` and `test_release/` is phone-sized — so the
+    // build claims iPhone only (family 1). iPad users can still install it in
+    // compatibility mode. Revisit, and delete this group, when tablet layouts
+    // and a tablet render sweep exist.
+    test('every Runner configuration targets device family 1 only', () {
+      // The pbxproj is full of `/* Runner */`-style annotations and its first
+      // line starts with `//`; strip them so a comment cannot trip or shadow
+      // the gate, the house rule for every source gate in this suite.
+      final pbxproj = _stripCodeComments(
+        File('ios/Runner.xcodeproj/project.pbxproj').readAsStringSync(),
+      );
+      // Xcode writes one family unquoted (`= 1;`) and several quoted
+      // (`= "1,2";`); accept both shapes so the gate reads whatever it wrote.
+      final values = RegExp(r'TARGETED_DEVICE_FAMILY\s*=\s*"?([^";]*)"?\s*;')
+          .allMatches(pbxproj)
+          .map((m) => m.group(1)!.trim())
+          .toList();
+      expect(
+        values,
+        isNotEmpty,
+        reason: 'no TARGETED_DEVICE_FAMILY setting was found in '
+            'ios/Runner.xcodeproj/project.pbxproj, so the regex is scanning '
+            'nothing or Xcode moved the setting. Without this check the loop '
+            'below would pass vacuously.',
+      );
+      for (final value in values) {
+        expect(
+          value,
+          '1',
+          reason: 'ios/Runner.xcodeproj/project.pbxproj sets '
+              'TARGETED_DEVICE_FAMILY to "$value". 1.0 ships iPhone-only '
+              '(decided 2026-09-11): App Store Connect required iPad '
+              'screenshots for a build that claimed both families, and App '
+              'Review tests what the binary claims; no tablet layout or tablet '
+              'render sweep exists. Revisit when tablet layouts and a tablet '
+              'render sweep exist — then change this test in the same commit '
+              'as the pbxproj.',
         );
       }
     });
