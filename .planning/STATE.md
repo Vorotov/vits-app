@@ -1,19 +1,20 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.2
-milestone_name: Onboarding, Languages & the Release Gate
+milestone_name: Progress
 current_phase: 9
-status: milestone_shipped_pending_device_pass
-stopped_at: "Phase 9 shipped (fc7bfd3); no phase in flight"
-last_updated: "2026-09-02T00:00:00Z"
-last_activity: 2026-09-01
-last_activity_desc: "Phase 9 complete — seven locales, cross-locale defect fixes, test_release/ gate, planner window shifted"
-progress:
-  total_phases: 9
-  completed_phases: 8
-  total_plans: 40
-  completed_plans: 40
 current_phase_name: Languages & the Release Gate
+status: milestone_shipped_pending_device_pass
+stopped_at: Phase 9 shipped (fc7bfd3); no phase in flight
+last_updated: "2026-09-11T14:14:39.106Z"
+last_activity: 2026-09-11
+last_activity_desc: "Completed quick task 260911-mms: App Store listing: fix the 31-char subtitle and refresh promotional text, description and keywords in store/listing.md with ASO rationale; document the 6.5-inch ASC slot; make tool/make_screenshots.sh derive the 6.5-inch set; commit store/screenshots/ios-6.5"
+progress:
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -39,6 +40,7 @@ Progress: [██████████] 9 phases, 8 closed — Phase 7 (Dose 
 - **Everything is built.** v1 (Phases 1-5), v1.1 (6-7) and v1.2 (8-9) are all
   implemented and merged on `main`. The working tree is clean and the repo has
   **no remote** — never push.
+
 - **Two suites, not one.** `flutter test` runs `test/` only, and stays uk+en.
   `flutter test test_release/` is the pre-production gate: the medical-claim
   vocabulary scan and the whole-screen render sweep, both across all seven
@@ -46,19 +48,23 @@ Progress: [██████████] 9 phases, 8 closed — Phase 7 (Dose 
   else runs it. Counts measured at `d7e82fc`: **1108** in `test/`, **46** in
   `test_release/` — treat them as a marker, not a contract; measure before
   quoting.
+
 - **The only open work is human-only.** No code is blocked on a decision.
   Four items need a person at a device or an account — listed under *Waiting on
   a human* below, and in the Deferred Items table. The sharpest one is a public
   URL: Apple's Support URL and both stores' privacy-policy fields take a URL,
   and `support@vitomy.app` closes Play's contact field but not Apple's.
+
 - **Store assets are generated, never hand-edited.** `tool/make_icons.py`
   builds every icon size for both platforms from one geometry;
   `tool/make_screenshots.sh` drives
   `integration_test/store_screenshots_test.dart` on a 6.9" simulator and
   collects the listing screenshots. Copy for both consoles is in
   `store/listing.md`. Editing a PNG by hand is how that stops being true.
+
 - **SHIP-01 is the one piece of code work queued** — RevenueCat plus a
   developer tip for Shipaton, under *Pending Todos*.
+
 - **One spec is partly superseded.** The onboarding spec
   (`docs/superpowers/specs/2026-08-26-vitomy-onboarding-design.md`) describes
   two explain screens and no contextual help. That is what was approved, not
@@ -71,6 +77,7 @@ Progress: [██████████] 9 phases, 8 closed — Phase 7 (Dose 
 - Plans written and executed: 40 across Phases 1-8. Phase 9 shipped as direct
   commits with no plan file, which is why the plan count and the phase count
   disagree.
+
 - Durations were only ever recorded for 01-01 (~40 min active). Nothing since
   then was timed, so the averages this table used to carry were arithmetic over
   one sample; they are removed rather than extrapolated.
@@ -104,16 +111,20 @@ picking this up now has to know:
   tutorial left participants rating the *same* tasks harder — 4.92 against 5.49
   of 7 — with no gain in task success or speed. Coach marks fired at session
   start fail identically: the explanation arrives before the user needs it.
+
 - **What replaced it:** a two-page intro (page 1 the daily loop, page 2 what the
   Календар answers) plus one-time inline hints at the moment their subject first
   appears — the cycle idea in the regimen editor's schedule panel, marking a
   dose on Сьогодні only on a day that has doses.
+
 - **The calendar page earned its place** because no contextual hint can answer
   "why is there a calendar tab": a hint there only fires once the user has
   already opened Календар.
+
 - **The Settings restore row ships in every build**, not just debug. It writes
   only the two first-run preference keys; the alternative was deleting the app,
   which takes the user's stack with it.
+
 - The spec is now partly wrong and says so: see its *What shipped* section.
 
 **v1.2, languages (2026-09-01)**
@@ -125,15 +136,18 @@ picking this up now has to know:
   Bengali and Urdu were then cut. Their forbidden-vocabulary stem lists were
   captured in that session's history; their ARB files were never written, so
   nothing of them is in the repository.
+
 - **No new fonts are bundled.** Instrument Sans covers 343 codepoints, Latin
   only — it has no Cyrillic, so Ukrainian has always rendered through the
   platform's own font, exactly as the approved mockup does. The new scripts do
   the same. Bundling CJK alone would add 10+ MB for one language.
+
 - **The heavy checks run before a production build, not on every edit.** The
   all-locale vocabulary scan and the all-locale render sweep live in
   `test_release/`, a sibling directory — not a `@Tags` annotation and not a
   `dart_test.yaml` filter, because either of those can be switched off by
   editing one line in a file nobody reads at review time.
+
 - **One clock shape, pinned rather than asked for.** CLDR gives Spanish `H:mm`
   and every other shipped locale `HH:mm`, so `alwaysUse24HourFormat` produced a
   ragged column in es. The pattern is now fixed in one place; the locale still
@@ -145,9 +159,11 @@ picking this up now has to know:
   Same four-month width, band shifted back one month, so today sits strictly
   inside it with history behind the marker — and a January clock now opens the
   window in the previous year.
+
 - **A future day refuses every mark**, on the tap path and the
   assistive-technology path alike. Today is not future: a 21:00 dose is still
   markable at 10:00.
+
 - **Every distinct dose time inside a block carries its own label**; the block
   label appears once, and the accent marks the next time actually due rather
   than the block's earliest.
@@ -157,10 +173,13 @@ picking this up now has to know:
 - Foundation, domain math, DB and app shell were bundled into a single Phase 1;
   L10N verification was deferred to Phase 5 because "zero hardcoded strings" and
   full plural coverage cannot be honestly checked before every screen exists.
+
 - `intl` is never hand-pinned — SDK resolution picks it via
   `flutter_localizations`.
+
 - One variable-font TTF per family under `assets/fonts/`, one pubspec entry
   each, no `weight:` fanning.
+
 - UI depends on repository interfaces only; Drift is one implementation.
 
 ### Pending Todos
@@ -177,13 +196,16 @@ starting — what follows is a pointer, not a substitute.
 - **iOS only.** Google Play's 12-testers-for-14-days rule plus up to 7 days of
   production review does not fit the window. Android follows after the
   hackathon.
+
 - **One consumable tip** ("support the developer"), not a subscription. Apple
   permits developer tips outright (guideline 3.1.1) and an in-app purchase is
   not obliged to deliver anything, so this needs no entitlement, no feature
   gate, no Restore control and no reinstall edge case. Shipaton requires only
   "at least one in-app or web purchase".
+
 - The word is **support** or **tip**, never **donate**: 3.2.2(iv) bans in-app
   fundraising for charities and pushes such apps to collect outside the app.
+
 - RevenueCat Paywalls do not support consumables, so the tip screen is
   hand-built from the design tokens with `purchases_flutter` alone.
 
@@ -194,6 +216,7 @@ starting — what follows is a pointer, not a substitute.
    tested even in the sandbox until the bank status reads Clear, and the tax
    forms appear only after the agreement is signed. It looks like paperwork; it
    is a dependency.
+
 3. ~~Final app name and bundle id~~ — **closed 2026-09-11**: VitoMy,
    `app.vitomy`. It becomes permanent the moment the App Store Connect record
    is created, so do not create that record casually.
@@ -204,10 +227,12 @@ starting — what follows is a pointer, not a substitute.
   shaped like `notificationBootstrapProvider`. Its completion flag is
   load-bearing, not decoration: calling any SDK method while configure is still
   in flight throws `There is no singleton instance`.
+
 - A `PurchaseGateway` interface in `lib/core/purchases/` (not `core/domain/`,
   which imports nothing outside `dart:core`), plugin-backed implementation
   overridden in `main()` the way `notificationSchedulerProvider` is, so no test
   ever touches a method channel.
+
 - Tip copy in all seven ARB files.
 
 *Required regardless of what is sold:*
@@ -217,9 +242,11 @@ starting — what follows is a pointer, not a substitute.
   `ACCESS_NETWORK_STATE` and they merge in at build time, but the test reads
   the *source* manifests under `android/app/src/*/`. Fix it in the same commit
   that adds the dependency; do not leave it passing.
+
 - LEGAL-01 below: both legal documents and the store privacy labels change in
   the same release. Apple label becomes Purchases → Purchase History, purposes
   Analytics and App Functionality, not linked to identity.
+
 - A new gate asserting the app never sets RevenueCat subscriber attributes, so
   "your supplement data never leaves the device" stays true by construction
   rather than by intention.
@@ -232,8 +259,10 @@ starting — what follows is a pointer, not a substitute.
   Revisiting invalidates the Phase-4 gantt truncation measurements and requires
   re-running the text-scale matrix. **Reaffirmed 2026-09-01** when five more
   languages landed: the same reasoning now covers Arabic, Devanagari and CJK.
+
 - Riverpod 3 auto-retry error surface → FIXED: errors beat the retry-loading
   state, so a failing local DB shows the designed error surface immediately.
+
 - Gantt label truncation at 14px week columns → accepted for v1 with
   measurements in `04-UAT.md`; revisit only on user feedback.
 
@@ -244,21 +273,26 @@ starting — what follows is a pointer, not a substitute.
   arrives. Android's automated half passed on emulator-5554; the iOS half is
   blocked on a human tapping Allow. Do not read the unchecked NOTIF boxes in
   REQUIREMENTS.md as "not built".
+
 - ~~Release builds are still debug-signed.~~ **Fixed 2026-09-11** (`ecd3c00`).
   A 4096-bit upload key lives outside the repo at
   `~/keys/vitomy-upload-keystore.jks`, named by the gitignored
   `android/key.properties`. A release build with no key.properties now throws
   instead of falling back, and `test/platform_config_test.dart`'s five signing
   tests guard both directions.
+
 - ~~The bundle id is a placeholder and the app name is undecided.~~
   **Closed 2026-09-11**: **VitoMy**, `app.vitomy`.
+
 - **Play wants a rising versionCode.** `pubspec.yaml` is at `1.0.0+1` and the
   first internal-testing upload consumes versionCode 1. Every later upload
   needs a higher one: `flutter build appbundle --release --build-number=N`, or
   bump the `+N` in pubspec.
+
 - **Arabic RTL has never been seen by a human on a device.** The
   `test_release/` sweep proves the tree laid out right-to-left and threw no
   layout exception; it cannot tell you whether the screen reads well.
+
 - **The app's offline claim is about to narrow.** SHIP-01 adds the first
   network-capable dependency the app has ever had. The honest replacement claim
   is that supplement data never leaves the device and the only traffic is the
@@ -270,6 +304,7 @@ starting — what follows is a pointer, not a substitute.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260911-mms | App Store listing: fix the 31-char subtitle and refresh promotional text, description and keywords in store/listing.md with ASO rationale; document the 6.5-inch ASC slot; make tool/make_screenshots.sh derive the 6.5-inch set; commit store/screenshots/ios-6.5 | 2026-09-11 | f18a84e, f097461, 82350a7 | [260911-mms-app-store-listing-fix-the-31-char-subtit](./quick/260911-mms-app-store-listing-fix-the-31-char-subtit/) |
+| 2 | Tighten the App Store description in store/listing.md: no 'runs a stack', more supplement/vitamin wording, languages and data sections removed (owner request) | 2026-09-11 | fc79674 | — |
 
 ## Waiting on a human
 
@@ -280,10 +315,12 @@ an account:
    route: `xcrun simctl privacy` has no notifications service, and driving the
    prompt from a harness leaves `requestPermission()` returning null. Everything
    in 07-UAT entries 1-8 and 10 is blocked behind it.
+
 2. **Look at Arabic on a device**, right-to-left, once.
 3. **Apple Developer Program enrolment**, then the **Paid Apps Agreement with
    banking and tax forms** — the second blocks even a sandbox purchase, and the
    tax forms only appear once the agreement is signed. Neither is code.
+
 4. **A public URL for `docs/legal/privacy.md`.** Both stores require a privacy
    policy link and Apple additionally requires a Support URL; neither field is
    optional, and the project has no site yet.

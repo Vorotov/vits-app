@@ -70,36 +70,30 @@ Set each schedule once, on and off weeks included, and VitoMy keeps the calendar
 **Description** (4000 max)
 
 ```
-VitoMy shows you what to take today and lets you check it off. Set each schedule once, breaks included, and the calendar works the cycles out for you.
-
-Built for anyone who runs a stack: a few daily basics, a course that ends on a set date, or a protocol with on and off phases. Eight weeks on and four weeks off, or whatever pattern you actually follow. VitoMy keeps it straight.
+VitoMy is a supplement planner. Add your supplements and vitamins, set when you take them, and check them off each day. Schedules can repeat with breaks built in, and the calendar works the cycles out for you.
 
 WHAT IT DOES
 
-Today. Everything due today in one list, with the time beside it. Tap to mark it taken.
+Today. Every supplement due today in one list, with the time beside it. Tap to mark it taken.
 
-Cycles. Every schedule laid out across the months as bars, so you can see at a glance which weeks are on, which are breaks, and where they overlap.
+Cycles. Each supplement schedule laid out across the months as bars: which weeks are on, which are breaks, and where supplements overlap.
 
 Year. Twelve months at once, showing how much of each month is covered.
 
-Reminders. A local notification at each time you set. Reminders never name what you take, so nothing appears on your lock screen that you would not want a stranger to read.
+Reminders. A local notification for each supplement at the times you set. Reminders never name the supplement, so nothing appears on your lock screen that you would not want a stranger to read.
 
-YOUR DATA STAYS YOURS
+SCHEDULES THAT MATCH HOW YOU TAKE SUPPLEMENTS
 
-There is no account and nothing to sign up for. Everything you enter is written to your own device and never leaves it. Delete the app and the data goes with it. No ads, no subscription.
+Daily vitamins with no end date. A course of a supplement that ends on a set date. Eight weeks on and four weeks off. Whatever pattern you follow, set it once and VitoMy keeps the calendar.
 
-SEVEN LANGUAGES
-
-English, Arabic, Spanish, French, Hindi, Ukrainian and Chinese, including full right-to-left layout.
-
-VitoMy is a planner. It records what you decide to take and when. It does not suggest what to take, how much, or whether to take anything at all. Those decisions are yours.
+VitoMy is a planner. It records which supplements you decide to take and when. It does not suggest what to take, how much, or whether to take anything at all. Those decisions are yours.
 ```
-1383 characters. The earlier sentence claiming the app has no network client
-at all was dropped ahead of the RevenueCat tip jar (SHIP-01): once a purchases
-SDK lands, the app does have a network client, and the description should not
-have to change in the same release as the App Privacy label does. What
-remains — what you enter never leaves the device; no account; no ads; no
-subscription — stays true after a one-time tip.
+1150 characters. Tightened on 2026-09-11 at the owner's request: no
+"runs a stack", the supplement/vitamin wording carried through every
+section, and the languages and data sections dropped. The on-device claim
+now lives only in the promotional text, which is editable without a build —
+so when the RevenueCat tip jar (SHIP-01) adds a network client, the field
+that has to change is the one that can change without a release.
 
 **Keywords** (100 max, comma-separated, no spaces after commas)
 
