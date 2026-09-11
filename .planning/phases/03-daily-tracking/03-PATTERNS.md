@@ -33,7 +33,7 @@
 
 **Library doc-comment + dispose policy** (`providers.dart:1-22`) — new providers must extend this doc, not add a competing policy comment:
 ```dart
-/// Riverpod provider graph for Boostque (D-22, D-23).
+/// Riverpod provider graph for VitoMy (D-22, D-23).
 ///
 /// ## Dispose policy (D-23) — decided once for the whole app, recorded here
 ///
@@ -72,7 +72,7 @@ final stackEntriesProvider = Provider<AsyncValue<List<StackEntry>>>((ref) {
 });
 ```
 
-**Import convention** (`providers.dart:24-29`): relative imports inside `lib/core/` (`import 'db/database.dart' show BoostqueDb;`), package-absolute imports everywhere in `lib/features/` (see stack_screen below). Note the `show` clause on the Drift database import — keep Drift symbols narrowed.
+**Import convention** (`providers.dart:24-29`): relative imports inside `lib/core/` (`import 'db/database.dart' show VitomyDb;`), package-absolute imports everywhere in `lib/features/` (see stack_screen below). Note the `show` clause on the Drift database import — keep Drift symbols narrowed.
 
 ---
 
@@ -150,9 +150,9 @@ For `TodayController`: same class shape, **no family arg**, plain `NotifierProvi
 /// [ScheduleSummary] hierarchy and maps to ARB keys itself.
 library;
 
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart';
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart';
 ```
 Note the three imports: no `flutter/material.dart`, no l10n, no Drift. `day_view_model.dart` must have exactly this import set.
 
@@ -225,13 +225,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/core/domain/repositories.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/features/stack/stack_status.dart';
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/core/domain/repositories.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/features/stack/stack_status.dart';
 ```
 
 **ConsumerWidget + screen scaffold/padding** (lines 36-56) — 20px horizontal, bottom 84 for nav-bar clearance:
@@ -494,7 +494,7 @@ No hex literals in `features/`. Colors from `BqColors.*`, radii from `BqRadii.*`
 ### Localization access (applies to: every widget)
 **Source:** `stack_screen.dart:42` / `regimen_editor_screen.dart:727`
 ```dart
-    final l10n = context.l10n;              // from package:boostque/core/l10n/l10n.dart
+    final l10n = context.l10n;              // from package:vitomy/core/l10n/l10n.dart
     ... Text(l10n.addTimeSlot, ...)
 ```
 Zero string literals in widget code except separators (`' · '`, `' – '`) — see `stack_screen.dart:350-357` for the sanctioned separator-only exception.
@@ -513,7 +513,7 @@ Features touch `SupplementRepository`/`RegimenRepository`/`IntakeRepository` via
     container = ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
-          final db = BoostqueDb.forTesting(NativeDatabase.memory());
+          final db = VitomyDb.forTesting(NativeDatabase.memory());
           ref.onDispose(db.close);
           return db;
         }),
@@ -610,11 +610,11 @@ Apply: two `tester.tap` on a dose row with no pump between; assert the final `st
 /// zero-stamp assertion) ...
 library;
 
-import 'package:boostque/core/db/database.dart' show BoostqueDb, IntakeLogsCompanion;
-import 'package:boostque/core/db/drift_repositories.dart';
+import 'package:vitomy/core/db/database.dart' show VitomyDb, IntakeLogsCompanion;
+import 'package:vitomy/core/db/drift_repositories.dart';
 ...
   setUp(() {
-    db = BoostqueDb.forTesting(NativeDatabase.memory());
+    db = VitomyDb.forTesting(NativeDatabase.memory());
     supps = DriftSupplementRepository(db);
     regs = DriftRegimenRepository(db);
     intake = DriftIntakeRepository(db);

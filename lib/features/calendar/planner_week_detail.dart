@@ -22,10 +22,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/features/calendar/planner_providers.dart';
-import 'package:boostque/features/calendar/planner_view_model.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/features/calendar/planner_providers.dart';
+import 'package:vitomy/features/calendar/planner_view_model.dart';
 
 /// Card padding (mockup line 352 `padding:17px`).
 const double _cardPadding = 17;

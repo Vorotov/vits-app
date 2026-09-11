@@ -5,7 +5,7 @@
 **Confidence:** HIGH (all relevant Phase-1/2 code and the mockup Calendar screen read line-by-line this session; the one no-precedent SDK API — `AppLifecycleListener` — fetched from api.flutter.dev this session; block boundaries, skip affordance, and past-day missed styling are mockup gaps flagged ASSUMED)
 
 <user_constraints>
-## User Constraints (no CONTEXT.md exists — sources: approved design spec `docs/superpowers/specs/2026-08-14-boostque-v1-design.md`, `.claude/CLAUDE.md`, REQUIREMENTS.md locked decisions, Phase-1/2 decisions)
+## User Constraints (no CONTEXT.md exists — sources: approved design spec `docs/superpowers/specs/2026-08-14-vitomy-v1-design.md`, `.claude/CLAUDE.md`, REQUIREMENTS.md locked decisions, Phase-1/2 decisions)
 
 ### Locked Decisions
 - Flutter + Dart single codebase; Riverpod + Drift; UI depends on repository interfaces only (`SupplementRepository`/`RegimenRepository`/`IntakeRepository`) — Drift types never appear in `features/`
@@ -17,7 +17,7 @@
 - Token-only styling (D-07): all UI via `BqColors`/`BqRadii`/`BqSpace`/`BqText`/`bqTheme()` — no ad-hoc hex literals in feature code
 - Zero hardcoded user-visible strings (gen-l10n en/uk ARBs, all four uk CLDR plural forms); `EdgeInsetsDirectional` only; no fixed-width text containers
 - No new packages without strong justification (D-04); bespoke layouts as plain widgets/`CustomPaint`, no generic calendar packages (CLAUDE.md "What NOT to Use": no `table_calendar`-style packages)
-- Mockup `claude_design_mockup/Boostque v0.1.dc.html` is the authoritative visual reference (screen 02 · КАЛЕНДАР for this phase)
+- Mockup `claude_design_mockup/VitoMy v0.1.dc.html` is the authoritative visual reference (screen 02 · КАЛЕНДАР for this phase)
 - Pause = query-level filter in `watchDay` (`paused AND pending` excluded), never a log-row mutation (Phase-2 PF-1) — already implemented and tested
 - DATA-03 mapped to this phase: full plan→see→mark loop builds and runs on iOS simulator/device AND Android emulator/device (targetSdk 36)
 
@@ -54,7 +54,7 @@
 - GSD workflow for all file changes; package set locked (no new packages expected this phase — confirmed below: zero needed)
 - `flutter analyze` clean and `flutter test` green are exit criteria for every plan
 - Bespoke layouts (ring, day strip, block list) as plain Flutter widgets/`CustomPaint` — no charting or calendar packages
-- Bundle id placeholder `com.boostque.dev`; DATA-03 is a dev-build verification, not a store-release step
+- Bundle id placeholder `app.vitomy`; DATA-03 is a dev-build verification, not a store-release step
 
 ## Summary
 
@@ -493,7 +493,7 @@ emptyDayTitle/emptyDayBody                                            [ASSUMED �
 ### Test Framework
 | Property | Value |
 |----------|-------|
-| Framework | `flutter_test` (SDK) + in-memory Drift (`BoostqueDb.forTesting(NativeDatabase.memory())`) + ProviderScope overrides — harness proven in Phases 1–2 |
+| Framework | `flutter_test` (SDK) + in-memory Drift (`VitomyDb.forTesting(NativeDatabase.memory())`) + ProviderScope overrides — harness proven in Phases 1–2 |
 | Config file | `analysis_options.yaml` (exists) |
 | Quick run command | `flutter test test/features/<file>_test.dart` |
 | Full suite command | `flutter analyze && flutter test` (162 tests green at Phase-2 close) |
@@ -576,13 +576,13 @@ No blocking gaps. DATA-03 needs a human at the checkpoint (simulator + emulator 
 
 ### Primary (HIGH confidence)
 - Project code read line-by-line this session: `lib/core/domain/{models,cycle_math,repositories}.dart`, `lib/core/db/{database,drift_repositories}.dart`, `lib/core/providers.dart`, `lib/core/theme/{tokens,theme}.dart`, `lib/features/stack/{stack_screen,stack_status}.dart`, `lib/features/calendar/calendar_screen.dart` (stub), `android/app/build.gradle.kts` — all line citations refer to these reads
-- `claude_design_mockup/Boostque v0.1.dc.html` — Calendar screen (lines 193-274) and script data (576-761, 860-880) read this session; all mockup citations verbatim
+- `claude_design_mockup/VitoMy v0.1.dc.html` — Calendar screen (lines 193-274) and script data (576-761, 860-880) read this session; all mockup citations verbatim
 - Test suite read/grepped this session: `test/db/{repositories,pause_filter,cascade_delete}_test.dart` callers of `ensureLogsForDay` (proving zero production callers), pause round-trip losslessness
 - [api.flutter.dev — AppLifecycleListener](https://api.flutter.dev/flutter/widgets/AppLifecycleListener-class.html) — fetched this session; constructor/dispose semantics quoted in Standard Stack
 - `.planning/phases/02-stack-management/02-RESEARCH.md`, `02-REVIEW.md` (IN-01..07, CR-01/WR-01 double-activation lessons, IN-06 midnight staleness), `02-PATTERNS.md` (test harnesses, import conventions, file-header convention)
 
 ### Secondary (MEDIUM confidence)
-- REQUIREMENTS.md / ROADMAP.md / design spec `docs/superpowers/specs/2026-08-14-boostque-v1-design.md` — locked missed semantics, materialization strategy ("lazily for browsed dates"), v1 test expectations
+- REQUIREMENTS.md / ROADMAP.md / design spec `docs/superpowers/specs/2026-08-14-vitomy-v1-design.md` — locked missed semantics, materialization strategy ("lazily for browsed dates"), v1 test expectations
 
 ### Tertiary (LOW confidence)
 - intl uk CLDR rendering of `'EEEE, d MMMM'` as "четвер, 13 серпня" (A7) and Ukraine 2026 DST dates (last Sundays of March/October → 2026-10-25) — training knowledge, each pinned by a unit test rather than a doc fetch

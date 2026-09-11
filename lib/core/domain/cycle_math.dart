@@ -1,4 +1,4 @@
-/// DST-safe cycle math for Boostque regimens (D-13, D-14).
+/// DST-safe cycle math for VitoMy regimens (D-13, D-14).
 ///
 /// Pure Dart: imports only the domain models. Never reads the current wall
 /// clock — callers pass the day to evaluate (D-13). All day arithmetic runs

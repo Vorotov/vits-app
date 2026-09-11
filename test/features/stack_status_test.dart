@@ -7,9 +7,9 @@
 /// today == endDate + 1 day is finished.
 library;
 
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart';
-import 'package:boostque/features/stack/stack_status.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart';
+import 'package:vitomy/features/stack/stack_status.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

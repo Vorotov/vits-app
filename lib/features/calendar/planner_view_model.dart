@@ -15,9 +15,9 @@
 /// No user-visible strings: the renderer maps each shape to an ARB key itself.
 library;
 
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart';
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart';
 
 /// A maximal run of consecutive days on which a regimen is active.
 ///

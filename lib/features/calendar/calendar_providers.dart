@@ -7,8 +7,8 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/core/today_controller.dart';
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/core/today_controller.dart';
 
 /// The day the user is browsing, or `null` to follow today.
 ///

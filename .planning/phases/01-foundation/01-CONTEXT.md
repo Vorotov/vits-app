@@ -2,7 +2,7 @@
 
 **Gathered:** 2026-08-14
 **Status:** Ready for planning
-**Source:** PRD Express Path (docs/superpowers/specs/2026-08-14-boostque-v1-design.md)
+**Source:** PRD Express Path (docs/superpowers/specs/2026-08-14-vitomy-v1-design.md)
 
 <domain>
 ## Phase Boundary
@@ -15,8 +15,8 @@ A themed, localized, three-tab app shell (Stack / Calendar / Settings) running o
 ## Implementation Decisions
 
 ### Project scaffold
-- Flutter project at the repo root: `flutter create --project-name boostque --org com.boostque --platforms ios,android .`
-- Bundle id placeholder `com.boostque.dev` on both platforms (final id is a pre-release open item)
+- Flutter project at the repo root: `flutter create --project-name vitomy --org app.vitomy --platforms ios,android .`
+- Bundle id placeholder `app.vitomy` on both platforms (final id is a pre-release open item)
 - Android targetSdk 36 (SDK 36 already installed; Play deadline 2026-08-31)
 - Toolchain (CocoaPods, JDK, Android SDK 36) is ALREADY installed — `flutter doctor` is green; do not re-plan environment setup
 
@@ -26,7 +26,7 @@ A themed, localized, three-tab app shell (Stack / Calendar / Settings) running o
 - Do NOT add sqlite3_flutter_libs (bundled by Drift ≥2.32); do NOT hand-pin intl (let flutter_localizations resolve it)
 - Do NOT use google_fonts (runtime HTTP fetch is wrong for offline app) — bundle Instrument Sans (400/500/600/700) and JetBrains Mono (400/500) as local .ttf assets declared in pubspec `fonts:`
 
-### Design tokens & theme (from claude_design_mockup/Boostque v0.1.dc.html)
+### Design tokens & theme (from claude_design_mockup/VitoMy v0.1.dc.html)
 - Single tokens file `lib/core/theme/tokens.dart` + `bqTheme()` in `lib/core/theme/theme.dart`
 - Palette: canvas #EAE9E4, paper #F7F6F3 (scaffold bg), surface #FFFFFF, surfaceAlt #FBFBF9, chip #F2F1EE, field #E4E3DD, ink #17171B, textSecondary #5C5C66, textMuted #8E8E99, textFaint #A0A0A9, accent #4A4E7C, accentPressed #3D4169, accentChipBg #EDEDF4, calm #3F7A6A/#E8F1ED, warn #B07A22/#FAF1E0, risk #A8443C/#F8EBE8
 - Series palette for supplement color tags: B08A2A, 2F3457, 3F7A6A, 6B6FA8, C4685E, 2F7A85, C07A3A, 4A4E7C
@@ -49,7 +49,7 @@ A themed, localized, three-tab app shell (Stack / Calendar / Settings) running o
 ### Database (Drift, lib/core/db/)
 - Tables: Supplements, Regimens, RegimenSlots, IntakeLogs; SyncColumns mixin on every table: TEXT UUID id PK, createdAt, updatedAt, deletedAt nullable (soft delete)
 - IntakeLogs unique key (slotId, date); date stored as UTC-midnight DateTime; status int = DoseStatus.index
-- `BoostqueDb.forTesting(NativeDatabase.memory())` + `BoostqueDb.open()` via driftDatabase(name: 'boostque')
+- `VitomyDb.forTesting(NativeDatabase.memory())` + `VitomyDb.open()` via driftDatabase(name: 'vitomy')
 - Export drift schema snapshot (`drift_schema_v1.json`) at schema version 1 — migration discipline starts now
 - Verify DB file lives in default app-documents location included in OS backups (DATA-02); document this in code comment
 - Repository interfaces (SupplementRepository, RegimenRepository, IntakeRepository) in core/domain; Drift implementations in core/db; `ensureLogsForDay` idempotent materialization; StackEntry/DayDose view models; Riverpod providers in core/providers.dart
@@ -77,9 +77,9 @@ A themed, localized, three-tab app shell (Stack / Calendar / Settings) running o
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Design & spec
-- `docs/superpowers/specs/2026-08-14-boostque-v1-design.md` — approved v1 design spec (architecture, data model, i18n, testing)
-- `docs/superpowers/plans/2026-08-14-boostque-v1.md` — approved task-level implementation plan; Tasks 1–7 map to this phase (Task 0 toolchain DONE; ignore its google_fonts references — superseded by bundled fonts decision)
-- `claude_design_mockup/Boostque v0.1.dc.html` — authoritative visual design (palette, typography, 5 screens)
+- `docs/superpowers/specs/2026-08-14-vitomy-v1-design.md` — approved v1 design spec (architecture, data model, i18n, testing)
+- `docs/superpowers/plans/2026-08-14-vitomy-v1.md` — approved task-level implementation plan; Tasks 1–7 map to this phase (Task 0 toolchain DONE; ignore its google_fonts references — superseded by bundled fonts decision)
+- `claude_design_mockup/VitoMy v0.1.dc.html` — authoritative visual design (palette, typography, 5 screens)
 
 ### Research
 - `.planning/research/STACK.md` — verified package versions and what NOT to use

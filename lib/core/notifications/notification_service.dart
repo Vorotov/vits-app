@@ -21,9 +21,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 
-import 'package:boostque/core/notifications/notification_constants.dart';
-import 'package:boostque/core/notifications/notification_scheduler.dart';
-import 'package:boostque/core/notifications/tz_conversion.dart';
+import 'package:vitomy/core/notifications/notification_constants.dart';
+import 'package:vitomy/core/notifications/notification_scheduler.dart';
+import 'package:vitomy/core/notifications/tz_conversion.dart';
 
 /// The Android status-bar icon.
 ///
@@ -279,7 +279,7 @@ class PluginNotificationScheduler extends NotificationScheduler {
         FlutterErrorDetails(
           exception: error,
           stack: stack,
-          library: 'boostque',
+          library: 'vitomy',
           context: what,
         ),
       );

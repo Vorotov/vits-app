@@ -2,7 +2,7 @@
 ///
 /// Container harness copied from test/providers_test.dart: [dbProvider] is
 /// overridden with an in-memory database, so no test touches the on-disk
-/// boostque.sqlite file (D-19). Seeding goes through the repository providers
+/// vitomy.sqlite file (D-19). Seeding goes through the repository providers
 /// read off the SAME container, so production code paths are exercised.
 ///
 /// This file NEVER calls the repository's materialization primitive — that is
@@ -19,23 +19,23 @@
 /// (PF-9, E-4), and the `dateOnly()` family-key assert (PF-1).
 library;
 
-import 'package:boostque/core/db/database.dart' show BoostqueDb, IntakeLog;
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart';
-import 'package:boostque/core/providers.dart';
+import 'package:vitomy/core/db/database.dart' show VitomyDb, IntakeLog;
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart';
+import 'package:vitomy/core/providers.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   late ProviderContainer container;
-  late BoostqueDb db;
+  late VitomyDb db;
 
   setUp(() {
     container = ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
-          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          final database = VitomyDb.forTesting(NativeDatabase.memory());
           ref.onDispose(database.close);
           db = database;
           return database;

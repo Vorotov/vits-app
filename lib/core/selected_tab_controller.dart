@@ -14,7 +14,7 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/core/notifications/notification_constants.dart';
+import 'package:vitomy/core/notifications/notification_constants.dart';
 
 /// Index of the Стек destination — the destination the app opens on when
 /// nothing gives it a reason to open on another.

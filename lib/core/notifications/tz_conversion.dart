@@ -59,7 +59,7 @@ Future<void> initTimeZones({
       FlutterErrorDetails(
         exception: error,
         stack: stack,
-        library: 'boostque',
+        library: 'vitomy',
         context: ErrorDescription('resolving the device time zone'),
       ),
     );

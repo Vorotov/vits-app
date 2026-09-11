@@ -23,8 +23,8 @@ library;
 
 import 'dart:ui';
 
-import 'package:boostque/core/l10n/gen/app_localizations.dart';
-import 'package:boostque/core/theme/tokens.dart';
+import 'package:vitomy/core/l10n/gen/app_localizations.dart';
+import 'package:vitomy/core/theme/tokens.dart';
 
 /// One bundled catalog entry: stable id, palette color token, and
 /// locale-resolving name/doseText functions (RESEARCH P-1).

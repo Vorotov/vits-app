@@ -70,7 +70,7 @@ entries 1, 2, 3, 8 or 9.
 ### 0. P1 — PRE-STEP: notification permission granted on each device
 expected: the app is permitted to post notifications on both devices BEFORE
 anything below runs. On Android, from the host shell:
-`adb shell pm grant com.boostque.dev android.permission.POST_NOTIFICATIONS`
+`adb shell pm grant app.vitomy android.permission.POST_NOTIFICATIONS`
 (an emulator below API 33 needs no grant — the permission does not exist there).
 On iOS there is no shell equivalent: launch the app by hand, save one regimen,
 and answer the system dialog **Allow**; there is exactly one prompt per install.
@@ -161,7 +161,7 @@ only check of what those counts actually look like rendered.
 result:
 
 ### 4. P1 — the Android channel row, and its rename in place
-expected: Android only. Settings → Apps → Boostque → Notifications shows ONE
+expected: Android only. Settings → Apps → VitoMy → Notifications shows ONE
 channel, under its Ukrainian name «Нагадування про прийом» with the description
 «Одне нагадування на кожен час прийому у вашому розкладі.». Then switch the app's
 language to English in the app's own Settings screen, return to Android's

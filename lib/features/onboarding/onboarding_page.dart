@@ -8,7 +8,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-import 'package:boostque/core/theme/tokens.dart';
+import 'package:vitomy/core/theme/tokens.dart';
 
 class OnboardingPage extends StatelessWidget {
   const OnboardingPage({

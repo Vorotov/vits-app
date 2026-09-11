@@ -1,4 +1,4 @@
-# Local dose notifications for Boostque v1.1 — research
+# Local dose notifications for VitoMy v1.1 — research
 
 **Date:** 2026-08-16
 **Scope:** local (non-push) dose reminders on iOS + Android for the existing Flutter/Riverpod/Drift codebase
@@ -47,7 +47,7 @@ Nothing else. No permission-handler package: `flutter_local_notifications` expos
 
 **`awesome_notifications` (0.12.1, ~45 days old, 3.4k likes).** Still pre-1.0 and self-describes as *"plugin under development"* with per-platform percentage-complete estimates. It confirms the same iOS 64 limit, so it buys nothing on the hard constraint. Richer scheduling model (`NotificationAndroidCrontab`) that this app does not need. Rejected on maturity for an app whose core promise is that the reminder actually arrives.
 
-**Firebase Cloud Messaging / any push approach.** Rejected on the locked constraint: Boostque ships with no `INTERNET` permission in the release manifest and no backend. Off the table.
+**Firebase Cloud Messaging / any push approach.** Rejected on the locked constraint: VitoMy ships with no `INTERNET` permission in the release manifest and no backend. Off the table.
 
 ### Installation
 
@@ -101,7 +101,7 @@ UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDe
 | Do repeating notifications count against it? | **A repeating request counts as 1**, regardless of how many deliveries it produces. This is what makes tier one of the recommended architecture viable. | HIGH |
 | Which requests are dropped when you exceed 64? | **Unresolved.** Apple's docs/forums are read by some as "the system keeps the soonest-firing 64"; the plugin's README states *"iOS will only keep the 64 notifications that were last set."* These are different rules with different consequences. **Design so we never find out** — enforce the budget in our own code (§5). | LOW — do not depend on either reading |
 | Permission timing / UX | One system prompt, ever. Once the user answers, `requestPermissions` returns the stored answer and shows nothing. There is no second chance. See §6. | HIGH |
-| Survive app update? | **Yes**, per an Apple engineer (Jan '25): *"Scheduled local notifications will persist after an app update as long as you have not changed the app's bundle id."* One developer in that same thread posted a reproducible counter-case that Apple did not follow up on. Since our design reschedules on every foreground, this is self-healing either way — but it is a reason **not** to change the bundle id casually. Note: the bundle id is still the placeholder `com.boostque.dev`; **changing it before release wipes every pending notification on existing installs.** | MEDIUM (self-healing, so low risk) |
+| Survive app update? | **Yes**, per an Apple engineer (Jan '25): *"Scheduled local notifications will persist after an app update as long as you have not changed the app's bundle id."* One developer in that same thread posted a reproducible counter-case that Apple did not follow up on. Since our design reschedules on every foreground, this is self-healing either way — but it is a reason **not** to change the bundle id casually. Note: the bundle id is still the placeholder `app.vitomy`; **changing it before release wipes every pending notification on existing installs.** | MEDIUM (self-healing, so low risk) |
 | Survive reinstall? | No — deleting the app removes its notifications. The plugin README warns that on older iOS versions notifications scheduled before an uninstall could reappear after reinstall, and suggests clearing on first launch. Cheap insurance: on first-ever launch, `cancelAll()` before scheduling. | MEDIUM |
 | Fire if the app has never been opened since boot? | **Yes.** Local notification requests are held and delivered by the system, not by the app process; the app is not launched or woken to deliver them. iOS has no "app must have run since boot" gate — that is an Android-only concern. | HIGH |
 | Time zone handling | Verified by reading the plugin's `FlutterLocalNotificationsPlugin.m`: `buildUserNotificationCalendarTrigger:` builds an `NSTimeZone` from the passed zone name, sets it on both the date formatter and the `NSCalendar`, then extracts `NSDateComponents` and creates a `UNCalendarNotificationTrigger`. Without `matchDateTimeComponents` it extracts year/month/day/hour/minute/second and uses `repeats:NO`. With `DateTimeComponents.time` it extracts only hour/minute/second and uses **`repeats:YES`**. | HIGH |
@@ -142,7 +142,7 @@ Android's power-management limits, quoted from the official table:
 | Rare | 1 per hour |
 | Restricted | **One alarm per day**, exact or inexact |
 
-Boostque is a daily-open app by design, so it should sit in Active/Working set for engaged users. But a user who stops opening it drifts toward Rare — and at 6 slots/day the "1 per hour" cap does not bite (doses are hours apart), while "Restricted" (1/day) would. Android 16 (API 36, our target) *enforces* bucket quotas more aggressively than earlier releases. This is a real degradation curve for lapsed users and is worth a line in the design doc rather than a surprise in a bug report.
+VitoMy is a daily-open app by design, so it should sit in Active/Working set for engaged users. But a user who stops opening it drifts toward Rare — and at 6 slots/day the "1 per hour" cap does not bite (doses are hours apart), while "Restricted" (1/day) would. Android 16 (API 36, our target) *enforces* bucket quotas more aggressively than earlier releases. This is a real degradation curve for lapsed users and is worth a line in the design doc rather than a surprise in a bug report.
 
 ### Reboot
 
@@ -275,7 +275,7 @@ Partition regimens at plan time:
 | App force-stopped (Android) | ❌ All alarms cancelled; no `BOOT_COMPLETED` until manual launch. Unfixable. |
 | DST transition | ✅ Tier A recomputes wall-clock; tier B is rescheduled on the next foreground anyway. |
 
-**Mitigation for the tier-B silent gap, cost 1 request:** schedule a **sentinel** notification at the tail of the horizon — *"Відкрийте Boostque, щоб оновити нагадування."* It converts a silent failure into a visible, actionable one. This is the standard workaround for the iOS cap and it is honest with the user. It is also a product decision, not a technical one (see Open Questions Q2). The counter-argument: Boostque's core loop *is* opening the app daily to check doses off, so a user who hasn't opened it in a week has already stopped using it, and nagging them may not be wanted.
+**Mitigation for the tier-B silent gap, cost 1 request:** schedule a **sentinel** notification at the tail of the horizon — *"Відкрийте VitoMy, щоб оновити нагадування."* It converts a silent failure into a visible, actionable one. This is the standard workaround for the iOS cap and it is honest with the user. It is also a product decision, not a technical one (see Open Questions Q2). The counter-argument: VitoMy's core loop *is* opening the app daily to check doses off, so a user who hasn't opened it in a week has already stopped using it, and nagging them may not be wanted.
 
 ### Notification identity — the piece that makes reconciliation work
 
@@ -322,7 +322,7 @@ List<PlannedNotification> planNotifications({
 
 **When to ask: on the first successful regimen save — not at first launch.**
 
-iOS gives exactly one system prompt for the app's lifetime; Android 13+ effectively gives two before permanent denial. Asking cold at first launch, before the user has entered a single supplement, spends that one shot at the moment the user has the least reason to say yes. Asking right after they've defined a schedule — the moment the app has something to remind them *about* — is when the request is self-explanatory. A short pre-prompt sheet before the system dialog ("Boostque can remind you at each dose time. Reminders never leave your phone.") is the standard pattern and is worth the one extra screen, given there is no retry.
+iOS gives exactly one system prompt for the app's lifetime; Android 13+ effectively gives two before permanent denial. Asking cold at first launch, before the user has entered a single supplement, spends that one shot at the moment the user has the least reason to say yes. Asking right after they've defined a schedule — the moment the app has something to remind them *about* — is when the request is self-explanatory. A short pre-prompt sheet before the system dialog ("VitoMy can remind you at each dose time. Reminders never leave your phone.") is the standard pattern and is worth the one extra screen, given there is no retry.
 
 **Critical implementation detail:** `DarwinInitializationSettings` defaults `requestAlertPermission`, `requestSoundPermission`, `requestBadgePermission` all to **`true`** — meaning a default `initialize()` fires the iOS prompt immediately on first launch, exactly what we're trying to avoid. **Set all three to `false`** and call `IOSFlutterLocalNotificationsPlugin.requestPermissions(alert: true, badge: true, sound: true)` explicitly at the chosen moment.
 
@@ -403,7 +403,7 @@ The cost is that the notification no longer tells you *which* supplement without
 
 **Q1 — Per-slot or grouped-by-time? (biggest one.)** One notification per dose slot, as briefed, or one per distinct time-of-day covering all doses due then? Grouping is materially better for the iOS 64 cap (roughly 3× the horizon for a typical stack), for privacy, and for buzz fatigue. It costs the ability to name the supplement in the banner — which the recommended privacy default already gives up. **Recommendation: group by time.**
 
-**Q2 — Sentinel notification?** On iOS the tier-B horizon runs out (~4–7 days) and reminders for cycling/course regimens go silent with no signal. Add a single "open Boostque to refresh reminders" notification at the tail of the horizon (cost: 1 request, converts silent failure into visible)? Or accept the silence on the grounds that a user who hasn't opened the app in a week has lapsed anyway? **Recommendation: add it, plainly worded.**
+**Q2 — Sentinel notification?** On iOS the tier-B horizon runs out (~4–7 days) and reminders for cycling/course regimens go silent with no signal. Add a single "open VitoMy to refresh reminders" notification at the tail of the horizon (cost: 1 request, converts silent failure into visible)? Or accept the silence on the grounds that a user who hasn't opened the app in a week has lapsed anyway? **Recommendation: add it, plainly worded.**
 
 **Q3 — Cancel the reminder for a dose already marked taken?** If the 21:00 dose is checked off at 20:00, the reminder still fires. Cancelling it is correct but adds a fourth reschedule trigger (on every intake status change — the app's most frequent write) and makes the plan function depend on `IntakeLog` state, not just regimens. **Recommendation: defer to v1.2**, but note that the ~1-slot-per-dose churn is small and it is the kind of detail users notice.
 
@@ -413,7 +413,7 @@ The cost is that the notification no longer tells you *which* supplement without
 
 **Q6 — Discoverability when permission is denied.** With no notification settings screen in v1.1, a user who taps "Don't Allow" has no way back except system Settings. Is a single passive status row in the existing Settings screen (with an "Open system settings" button) enough, or is that already the deferred settings UI creeping in? **Recommendation: one status row — it's a status indicator, not a settings surface.**
 
-**Q7 — Bundle id.** Still the placeholder `com.boostque.dev`. Changing it wipes every pending iOS notification on existing installs. Not urgent (the app reschedules on foreground) but it belongs on the pre-release checklist alongside the app-name decision already flagged in CLAUDE.md.
+**Q7 — Bundle id.** Still the placeholder `app.vitomy`. Changing it wipes every pending iOS notification on existing installs. Not urgent (the app reschedules on foreground) but it belongs on the pre-release checklist alongside the app-name decision already flagged in CLAUDE.md.
 
 **Q8 — Accept 10–15 min DST/Doze jitter and the twice-yearly off-by-an-hour dose?** The Play-compliant inexact-alarm choice means Android reminders can arrive up to ~15 minutes late while dozing, and a 03:00 dose lands at 04:00 on Ukraine's spring-forward Sunday. Both are consequences of correct choices, not bugs — but the user should sign off rather than discover them.
 

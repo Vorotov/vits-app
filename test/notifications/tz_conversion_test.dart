@@ -12,7 +12,7 @@
 /// exists in this file for the same reason.
 library;
 
-import 'package:boostque/core/notifications/tz_conversion.dart';
+import 'package:vitomy/core/notifications/tz_conversion.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/timezone.dart' as tz;

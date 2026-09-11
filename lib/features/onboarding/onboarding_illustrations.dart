@@ -14,8 +14,8 @@ library;
 
 import 'package:flutter/material.dart';
 
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/theme/tokens.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/theme/tokens.dart';
 
 /// Page 1: two mini dose rows — one taken (accent circle, ✓, struck name
 /// bar), one pending (empty circle, plain bar). Names are rounded bars, not

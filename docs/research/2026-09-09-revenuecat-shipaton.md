@@ -20,9 +20,9 @@ Two rules decide the shape of the work:
   purchase**. Installing the SDK is not enough; a paywall backed by a
   configured product is the stated minimum.
 
-Boostque passes the rule that disqualifies most existing projects: a project
+VitoMy passes the rule that disqualifies most existing projects: a project
 may predate the submission period, but its **first public store release** must
-happen inside it. Boostque has never shipped, so the existing codebase is an
+happen inside it. VitoMy has never shipped, so the existing codebase is an
 asset rather than a disqualification.
 
 **Android is out of reach.** Personal Play developer accounts created after
@@ -89,7 +89,7 @@ call, but **nothing requires it before the first frame.** It must not go in
 The shape to copy is `notificationBootstrapProvider`
 (`lib/core/notifications/notification_providers.dart`): a `Notifier<bool>` that
 runs from a post-first-frame callback and reports when it is done, watched by
-`BoostqueApp` purely to keep it alive because an unlistened provider is paused
+`VitomyApp` purely to keep it alive because an unlistened provider is paused
 in this Riverpod version. A `purchasesBootstrapProvider` with the same
 structure is the right answer, and its `bool` state is not decoration — see
 the race below.
@@ -352,7 +352,7 @@ Ordered by what blocks what, not by effort.
 
 1. **Today, in parallel**: (a) Apple Developer Program enrolment, if not
    already done; (b) the Paid Apps Agreement, banking and tax forms from §7;
-   (c) decide the app name and bundle id — `com.boostque.dev` becomes permanent
+   (c) decide the app name and bundle id — `app.vitomy` becomes permanent
    the moment the App Store Connect record is created, and the `.dev` suffix
    would be stuck on a shipping product.
 2. Create the App Store Connect record and the consumable tip product (or the

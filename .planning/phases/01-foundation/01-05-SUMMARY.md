@@ -14,7 +14,7 @@ provides:
   - Drift tables Supplements, Regimens, RegimenSlots, IntakeLogs with generated database.g.dart
   - IntakeLogs composite unique key (slotId, date) enabling idempotent insert-or-ignore materialization
   - Text-based ISO-8601 datetime storage (build.yaml) so DateTime.utc round-trips with isUtc true
-  - BoostqueDb.forTesting(NativeDatabase.memory()) + BoostqueDb.open() via driftDatabase(name 'boostque')
+  - VitomyDb.forTesting(NativeDatabase.memory()) + VitomyDb.open() via driftDatabase(name 'vitomy')
   - drift_schemas/drift_schema_v1.json snapshot at schemaVersion 1
 affects: [01-07 repositories, sync backend (future), all feature phases reading the DB]
 
@@ -92,7 +92,7 @@ coverage:
         status: pass
     human_judgment: false
   - id: D5
-    description: "On-device boostque.sqlite is created under the app-documents directory included in OS backups"
+    description: "On-device vitomy.sqlite is created under the app-documents directory included in OS backups"
     requirement: DATA-02
     verification: []
     human_judgment: true
@@ -119,7 +119,7 @@ status: complete
 - SyncColumns mixin applied to all 4 tables (Supplements, Regimens, RegimenSlots, IntakeLogs) — proven by a table-introspection test over `db.allTables`
 - IntakeLogs composite `uniqueKeys` on (slotId, date): duplicate insert-or-ignore leaves exactly one row, making future `ensureLogsForDay` materialization idempotent
 - `store_date_time_values_as_text: true` in build.yaml — `DateTime.utc(2026,8,14)` round-trips equal with `isUtc == true` (UTC-midnight calendar identity intact)
-- `BoostqueDb.forTesting` (in-memory) and `BoostqueDb.open()` via `driftDatabase(name: 'boostque')` with D-21 backup-inclusion doc comment at the open() site
+- `VitomyDb.forTesting` (in-memory) and `VitomyDb.open()` via `driftDatabase(name: 'vitomy')` with D-21 backup-inclusion doc comment at the open() site
 - `drift_schemas/drift_schema_v1.json` exported at schemaVersion 1 — migration discipline starts now
 - Automated gates confirm OS-backup defaults untouched (no `android:allowBackup="false"`, no `NSURLIsExcludedFromBackupKey`)
 
@@ -128,13 +128,13 @@ status: complete
 Each task was committed atomically (Task 1 was TDD — RED then GREEN):
 
 1. **Task 1 RED: failing schema tests** - `75ebe95` (test)
-2. **Task 1 GREEN: SyncColumns + 4 tables + BoostqueDb + codegen** - `cd9159a` (feat)
+2. **Task 1 GREEN: SyncColumns + 4 tables + VitomyDb + codegen** - `cd9159a` (feat)
 3. **Task 2: schema v1 snapshot + backup-default verification** - `a221d8f` (chore)
 
 _No REFACTOR commit — GREEN implementation needed no cleanup._
 
 ## Files Created/Modified
-- `lib/core/db/database.dart` - SyncColumns mixin, 4 tables, BoostqueDb (forTesting/open, schemaVersion 1)
+- `lib/core/db/database.dart` - SyncColumns mixin, 4 tables, VitomyDb (forTesting/open, schemaVersion 1)
 - `lib/core/db/database.g.dart` - generated Drift code (committed per plan)
 - `build.yaml` - drift_dev option `store_date_time_values_as_text: true` with rationale comment
 - `drift_schemas/drift_schema_v1.json` - schema snapshot keyed to schemaVersion 1
@@ -162,7 +162,7 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 - Plan 01-07 can build repositories against this schema without touching it: SyncColumns shape, unique key, and text-mode datetimes are locked and tested
-- Outstanding phase-end human check (D5): run the app once on one platform and confirm `boostque.sqlite` appears under the app-documents directory
+- Outstanding phase-end human check (D5): run the app once on one platform and confirm `vitomy.sqlite` appears under the app-documents directory
 
 ## Self-Check: PASSED
 

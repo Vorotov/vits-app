@@ -1,4 +1,4 @@
-import 'package:boostque/core/domain/models.dart';
+import 'package:vitomy/core/domain/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

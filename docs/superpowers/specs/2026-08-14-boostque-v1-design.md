@@ -1,15 +1,15 @@
-# Boostque v1 — Design Spec
+# VitoMy v1 — Design Spec
 
 **Date:** 2026-08-14
 **Status:** Approved scope, pending final spec review
 
 ## What we're building
 
-Boostque is a supplement stack planner and tracker for iOS and Android. The
+VitoMy is a supplement stack planner and tracker for iOS and Android. The
 user defines their supplement stack, schedules doses (including week-based
 on/off cycles), and tracks intake in a calendar with Day / Cycles / Year
 views. The visual design already exists as an HTML mockup; the authoritative
-file is `claude_design_mockup/Boostque v0.1.dc.html`.
+file is `claude_design_mockup/VitoMy v0.1.dc.html`.
 
 ## Decisions made
 
@@ -22,7 +22,7 @@ file is `claude_design_mockup/Boostque v0.1.dc.html`.
 
 **Out of scope for v1** (planned for later, kept in mind architecturally):
 Advisor tab (Радник), camera label scanning, home-screen widgets, dose
-reminders/notifications, cloud sync/backup, Boostque Plus monetization.
+reminders/notifications, cloud sync/backup, VitoMy Plus monetization.
 Widgets and notifications influence one v1 choice: dose occurrences are
 materialized in the database (see Data model) so a future widget or
 notification scheduler can read "today's doses" without running app logic.
@@ -117,5 +117,5 @@ CocoaPods, Java (Temurin), and Android command-line tools to be installed
 during setup.
 
 **Open item (decide before first store release):** final app name and bundle
-identifier. Development uses the placeholder `com.boostque.dev`; renaming
+identifier. Development uses the placeholder `app.vitomy`; renaming
 before release is a mechanical, well-supported change.

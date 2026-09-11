@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/notifications/notification_constants.dart';
-import 'package:boostque/core/notifications/notification_providers.dart';
-import 'package:boostque/core/selected_tab_controller.dart';
-import 'package:boostque/core/widgets/bq_add_fab.dart';
-import 'package:boostque/core/widgets/bq_nav_bar.dart';
-import 'package:boostque/features/calendar/calendar_providers.dart';
-import 'package:boostque/features/calendar/planner_screen.dart';
-import 'package:boostque/features/calendar/today_screen.dart';
-import 'package:boostque/features/stack/stack_screen.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/notifications/notification_constants.dart';
+import 'package:vitomy/core/notifications/notification_providers.dart';
+import 'package:vitomy/core/selected_tab_controller.dart';
+import 'package:vitomy/core/widgets/bq_add_fab.dart';
+import 'package:vitomy/core/widgets/bq_nav_bar.dart';
+import 'package:vitomy/features/calendar/calendar_providers.dart';
+import 'package:vitomy/features/calendar/planner_screen.dart';
+import 'package:vitomy/features/calendar/today_screen.dart';
+import 'package:vitomy/features/stack/stack_screen.dart';
 
 /// Three-tab app shell (NAV-02, UI-SPEC S9): [IndexedStack] over the Стек /
 /// Сьогодні / Календар screens with the hand-built [BqNavBar].

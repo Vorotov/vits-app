@@ -18,9 +18,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/theme/tokens.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/theme/tokens.dart';
 
 /// Outer box of the ring (mockup line 210).
 const double _ringBox = 46;

@@ -1,4 +1,4 @@
-/// Sync-ready Drift schema for Boostque (DATA-02).
+/// Sync-ready Drift schema for VitoMy (DATA-02).
 ///
 /// Every table mixes in [SyncColumns] (per D-17): TEXT UUID primary key,
 /// createdAt/updatedAt true-UTC instants, and a nullable deletedAt for soft
@@ -101,12 +101,12 @@ class IntakeLogs extends Table with SyncColumns {
 }
 
 @DriftDatabase(tables: [Supplements, Regimens, RegimenSlots, IntakeLogs])
-class BoostqueDb extends _$BoostqueDb {
+class VitomyDb extends _$VitomyDb {
   /// Test-only constructor — pass `NativeDatabase.memory()`; never touches
   /// disk (D-19).
-  BoostqueDb.forTesting(super.executor);
+  VitomyDb.forTesting(super.executor);
 
-  /// Opens the on-device database file `boostque.sqlite`.
+  /// Opens the on-device database file `vitomy.sqlite`.
   ///
   /// D-21 / DATA-02: `driftDatabase(name:)` resolves the file into the
   /// platform app-documents directory — the iOS Documents directory (backed
@@ -115,7 +115,7 @@ class BoostqueDb extends _$BoostqueDb {
   /// out of OS backups: no `android:allowBackup="false"` in the manifest and
   /// no `NSURLIsExcludedFromBackupKey` on iOS. Backup inclusion is an OS
   /// default triggered by this file location — leave it alone.
-  BoostqueDb.open() : super(driftDatabase(name: 'boostque'));
+  VitomyDb.open() : super(driftDatabase(name: 'vitomy'));
 
   @override
   int get schemaVersion => 1;

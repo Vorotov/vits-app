@@ -1,4 +1,4 @@
-/// Pure-Dart domain value models for Boostque (D-12).
+/// Pure-Dart domain value models for VitoMy (D-12).
 ///
 /// This library imports nothing outside `dart:core`. No Flutter, no Drift,
 /// no I/O — the domain layer stays framework-free by design.

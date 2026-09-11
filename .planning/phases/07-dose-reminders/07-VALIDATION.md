@@ -163,7 +163,7 @@ Two independent defects in one test.
 by design), and the real plugin-backed one is installed only by `main()`'s override. The existing
 device harness this task is told to follow — `integration_test/data03_loop_test.dart:84-89` — does
 **not** run `main()`; it builds its own `ProviderScope` with a single `sharedPreferencesProvider`
-override and pumps `BoostqueApp`. A device test written on that precedent resolves the **no-op**
+override and pumps `VitomyApp`. A device test written on that precedent resolves the **no-op**
 scheduler, whose `pending` answer is documented as an empty list. The test then either fails for a
 reason that has nothing to do with the device, or — if written tolerantly — passes green while
 asserting nothing at all. That is the worst outcome available: a device claim that was never
@@ -179,7 +179,7 @@ the pending set stays empty by design.
 the default is the no-op and its pending list is always empty, so the assertion would be vacuous.
 Assert first that the resolved scheduler is not the no-op, and fail loudly if it is."* And:
 *"the permission grant is a documented pre-step, not a test action: on Android
-`adb shell pm grant com.boostque.dev android.permission.POST_NOTIFICATIONS` before the run; on iOS
+`adb shell pm grant app.vitomy android.permission.POST_NOTIFICATIONS` before the run; on iOS
 the dialog is human-answered, so the automated half runs on an already-granted install. If the
 enabled check answers false, the test must fail with a message naming the pre-step rather than
 report an empty pending set as a pass."* Record the pre-step in `07-UAT.md` too.
@@ -375,7 +375,7 @@ checkable is real but collides with itself (B1).
 plugin. There is no commit in which plugin code exists without the seam in front of it, and no
 window in which a test could reach it: the plugin resolves in exactly one file, the real
 implementation is installed only by `main()`'s override, and every existing test pumps
-`BoostqueApp`/`AppShell` inside its own `ProviderScope`. 07-01's acceptance that **zero existing test
+`VitomyApp`/`AppShell` inside its own `ProviderScope`. 07-01's acceptance that **zero existing test
 files are edited** is the right proof of the default being correct. Later plans' tests all drive the
 mocked or default seam. The one place this rule is broken is the device test, which needs the
 *opposite* (B5).

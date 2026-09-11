@@ -1,4 +1,4 @@
-# Requirements: Boostque
+# Requirements: VitoMy
 
 **Defined:** 2026-08-14
 **Core Value:** A user can see exactly what to take today and check it off, with cycles and breaks computed correctly — the daily loop of plan → see → mark taken must always work.
@@ -71,7 +71,7 @@ Deferred to future release. Tracked but not in current roadmap.
 - **SCAN-01**: User can add a supplement by scanning its label (camera/OCR)
 - **SYNC-01**: User can sync data across devices (accounts + backend; LWW on existing timestamps)
 - **ADVI-01**: Advisor tab with properly-sourced interaction data (never a naive version)
-- **MONE-01**: Boostque Plus subscription
+- **MONE-01**: VitoMy Plus subscription
 
 ## Out of Scope
 
@@ -84,7 +84,7 @@ Explicitly excluded. Documented to prevent scope creep.
 | Social sharing of health data | Privacy risk, no user value for this product |
 | Guilt-based streaks / aggressive reminders | Documented alert-fatigue and uninstall driver; conflicts with cycle-off weeks |
 | Auto-adjusting "smart" reminders | Opaque behavior erodes trust |
-| Quality scores | Mockup v0.1 explicitly excludes (this row originally also covered the onboarding flow; that half was revisited 2026-08-26 per the spec `docs/superpowers/specs/2026-08-26-boostque-onboarding-design.md` and shipped as ONBO-01..05 in v1.2 — quality scores stay out) |
+| Quality scores | Mockup v0.1 explicitly excludes (this row originally also covered the onboarding flow; that half was revisited 2026-08-26 per the spec `docs/superpowers/specs/2026-08-26-vitomy-onboarding-design.md` and shipped as ONBO-01..05 in v1.2 — quality scores stay out) |
 | Treating the 5-substance limit as a safety threshold | It is an editorial tracking-comfort rule; presenting it as medical invites store-review and liability problems |
 
 ## Decisions Locked During Definition
@@ -137,7 +137,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 # Milestone v1.1 — Navigation, Notifications, Simplification
 
-Source: `docs/superpowers/specs/2026-08-17-boostque-v1.1-design.md` (approved 2026-08-17).
+Source: `docs/superpowers/specs/2026-08-17-vitomy-v1.1-design.md` (approved 2026-08-17).
 Requested after the first hands-on session with the shipped v1 build.
 
 ## Navigation (NAV)
@@ -182,7 +182,7 @@ tapping **Allow**, and the delivery entries have not been run. See
 
 # v1.2 Requirements
 
-Source: `docs/superpowers/specs/2026-08-26-boostque-onboarding-design.md` (approved 2026-08-31;
+Source: `docs/superpowers/specs/2026-08-26-vitomy-onboarding-design.md` (approved 2026-08-31;
 its D-1 and *Screens* sections superseded 2026-08-31 by the research pass recorded in that file's
 *What shipped* section).
 Amends the former "Onboarding flow, quality scores" Out-of-Scope row — this is that revisit; quality scores remain out.

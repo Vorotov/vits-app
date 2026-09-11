@@ -35,10 +35,10 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/today_controller.dart';
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/today_controller.dart';
 
 /// Sentinel for [RegimenDraft.copyWith] nullable parameters.
 const Object _unset = Object();

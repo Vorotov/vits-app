@@ -55,9 +55,9 @@ Source of the file list: `04-RESEARCH.md` — "Architectural Responsibility Map"
 /// sealed [BlockTag] hierarchy and maps each case to an ARB key itself.
 library;
 
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart';
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart';
 ```
 V-1.4 is satisfied by copying exactly these three imports and nothing else.
 
@@ -601,9 +601,9 @@ All four uk CLDR forms on every count key (`cyclesCount`); `@`-descriptions in `
 /// moving a boundary is a one-line change that a test catches.
 library;
 
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart';
-import 'package:boostque/features/calendar/day_view_model.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart';
+import 'package:vitomy/features/calendar/day_view_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 ```
 Plus the local fixture-builder-function idiom (`day_view_model_test.dart:19-61`): a `Supplement supplement({...})` and a `DayDose dose({...})` helper with defaults, each documented with the production shape it mimics. Planner needs `Regimen cyclic({onDays, offDays, start, paused})` and `Regimen course({start, end})`. Boundary discipline maps to: verdict at load 3/4 and 5/6, `frac` at 0.84/0.85, run-start on today vs today+1 (P-5).
@@ -614,7 +614,7 @@ Plus the local fixture-builder-function idiom (`day_view_model_test.dart:19-61`)
 ```dart
 /// Container harness copied from test/providers_test.dart: [dbProvider] is
 /// overridden with an in-memory database, so no test touches the on-disk
-/// boostque.sqlite file (D-19). Seeding goes through the repository providers
+/// vitomy.sqlite file (D-19). Seeding goes through the repository providers
 /// read off the SAME container, so production code paths are exercised.
 ///
 /// Riverpod 3 pauses unlistened providers, so every family instance under test
@@ -626,7 +626,7 @@ setUp(() {
   container = ProviderContainer(
     overrides: [
       dbProvider.overrideWith((ref) {
-        final database = BoostqueDb.forTesting(NativeDatabase.memory());
+        final database = VitomyDb.forTesting(NativeDatabase.memory());
         ref.onDispose(database.close);
         db = database;
         return database;
@@ -663,7 +663,7 @@ ProviderContainer makeContainer({DateTime? today, int? nowMinutes}) {
   return ProviderContainer(
     overrides: [
       dbProvider.overrideWith((ref) {
-        final database = BoostqueDb.forTesting(NativeDatabase.memory());
+        final database = VitomyDb.forTesting(NativeDatabase.memory());
         ref.onDispose(database.close);
         db = database;
         return database;

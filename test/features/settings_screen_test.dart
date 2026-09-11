@@ -17,18 +17,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boostque/core/db/database.dart' show BoostqueDb;
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/l10n/locale_controller.dart';
-import 'package:boostque/core/notifications/notification_providers.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/widgets/bq_add_fab.dart';
-import 'package:boostque/core/widgets/bq_nav_bar.dart';
-import 'package:boostque/features/settings/language_picker.dart';
-import 'package:boostque/features/settings/settings_screen.dart';
-import 'package:boostque/main.dart';
+import 'package:vitomy/core/db/database.dart' show VitomyDb;
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/l10n/locale_controller.dart';
+import 'package:vitomy/core/notifications/notification_providers.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/widgets/bq_add_fab.dart';
+import 'package:vitomy/core/widgets/bq_nav_bar.dart';
+import 'package:vitomy/features/settings/language_picker.dart';
+import 'package:vitomy/features/settings/settings_screen.dart';
+import 'package:vitomy/main.dart';
 
 // The shared seam double, rather than a fourth recorder: it answers all three
 // permission states and records what it was asked, which is what the row's
@@ -113,7 +113,7 @@ void main() {
   /// `LocaleController.build()` (P-4 Option A).
   Future<SharedPreferences> seedPrefs(Map<String, Object> values) async {
     // `onboarding_seen` rides along under every case: these suites model a
-    // returning user reaching Settings through the shell, and BoostqueApp
+    // returning user reaching Settings through the shell, and VitomyApp
     // now opens through the onboarding gate. First-launch behaviour is
     // onboarding_gate_test.dart's job.
     SharedPreferences.setMockInitialValues({
@@ -130,12 +130,12 @@ void main() {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         dbProvider.overrideWith((ref) {
-          final db = BoostqueDb.forTesting(NativeDatabase.memory());
+          final db = VitomyDb.forTesting(NativeDatabase.memory());
           ref.onDispose(db.close);
           return db;
         }),
       ],
-      child: const BoostqueApp(),
+      child: const VitomyApp(),
     );
   }
 
@@ -585,7 +585,7 @@ void main() {
       await tester.pump();
 
       final container = ProviderScope.containerOf(
-        tester.element(find.byType(BoostqueApp)),
+        tester.element(find.byType(VitomyApp)),
         listen: false,
       );
       await container.read(supplementRepoProvider).upsert(
@@ -625,7 +625,7 @@ void main() {
       await tester.pump();
 
       final container = ProviderScope.containerOf(
-        tester.element(find.byType(BoostqueApp)),
+        tester.element(find.byType(VitomyApp)),
         listen: false,
       );
 

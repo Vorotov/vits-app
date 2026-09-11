@@ -8,10 +8,10 @@ library;
 
 import 'dart:math' as math;
 
-import 'package:boostque/core/domain/cycle_math.dart' show plannerWindow;
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart';
-import 'package:boostque/features/calendar/planner_view_model.dart';
+import 'package:vitomy/core/domain/cycle_math.dart' show plannerWindow;
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart';
+import 'package:vitomy/features/calendar/planner_view_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A cyclic regimen; defaults to the 14-on/14-off cadence the window cases use.

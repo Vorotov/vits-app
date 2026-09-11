@@ -5,19 +5,19 @@
 **Confidence:** HIGH for the audit results and the criterion-4 gap list (every claim is a file+line read this session with the value quoted verbatim, including four reads inside the installed Flutter SDK and riverpod 3.4.2 sources); HIGH for the Riverpod auto-retry root cause (traced to the exact `triggerRetry` return in `riverpod-3.4.2/lib/src/core/element.dart`); MEDIUM for the Settings screen's visual design (the mockup has no Settings screen at all — its third tab is `Радник`, so the screen must be composed from existing tokens and needs a UI-SPEC); the font decision is deliberately left as a user call with both options costed
 
 <user_constraints>
-## User Constraints (no CONTEXT.md exists — sources: approved design spec `docs/superpowers/specs/2026-08-14-boostque-v1-design.md`, `.claude/CLAUDE.md`, REQUIREMENTS.md, ROADMAP.md Phase 5, `.planning/STATE.md` Pending Todos, and the Phase-1..4 locked decisions)
+## User Constraints (no CONTEXT.md exists — sources: approved design spec `docs/superpowers/specs/2026-08-14-vitomy-v1-design.md`, `.claude/CLAUDE.md`, REQUIREMENTS.md, ROADMAP.md Phase 5, `.planning/STATE.md` Pending Todos, and the Phase-1..4 locked decisions)
 
 ### Locked Decisions
-- **gen-l10n with ARB files, zero hardcoded user-visible strings.** "Flutter's official **gen-l10n** with ARB files: `app_uk.arb`, `app_en.arb`. Zero hardcoded user-visible strings anywhere — enforced from the first commit. A new language = one new `.arb` file, no code changes." [VERIFIED: docs/superpowers/specs/2026-08-14-boostque-v1-design.md:83-85]
+- **gen-l10n with ARB files, zero hardcoded user-visible strings.** "Flutter's official **gen-l10n** with ARB files: `app_uk.arb`, `app_en.arb`. Zero hardcoded user-visible strings anywhere — enforced from the first commit. A new language = one new `.arb` file, no code changes." [VERIFIED: docs/superpowers/specs/2026-08-14-vitomy-v1-design.md:83-85]
 - **ICU plurals with the full Ukrainian form set.** CLAUDE.md Constraints: "ICU plurals (Ukrainian one/few/many)"; ROADMAP Phase 5 criterion 1 requires "all four CLDR plural forms (one/few/many/other, including the 11-14 exception)" [VERIFIED: .planning/ROADMAP.md:131]
-- **Locale resolution:** "follow system language when supported; otherwise fall back to English. A settings-screen language picker stores a manual override locally and switches the app instantly." [VERIFIED: docs/superpowers/specs/2026-08-14-boostque-v1-design.md:88-90]
-- **All dates/months/numbers through `intl` with the active locale — never hand-built strings.** [VERIFIED: docs/superpowers/specs/2026-08-14-boostque-v1-design.md:91-92]
-- **Layout rules:** "no fixed-width text containers (translations change length); direction-neutral padding (`EdgeInsetsDirectional`) so a future RTL language works without rework." [VERIFIED: docs/superpowers/specs/2026-08-14-boostque-v1-design.md:93-95]
+- **Locale resolution:** "follow system language when supported; otherwise fall back to English. A settings-screen language picker stores a manual override locally and switches the app instantly." [VERIFIED: docs/superpowers/specs/2026-08-14-vitomy-v1-design.md:88-90]
+- **All dates/months/numbers through `intl` with the active locale — never hand-built strings.** [VERIFIED: docs/superpowers/specs/2026-08-14-vitomy-v1-design.md:91-92]
+- **Layout rules:** "no fixed-width text containers (translations change length); direction-neutral padding (`EdgeInsetsDirectional`) so a future RTL language works without rework." [VERIFIED: docs/superpowers/specs/2026-08-14-vitomy-v1-design.md:93-95]
 - **`shared_preferences` has exactly one job in this app** — the manual language override. "Exactly one use in this app: persisting the manual language-override choice from the settings screen (`features/settings`). Do not use it for anything that belongs in Drift" [VERIFIED: .claude/CLAUDE.md, Supporting Libraries]
 - **`intl` stays unpinned** — "never hand-set an `intl` version constraint; always let SDK resolution pick it" [VERIFIED: .claude/CLAUDE.md, Version Compatibility]; `pubspec.yaml:47` reads `intl: any` with the comment "version is deliberately unpinned so flutter_localizations (SDK) owns resolution — never hand-pin (locked decision)" [VERIFIED: pubspec.yaml:45-47]
 - **Fonts are bundled via the plain `fonts:` declaration; `google_fonts` is never-use** — "this is a fully offline, no-network app — `google_fonts`'s default behavior is to fetch font files over HTTP at first use" [VERIFIED: .claude/CLAUDE.md, What NOT to Use]
-- **`settings/` is the language picker and nothing more in v1** — "settings/     # language picker (grows later: profile, export, etc.)" [VERIFIED: docs/superpowers/specs/2026-08-14-boostque-v1-design.md:56]
-- **Three-tab shell (Stack / Calendar / Settings)** [VERIFIED: .planning/ROADMAP.md:31]; the mockup's third tab is `Радник`, which is out of scope [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:176]
+- **`settings/` is the language picker and nothing more in v1** — "settings/     # language picker (grows later: profile, export, etc.)" [VERIFIED: docs/superpowers/specs/2026-08-14-vitomy-v1-design.md:56]
+- **Three-tab shell (Stack / Calendar / Settings)** [VERIFIED: .planning/ROADMAP.md:31]; the mockup's third tab is `Радник`, which is out of scope [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:176]
 - **Token-only styling, no ad-hoc hex literals anywhere** [VERIFIED: lib/core/theme/tokens.dart:5-7]
 - **Riverpod dispose policy (D-23)** recorded once in `lib/core/providers.dart:5-11`; `localeControllerProvider` is deliberately NOT autoDispose — "App-lifetime state — intentionally NOT autoDispose" [VERIFIED: lib/core/l10n/locale_controller.dart:49-52]
 - **Zero new packages.** The stack is closed; this phase needs none.
@@ -31,7 +31,7 @@
 - The exact shape of the two new source-globbing gate tests (V-2, V-3)
 
 ### Deferred Ideas (OUT OF SCOPE)
-- Any Settings content beyond the language picker — profile, export/import (EXPT-01 is v1.x), notifications (NOTF-01 is v2), theme switching, units [VERIFIED: docs/superpowers/specs/2026-08-14-boostque-v1-design.md:56; .planning/REQUIREMENTS.md:57-70]
+- Any Settings content beyond the language picker — profile, export/import (EXPT-01 is v1.x), notifications (NOTF-01 is v2), theme switching, units [VERIFIED: docs/superpowers/specs/2026-08-14-vitomy-v1-design.md:56; .planning/REQUIREMENTS.md:57-70]
 - Actually shipping a third language. Criterion 4 is a **structural** claim ("adding a new language *requires* only one new ARB file"), proven by a test, not by shipping `app_pl.arb`
 - RTL layout work beyond the direction-neutral padding already in place — no RTL language ships in v1 (see E-9)
 - Widening the gantt label column or the load-chart week columns — both were measured and **accepted for v1** at Phase-4 UAT (see the third carried todo, resolved in P-9)
@@ -487,7 +487,7 @@ Future<void> main() async {
   final prefs = await SharedPreferences.getInstance();
   runApp(ProviderScope(
     overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-    child: const BoostqueApp(),
+    child: const VitomyApp(),
   ));
 }
 
@@ -525,7 +525,7 @@ One propagation nuance to state in the UI-SPEC: the user's own data is never re-
 
 ### P-6: The Settings screen — there is no mockup
 
-**Verified absence, not an oversight in my search.** The mockup is 991 lines. Greping it case-insensitively for `settings|налашт|мова|language|укра|english` returns three hits, all false positives: two CSS `font-feature-settings:'tnum'` declarations (lines 211, 229) and one occurrence of the word `налаштувань` inside a regimen-editor sentence (line 963). The mockup's third nav destination is **`Радник`** (Advisor), not Settings [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:176, 269, 383, 463] — Settings replaced it in the v1 three-tab decision. So: **no verbatim copy, no verbatim layout exists to extract for this screen.** The planner must produce a `05-UI-SPEC.md` composing the screen from the established design language, and the copy is newly authored (and therefore `[ASSUMED]` until UAT).
+**Verified absence, not an oversight in my search.** The mockup is 991 lines. Greping it case-insensitively for `settings|налашт|мова|language|укра|english` returns three hits, all false positives: two CSS `font-feature-settings:'tnum'` declarations (lines 211, 229) and one occurrence of the word `налаштувань` inside a regimen-editor sentence (line 963). The mockup's third nav destination is **`Радник`** (Advisor), not Settings [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:176, 269, 383, 463] — Settings replaced it in the v1 three-tab decision. So: **no verbatim copy, no verbatim layout exists to extract for this screen.** The planner must produce a `05-UI-SPEC.md` composing the screen from the established design language, and the copy is newly authored (and therefore `[ASSUMED]` until UAT).
 
 What exists today is the Phase-1 stub — a localized heading and nothing else:
 
@@ -1140,8 +1140,8 @@ for (final locale in const ['uk', 'en']) {
 - **Installed Flutter SDK 3.47.0** (`/opt/homebrew/share/flutter`), read directly: `packages/flutter/lib/src/widgets/app.dart:151-239` (`basicLocaleListResolution`, `supportedLocales.first` fallback); `packages/flutter_localizations/lib/src/utils/date_localizations.dart:17-30` (loads date symbols for ALL locales at once); `packages/flutter_localizations/lib/src/material_localizations.dart:726-745` (`isSupported` assert + `loadDateIntlDataIfNotLoaded` call site); `packages/flutter_localizations/lib/src/l10n/generated_material_localizations.dart:46518ff` (`kMaterialSupportedLanguages`, 82 entries, parsed); `packages/flutter_tools/lib/src/commands/generate_localizations.dart:55-200` (`untranslated-messages-file`, `preferred-supported-locales`, `required-resource-attributes`, `nullable-getter` semantics)
 - **Installed pub cache**, read directly: `riverpod-3.4.2/lib/src/core/element.dart:764-797` (`triggerRetry`), `riverpod-3.4.2/lib/src/core/async_value.dart:74-127, 236-267` (`hasError`, `isReloading`, `when`), `riverpod-3.4.2/lib/src/core/provider_container.dart:978-995` (`defaultRetry`), `flutter_riverpod-3.4.2/lib/src/core/provider_scope.dart:75-115` (`retry` parameter), `intl-0.20.3/lib/intl.dart:607` (`toBeginningOfSentenceCase`), `shared_preferences-2.5.5` (no deprecation on the legacy API)
 - **Bundled font files**, `cmap` tables parsed directly this session (formats 4 and 12) — `assets/fonts/InstrumentSans[wdth,wght].ttf` and `assets/fonts/JetBrainsMono[wght].ttf`
-- `claude_design_mockup/Boostque v0.1.dc.html` — full-file search for any Settings/language surface (991 lines; three hits, all false positives) and the nav destinations at lines 174-176, 267-269, 381-383, 461-463
-- `.planning/REQUIREMENTS.md` (L10N-01..04, Out of Scope, locked decisions), `.planning/ROADMAP.md:124-137` (Phase 5 goal + 4 criteria), `.planning/STATE.md:77-81` (the three carried todos, verbatim), `.planning/phases/04-planner-views/04-REVIEW.md:125-156` (CR-02 + the auto-retry note), `.planning/phases/04-planner-views/04-UAT.md:21,25,53` (the accepted measurements), `.claude/CLAUDE.md`, `docs/superpowers/specs/2026-08-14-boostque-v1-design.md:82-95`
+- `claude_design_mockup/VitoMy v0.1.dc.html` — full-file search for any Settings/language surface (991 lines; three hits, all false positives) and the nav destinations at lines 174-176, 267-269, 381-383, 461-463
+- `.planning/REQUIREMENTS.md` (L10N-01..04, Out of Scope, locked decisions), `.planning/ROADMAP.md:124-137` (Phase 5 goal + 4 criteria), `.planning/STATE.md:77-81` (the three carried todos, verbatim), `.planning/phases/04-planner-views/04-REVIEW.md:125-156` (CR-02 + the auto-retry note), `.planning/phases/04-planner-views/04-UAT.md:21,25,53` (the accepted measurements), `.claude/CLAUDE.md`, `docs/superpowers/specs/2026-08-14-vitomy-v1-design.md:82-95`
 
 ### Secondary (MEDIUM confidence)
 - `https://raw.githubusercontent.com/google/fonts/main/ofl/{instrumentsans,manrope,inter}/METADATA.pb` — declared subsets and filenames, fetched this session. Authoritative for the fonts' own metadata; MEDIUM only because the repository's `main` branch can move

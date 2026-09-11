@@ -26,13 +26,13 @@ import 'package:flutter/material.dart';
 // `DateFormat` is wanted from here.
 import 'package:intl/intl.dart' hide TextDirection;
 
-import 'package:boostque/core/l10n/casing.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/features/calendar/planner_view_model.dart';
-import 'package:boostque/features/stack/schedule_summary_text.dart';
-import 'package:boostque/features/stack/stack_status.dart';
+import 'package:vitomy/core/l10n/casing.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/features/calendar/planner_view_model.dart';
+import 'package:vitomy/features/stack/schedule_summary_text.dart';
+import 'package:vitomy/features/stack/stack_status.dart';
 
 /// Height of a row's track (mockup line 316 `height:11px`).
 const double _trackHeight = 11;

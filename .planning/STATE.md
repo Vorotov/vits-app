@@ -50,7 +50,7 @@ Progress: [██████████] 9 phases, 8 closed — Phase 7 (Dose 
   items need a person at a device or an account — listed under *Waiting on a
   human* below, and in the Deferred Items table.
 - **One spec is partly superseded.** The onboarding spec
-  (`docs/superpowers/specs/2026-08-26-boostque-onboarding-design.md`) describes
+  (`docs/superpowers/specs/2026-08-26-vitomy-onboarding-design.md`) describes
   two explain screens and no contextual help. That is what was approved, not
   what shipped. Its *What shipped* section, at the end of the file, is the app.
 
@@ -184,7 +184,7 @@ starting — what follows is a pointer, not a substitute.
    tested even in the sandbox until the bank status reads Clear, and the tax
    forms appear only after the agreement is signed. It looks like paperwork; it
    is a dependency.
-3. Final app name and bundle id — `com.boostque.dev` becomes permanent the
+3. Final app name and bundle id — `app.vitomy` becomes permanent the
    moment the App Store Connect record is created.
 
 *Code shape — all three follow patterns already in this tree:*
@@ -236,7 +236,7 @@ starting — what follows is a pointer, not a substitute.
 - **Release builds are still debug-signed.** Asserted by
   `test/platform_config_test.dart` so it cannot be forgotten. Harmless until
   distribution, blocking at it.
-- **The bundle id is still `com.boostque.dev`** and the app name is undecided.
+- **The bundle id is still `app.vitomy`** and the app name is undecided.
   Both must be settled before a first store release.
 - **Arabic RTL has never been seen by a human on a device.** The
   `test_release/` sweep proves the tree laid out right-to-left and threw no
@@ -269,7 +269,7 @@ Items acknowledged and carried forward rather than done:
 | Reminders | 07-UAT entry 0 (iOS half) — a human must tap Allow; no shell equivalent exists | Open — human-only | 2026-08-17 |
 | Reminders | 07-UAT entries 1-8 and 10 — delivery, Doze latency, lock-screen rendering, the Android channel row, the two permission dialogs, denial, tap destination, reboot re-arming, the autumn DST overlap | Open — blocked on entry 0 | 2026-08-17 |
 | Release | Real signing keystore; Android release builds are still debug-signed | Open — owner-only, pre-release blocker | 2026-08-16 |
-| Release | Final app name and bundle id (still `com.boostque.dev`) | Open — owner-only, pre-release blocker | 2026-08-16 |
+| Release | Final app name and bundle id (still `app.vitomy`) | Open — owner-only, pre-release blocker | 2026-08-16 |
 | Localization | Eyes-on Arabic RTL pass on a device | Open — owner-only | 2026-09-01 |
 | Localization | Portuguese, Russian, Bengali, Urdu — stem lists captured, ARB files never written | Cut mid-flight; re-openable, one ARB file each | 2026-09-01 |
 | Planner | Gantt label truncation at 14px week columns | Accepted for v1; measurements in `04-UAT.md` | 2026-08-16 |

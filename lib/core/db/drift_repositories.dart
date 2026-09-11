@@ -1,6 +1,6 @@
 /// Drift-backed repository implementations (D-22, D-26).
 ///
-/// The only layer that touches [BoostqueDb]. UI/state code depends on the
+/// The only layer that touches [VitomyDb]. UI/state code depends on the
 /// interfaces in `core/domain/repositories.dart`; these classes are wired in
 /// via `core/providers.dart`.
 ///
@@ -28,7 +28,7 @@ import 'database.dart';
 class DriftSupplementRepository implements SupplementRepository {
   DriftSupplementRepository(this.db);
 
-  final BoostqueDb db;
+  final VitomyDb db;
 
   @override
   Stream<List<domain.Supplement>> watchAll() => (db.select(db.supplements)
@@ -123,7 +123,7 @@ class DriftSupplementRepository implements SupplementRepository {
 class DriftRegimenRepository implements RegimenRepository {
   DriftRegimenRepository(this.db);
 
-  final BoostqueDb db;
+  final VitomyDb db;
 
   /// Active regimens left-joined with their active slots, deterministically
   /// ordered (regimen createdAt/id, then slot minutesFromMidnight/id).
@@ -256,7 +256,7 @@ class DriftIntakeRepository implements IntakeRepository {
   DriftIntakeRepository(this.db, {RegimenRepository? regimens})
       : _regimens = regimens ?? DriftRegimenRepository(db);
 
-  final BoostqueDb db;
+  final VitomyDb db;
 
   /// Regimen source consumed via the interface, not the concrete class —
   /// repositories depend on repository contracts just like UI/state code does.

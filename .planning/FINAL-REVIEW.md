@@ -59,7 +59,7 @@ remediation:
   suite_after: 715 tests green (from 701); flutter analyze clean
 ---
 
-# Boostque v1 — Whole-Codebase Final Review
+# VitoMy v1 — Whole-Codebase Final Review
 
 **Reviewed:** 2026-08-16
 **Depth:** deep (cross-file call chains, layered-fix archaeology, test-suite audit)

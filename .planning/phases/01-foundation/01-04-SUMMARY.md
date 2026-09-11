@@ -22,7 +22,7 @@ actuals:
 tech-stack:
   added: []
   patterns:
-    - "gen-l10n source-dir path: synthetic-package false + pubspec generate:true, imports via package:boostque/core/l10n/gen/"
+    - "gen-l10n source-dir path: synthetic-package false + pubspec generate:true, imports via package:vitomy/core/l10n/gen/"
     - "Plural unit tests via AppLocalizations.delegate.load — no widget pump (RESEARCH Pattern 6)"
     - "Riverpod 3.x Notifier with async SharedPreferences load kicked off in build(), state set only on validated input"
 

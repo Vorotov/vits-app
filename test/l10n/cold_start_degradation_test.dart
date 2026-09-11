@@ -24,9 +24,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boostque/core/l10n/locale_controller.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/main.dart' as entrypoint;
+import 'package:vitomy/core/l10n/locale_controller.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/main.dart' as entrypoint;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -38,7 +38,7 @@ void main() {
   late Directory dbDir;
 
   setUpAll(() {
-    dbDir = Directory.systemTemp.createTempSync('boostque_cold_start');
+    dbDir = Directory.systemTemp.createTempSync('vitomy_cold_start');
     // Registered for the WHOLE file, never per test: the database opens lazily
     // and the resolution can land after the test that triggered it, so a
     // handler torn down per test would leave a real launch-path failure

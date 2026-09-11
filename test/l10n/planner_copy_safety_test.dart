@@ -18,7 +18,7 @@ import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:boostque/core/l10n/gen/app_localizations.dart';
+import 'package:vitomy/core/l10n/gen/app_localizations.dart';
 
 /// Vocabulary that may never appear in planner copy, in either locale.
 ///

@@ -18,7 +18,7 @@
 No `07-CONTEXT.md` exists yet (`/Users/dima/supplements/.planning/phases/07-dose-reminders/` is
 empty). The binding constraints therefore come from the approved spec, ROADMAP and CLAUDE.md.
 
-### Locked Decisions (approved spec `docs/superpowers/specs/2026-08-17-boostque-v1.1-design.md` §2)
+### Locked Decisions (approved spec `docs/superpowers/specs/2026-08-17-vitomy-v1.1-design.md` §2)
 
 - **One notification per time-of-day, not per supplement.** Three supplements at 08:00 = one
   notification reading "3 прийоми". Tapping opens the **Сьогодні** tab.
@@ -285,8 +285,8 @@ with the three packages plus the edits above. Merged release manifest,
 
 | | Permissions in the RELEASE merged manifest |
 |---|---|
-| **Today (baseline)** | `com.boostque.dev.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` (AGP-generated) |
-| **After Phase 7** | `com.boostque.dev.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, `android.permission.POST_NOTIFICATIONS`, `android.permission.RECEIVE_BOOT_COMPLETED`, `android.permission.VIBRATE` |
+| **Today (baseline)** | `app.vitomy.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` (AGP-generated) |
+| **After Phase 7** | `app.vitomy.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, `android.permission.POST_NOTIFICATIONS`, `android.permission.RECEIVE_BOOT_COMPLETED`, `android.permission.VIBRATE` |
 
 [VERIFIED: two `flutter build apk --release` runs, /tmp/bqbase and /tmp/bqbuild, 2026-08-17]
 
@@ -647,7 +647,7 @@ Future<void> initTimeZones() async {
   } catch (error, stack) {
     // Degrade, never fail the launch — same stance as main()'s SharedPreferences guard.
     FlutterError.reportError(FlutterErrorDetails(
-      exception: error, stack: stack, library: 'boostque',
+      exception: error, stack: stack, library: 'vitomy',
       context: ErrorDescription('resolving the device time zone'),
     ));
     // tz.local defaults to UTC when setLocalLocation was never called.
@@ -1089,7 +1089,7 @@ broadcasts including `BOOT_COMPLETED`, and Xiaomi/Huawei/Samsung defer or block 
 an autostart grant. No API detects either. *Mitigation:* documentation only for v1.1 (prior
 research Q5); do not build detection.
 
-**Pitfall 12 — bundle id.** Still the placeholder `com.boostque.dev`
+**Pitfall 12 — bundle id.** Still the placeholder `app.vitomy`
 (`android/app/build.gradle.kts:19`). Changing it wipes every pending iOS notification on existing
 installs. Belongs on the pre-release checklist, not this phase.
 
@@ -1288,7 +1288,7 @@ installs. Belongs on the pre-release checklist, not this phase.
 - [pub.dev/packages/timezone](https://pub.dev/packages/timezone) — 0.11.1, tzdata 2025c
 - [pub.dev/packages/flutter_timezone](https://pub.dev/packages/flutter_timezone) — 5.1.0, publisher
 - `docs/research/2026-08-16-notifications-research.md` — platform constraints, Play policy, iOS 64 cap, OEM behaviour (settled; corrected in §10 where verified otherwise)
-- `docs/superpowers/specs/2026-08-17-boostque-v1.1-design.md` §2 — the approved architecture
+- `docs/superpowers/specs/2026-08-17-vitomy-v1.1-design.md` §2 — the approved architecture
 - [flutter_local_notifications#2405](https://github.com/MaikuB/flutter_local_notifications/issues/2405), [#2389](https://github.com/MaikuB/flutter_local_notifications/issues/2389), [flutter#161964](https://github.com/flutter/flutter/issues/161964) — the desugaring failure mode
 - [flutter_local_notifications#2721](https://github.com/MaikuB/flutter_local_notifications/issues/2721) — stale README iOS instructions vs UIScene (does not affect us)
 

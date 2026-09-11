@@ -27,7 +27,7 @@ human_verification:
 
 # Phase 3: Daily Tracking Verification Report
 
-**Phase Goal:** A user can see exactly what to take today (and browse recent days) and mark each dose taken or skipped with one tap — the daily loop that is Boostque's core value — running correctly end-to-end on both platforms.
+**Phase Goal:** A user can see exactly what to take today (and browse recent days) and mark each dose taken or skipped with one tap — the daily loop that is VitoMy's core value — running correctly end-to-end on both platforms.
 **Verified:** 2026-08-15T20:07:02Z
 **Status:** passed — all 4 human-verification items confirmed in 03-UAT.md (DATA-03 automated on both platforms; backstops accepted on combined structural + on-device evidence)
 **Re-verification:** No — initial verification

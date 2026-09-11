@@ -27,19 +27,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart';
-import 'package:boostque/core/l10n/clock_format.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/notifications/notification_permission.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/core/widgets/bq_hint_card.dart';
-import 'package:boostque/features/onboarding/first_run_hints.dart';
-import 'package:boostque/core/widgets/bq_segmented.dart';
-import 'package:boostque/features/stack/regimen_editor_controller.dart';
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart';
+import 'package:vitomy/core/l10n/clock_format.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/notifications/notification_permission.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/core/widgets/bq_hint_card.dart';
+import 'package:vitomy/features/onboarding/first_run_hints.dart';
+import 'package:vitomy/core/widgets/bq_segmented.dart';
+import 'package:vitomy/features/stack/regimen_editor_controller.dart';
 
 /// The Dosing Schedule editor for one supplement (REGI-01..04, STACK-04).
 class RegimenEditorScreen extends ConsumerWidget {
@@ -1004,7 +1004,7 @@ class _EditorFooterState extends ConsumerState<_EditorFooter> {
         FlutterError.reportError(FlutterErrorDetails(
           exception: error,
           stack: stackTrace,
-          library: 'boostque',
+          library: 'vitomy',
           context: ErrorDescription(
             'saving the regimen editor draft after the screen was popped',
           ),

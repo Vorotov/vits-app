@@ -19,9 +19,9 @@ library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/today_controller.dart';
-import 'package:boostque/features/calendar/planner_view_model.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/today_controller.dart';
+import 'package:vitomy/features/calendar/planner_view_model.dart';
 
 /// The Цикли model: gantt rows over the current ~4-month window.
 ///

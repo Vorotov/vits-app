@@ -1,4 +1,4 @@
-# Boostque Onboarding (Phase 8) Implementation Plan
+# VitoMy Onboarding (Phase 8) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** Flutter 3.47, Riverpod 3 manual Notifiers (no codegen), shared_preferences, gen-l10n ARB.
 
-**Spec:** `docs/superpowers/specs/2026-08-26-boostque-onboarding-design.md`
+**Spec:** `docs/superpowers/specs/2026-08-26-vitomy-onboarding-design.md`
 
 ## Global Constraints
 
@@ -42,8 +42,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/features/onboarding/onboarding_controller.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/features/onboarding/onboarding_controller.dart';
 
 void main() {
   ProviderContainer scoped(SharedPreferences? prefs) {
@@ -143,7 +143,7 @@ Expected: compile error — `onboarding_controller.dart` does not exist.
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/core/providers.dart';
+import 'package:vitomy/core/providers.dart';
 
 /// The persisted "onboarding shown" flag (spec D-3..D-7, ONBO-03).
 ///
@@ -195,7 +195,7 @@ class OnboardingController extends Notifier<bool> {
         FlutterErrorDetails(
           exception: error,
           stack: stack,
-          library: 'boostque',
+          library: 'vitomy',
           context: ErrorDescription('persisting the onboarding seen flag'),
         ),
       );
@@ -379,7 +379,7 @@ class _FirstAddLauncher extends ConsumerStatefulWidget { /* holds child */ }
 // build => widget.child;
 ```
 
-- [ ] **Step 1: Write the failing tests** — harness needs the shell branch to mount `AppShell`, so reuse the `app_shell_test.dart` scoped pattern: override `sharedPreferencesProvider` AND `dbProvider` (in-memory `BoostqueDb.forTesting(NativeDatabase.memory())` with `ref.onDispose(db.close)`), `home: const OnboardingGate()`; bounded `pump` loops, never `pumpAndSettle` (shell midnight timer), and the `flushTearDown` idiom. Tests: (a) empty store → OnboardingScreen present, no `AppShell`; (b) stored true → `AppShell` present, no onboarding, and **no sheet opens** (cold start never has the one-shot); (c) walking the real flow — pump gate unseen, tap through to final CTA → shell appears AND the add sheet is open exactly once (find the sheet's segmented tabs); (d) Skip → shell appears and NO sheet; (e) after (c), rebuilding the shell branch (e.g. `tester.pumpWidget` same tree again) opens no second sheet — one-shot consumed.
+- [ ] **Step 1: Write the failing tests** — harness needs the shell branch to mount `AppShell`, so reuse the `app_shell_test.dart` scoped pattern: override `sharedPreferencesProvider` AND `dbProvider` (in-memory `VitomyDb.forTesting(NativeDatabase.memory())` with `ref.onDispose(db.close)`), `home: const OnboardingGate()`; bounded `pump` loops, never `pumpAndSettle` (shell midnight timer), and the `flushTearDown` idiom. Tests: (a) empty store → OnboardingScreen present, no `AppShell`; (b) stored true → `AppShell` present, no onboarding, and **no sheet opens** (cold start never has the one-shot); (c) walking the real flow — pump gate unseen, tap through to final CTA → shell appears AND the add sheet is open exactly once (find the sheet's segmented tabs); (d) Skip → shell appears and NO sheet; (e) after (c), rebuilding the shell branch (e.g. `tester.pumpWidget` same tree again) opens no second sheet — one-shot consumed.
 - [ ] **Step 2:** Run — fails.
 - [ ] **Step 3:** Implement the gate file.
 - [ ] **Step 4:** Run — passes.

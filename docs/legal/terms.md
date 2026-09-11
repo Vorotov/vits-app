@@ -4,13 +4,13 @@ Last updated: [LAST_UPDATED]
 
 ## 1. Introduction
 
-[APP_NAME] is a planner and tracker for the supplements and vitamins you
+VitoMy is a planner and tracker for the supplements and vitamins you
 choose to take. It is developed and operated by an independent team of
-individuals working from different countries (the "[APP_NAME] team", "we",
+individuals working from different countries (the "VitoMy team", "we",
 "us", "our"). These Terms of Use (the "Terms") govern your access to and use
 of:
 
-- the [APP_NAME] mobile app on iOS and Android (the "App"); and
+- the VitoMy mobile app on iOS and Android (the "App"); and
 - any related support channels and content (together with the App, the
   "Services").
 
@@ -85,8 +85,8 @@ appear; the rest of the App keeps working.
 ## 7. Intellectual property and licence
 
 All rights, title and interest in and to the Services (including software,
-designs, logos, the "[APP_NAME]" name and branding, text, graphics, the
-catalog, interfaces and underlying technology) are owned by the [APP_NAME]
+designs, logos, the "VitoMy" name and branding, text, graphics, the
+catalog, interfaces and underlying technology) are owned by the VitoMy
 team or our licensors.
 
 Subject to your compliance with these Terms, we grant you a limited,
@@ -114,7 +114,7 @@ third-party services.
 These terms apply where you obtain the App through the Apple App Store or
 Google Play.
 
-- You acknowledge that these Terms are between you and the [APP_NAME] team
+- You acknowledge that these Terms are between you and the VitoMy team
   only, not with Apple or Google, and that Apple and Google are not
   responsible for the App or its content.
 - Your licence to use the App is limited to use on devices you own or
@@ -191,7 +191,7 @@ discretion.
 
 ## 15. Limitation of liability
 
-To the maximum extent permitted by applicable law, the [APP_NAME] team will
+To the maximum extent permitted by applicable law, the VitoMy team will
 not be liable for any indirect, incidental, special, consequential or
 punitive damages, or for any loss of profits, revenue, data or goodwill,
 arising out of or in connection with your use of, or inability to use, the
@@ -209,7 +209,7 @@ above apply only to the extent permitted.
 ## 16. Indemnity
 
 To the extent permitted by law, you agree to indemnify and hold harmless the
-[APP_NAME] team from and against any claims, liabilities, damages, losses
+VitoMy team from and against any claims, liabilities, damages, losses
 and expenses (including reasonable legal fees) arising out of or related to
 your use of the Services, your violation of these Terms, or your violation
 of any law or the rights of a third party.
@@ -228,7 +228,7 @@ them together with the legal entity; see docs/legal/2026-09-07-privacy-and-terms
 
 ## 18. Team structure and assignment
 
-[APP_NAME] is currently developed and operated by a distributed team of
+VitoMy is currently developed and operated by a distributed team of
 individual creators and is not yet incorporated as a separate legal entity.
 If our structure changes, for example if we form a company or transfer the
 Services to another owner, these Terms may be assigned to the new entity. We
@@ -242,7 +242,7 @@ with a merger, acquisition, reorganisation or sale of the Services.
 ## 19. Miscellaneous
 
 - Entire agreement. These Terms and the Privacy Policy are the entire
-  agreement between you and the [APP_NAME] team regarding the Services and
+  agreement between you and the VitoMy team regarding the Services and
   supersede any prior agreements on the same subject.
 - Severability. If any provision is held invalid or unenforceable, the
   remaining provisions remain in full force and effect.

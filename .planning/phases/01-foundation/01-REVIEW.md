@@ -80,7 +80,7 @@ It directly constructs a concrete `DriftRegimenRepository` rather than depending
 class DriftIntakeRepository implements IntakeRepository {
   DriftIntakeRepository(this.db, this._regimens);
 
-  final BoostqueDb db;
+  final VitomyDb db;
   final domain_repo.RegimenRepository _regimens; // inject via constructor
 
   Future<void> ensureLogsForDay(DateTime day) async {

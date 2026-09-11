@@ -5,12 +5,12 @@
 **Confidence:** HIGH for computation strategy, mockup extraction and integration (every claim cites a file+line range read this session, with verbatim quotes); MEDIUM for navigation/IA (the mockup shows the planner screens but no entry affordance — an invented seam, flagged); LOW for the handful of invented UX bits (empty states, touch-target mitigation), all tagged ASSUMED with cheap reversal paths
 
 <user_constraints>
-## User Constraints (no CONTEXT.md exists — sources: approved design spec `docs/superpowers/specs/2026-08-14-boostque-v1-design.md`, `.claude/CLAUDE.md`, REQUIREMENTS.md, ROADMAP.md Phase 4, Phase-1/2/3 locked decisions)
+## User Constraints (no CONTEXT.md exists — sources: approved design spec `docs/superpowers/specs/2026-08-14-vitomy-v1-design.md`, `.claude/CLAUDE.md`, REQUIREMENTS.md, ROADMAP.md Phase 4, Phase-1/2/3 locked decisions)
 
 ### Locked Decisions
 - Flutter + Dart single codebase; Riverpod + Drift; UI depends on repository interfaces only — Drift types never appear in `features/` [VERIFIED: .claude/CLAUDE.md "Constraints"; lib/core/providers.dart:42-58]
-- **All calendar views are computed projections, never stored** — "Three tables; all calendar views are computed projections, never stored." [VERIFIED: docs/superpowers/specs/2026-08-14-boostque-v1-design.md:67]
-- **Cycles/Year live in the calendar feature** — spec structure comment: `calendar/    # Day / Cycles / Year views, mark-as-taken` [VERIFIED: docs/superpowers/specs/2026-08-14-boostque-v1-design.md:54]
+- **All calendar views are computed projections, never stored** — "Three tables; all calendar views are computed projections, never stored." [VERIFIED: docs/superpowers/specs/2026-08-14-vitomy-v1-design.md:67]
+- **Cycles/Year live in the calendar feature** — spec structure comment: `calendar/    # Day / Cycles / Year views, mark-as-taken` [VERIFIED: docs/superpowers/specs/2026-08-14-vitomy-v1-design.md:54]
 - Date-only values normalized as `DateTime.utc(y,m,d)`; **domain never reads the clock** (D-13/D-15) — every date comparison via `dateOnly()` [VERIFIED: lib/core/domain/cycle_math.dart:1-16]
 - `isActiveOn` is the single activity decision point [VERIFIED: lib/core/domain/cycle_math.dart:26-45]
 - Paused regimens produce no doses and show ПАУЗА status (REGI-04) [VERIFIED: .planning/REQUIREMENTS.md:22]
@@ -20,7 +20,7 @@
 - **No charting package, no calendar package** — "Recommend building them as plain Flutter widgets (`Row`/`Stack`/`CustomPaint`) sized directly off the design tokens, which also guarantees exact mockup fidelity that a generic charting library would fight against"; `fl_chart` explicitly relegated to fallback-only, `table_calendar`-style packages explicitly rejected [VERIFIED: .claude/CLAUDE.md "Alternatives Considered" + "What NOT to Use"]
 - **The 5-substance limit is editorial, never medical** — Out of Scope: "Treating the 5-substance limit as a safety threshold | It is an editorial tracking-comfort rule; presenting it as medical invites store-review and liability problems" [VERIFIED: .planning/REQUIREMENTS.md:84]
 - **Naive/partial interaction checking is never-ship** — "High liability; research verdict: never ship a lightweight version" [VERIFIED: .planning/REQUIREMENTS.md:78]; ADVI-01 ("never a naive version") is v2 [VERIFIED: .planning/REQUIREMENTS.md:70]
-- Mockup `claude_design_mockup/Boostque v0.1.dc.html` is the authoritative visual reference — screen 03 · ЦИКЛИ (lines 276-388) and screen 04 · РІК (lines 390-468) for this phase
+- Mockup `claude_design_mockup/VitoMy v0.1.dc.html` is the authoritative visual reference — screen 03 · ЦИКЛИ (lines 276-388) and screen 04 · РІК (lines 390-468) for this phase
 - Three-tab shell (Stack / Calendar / Settings) is a Phase-1 success criterion [VERIFIED: .planning/ROADMAP.md:31] — a 4th tab is out of bounds
 
 ### Claude's Discretion
@@ -36,7 +36,7 @@
 - The `Зсунути цикл` / `Порівняти тижні` action buttons (mockup lines 370-373) — no requirement covers them, and "shift cycle" is a scheduling mutation this phase has no mandate for
 - The `+ Додати` FAB on the planner screens (mockup lines 377-380, 457-460) — the add flow lives on the Stack tab
 - The `Радник` / `Профіль` nav destinations (mockup lines 383-384) — the app ships three tabs
-- Quality scores, ratings, any numeric verdict on a supplement (mockup screen-level assumption: "Оцінки, взаємодії, радник, підписка й онбординг сюди не входять" [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:34])
+- Quality scores, ratings, any numeric verdict on a supplement (mockup screen-level assumption: "Оцінки, взаємодії, радник, підписка й онбординг сюди не входять" [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:34])
 - Language override (Phase 5), history/adherence/streaks (HIST-01, v2), notifications/widgets (v2)
 </user_constraints>
 
@@ -68,7 +68,7 @@ Actionable directives extracted from `.claude/CLAUDE.md` that the planner must h
 
 Phase 4 is, computationally, the cheapest phase in the project and the one with the highest chance of being built the expensive way. Every number on both planner screens — gantt segments, weekly concurrent load, monthly coverage fractions, the peak month — is a pure projection of `isActiveOn(regimen, day)` over a bounded window of days. The inputs already exist and are already live: `stackEntriesProvider` pairs supplements with their regimens off two Drift streams and re-emits on any add/edit/pause/resume/delete [VERIFIED: lib/core/providers.dart:132-144], and `todayProvider` is the app's single calendar clock, self-updating at local midnight [VERIFIED: lib/core/today_controller.dart:37-79]. **No new repository method, no new Drift query, and above all no `IntakeLog` row is needed anywhere in this phase.** That last point is the phase's defining constraint: Phase 3's WR-06 finding proved that reading day data through the materializing provider to colour a 4px dot made "the database grow with pager travel rather than with user intent — up to ~371 days for a strip the user may never have looked at" [VERIFIED: .planning/phases/03-daily-tracking/03-REVIEW.md:384-406]. A year matrix drawn the same way would materialize 365 days × slots on first paint. The planner must never touch `dayDosesProvider` or `ensureLogsForDay`; a grep gate belongs in the phase's verification.
 
-The mockup is unusually generous here: it ships the entire derivation as readable JavaScript, and it declares its own architecture — "Single source of truth: day-of-year segments for 2026. Both the gantt and the year matrix derive from this." [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:629]. That is exactly the shape to reproduce in Dart: one pure function that turns a regimen plus a date window into a coalesced list of active runs, and three small projections off those runs (gantt segments, week buckets, month cells). The window itself is verified from the mockup's constants: `SPAN = 122`, `WIN_A = 212`, `TODAY = 224` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:623-628] — day-of-year 212 in 2026 is 1 August and 224 is 13 August, which matches the Today screen's "четвер, 13 серпня" [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:207]. So the gantt window is `[first day of today's month, +4 months)` — 122 days for August 2026 — and the month gridlines fall at 31/122, 61/122, 92/122, matching the mockup's hardcoded 25.4% / 50% / 75.4% [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:302-308].
+The mockup is unusually generous here: it ships the entire derivation as readable JavaScript, and it declares its own architecture — "Single source of truth: day-of-year segments for 2026. Both the gantt and the year matrix derive from this." [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:629]. That is exactly the shape to reproduce in Dart: one pure function that turns a regimen plus a date window into a coalesced list of active runs, and three small projections off those runs (gantt segments, week buckets, month cells). The window itself is verified from the mockup's constants: `SPAN = 122`, `WIN_A = 212`, `TODAY = 224` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:623-628] — day-of-year 212 in 2026 is 1 August and 224 is 13 August, which matches the Today screen's "четвер, 13 серпня" [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:207]. So the gantt window is `[first day of today's month, +4 months)` — 122 days for August 2026 — and the month gridlines fall at 31/122, 61/122, 92/122, matching the mockup's hardcoded 25.4% / 50% / 75.4% [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:302-308].
 
 Cost at realistic scale is negligible and memoization beyond Riverpod's own provider cache is unnecessary: the gantt scans 122 days × N supplements and the year scans 365 × N, so at N = 20 that is roughly 10,000 `isActiveOn` calls per recompute, each a handful of integer operations. What matters is *where* it runs: derive it once in a `Provider` that watches `stackEntriesProvider` + `todayProvider` (recomputing only when regimens change or midnight passes), never inside a widget `build()` that a scroll can re-run every frame.
 
@@ -182,15 +182,15 @@ WRITES: none.  IntakeLog: never read, never created.  ensureLogsForDay: never ca
 
 `day_view_model.dart` states the contract this file must copy: "Top-level pure functions in the `stack_status.dart` style: `today`, `viewingToday` and `nowMinutes` arrive as explicit parameters and every date comparison goes through `dateOnly` — this file NEVER reads the clock. It imports only the three pure domain libraries: no UI framework, no l10n, no persistence" [VERIFIED: lib/features/calendar/day_view_model.dart:1-14]. Same three imports (`cycle_math.dart`, `models.dart`, `repositories.dart`), same "no user-visible strings — the renderer switches exhaustively over a sealed hierarchy and maps to ARB keys itself" rule [VERIFIED: lib/features/calendar/day_view_model.dart:12-13], same sealed-class idiom as `BlockTag` / `ScheduleSummary` for the week verdict.
 
-**Location:** `lib/features/calendar/` per the design spec's own structure comment (`calendar/    # Day / Cycles / Year views`) [VERIFIED: docs/superpowers/specs/2026-08-14-boostque-v1-design.md:54]. Prefix the new files `planner_` so the folder stays legible: `planner_view_model.dart`, `planner_providers.dart`, `planner_screen.dart`, `planner_gantt.dart`, `planner_load_chart.dart`, `planner_year_grid.dart`. A sibling `lib/features/planner/` folder is the alternative; it contradicts the spec's enumerated structure for no functional gain, so it is not recommended.
+**Location:** `lib/features/calendar/` per the design spec's own structure comment (`calendar/    # Day / Cycles / Year views`) [VERIFIED: docs/superpowers/specs/2026-08-14-vitomy-v1-design.md:54]. Prefix the new files `planner_` so the folder stays legible: `planner_view_model.dart`, `planner_providers.dart`, `planner_screen.dart`, `planner_gantt.dart`, `planner_load_chart.dart`, `planner_year_grid.dart`. A sibling `lib/features/planner/` folder is the alternative; it contradicts the spec's enumerated structure for no functional gain, so it is not recommended.
 
 ### P-3: Navigation — the planner is a third page *inside* the Calendar tab
 
 What the mockup proves, and what it doesn't:
 
-- Screens 03 and 04 both keep **Календар** selected in the bottom nav (`background:#4A4E7C` on the Календар destination, `border:1.6px solid #A0A0A9` on the others) [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:382, 462] → the planner is inside the Calendar tab, not a fourth tab. A fourth tab would also break Phase-1 success criterion 1 ("a three-tab shell (Stack / Calendar / Settings)") [VERIFIED: .planning/ROADMAP.md:31].
-- Screens 03/04 carry the title `Планувальник` and a two-segment `Рік | Цикли` control [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:287-292, 401-406], while screen 02 carries `Сьогодні`, a progress ring and a week strip and **no segmented control at all** [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:203-223] → the planner is a distinct screen, not a segment of the Today screen. The segmented control switches Year↔Cycles *within* the planner.
-- The section caption over the whole group reads `день · цикли · рік · розклад` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:189] — four peer screens under "Календар і планування".
+- Screens 03 and 04 both keep **Календар** selected in the bottom nav (`background:#4A4E7C` on the Календар destination, `border:1.6px solid #A0A0A9` on the others) [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:382, 462] → the planner is inside the Calendar tab, not a fourth tab. A fourth tab would also break Phase-1 success criterion 1 ("a three-tab shell (Stack / Calendar / Settings)") [VERIFIED: .planning/ROADMAP.md:31].
+- Screens 03/04 carry the title `Планувальник` and a two-segment `Рік | Цикли` control [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:287-292, 401-406], while screen 02 carries `Сьогодні`, a progress ring and a week strip and **no segmented control at all** [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:203-223] → the planner is a distinct screen, not a segment of the Today screen. The segmented control switches Year↔Cycles *within* the planner.
+- The section caption over the whole group reads `день · цикли · рік · розклад` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:189] — four peer screens under "Календар і планування".
 - **No screen shows how to get from Сьогодні to Планувальник.** This is a genuine mockup gap; the affordance must be invented. [ASSUMED]
 
 **Recommendation:** keep the planner inside the Calendar tab as a swapped page, not a `Navigator.push`. `AppShell` is an `IndexedStack` that "builds and KEEPS every child mounted" [VERIFIED: lib/app_shell.dart:38-45], and a root-level push would cover the `NavigationBar` that the mockup deliberately shows. A local page enum in `CalendarScreen` (`today` | `planner`) preserves the chrome exactly, keeps the existing `TickerMode` gate working, and costs no nested-`Navigator` machinery. Entry affordance: a text/icon action in the Calendar header beside the ring; return affordance: a back control in the planner header. Both are inventions — confirm at UAT (Open Question 1).
@@ -199,25 +199,25 @@ If a nested `Navigator` is preferred later for deep-linking, it is a contained r
 
 ### P-4: The window — first of this month, four months wide
 
-Verified constants: `const SPAN = 122; … const TODAY = 224; const WIN_A = 212;` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:623-628]. Day-of-year 212 (0-based) in a non-leap year is 1 August (31+28+31+30+31+30+31 = 212), and 224 is 13 August — which is the day the Today screen renders [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:207 `четвер, 13 серпня`]. 122 = 31 (Aug) + 30 (Sep) + 31 (Oct) + 30 (Nov). The header labels and their widths confirm it: `<span style="width:25.4%">СЕРП</span><span style="width:24.6%">ВЕР</span><span style="width:25.4%">ЖОВ</span><span style="width:24.6%">ЛИС</span>` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:302] — 31/122 = 25.41%, 30/122 = 24.59%.
+Verified constants: `const SPAN = 122; … const TODAY = 224; const WIN_A = 212;` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:623-628]. Day-of-year 212 (0-based) in a non-leap year is 1 August (31+28+31+30+31+30+31 = 212), and 224 is 13 August — which is the day the Today screen renders [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:207 `четвер, 13 серпня`]. 122 = 31 (Aug) + 30 (Sep) + 31 (Oct) + 30 (Nov). The header labels and their widths confirm it: `<span style="width:25.4%">СЕРП</span><span style="width:24.6%">ВЕР</span><span style="width:25.4%">ЖОВ</span><span style="width:24.6%">ЛИС</span>` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:302] — 31/122 = 25.41%, 30/122 = 24.59%.
 
 So: `windowStart = DateTime.utc(today.year, today.month, 1)`, `windowEndExclusive = DateTime.utc(today.year, today.month + 4, 1)`, `span = windowEndExclusive.difference(windowStart).inDays`. Dart normalizes month overflow in the UTC constructor, so `month + 4` needs no manual year carry. **Column widths and gridline positions must be computed from real month lengths, never fixed at 25%** — the four-month span is 120–123 days depending on the start month (Feb..May 2027 = 28+31+30+31 = 120; Jul..Oct = 123).
 
-Today marker position: `left = (todayIndex + 0.5) / span` — from `todayLeft: ((TODAY - WIN_A + 0.5) / SPAN * 100).toFixed(2) + '%'` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:903]. Today is always inside the window by construction, so the marker always renders.
+Today marker position: `left = (todayIndex + 0.5) / span` — from `todayLeft: ((TODAY - WIN_A + 0.5) / SPAN * 100).toFixed(2) + '%'` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:903]. Today is always inside the window by construction, so the marker always renders.
 
 ### P-5: Runs, and the "planned" rule
 
-The mockup declares the architecture: "Single source of truth: day-of-year segments for 2026. Both the gantt and the year matrix derive from this." [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:629]. In the mockup, segments are hand-authored data (`segs: [[59, 114], [236, 291]]` [line 636]); in the app they are **derived by scanning `isActiveOn` day by day across the window and coalescing consecutive true days into runs**. That is the only sanctioned derivation (PF-1).
+The mockup declares the architecture: "Single source of truth: day-of-year segments for 2026. Both the gantt and the year matrix derive from this." [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:629]. In the mockup, segments are hand-authored data (`segs: [[59, 114], [236, 291]]` [line 636]); in the app they are **derived by scanning `isActiveOn` day by day across the window and coalescing consecutive true days into runs**. That is the only sanctioned derivation (PF-1).
 
-Segment kind, verbatim: `function segKind(r, s) { return s[0] > TODAY ? 'planned' : (r.risk ? 'risk' : 'active'); }` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:639]. Stripped of the `risk` branch (PF-5), the rule is: **a run is `planned` iff its first day is strictly after today; otherwise `active`** — including the future tail of a run that has already started. This is whole-segment, not split-at-today.
+Segment kind, verbatim: `function segKind(r, s) { return s[0] > TODAY ? 'planned' : (r.risk ? 'risk' : 'active'); }` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:639]. Stripped of the `risk` branch (PF-5), the rule is: **a run is `planned` iff its first day is strictly after today; otherwise `active`** — including the future tail of a run that has already started. This is whole-segment, not split-at-today.
 
 Note the consistency with the Stack tab: `statusOf` returns `planned` when "today before startDate" [VERIFIED: lib/features/stack/stack_status.dart:37 `if (day.isBefore(dateOnly(r.startDate))) return StackStatus.planned;`], so for a non-paused regimen the *first* run being hatched is exactly the condition that makes its stack card read ЗАПЛАНОВАНО. Keeping the mockup rule preserves that alignment; splitting runs at today would break it. Recommend mockup-exact; the alternative (split at today so the future tail of a running cycle is hatched) is arguably more informative and is a one-line change in `ganttSegments` — flag at UAT.
 
-Styling, verbatim: `active: { bg: '#4A4E7C', border: '#4A4E7C' }`, `planned: { bg: 'repeating-linear-gradient(115deg,rgba(74,78,124,.18) 0 4px,rgba(74,78,124,.06) 4px 8px)', border: 'rgba(74,78,124,.45)' }` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:645-649].
+Styling, verbatim: `active: { bg: '#4A4E7C', border: '#4A4E7C' }`, `planned: { bg: 'repeating-linear-gradient(115deg,rgba(74,78,124,.18) 0 4px,rgba(74,78,124,.06) 4px 8px)', border: 'rgba(74,78,124,.45)' }` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:645-649].
 
 ### P-6: Week buckets and concurrent load
 
-Mockup derivation, verbatim [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:763-768]:
+Mockup derivation, verbatim [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:763-768]:
 
 ```js
 const weeks = [];
@@ -228,17 +228,17 @@ for (let i = 0; i < 18; i++) {
 }
 ```
 
-with `function overlapDays(s, a, b) { return Math.max(0, Math.min(s[1], b) - Math.max(s[0], a) + 1); }` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:640].
+with `function overlapDays(s, a, b) { return Math.max(0, Math.min(s[1], b) - Math.max(s[0], a) + 1); }` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:640].
 
 Two things to carry over exactly: **load counts a supplement once per week if it is active on *any* day of that week** (not every day), and **18 buckets** = `ceil(122 / 7)` with the last bucket clamped to the window end.
 
-One deliberate deviation to consider: the mockup's buckets are window-aligned (bucket 0 starts on the 1st of the month — a Saturday for August 2026), so a "week" is not a calendar week. The app already locked Monday-first weeks in every locale (DECIDED-4, "The first column is Monday everywhere … reaching for `MaterialLocalizations` here would be the bug, not the fix" [VERIFIED: lib/features/calendar/week_strip.dart:8-15]), and the top summary chip literally says "Цього тижня" [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:920] — which should mean the calendar week containing today, not a bucket that happens to straddle it. **Recommendation: Monday-align the buckets** (`first = mondayOfWeek(windowStart)`, last = the week containing `windowEnd - 1` → 18 or 19 buckets), which makes the "this week" chip honest and the axis labels real week starts. Visual result is indistinguishable; the mockup's own summary uses a hardcoded `cur = weeks[1]` [line 769], plainly a mockup artifact. Flag as a deviation in the UI-SPEC.
+One deliberate deviation to consider: the mockup's buckets are window-aligned (bucket 0 starts on the 1st of the month — a Saturday for August 2026), so a "week" is not a calendar week. The app already locked Monday-first weeks in every locale (DECIDED-4, "The first column is Monday everywhere … reaching for `MaterialLocalizations` here would be the bug, not the fix" [VERIFIED: lib/features/calendar/week_strip.dart:8-15]), and the top summary chip literally says "Цього тижня" [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:920] — which should mean the calendar week containing today, not a bucket that happens to straddle it. **Recommendation: Monday-align the buckets** (`first = mondayOfWeek(windowStart)`, last = the week containing `windowEnd - 1` → 18 or 19 buckets), which makes the "this week" chip honest and the axis labels real week starts. Visual result is indistinguishable; the mockup's own summary uses a hardcoded `cur = weeks[1]` [line 769], plainly a mockup artifact. Flag as a deviation in the UI-SPEC.
 
 To do that, promote `mondayOfWeek` from `week_strip.dart` into `core/domain/cycle_math.dart` (it is pure date-only arithmetic with a DST-safety comment already [VERIFIED: lib/features/calendar/week_strip.dart:83-90]) and have the strip import it — a feature file must not import another feature's widget file.
 
 ### P-7: The verdict — three bands, editorial language, verbatim copy
 
-Verbatim [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:777-786]:
+Verbatim [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:777-786]:
 
 ```js
 if (sel.load <= 3) {
@@ -253,19 +253,19 @@ if (sel.load <= 3) {
 }
 ```
 
-with `const MAX_SLOTS = 5;` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:624] and `const CYCLES = ['цикл', 'цикли', 'циклів'];` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:658].
+with `const MAX_SLOTS = 5;` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:624] and `const CYCLES = ['цикл', 'цикли', 'циклів'];` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:658].
 
 Model the verdict as a sealed hierarchy (`ComfortVerdict` / `LimitVerdict` / `OverLimitVerdict(load)`) so the renderer switches exhaustively and maps to ARB keys — the `BlockTag` idiom [VERIFIED: lib/features/calendar/day_view_model.dart:132-167]. The three-band thresholds (≤3, ≤5, >5) are the editorial rule, expressed as two named constants (`comfortLoad = 3`, `editorialLimit = 5`) in one place.
 
 **Copy amendment required (PF-5):** the over-limit note's trailing clause "— зокрема через сумарне навантаження жиророзчинними формами" is a pharmacological claim the app cannot support and sits squarely inside the never-ship interaction-advice exclusion. Ship the sentence truncated: `Цього тижня перетинаються {N}. Варто зсунути старт частини з них або обговорити такий обсяг із лікарем.` — "talk to a doctor" is a referral, not advice, and is consistent with the disclaimer.
 
-Supporting week-detail copy, verbatim: `weekLoadLabel: sel.load + ' з ' + MAX_SLOTS + ' слотів'`, `freeSlotHint: sel.load < MAX_SLOTS ? 'Вільно ' + (MAX_SLOTS - sel.load) + ' — можна планувати старт' : 'Вільних слотів немає'` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:913, 921]. Slot pips, verbatim [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:770-776]: `for (let p = 0; p < Math.max(MAX_SLOTS, sel.load); p++)` with `bg: p >= MAX_SLOTS ? T.risk.fg : (p < sel.load ? '#4A4E7C' : '#FFFFFF')` and `border: p >= MAX_SLOTS ? T.risk.fg : (p < sel.load ? '#4A4E7C' : 'rgba(23,23,27,.2)')`.
+Supporting week-detail copy, verbatim: `weekLoadLabel: sel.load + ' з ' + MAX_SLOTS + ' слотів'`, `freeSlotHint: sel.load < MAX_SLOTS ? 'Вільно ' + (MAX_SLOTS - sel.load) + ' — можна планувати старт' : 'Вільних слотів немає'` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:913, 921]. Slot pips, verbatim [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:770-776]: `for (let p = 0; p < Math.max(MAX_SLOTS, sel.load); p++)` with `bg: p >= MAX_SLOTS ? T.risk.fg : (p < sel.load ? '#4A4E7C' : '#FFFFFF')` and `border: p >= MAX_SLOTS ? T.risk.fg : (p < sel.load ? '#4A4E7C' : 'rgba(23,23,27,.2)')`.
 
-Top summary chip, verbatim: `planSummary: 'Цього тижня одночасно ' + cur.load + ' ' + plural(cur.load, SUBST)` with palette `cur.load >= MAX_SLOTS ? T.warn : T.calm` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:918-920] and a mono `межа 5` badge on the end [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:297].
+Top summary chip, verbatim: `planSummary: 'Цього тижня одночасно ' + cur.load + ' ' + plural(cur.load, SUBST)` with palette `cur.load >= MAX_SLOTS ? T.warn : T.calm` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:918-920] and a mono `межа 5` badge on the end [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:297].
 
 ### P-8: Rendering the gantt
 
-Structure, verbatim from the mockup [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:300-331]: a `#FFFFFF` card (`border:1px solid rgba(23,23,27,.09); border-radius:16px; padding:16px 14px 14px`) containing a mono month-label row (`10.5px`, `letter-spacing:.05em`, `margin-bottom:9px`), then a `position:relative` block holding the today line and three gridlines as absolutely-positioned 1px full-height children, then a `flex-direction:column; gap:13px` list of rows. Each row: a baseline-aligned name (`500 13px`) + hint (`400 10.5px mono #A0A0A9`) line with `margin-bottom:6px`, then `height:11px; border-radius:6px; background:#F2F1EE` as the track, with absolutely-positioned segments (`height:11px; border-radius:6px; box-sizing:border-box`, `left`/`width` as percentages). Legend row below: `flex-wrap:wrap; gap:12px; margin-top:15px; padding-top:13px; border-top:1px solid rgba(23,23,27,.07)` with `14px × 8px` radius-4 swatches.
+Structure, verbatim from the mockup [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:300-331]: a `#FFFFFF` card (`border:1px solid rgba(23,23,27,.09); border-radius:16px; padding:16px 14px 14px`) containing a mono month-label row (`10.5px`, `letter-spacing:.05em`, `margin-bottom:9px`), then a `position:relative` block holding the today line and three gridlines as absolutely-positioned 1px full-height children, then a `flex-direction:column; gap:13px` list of rows. Each row: a baseline-aligned name (`500 13px`) + hint (`400 10.5px mono #A0A0A9`) line with `margin-bottom:6px`, then `height:11px; border-radius:6px; background:#F2F1EE` as the track, with absolutely-positioned segments (`height:11px; border-radius:6px; box-sizing:border-box`, `left`/`width` as percentages). Legend row below: `flex-wrap:wrap; gap:12px; margin-top:15px; padding-top:13px; border-top:1px solid rgba(23,23,27,.07)` with `14px × 8px` radius-4 swatches.
 
 **Flutter mapping:**
 - Outer `LayoutBuilder` to get the row width once; convert every fraction to pixels there. (`FractionallySizedBox` cannot express "left offset + width" inside a `Stack` cleanly; `Positioned` with computed pixels is exact and testable.)
@@ -278,7 +278,7 @@ Performance: repaint cost is O(total segments) ≈ O(N × runs), typically < 100
 
 ### P-9: Rendering the load chart
 
-Verbatim geometry [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:338-349]: a `position:relative; height:46px; display:flex; align-items:flex-end; gap:3px` row; the threshold line is `position:absolute; left:0; right:0; bottom:22.8px; height:1px; background:repeating-linear-gradient(90deg,rgba(23,23,27,.22) 0 4px,transparent 4px 8px)`; each week is `flex:1; display:flex; flex-direction:column; justify-content:flex-end; cursor:pointer; opacity:{{ w.opacity }}` containing an over-bar (`border-radius:2px 2px 0 0; background:#A8443C`) above a main bar (`border-radius:2px`). Heights [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:904-910]: `h: Math.round(Math.min(w.load, MAX_SLOTS) / MAX_SLOTS * 38) + 'px'`, `over: w.load > MAX_SLOTS ? Math.round((w.load - MAX_SLOTS) / MAX_SLOTS * 38) + 'px' : '0px'`, `opacity: w.i === this.state.week ? '1' : '.5'`. Axis labels below: `1 серп` / `межа 5 · комфорт 3` / `30 лис` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:347-349].
+Verbatim geometry [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:338-349]: a `position:relative; height:46px; display:flex; align-items:flex-end; gap:3px` row; the threshold line is `position:absolute; left:0; right:0; bottom:22.8px; height:1px; background:repeating-linear-gradient(90deg,rgba(23,23,27,.22) 0 4px,transparent 4px 8px)`; each week is `flex:1; display:flex; flex-direction:column; justify-content:flex-end; cursor:pointer; opacity:{{ w.opacity }}` containing an over-bar (`border-radius:2px 2px 0 0; background:#A8443C`) above a main bar (`border-radius:2px`). Heights [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:904-910]: `h: Math.round(Math.min(w.load, MAX_SLOTS) / MAX_SLOTS * 38) + 'px'`, `over: w.load > MAX_SLOTS ? Math.round((w.load - MAX_SLOTS) / MAX_SLOTS * 38) + 'px' : '0px'`, `opacity: w.i === this.state.week ? '1' : '.5'`. Axis labels below: `1 серп` / `межа 5 · комфорт 3` / `30 лис` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:347-349].
 
 **Read the threshold line carefully:** `bottom:22.8px` is `0.6 × 38` = the **load-3 "комфорт" line**, not the load-5 line (which is the top of the 38px main-bar area, where the red over-bar begins). The axis caption names both — `межа 5 · комфорт 3`. PLAN-02's phrasing ("against the editorial 5-substance line") is satisfied by the red overflow + the `межа 5` badge + the pips + the verdict chip; whether to also draw a line at 38px is an open question (Open Question 2). Ship the mockup's single dashed line unless UAT says otherwise, and never label either line as a safety threshold.
 
@@ -286,7 +286,7 @@ Verbatim geometry [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:338-349]
 
 ### P-10: Month cells for the Year matrix
 
-Verbatim derivation [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:809-821]:
+Verbatim derivation [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:809-821]:
 
 ```js
 const cell = (r, m) => {
@@ -304,21 +304,21 @@ const cell = (r, m) => {
 const monthLoad = MONTHS.map((_, m) => PLAN.filter(r => cell(r, m).frac > 0).length);
 ```
 
-Bar width, verbatim: `width: c.frac === 0 ? '0%' : (c.full ? '100%' : Math.max(Math.round(c.frac * 100), 22) + '%')`, fill `bg: c.planned ? r.color + '4D' : r.color` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:838-842]. The `max(…, 22%)` floor is what keeps a two-day coverage visible — carry it over.
+Bar width, verbatim: `width: c.frac === 0 ? '0%' : (c.full ? '100%' : Math.max(Math.round(c.frac * 100), 22) + '%')`, fill `bg: c.planned ? r.color + '4D' : r.color` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:838-842]. The `max(…, 22%)` floor is what keeps a two-day coverage visible — carry it over.
 
-Month-count colour: `countFg: monthLoad[m] > MAX_SLOTS ? T.risk.fg : '#A0A0A9'` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:836] — strictly greater than 5 is red, which is exactly what the year footnote explains.
+Month-count colour: `countFg: monthLoad[m] > MAX_SLOTS ? T.risk.fg : '#A0A0A9'` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:836] — strictly greater than 5 is red, which is exactly what the year footnote explains.
 
-Peak month, verbatim [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:822-827, 967-970]: max load, ties broken toward the month nearest the current one, label `'Найщільніший місяць — ' + MONTH_NOM[peak]` or `'Найщільніші місяці, зокрема ' + MONTH_NOM[peak]` when more than one month ties, count `monthLoad[peak] + ' ' + plural(monthLoad[peak], SUBST)`, palette `monthLoad[peak] > MAX_SLOTS ? T.warn : T.calm`.
+Peak month, verbatim [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:822-827, 967-970]: max load, ties broken toward the month nearest the current one, label `'Найщільніший місяць — ' + MONTH_NOM[peak]` or `'Найщільніші місяці, зокрема ' + MONTH_NOM[peak]` when more than one month ties, count `monthLoad[peak] + ' ' + plural(monthLoad[peak], SUBST)`, palette `monthLoad[peak] > MAX_SLOTS ? T.warn : T.calm`.
 
 **Note the `>=` / `>` mismatch between screens:** the Cycles summary chip warns at `cur.load >= MAX_SLOTS` [line 918] while the Year peak chip warns at `monthLoad[peak] > MAX_SLOTS` [line 969]. Transcribe both verbatim (a "at the limit" week is worth an amber nudge; a month is only flagged when it exceeds), and record the asymmetry in the UI-SPEC so a later reader does not "fix" it.
 
-Month detail rows, verbatim [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:847-852]: filter to `frac > 0`, dot tinted `+ '80'` when planned, state text `'заплановано'` / `'приймаю'` / `'частина місяця'`, muted foreground when planned.
+Month detail rows, verbatim [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:847-852]: filter to `frac > 0`, dot tinted `+ '80'` when planned, state text `'заплановано'` / `'приймаю'` / `'частина місяця'`, muted foreground when planned.
 
-The year is `today.year`, Jan..Dec — the mockup's `MONTH_LEN` is a hardcoded non-leap table [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:625]; the app must compute month length as `DateTime.utc(y, m + 1, 0).day` (PF-3).
+The year is `today.year`, Jan..Dec — the mockup's `MONTH_LEN` is a hardcoded non-leap table [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:625]; the app must compute month length as `DateTime.utc(y, m + 1, 0).day` (PF-3).
 
 ### P-11: Rendering the Year grid
 
-Verbatim [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:414-428]: a white card with `display:grid; grid-template-columns:repeat(4,1fr); gap:8px`; each month card `border-radius:11px; padding:9px 8px 10px`, selected `bg #F2F2F7` + `1.6px solid #4A4E7C`, unselected `bg #FBFBF9` + `1px solid rgba(23,23,27,.09)`; header row = mono label + mono count; then `flex-direction:column; gap:3px; margin-top:9px` of `height:4px; border-radius:2px; background:#F0EFEA` tracks each holding a filled bar.
+Verbatim [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:414-428]: a white card with `display:grid; grid-template-columns:repeat(4,1fr); gap:8px`; each month card `border-radius:11px; padding:9px 8px 10px`, selected `bg #F2F2F7` + `1.6px solid #4A4E7C`, unselected `bg #FBFBF9` + `1px solid rgba(23,23,27,.09)`; header row = mono label + mono count; then `flex-direction:column; gap:3px; margin-top:9px` of `height:4px; border-radius:2px; background:#F0EFEA` tracks each holding a filled bar.
 
 **Card height depends on N** (`headerLine + 9 + N×4 + (N−1)×3 + 19` of padding) and on the text scaler for the header line. A `GridView.count` with a fixed `childAspectRatio` will clip or leave dead space as the stack grows — the same class of bug as CR-01/WR-04 in Phase 3. **Use `SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, mainAxisSpacing: 8, crossAxisSpacing: 8, mainAxisExtent: computedExtent)` with `shrinkWrap: true` and `NeverScrollableScrollPhysics` inside the page scroll**, computing `mainAxisExtent` exactly like `stripHeightFor` does: fixed part + `scaler.scale(textPart)` [VERIFIED: lib/features/calendar/week_strip.dart:60-78]. Equivalent alternative: three `Row`s of four `Expanded` cards inside an `IntrinsicHeight`; the computed-extent form is cheaper and has a precedent in-repo.
 
@@ -333,7 +333,7 @@ Existing keys to reuse rather than duplicate:
 
 New plural key required: `cyclesCount` with all four uk forms (`цикл` / `цикли` / `циклів` / `цикли`) for the over-limit note. Full new-key inventory in Code Examples.
 
-**Month names:** Ukrainian distinguishes the *format* (genitive, used with a day number — "13 серпня") from the *standalone* (nominative — "серпень") month name. The Calendar screen correctly uses the genitive pattern with a day (`DateFormat('EEEE, d MMMM', locale)` [VERIFIED: lib/features/calendar/calendar_screen.dart:103]). Every month name on the planner screens is standalone — the Cycles subtitle `серпень — листопад 2026` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:288], the peak label `MONTH_NOM` list `['січень', 'лютий', …]` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:643], the month card labels `['СІЧ','ЛЮТ',…]` [line 641] and the detail title `MONTHS_FULL` [line 642] — so they need the standalone pattern letters `LLLL` / `LLL`, not `MMMM` / `MMM`. [ASSUMED — CLDR standalone-vs-format convention from training knowledge; pin it with a unit test asserting the uk output rather than trusting it.]
+**Month names:** Ukrainian distinguishes the *format* (genitive, used with a day number — "13 серпня") from the *standalone* (nominative — "серпень") month name. The Calendar screen correctly uses the genitive pattern with a day (`DateFormat('EEEE, d MMMM', locale)` [VERIFIED: lib/features/calendar/calendar_screen.dart:103]). Every month name on the planner screens is standalone — the Cycles subtitle `серпень — листопад 2026` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:288], the peak label `MONTH_NOM` list `['січень', 'лютий', …]` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:643], the month card labels `['СІЧ','ЛЮТ',…]` [line 641] and the detail title `MONTHS_FULL` [line 642] — so they need the standalone pattern letters `LLLL` / `LLL`, not `MMMM` / `MMM`. [ASSUMED — CLDR standalone-vs-format convention from training knowledge; pin it with a unit test asserting the uk output rather than trusting it.]
 
 ### Anti-Patterns to Avoid
 
@@ -347,13 +347,13 @@ New plural key required: `cyclesCount` with all four uk forms (`цикл` / `ц�
 
 ### P-13: Detail panels are inline, not modal
 
-The week detail is a card in the Cycles scroll flow immediately under the load chart [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:352-368] and the month detail is a card in the Year scroll flow under the grid + legend [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:439-453]. Both are *always visible* and simply re-render on selection (`onClick="{{ w.pick }}"` → `this.setState({ week: w.i })` [lines 341, 909]; `pick: () => this.setState({ yearMonth: m })` [line 844]). No `showModalBottomSheet` anywhere in these screens.
+The week detail is a card in the Cycles scroll flow immediately under the load chart [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:352-368] and the month detail is a card in the Year scroll flow under the grid + legend [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:439-453]. Both are *always visible* and simply re-render on selection (`onClick="{{ w.pick }}"` → `this.setState({ week: w.i })` [lines 341, 909]; `pick: () => this.setState({ yearMonth: m })` [line 844]). No `showModalBottomSheet` anywhere in these screens.
 
 Data each detail needs — all already in the derived model:
 - **Week:** date range (start/end), load, verdict band, free-slot count, pip array, the list of active supplement *names*, and the verdict note.
 - **Month:** month index, per-supplement rows filtered to `frac > 0` with `{name, hint, planned, full}`, the row count, and the editorial limit for the meta line.
 
-Default selection must be seeded from `todayProvider` — the week containing today and today's month (the mockup's `week: 1` is a hardcoded artifact; `yearMonth: NOW_MONTH` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:675] already does the right thing for months).
+Default selection must be seeded from `todayProvider` — the week containing today and today's month (the mockup's `week: 1` is a hardcoded artifact; `yearMonth: NOW_MONTH` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:675] already does the right thing for months).
 
 ## Don't Hand-Roll
 
@@ -404,7 +404,7 @@ Rules the implementation must satisfy, checkable mechanically at review:
 **Warning signs:** any `family` provider keyed by a day inside the planner; a growing DB after opening the planner.
 
 ### PF-3: Month arithmetic done with `Duration`
-**What goes wrong:** `windowStart.add(Duration(days: 122))` for "four months", or the mockup's hardcoded `MONTH_LEN = [31,28,31,…]` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:625] carried into Dart — both wrong in a leap year and wrong for any window that is not Aug–Nov.
+**What goes wrong:** `windowStart.add(Duration(days: 122))` for "four months", or the mockup's hardcoded `MONTH_LEN = [31,28,31,…]` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:625] carried into Dart — both wrong in a leap year and wrong for any window that is not Aug–Nov.
 **How to avoid:** month boundaries via the UTC constructor (`DateTime.utc(y, m + 4, 1)`, which normalizes overflow), month length via `DateTime.utc(y, m + 1, 0).day`, and day counts only between two UTC date-only values (where `inDays` is exact — the reason the whole project normalizes to UTC [VERIFIED: lib/core/domain/cycle_math.dart:3-6]).
 **Warning signs:** any `Duration(days: 30)`, `Duration(days: 365)`, or a literal month-length table in `lib/`.
 
@@ -428,7 +428,7 @@ Enumerated so the planner can put them on an explicit exclusion list:
 Plus the standing PLAN-04 rule: the 5-substance limit is only ever described with the mockup's own editorial wording ("наше редакційне правило … а не медичний норматив"); never "safe", "norm", "overdose", "exceeds the safe limit".
 
 ### PF-6: Sub-pixel and zero-width segments
-**What goes wrong:** a one-day run in a 122-day window is 0.82% ≈ 2.8px on a ~340px track; rounding can collapse it to 0 and the user sees a cycle that "isn't there". The Year matrix already guards this with a 22% floor [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:840]; the gantt has no such guard.
+**What goes wrong:** a one-day run in a 122-day window is 0.82% ≈ 2.8px on a ~340px track; rounding can collapse it to 0 and the user sees a cycle that "isn't there". The Year matrix already guards this with a 22% floor [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:840]; the gantt has no such guard.
 **How to avoid:** clamp painted segment width to a ≥ 2px minimum, and keep the run's true dates in the model for the semantics label.
 **Warning signs:** a supplement with a short course showing an empty track.
 
@@ -444,7 +444,7 @@ Plus the standing PLAN-04 rule: the 5-substance limit is only ever described wit
 
 ### PF-9: Which rows appear at all — paused, fresh, deleted
 - **Soft-deleted** supplements/regimens never arrive: both streams filter `deletedAt` [VERIFIED: lib/core/domain/repositories.dart:46, 68]. Nothing to do.
-- **Paused** regimens produce zero runs automatically (`isActiveOn` returns false first thing: `if (r.paused) return false;` [VERIFIED: lib/core/domain/cycle_math.dart:27]). The mockup answers how to show them: the legend's `пауза` swatch is `background:#F2F1EE` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:329] — the *same* colour as the row track `background:#F2F1EE` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:316]. So a paused supplement keeps its gantt row and shows a bare track, and the legend is what explains it. It contributes 0 to every week load and every month cell, consistent with REGI-04.
+- **Paused** regimens produce zero runs automatically (`isActiveOn` returns false first thing: `if (r.paused) return false;` [VERIFIED: lib/core/domain/cycle_math.dart:27]). The mockup answers how to show them: the legend's `пауза` swatch is `background:#F2F1EE` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:329] — the *same* colour as the row track `background:#F2F1EE` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:316]. So a paused supplement keeps its gantt row and shows a bare track, and the legend is what explains it. It contributes 0 to every week load and every month cell, consistent with REGI-04.
 - **Fresh** entries (a supplement with no regimen at all — `StackStatus.fresh` [VERIFIED: lib/features/stack/stack_status.dart:32-33]) have nothing to draw and no schedule to explain. Recommend excluding them from the gantt and the year grid. [ASSUMED — confirm at UAT.]
 
 ### PF-10: Deriving the model inside `build()`
@@ -458,7 +458,7 @@ Plus the standing PLAN-04 rule: the 5-substance limit is only ever described wit
 ### PF-12: Empty stack, and the Year screen's missing disclaimer
 Two mockup gaps:
 - The mockup has no empty state for either planner screen (its data is always seven supplements). With zero supplements the gantt card would render as an empty white box with gridlines. Invent an empty state reusing the Stack tab's tone (`emptyStackTitle` / `emptyStackBody` are the models [VERIFIED: lib/core/l10n/arb/app_uk.arb:18-19]). [ASSUMED]
-- The Year footnote is `Рік показує, як цикли накладаються один на одний. Червоне число в місяці означає перевищення нашої межі у 5 речовин одночасно.` [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:454] — it does **not** contain "Освітній матеріал, не медична порада.", while the Cycles footnote does [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:374]. PLAN-04 requires *every* planner screen to carry it, so the Year screen must append the existing `disclaimerEducational` key. Recording this as a deliberate, requirement-driven addition to the mockup, not a transcription error.
+- The Year footnote is `Рік показує, як цикли накладаються один на одний. Червоне число в місяці означає перевищення нашої межі у 5 речовин одночасно.` [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:454] — it does **not** contain "Освітній матеріал, не медична порада.", while the Cycles footnote does [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:374]. PLAN-04 requires *every* planner screen to carry it, so the Year screen must append the existing `disclaimerEducational` key. Recording this as a deliberate, requirement-driven addition to the mockup, not a transcription error.
 
 ## Code Examples
 
@@ -834,10 +834,10 @@ No blocking gaps and no new external dependency. Nothing in this phase requires 
 
 ### Primary (HIGH confidence)
 - Project code read line-by-line this session: `lib/core/domain/{models,cycle_math,repositories}.dart`, `lib/core/providers.dart`, `lib/core/today_controller.dart`, `lib/core/theme/{tokens,theme}.dart`, `lib/core/widgets/bq_segmented.dart`, `lib/app_shell.dart`, `lib/features/calendar/{calendar_providers,calendar_screen,day_view_model,day_progress_ring,week_strip}.dart`, `lib/features/stack/stack_status.dart`, `lib/core/l10n/arb/app_{uk,en}.arb`, `pubspec.yaml` — every `[VERIFIED: path:lines]` tag refers to these reads, with the cited values quoted verbatim
-- `claude_design_mockup/Boostque v0.1.dc.html` — screen 03 · ЦИКЛИ (lines 276-388), screen 04 · РІК (lines 390-468), screen 02 · КАЛЕНДАР (lines 193-274) and the full planner script (lines 623-668, 763-852, 891-972) read this session; all mockup citations are verbatim quotes with line numbers
+- `claude_design_mockup/VitoMy v0.1.dc.html` — screen 03 · ЦИКЛИ (lines 276-388), screen 04 · РІК (lines 390-468), screen 02 · КАЛЕНДАР (lines 193-274) and the full planner script (lines 623-668, 763-852, 891-972) read this session; all mockup citations are verbatim quotes with line numbers
 - `.planning/phases/03-daily-tracking/03-REVIEW.md` — WR-06 (materialization-by-pager), CR-01/WR-04 (text-scale overflows), WR-02 (semantics action), IN-08 (zero text-scale coverage), and the 290-test baseline
 - `.planning/REQUIREMENTS.md` (PLAN-01..04, Out of Scope table, locked decisions), `.planning/ROADMAP.md` (Phase 4 goal + 4 success criteria, Phase-1 three-tab criterion), `.claude/CLAUDE.md` (locked stack, "What NOT to Use", alternatives table)
-- `docs/superpowers/specs/2026-08-14-boostque-v1-design.md` — "all calendar views are computed projections, never stored" (line 67) and the `calendar/  # Day / Cycles / Year views` structure (line 54)
+- `docs/superpowers/specs/2026-08-14-vitomy-v1-design.md` — "all calendar views are computed projections, never stored" (line 67) and the `calendar/  # Day / Cycles / Year views` structure (line 54)
 
 ### Secondary (MEDIUM confidence)
 - `.planning/phases/03-daily-tracking/03-RESEARCH.md` and `03-PATTERNS.md` — house conventions this document mirrors (pure view-model style, test harnesses, ARB composition with pre-formatted plural strings)

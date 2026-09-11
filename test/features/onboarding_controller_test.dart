@@ -12,8 +12,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/features/onboarding/onboarding_controller.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/features/onboarding/onboarding_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -5,9 +5,9 @@ library;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/core/notifications/notification_copy.dart';
-import 'package:boostque/core/notifications/notification_locale.dart';
-import 'package:boostque/core/notifications/notification_scheduler.dart';
+import 'package:vitomy/core/notifications/notification_copy.dart';
+import 'package:vitomy/core/notifications/notification_locale.dart';
+import 'package:vitomy/core/notifications/notification_scheduler.dart';
 
 /// The seam every later plan mocks.
 ///
@@ -216,7 +216,7 @@ class NotificationBootstrap extends Notifier<bool> {
         FlutterErrorDetails(
           exception: error,
           stack: stack,
-          library: 'boostque',
+          library: 'vitomy',
           context: ErrorDescription('bootstrapping dose reminders'),
         ),
       );

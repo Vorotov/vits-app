@@ -12,7 +12,7 @@ human_verification:
   - test: "On an iPhone SE-class (667pt-height) simulator in BOTH uk and en, open the add-supplement sheet, focus the search field and then the manual-tab name field with the keyboard open."
     expected: "The focused field stays fully visible above the keyboard on both tabs; the sheet body scrolls; nothing is covered."
     why_human: "02-05-PLAN.md declares this truth with `verification: backstop` (UI-SPEC #15, PF-6). The wiring exists (isScrollControlled + viewInsets padding + SingleChildScrollView — code read), but keyboard-inset behavior on a real small-height device cannot be asserted in widget tests — explicitly deferred to phase sign-off by the plan."
-  - test: "On a simulator in uk locale, visually compare the Stack screen, add-supplement sheet, and regimen editor against claude_design_mockup/Boostque v0.1.dc.html screens 01, 02(sheet), and 05."
+  - test: "On a simulator in uk locale, visually compare the Stack screen, add-supplement sheet, and regimen editor against claude_design_mockup/VitoMy v0.1.dc.html screens 01, 02(sheet), and 05."
     expected: "Card anatomy, chips, segmented tabs, panel/slider/slot styling, 28-bar preview, and pinned footer match the mockup's layout, palette, radii, and typography."
     why_human: "02-VALIDATION.md 'Manual-Only Verifications': visual fidelity to a design mockup cannot be pixel-asserted by widget tests."
   - test: "On a simulator in uk locale, open the start-date picker and a slot time picker in the regimen editor."
@@ -117,7 +117,7 @@ None. `grep -rn -E "TBD|FIXME|XXX|HACK|PLACEHOLDER|not yet implemented|coming so
 
 1. **uk footer labels at 390pt (02-04 backstop)** — open the editor in uk, toggle pause; expect Додати й запустити цикл / Зберегти, цикл на паузі / Відновити цикл each on one line, no clipping.
 2. **Add-sheet keyboard handling at 667pt (02-05 backstop)** — SE-class simulator, uk and en; expect the focused field fully visible above the keyboard on both tabs.
-3. **Visual fidelity vs mockup (02-VALIDATION manual-only)** — Stack screen, add sheet, editor vs `claude_design_mockup/Boostque v0.1.dc.html` screens 01/05.
+3. **Visual fidelity vs mockup (02-VALIDATION manual-only)** — Stack screen, add sheet, editor vs `claude_design_mockup/VitoMy v0.1.dc.html` screens 01/05.
 4. **uk picker localization (02-VALIDATION manual-only)** — date picker uk month/day names; 24-h time picker; locale-formatted values in fields.
 
 ### Gaps Summary

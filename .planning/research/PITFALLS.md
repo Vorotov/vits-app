@@ -285,7 +285,7 @@ How roadmap phases should address these pitfalls.
 - [Target API level requirements for Google Play apps - Play Console Help](https://support.google.com/googleplay/android-developer/answer/11926878) — official Google Play policy (HIGH)
 - [I Tested 10 Habit Trackers in 30 Days. 8 Broke Me the Same Way. — Medium](https://medium.com/@wardtylerd/i-tested-10-habit-trackers-in-30-days-8-broke-me-the-same-way-9803ea20b228) — practitioner/anecdotal (LOW-MEDIUM, used only for UX-pitfalls framing, not as authoritative)
 - [Why Local-First Software Is the Future and its Limitations — RxDB](https://rxdb.info/articles/local-first-future.html) — practitioner/vendor write-up (MEDIUM)
-- Project-internal: `/Users/dima/supplements/.planning/PROJECT.md` and `/Users/dima/supplements/docs/superpowers/specs/2026-08-14-boostque-v1-design.md` (already-decided constraints referenced throughout, e.g. UTC date normalization, repository pattern, i18n rules)
+- Project-internal: `/Users/dima/supplements/.planning/PROJECT.md` and `/Users/dima/supplements/docs/superpowers/specs/2026-08-14-vitomy-v1-design.md` (already-decided constraints referenced throughout, e.g. UTC date normalization, repository pattern, i18n rules)
 
 ---
 *Pitfalls research for: local-first Flutter supplement tracker with cyclic scheduling and i18n*

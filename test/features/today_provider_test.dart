@@ -18,8 +18,8 @@
 /// path, none of which had any coverage at all.
 library;
 
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/core/today_controller.dart';
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/core/today_controller.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';

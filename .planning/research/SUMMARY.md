@@ -1,13 +1,13 @@
 # Project Research Summary
 
-**Project:** Boostque
+**Project:** VitoMy
 **Domain:** Local-first Flutter mobile app — supplement stack planner/adherence tracker (iOS + Android)
 **Researched:** 2026-08-14
 **Confidence:** HIGH
 
 ## Executive Summary
 
-Boostque is a local-first Flutter app for planning and tracking cyclic supplement regimens, built on an already-locked architecture (Riverpod + Drift/SQLite + repository pattern + pure-Dart domain math + feature-first folders + gen-l10n uk/en). This research confirms every locked decision is the industry-standard shape for this app class, and fills in the concrete package versions (Riverpod 3.4.2, Drift 2.34.3, drift_flutter 0.3.1, uuid, build_runner-driven codegen) needed to start building on the dev machine's Flutter 3.47/Dart 3.13. There are no architectural surprises here — the biggest value of this research round is confirming the plan is sound and surfacing the sharp edges (DST-safe date math, ICU plural correctness for Ukrainian, Drift migration discipline, Riverpod autoDispose lifecycle) that must be handled correctly from the very first phase that touches them, because they're expensive to retrofit later.
+VitoMy is a local-first Flutter app for planning and tracking cyclic supplement regimens, built on an already-locked architecture (Riverpod + Drift/SQLite + repository pattern + pure-Dart domain math + feature-first folders + gen-l10n uk/en). This research confirms every locked decision is the industry-standard shape for this app class, and fills in the concrete package versions (Riverpod 3.4.2, Drift 2.34.3, drift_flutter 0.3.1, uuid, build_runner-driven codegen) needed to start building on the dev machine's Flutter 3.47/Dart 3.13. There are no architectural surprises here — the biggest value of this research round is confirming the plan is sound and surfacing the sharp edges (DST-safe date math, ICU plural correctness for Ukrainian, Drift migration discipline, Riverpod autoDispose lifecycle) that must be handled correctly from the very first phase that touches them, because they're expensive to retrofit later.
 
 On features, v1's scope (stack management, cyclic + one-time regimens, Today view, Cycles gantt, Year matrix, uk+en i18n, local-only storage) matches or exceeds table stakes across the competitor set (Medisafe, MyTherapy, SuppCo, Round Health, etc.), and the Cycles/Year visualizations are a genuine, defensible differentiator no competitor offers — protect them from scope-cutting. One near-zero-cost gap surfaced: the Today view should support browsing past dates with a "missed" state so v1 doesn't ship without basic dose history, since Cycles/Year already need the date-ranged queries this requires. Notifications are correctly deferred but should be the first post-v1 addition, since the "materialized dose row" data model already makes it cheap.
 
@@ -168,7 +168,7 @@ Phases with standard, well-documented patterns (skip research-phase):
 - App Review Guidelines (developer.apple.com) — official
 - Target API level requirements (support.google.com/googleplay) — official
 - flutter/flutter GitHub issues #138069 (DST DateTime), #15741 (locale data init), #86906 (nested plurals) — official issue tracker
-- Internal: `/Users/dima/supplements/.planning/PROJECT.md`, `docs/superpowers/specs/2026-08-14-boostque-v1-design.md`, `docs/superpowers/plans/2026-08-14-boostque-v1.md`
+- Internal: `/Users/dima/supplements/.planning/PROJECT.md`, `docs/superpowers/specs/2026-08-14-vitomy-v1-design.md`, `docs/superpowers/plans/2026-08-14-vitomy-v1.md`
 
 ### Secondary (MEDIUM confidence)
 - Competitor app-store listings and comparison articles (Medisafe, MyTherapy, SuppCo, Round Health, Dose Streak, Zareva, DoseNote, JanusMed, etc.) — see FEATURES.md for full list

@@ -9,7 +9,7 @@ verdict: OPEN_THREATS
 date: 2026-08-16
 ---
 
-# Boostque v1 — Security and Privacy Audit
+# VitoMy v1 — Security and Privacy Audit
 
 Retroactive audit of the whole v1 codebase against the STRIDE registers declared
 across all five phase plans, plus six directed checks (offline claim, data at
@@ -80,7 +80,7 @@ Phase 5 introduced an async `main()` that resolves `SharedPreferences` before
 document states the physical-device cold-start backstop (P3 / Backstop 15) was
 **not run**, and says explicitly: *"If skipped, threat T-05-10 has no mitigating
 evidence."* `integration_test/data03_loop_test.dart` cannot substitute — it
-pumps `BoostqueApp` directly and never calls `main()`. A failure here is a
+pumps `VitomyApp` directly and never calls `main()`. A failure here is a
 deterministic launch hang, not a degraded feature.
 
 *Fix:* run P2/Backstop 14 and P3/Backstop 15 on a physical iOS and a physical
@@ -127,7 +127,7 @@ repository read boundary, where the untrusted-storage boundary actually is.
 `lib/core/db/database.dart:118`; `lib/core/providers.dart:37-41`
 
 `grep -rniE "corrupt|SqliteException|DatabaseCorrupt" lib test integration_test`
-finds **nothing in `lib/`**. A corrupt `boostque.sqlite` (the realistic vector is
+finds **nothing in `lib/`**. A corrupt `vitomy.sqlite` (the realistic vector is
 a restored Android Auto Backup captured mid-write, since the DB is backed up by
 design and no `BackupAgent` quiesces it) surfaces as a stream error. The three
 error arms then render "could not load" + Retry — forever, with no reset path.
@@ -192,8 +192,8 @@ SQLite via native build hooks); neither appears in
 but `sqlcipher_flutter_libs` in the graph should not be mistaken for
 encryption-at-rest being present. It is not (T-01-11, accepted).
 
-**F-11 — Placeholder identity not yet resolved.** `applicationId = "com.boostque.dev"`
-(`android/app/build.gradle.kts:19`) and `PRODUCT_BUNDLE_IDENTIFIER = com.boostque.dev`
+**F-11 — Placeholder identity not yet resolved.** `applicationId = "app.vitomy"`
+(`android/app/build.gradle.kts:19`) and `PRODUCT_BUNDLE_IDENTIFIER = app.vitomy`
 (`ios/Runner.xcodeproj/project.pbxproj:387`). Known and tracked in CLAUDE.md
 constraints; repeated here because it is irreversible after first store release.
 
@@ -212,8 +212,8 @@ See the evidence table above.
 
 ### 2. Data at rest — appropriate location, backup decision defensible with disclosure
 
-`lib/core/db/database.dart:118` → `driftDatabase(name: 'boostque')` →
-`drift_flutter` resolves `<getApplicationDocumentsDirectory()>/boostque.sqlite`.
+`lib/core/db/database.dart:118` → `driftDatabase(name: 'vitomy')` →
+`drift_flutter` resolves `<getApplicationDocumentsDirectory()>/vitomy.sqlite`.
 
 - **iOS:** app `Documents/`. Verified **not** user-exposed: `Info.plist` sets
   neither `UIFileSharingEnabled` nor `LSSupportsOpeningDocumentsInPlace`, so the
@@ -390,7 +390,7 @@ Before store submission:
 - [ ] Complete the Play Data-safety form and App Store App Privacy answers,
       declaring that supplement/intake data is stored locally and included in
       OS backups; add `ios/Runner/PrivacyInfo.xcprivacy` (F-6)
-- [ ] Decide the final app name and bundle id; replace `com.boostque.dev` in
+- [ ] Decide the final app name and bundle id; replace `app.vitomy` in
       `android/app/build.gradle.kts:19` and `ios/.../project.pbxproj` (F-11)
 
 Recommended before v1.1:

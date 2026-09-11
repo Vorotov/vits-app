@@ -10,7 +10,7 @@ class AppLocalizationsUk extends AppLocalizations {
   AppLocalizationsUk([String locale = 'uk']) : super(locale);
 
   @override
-  String get appTitle => 'Boostque';
+  String get appTitle => 'VitoMy';
 
   @override
   String get tabStack => 'Стек';

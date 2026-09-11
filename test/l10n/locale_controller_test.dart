@@ -14,9 +14,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/l10n/locale_controller.dart';
-import 'package:boostque/core/providers.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/l10n/locale_controller.dart';
+import 'package:vitomy/core/providers.dart';
 
 void main() {
   /// Seeds the mock store and builds a container over the resolved instance.
@@ -191,7 +191,7 @@ void main() {
     // The value under this key is untrusted in its TYPE as well as its
     // content: `SharedPreferences.getString` is an unguarded `as String?`
     // downcast, so a non-String value throws a TypeError INSIDE build() —
-    // which BoostqueApp.build watches, so the provider parks in a permanent
+    // which VitomyApp.build watches, so the provider parks in a permanent
     // error state and the root widget cannot be rebuilt into health. That is
     // a bricked launch that survives restarts, not a cosmetic fallback.
     for (final tampered in <Object>[7, true, 3.5, <String>['uk']]) {

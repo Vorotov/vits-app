@@ -2226,9 +2226,9 @@ class IntakeLogsCompanion extends UpdateCompanion<IntakeLog> {
   }
 }
 
-abstract class _$BoostqueDb extends GeneratedDatabase {
-  _$BoostqueDb(QueryExecutor e) : super(e);
-  $BoostqueDbManager get managers => $BoostqueDbManager(this);
+abstract class _$VitomyDb extends GeneratedDatabase {
+  _$VitomyDb(QueryExecutor e) : super(e);
+  $VitomyDbManager get managers => $VitomyDbManager(this);
   late final $SupplementsTable supplements = $SupplementsTable(this);
   late final $RegimensTable regimens = $RegimensTable(this);
   late final $RegimenSlotsTable regimenSlots = $RegimenSlotsTable(this);
@@ -2274,11 +2274,11 @@ typedef $$SupplementsTableUpdateCompanionBuilder =
     });
 
 final class $$SupplementsTableReferences
-    extends BaseReferences<_$BoostqueDb, $SupplementsTable, Supplement> {
+    extends BaseReferences<_$VitomyDb, $SupplementsTable, Supplement> {
   $$SupplementsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
   static MultiTypedResultKey<$RegimensTable, List<Regimen>> _regimensRefsTable(
-    _$BoostqueDb db,
+    _$VitomyDb db,
   ) => MultiTypedResultKey.fromTable(
     db.regimens,
     aliasName: 'supplements__id__regimens__supplement_id',
@@ -2298,7 +2298,7 @@ final class $$SupplementsTableReferences
 }
 
 class $$SupplementsTableFilterComposer
-    extends Composer<_$BoostqueDb, $SupplementsTable> {
+    extends Composer<_$VitomyDb, $SupplementsTable> {
   $$SupplementsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -2373,7 +2373,7 @@ class $$SupplementsTableFilterComposer
 }
 
 class $$SupplementsTableOrderingComposer
-    extends Composer<_$BoostqueDb, $SupplementsTable> {
+    extends Composer<_$VitomyDb, $SupplementsTable> {
   $$SupplementsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -2423,7 +2423,7 @@ class $$SupplementsTableOrderingComposer
 }
 
 class $$SupplementsTableAnnotationComposer
-    extends Composer<_$BoostqueDb, $SupplementsTable> {
+    extends Composer<_$VitomyDb, $SupplementsTable> {
   $$SupplementsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -2486,7 +2486,7 @@ class $$SupplementsTableAnnotationComposer
 class $$SupplementsTableTableManager
     extends
         RootTableManager<
-          _$BoostqueDb,
+          _$VitomyDb,
           $SupplementsTable,
           Supplement,
           $$SupplementsTableFilterComposer,
@@ -2498,7 +2498,7 @@ class $$SupplementsTableTableManager
           Supplement,
           PrefetchHooks Function({bool regimensRefs})
         > {
-  $$SupplementsTableTableManager(_$BoostqueDb db, $SupplementsTable table)
+  $$SupplementsTableTableManager(_$VitomyDb db, $SupplementsTable table)
     : super(
         TableManagerState(
           db: db,
@@ -2599,7 +2599,7 @@ class $$SupplementsTableTableManager
 
 typedef $$SupplementsTableProcessedTableManager =
     ProcessedTableManager<
-      _$BoostqueDb,
+      _$VitomyDb,
       $SupplementsTable,
       Supplement,
       $$SupplementsTableFilterComposer,
@@ -2641,10 +2641,10 @@ typedef $$RegimensTableUpdateCompanionBuilder = RegimensCompanion Function({
 });
 
 final class $$RegimensTableReferences
-    extends BaseReferences<_$BoostqueDb, $RegimensTable, Regimen> {
+    extends BaseReferences<_$VitomyDb, $RegimensTable, Regimen> {
   $$RegimensTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $SupplementsTable _supplementIdTable(_$BoostqueDb db) =>
+  static $SupplementsTable _supplementIdTable(_$VitomyDb db) =>
       db.supplements.createAlias('regimens__supplement_id__supplements__id');
 
   $$SupplementsTableProcessedTableManager get supplementId {
@@ -2662,7 +2662,7 @@ final class $$RegimensTableReferences
   }
 
   static MultiTypedResultKey<$RegimenSlotsTable, List<RegimenSlot>>
-  _regimenSlotsRefsTable(_$BoostqueDb db) => MultiTypedResultKey.fromTable(
+  _regimenSlotsRefsTable(_$VitomyDb db) => MultiTypedResultKey.fromTable(
     db.regimenSlots,
     aliasName: 'regimens__id__regimen_slots__regimen_id',
   );
@@ -2680,7 +2680,7 @@ final class $$RegimensTableReferences
   }
 
   static MultiTypedResultKey<$IntakeLogsTable, List<IntakeLog>>
-  _intakeLogsRefsTable(_$BoostqueDb db) => MultiTypedResultKey.fromTable(
+  _intakeLogsRefsTable(_$VitomyDb db) => MultiTypedResultKey.fromTable(
     db.intakeLogs,
     aliasName: 'regimens__id__intake_logs__regimen_id',
   );
@@ -2699,7 +2699,7 @@ final class $$RegimensTableReferences
 }
 
 class $$RegimensTableFilterComposer
-    extends Composer<_$BoostqueDb, $RegimensTable> {
+    extends Composer<_$VitomyDb, $RegimensTable> {
   $$RegimensTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -2833,7 +2833,7 @@ class $$RegimensTableFilterComposer
 }
 
 class $$RegimensTableOrderingComposer
-    extends Composer<_$BoostqueDb, $RegimensTable> {
+    extends Composer<_$VitomyDb, $RegimensTable> {
   $$RegimensTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -2916,7 +2916,7 @@ class $$RegimensTableOrderingComposer
 }
 
 class $$RegimensTableAnnotationComposer
-    extends Composer<_$BoostqueDb, $RegimensTable> {
+    extends Composer<_$VitomyDb, $RegimensTable> {
   $$RegimensTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -3031,7 +3031,7 @@ class $$RegimensTableAnnotationComposer
 class $$RegimensTableTableManager
     extends
         RootTableManager<
-          _$BoostqueDb,
+          _$VitomyDb,
           $RegimensTable,
           Regimen,
           $$RegimensTableFilterComposer,
@@ -3047,7 +3047,7 @@ class $$RegimensTableTableManager
             bool intakeLogsRefs,
           })
         > {
-  $$RegimensTableTableManager(_$BoostqueDb db, $RegimensTable table)
+  $$RegimensTableTableManager(_$VitomyDb db, $RegimensTable table)
     : super(
         TableManagerState(
           db: db,
@@ -3218,7 +3218,7 @@ class $$RegimensTableTableManager
 
 typedef $$RegimensTableProcessedTableManager =
     ProcessedTableManager<
-      _$BoostqueDb,
+      _$VitomyDb,
       $RegimensTable,
       Regimen,
       $$RegimensTableFilterComposer,
@@ -3258,10 +3258,10 @@ typedef $$RegimenSlotsTableUpdateCompanionBuilder =
     });
 
 final class $$RegimenSlotsTableReferences
-    extends BaseReferences<_$BoostqueDb, $RegimenSlotsTable, RegimenSlot> {
+    extends BaseReferences<_$VitomyDb, $RegimenSlotsTable, RegimenSlot> {
   $$RegimenSlotsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $RegimensTable _regimenIdTable(_$BoostqueDb db) =>
+  static $RegimensTable _regimenIdTable(_$VitomyDb db) =>
       db.regimens.createAlias('regimen_slots__regimen_id__regimens__id');
 
   $$RegimensTableProcessedTableManager get regimenId {
@@ -3279,7 +3279,7 @@ final class $$RegimenSlotsTableReferences
   }
 
   static MultiTypedResultKey<$IntakeLogsTable, List<IntakeLog>>
-  _intakeLogsRefsTable(_$BoostqueDb db) => MultiTypedResultKey.fromTable(
+  _intakeLogsRefsTable(_$VitomyDb db) => MultiTypedResultKey.fromTable(
     db.intakeLogs,
     aliasName: 'regimen_slots__id__intake_logs__slot_id',
   );
@@ -3298,7 +3298,7 @@ final class $$RegimenSlotsTableReferences
 }
 
 class $$RegimenSlotsTableFilterComposer
-    extends Composer<_$BoostqueDb, $RegimenSlotsTable> {
+    extends Composer<_$VitomyDb, $RegimenSlotsTable> {
   $$RegimenSlotsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -3386,7 +3386,7 @@ class $$RegimenSlotsTableFilterComposer
 }
 
 class $$RegimenSlotsTableOrderingComposer
-    extends Composer<_$BoostqueDb, $RegimenSlotsTable> {
+    extends Composer<_$VitomyDb, $RegimenSlotsTable> {
   $$RegimenSlotsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -3449,7 +3449,7 @@ class $$RegimenSlotsTableOrderingComposer
 }
 
 class $$RegimenSlotsTableAnnotationComposer
-    extends Composer<_$BoostqueDb, $RegimenSlotsTable> {
+    extends Composer<_$VitomyDb, $RegimenSlotsTable> {
   $$RegimenSlotsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -3529,7 +3529,7 @@ class $$RegimenSlotsTableAnnotationComposer
 class $$RegimenSlotsTableTableManager
     extends
         RootTableManager<
-          _$BoostqueDb,
+          _$VitomyDb,
           $RegimenSlotsTable,
           RegimenSlot,
           $$RegimenSlotsTableFilterComposer,
@@ -3541,7 +3541,7 @@ class $$RegimenSlotsTableTableManager
           RegimenSlot,
           PrefetchHooks Function({bool regimenId, bool intakeLogsRefs})
         > {
-  $$RegimenSlotsTableTableManager(_$BoostqueDb db, $RegimenSlotsTable table)
+  $$RegimenSlotsTableTableManager(_$VitomyDb db, $RegimenSlotsTable table)
     : super(
         TableManagerState(
           db: db,
@@ -3665,7 +3665,7 @@ class $$RegimenSlotsTableTableManager
 
 typedef $$RegimenSlotsTableProcessedTableManager =
     ProcessedTableManager<
-      _$BoostqueDb,
+      _$VitomyDb,
       $RegimenSlotsTable,
       RegimenSlot,
       $$RegimenSlotsTableFilterComposer,
@@ -3701,10 +3701,10 @@ typedef $$IntakeLogsTableUpdateCompanionBuilder = IntakeLogsCompanion Function({
 });
 
 final class $$IntakeLogsTableReferences
-    extends BaseReferences<_$BoostqueDb, $IntakeLogsTable, IntakeLog> {
+    extends BaseReferences<_$VitomyDb, $IntakeLogsTable, IntakeLog> {
   $$IntakeLogsTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $RegimensTable _regimenIdTable(_$BoostqueDb db) =>
+  static $RegimensTable _regimenIdTable(_$VitomyDb db) =>
       db.regimens.createAlias('intake_logs__regimen_id__regimens__id');
 
   $$RegimensTableProcessedTableManager get regimenId {
@@ -3721,7 +3721,7 @@ final class $$IntakeLogsTableReferences
     );
   }
 
-  static $RegimenSlotsTable _slotIdTable(_$BoostqueDb db) =>
+  static $RegimenSlotsTable _slotIdTable(_$VitomyDb db) =>
       db.regimenSlots.createAlias('intake_logs__slot_id__regimen_slots__id');
 
   $$RegimenSlotsTableProcessedTableManager get slotId {
@@ -3740,7 +3740,7 @@ final class $$IntakeLogsTableReferences
 }
 
 class $$IntakeLogsTableFilterComposer
-    extends Composer<_$BoostqueDb, $IntakeLogsTable> {
+    extends Composer<_$VitomyDb, $IntakeLogsTable> {
   $$IntakeLogsTableFilterComposer({
     required super.$db,
     required super.$table,
@@ -3827,7 +3827,7 @@ class $$IntakeLogsTableFilterComposer
 }
 
 class $$IntakeLogsTableOrderingComposer
-    extends Composer<_$BoostqueDb, $IntakeLogsTable> {
+    extends Composer<_$VitomyDb, $IntakeLogsTable> {
   $$IntakeLogsTableOrderingComposer({
     required super.$db,
     required super.$table,
@@ -3913,7 +3913,7 @@ class $$IntakeLogsTableOrderingComposer
 }
 
 class $$IntakeLogsTableAnnotationComposer
-    extends Composer<_$BoostqueDb, $IntakeLogsTable> {
+    extends Composer<_$VitomyDb, $IntakeLogsTable> {
   $$IntakeLogsTableAnnotationComposer({
     required super.$db,
     required super.$table,
@@ -3989,7 +3989,7 @@ class $$IntakeLogsTableAnnotationComposer
 class $$IntakeLogsTableTableManager
     extends
         RootTableManager<
-          _$BoostqueDb,
+          _$VitomyDb,
           $IntakeLogsTable,
           IntakeLog,
           $$IntakeLogsTableFilterComposer,
@@ -4001,7 +4001,7 @@ class $$IntakeLogsTableTableManager
           IntakeLog,
           PrefetchHooks Function({bool regimenId, bool slotId})
         > {
-  $$IntakeLogsTableTableManager(_$BoostqueDb db, $IntakeLogsTable table)
+  $$IntakeLogsTableTableManager(_$VitomyDb db, $IntakeLogsTable table)
     : super(
         TableManagerState(
           db: db,
@@ -4120,7 +4120,7 @@ class $$IntakeLogsTableTableManager
 
 typedef $$IntakeLogsTableProcessedTableManager =
     ProcessedTableManager<
-      _$BoostqueDb,
+      _$VitomyDb,
       $IntakeLogsTable,
       IntakeLog,
       $$IntakeLogsTableFilterComposer,
@@ -4133,9 +4133,9 @@ typedef $$IntakeLogsTableProcessedTableManager =
       PrefetchHooks Function({bool regimenId, bool slotId})
     >;
 
-class $BoostqueDbManager {
-  final _$BoostqueDb _db;
-  $BoostqueDbManager(this._db);
+class $VitomyDbManager {
+  final _$VitomyDb _db;
+  $VitomyDbManager(this._db);
   $$SupplementsTableTableManager get supplements =>
       $$SupplementsTableTableManager(_db, _db.supplements);
   $$RegimensTableTableManager get regimens =>

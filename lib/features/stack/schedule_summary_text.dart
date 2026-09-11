@@ -19,8 +19,8 @@ library;
 
 import 'package:intl/intl.dart';
 
-import 'package:boostque/core/l10n/gen/app_localizations.dart';
-import 'package:boostque/features/stack/stack_status.dart';
+import 'package:vitomy/core/l10n/gen/app_localizations.dart';
+import 'package:vitomy/features/stack/stack_status.dart';
 
 /// The schedule description for [summary].
 ///

@@ -16,12 +16,12 @@ library;
 
 import 'dart:async';
 
-import 'package:boostque/core/db/database.dart' show BoostqueDb;
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/features/stack/regimen_editor_controller.dart';
+import 'package:vitomy/core/db/database.dart' show VitomyDb;
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/features/stack/regimen_editor_controller.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -80,7 +80,7 @@ void main() {
     container = ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
-          final db = BoostqueDb.forTesting(NativeDatabase.memory());
+          final db = VitomyDb.forTesting(NativeDatabase.memory());
           ref.onDispose(db.close);
           return db;
         }),
@@ -542,7 +542,7 @@ void main() {
       final cold = ProviderContainer(
         overrides: [
           dbProvider.overrideWith((ref) {
-            final db = BoostqueDb.forTesting(NativeDatabase.memory());
+            final db = VitomyDb.forTesting(NativeDatabase.memory());
             ref.onDispose(db.close);
             return db;
           }),
@@ -612,7 +612,7 @@ void main() {
       final cold = ProviderContainer(
         overrides: [
           dbProvider.overrideWith((ref) {
-            final db = BoostqueDb.forTesting(NativeDatabase.memory());
+            final db = VitomyDb.forTesting(NativeDatabase.memory());
             ref.onDispose(db.close);
             return db;
           }),

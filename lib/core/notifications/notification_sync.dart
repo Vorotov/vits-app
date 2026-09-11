@@ -17,16 +17,16 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/notifications/notification_constants.dart';
-import 'package:boostque/core/notifications/notification_copy.dart';
-import 'package:boostque/core/notifications/notification_locale.dart';
-import 'package:boostque/core/notifications/notification_permission.dart';
-import 'package:boostque/core/notifications/notification_plan.dart';
-import 'package:boostque/core/notifications/notification_providers.dart';
-import 'package:boostque/core/notifications/tz_conversion.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/today_controller.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/notifications/notification_constants.dart';
+import 'package:vitomy/core/notifications/notification_copy.dart';
+import 'package:vitomy/core/notifications/notification_locale.dart';
+import 'package:vitomy/core/notifications/notification_permission.dart';
+import 'package:vitomy/core/notifications/notification_plan.dart';
+import 'package:vitomy/core/notifications/notification_providers.dart';
+import 'package:vitomy/core/notifications/tz_conversion.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/today_controller.dart';
 
 /// How long a burst of triggers is collapsed into one application.
 ///
@@ -154,7 +154,7 @@ class NotificationSync extends Notifier<int> {
           FlutterErrorDetails(
             exception: error,
             stack: stack,
-            library: 'boostque',
+            library: 'vitomy',
             context: ErrorDescription('re-resolving the device time zone'),
           ),
         );
@@ -303,7 +303,7 @@ class NotificationSync extends Notifier<int> {
         FlutterErrorDetails(
           exception: error,
           stack: stack,
-          library: 'boostque',
+          library: 'vitomy',
           context: ErrorDescription('applying the dose-reminder difference'),
         ),
       );

@@ -23,14 +23,14 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/core/domain/repositories.dart';
-import 'package:boostque/core/l10n/clock_format.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/core/today_controller.dart';
-import 'package:boostque/features/calendar/day_view_model.dart';
-import 'package:boostque/features/calendar/dose_row.dart';
+import 'package:vitomy/core/domain/repositories.dart';
+import 'package:vitomy/core/l10n/clock_format.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/core/today_controller.dart';
+import 'package:vitomy/features/calendar/day_view_model.dart';
+import 'package:vitomy/features/calendar/dose_row.dart';
 
 /// A non-empty time block: header row, 9px, its dose rows 7px apart, 18px
 /// below the whole section (UI-SPEC spacing overrides).

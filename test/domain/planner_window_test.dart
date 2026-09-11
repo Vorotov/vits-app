@@ -9,8 +9,8 @@
 /// coverage denominators are all laid out from exactly these numbers.
 library;
 
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/features/calendar/planner_view_model.dart';
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/features/calendar/planner_view_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -1,4 +1,4 @@
-# Boostque v1 — Independent Re-Verification & Validation
+# VitoMy v1 — Independent Re-Verification & Validation
 
 **Date:** 2026-08-16 · **Commit at sign-off:** see `git log -1` · **Verdict: PASS**
 
@@ -81,7 +81,7 @@ real tests; deleting the hook now fails five.
   Locked deliberately: the approved mockup renders Cyrillic the same way. Gated so it
   cannot change silently. Manrope is Cyrillic-complete and smaller if you ever want the
   brand font to cover Ukrainian.
-- **Bundle id is still the placeholder** `com.boostque.dev`; app name and id are undecided.
+- **Bundle id is still the placeholder** `app.vitomy`; app name and id are undecided.
 - **Physical hardware untested** — simulator and emulator only.
 - **Health-adjacent data rides OS backups by design** (so a reinstall restores history).
   Defensible; Android backups are E2E-encrypted with the screen-lock secret, iOS iCloud

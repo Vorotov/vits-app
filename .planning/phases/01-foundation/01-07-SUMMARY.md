@@ -8,7 +8,7 @@ requires:
   - phase: 01-foundation (01-02)
     provides: Domain models (Supplement/Regimen/DoseSlot, enums) and DST-safe cycle math (dateOnly, isActiveOn)
   - phase: 01-foundation (01-05)
-    provides: Sync-ready Drift schema (SyncColumns, IntakeLogs unique (slotId, date), BoostqueDb.forTesting/open)
+    provides: Sync-ready Drift schema (SyncColumns, IntakeLogs unique (slotId, date), VitomyDb.forTesting/open)
 provides:
   - SupplementRepository / RegimenRepository / IntakeRepository interfaces + StackEntry / DayDose view models + combineStackEntries (core/domain, pure Dart)
   - DriftSupplementRepository / DriftRegimenRepository / DriftIntakeRepository — soft-delete-only, updatedAt-bumping, deterministically ordered
@@ -96,7 +96,7 @@ coverage:
         status: pass
     human_judgment: false
   - id: D5
-    description: "Fresh install launches to the three-tab shell with no errors and empty data; boostque.sqlite lands in app-documents (phase-end human check)"
+    description: "Fresh install launches to the three-tab shell with no errors and empty data; vitomy.sqlite lands in app-documents (phase-end human check)"
     requirement: DATA-01
     verification: []
     human_judgment: true
@@ -175,7 +175,7 @@ None - no external service configuration required.
 
 - Phase 1 is fully executed: 7/7 plans have summaries; `flutter analyze` clean and `flutter test` 79/79 green (D-27)
 - Phases 2-3 can code against the repository interfaces and provider graph verbatim (superpowers plan Task 6 shapes preserved exactly)
-- Outstanding phase-end human check (plan `<verification>`): launch on a wiped simulator/emulator — three-tab shell opens with no errors/data, background/foreground survives, `boostque.sqlite` in app-documents
+- Outstanding phase-end human check (plan `<verification>`): launch on a wiped simulator/emulator — three-tab shell opens with no errors/data, background/foreground survives, `vitomy.sqlite` in app-documents
 - REQUIREMENTS.md/ROADMAP.md tracking sync left to the orchestrator (node unavailable in this session); DATA-01/DATA-02 declaring plans are now all complete
 
 ---

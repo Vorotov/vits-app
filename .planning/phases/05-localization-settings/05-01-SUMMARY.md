@@ -16,7 +16,7 @@ provides:
   - ARB key addSupplementCatalogSemantics (Amendment A2, code half)
   - declared English fallback via preferred-supported-locales
 affects:
-  - every test harness that pumps BoostqueApp or mounts AppShell
+  - every test harness that pumps VitomyApp or mounts AppShell
   - lib/features/stack/add_supplement_sheet.dart (a11y label only)
 tech-stack:
   added: []
@@ -128,7 +128,7 @@ None. No placeholder text, no empty-state stand-in, no unwired data source. The 
 
 ## Notes for Later Plans
 
-- `sharedPreferencesProvider` now throws unless overridden. **Any new test that pumps `BoostqueApp` or mounts `AppShell` must supply it** — the `UnimplementedError` names the provider, so the failure is loud rather than silent.
+- `sharedPreferencesProvider` now throws unless overridden. **Any new test that pumps `VitomyApp` or mounts `AppShell` must supply it** — the `UnimplementedError` names the provider, so the failure is loud rather than silent.
 - The generated `supportedLocales` order is now controlled by `preferred-supported-locales`, so 05-03's criterion-4 gate can assert `supportedLocales.first == Locale('en')` as a declared fact rather than an alphabetical coincidence.
 - Amendment A2's **test half** (the two-locale semantics-tree assertion for the add-supplement label) is still owned by 05-05 Task 1; only the code half landed here.
 - LOCKED-FONT stands: no font asset changed, no `fontFamilyFallback` added. Record it as a locked v1 decision in the phase summary.

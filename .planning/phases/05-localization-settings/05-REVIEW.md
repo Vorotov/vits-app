@@ -101,7 +101,7 @@ sanitization boundary against "SharedPreferences ... edited outside the app
 (rooted device, backup edit)" (T-01-07 / T-05-01 / T-05-02).
 
 The throw happens inside `LocaleController.build()`, which is watched by
-`BoostqueApp.build` (`main.dart:42`) — i.e. the root widget. The provider enters
+`VitomyApp.build` (`main.dart:42`) — i.e. the root widget. The provider enters
 a permanent error state, the root build throws, and nothing in the app can
 invalidate it. On a real device this is a bricked launch that survives restarts,
 not a cosmetic fallback.
@@ -112,7 +112,7 @@ Verified by direct probe against the real controller:
 PROBE RESULT bool thrown=ProviderException: Tried to use a provider that is in error state.
 type 'bool' is not a subtype of type 'String?' in type cast
 #0 SharedPreferences.getString (package:shared_preferences/src/shared_preferences_legacy.dart:129:58)
-#1 LocaleController.build (package:boostque/core/l10n/locale_controller.dart:31:55)
+#1 LocaleController.build (package:vitomy/core/l10n/locale_controller.dart:31:55)
 ```
 
 Both `{'app_locale': 7}` and `{'app_locale': true}` reproduce it. The existing
@@ -182,7 +182,7 @@ try {
 }
 runApp(ProviderScope(
   overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-  child: const BoostqueApp(),
+  child: const VitomyApp(),
 ));
 
 // locale_controller.dart build()
@@ -530,16 +530,16 @@ rationale claims it catches "the failure mode grep cannot see".
 (`tester.binding.pipelineOwner.semanticsOwner?.rootSemanticsNode`) or at minimum
 sweep `tester.widgetList<Semantics>(...).map((s) => s.properties.label)`.
 
-### IN-07: Locale resolution is proven against a synthetic app, not against `BoostqueApp`
+### IN-07: Locale resolution is proven against a synthetic app, not against `VitomyApp`
 
 **File:** `test/l10n/locale_resolution_test.dart:48-54`
 **Issue:** `resolvingApp()` builds its own `MaterialApp` mirroring the root
 widget's configuration. Its header argues the app deliberately has no
 `localeResolutionCallback` and that "the absence deserves a test" — but the test
-cannot see the real root, so a callback added to `BoostqueApp` tomorrow leaves
+cannot see the real root, so a callback added to `VitomyApp` tomorrow leaves
 every case in this file green. The one file where resolution is asserted through
 the actual root (`settings_screen_test.dart`) always pins `locale:` explicitly.
-**Fix:** pump `BoostqueApp` inside a `ProviderScope` with the prefs and db
+**Fix:** pump `VitomyApp` inside a `ProviderScope` with the prefs and db
 overrides (the `appScope` helper already exists in `settings_screen_test.dart`)
 and set `platformDispatcher.localesTestValue`, so the assertions run against the
 widget that actually ships.

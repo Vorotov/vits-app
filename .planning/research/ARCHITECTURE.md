@@ -6,7 +6,7 @@
 
 ## Standard Architecture
 
-Local-first Flutter trackers (habit trackers, dose/medication trackers, fitness logs) converge on the same shape: **UI never touches the database directly**, a **repository layer** mediates all access, a **reactive local database** (Drift/SQLite is the dominant choice over sqflite/Hive/Isar for typed, reactive, migratable data) streams query results back to the UI, and **pure-Dart domain logic** (the thing most likely to have edge-case bugs — recurrence/cycle math, date arithmetic) is isolated with zero Flutter/DB imports so it's trivially unit-testable. Boostque's locked decisions (feature-first folders, Riverpod, Drift-behind-repositories, pure-Dart cycle math, materialized dose rows, gen-l10n) are a textbook instance of this pattern, and this research validates and sharpens each of those choices rather than proposing alternatives.
+Local-first Flutter trackers (habit trackers, dose/medication trackers, fitness logs) converge on the same shape: **UI never touches the database directly**, a **repository layer** mediates all access, a **reactive local database** (Drift/SQLite is the dominant choice over sqflite/Hive/Isar for typed, reactive, migratable data) streams query results back to the UI, and **pure-Dart domain logic** (the thing most likely to have edge-case bugs — recurrence/cycle math, date arithmetic) is isolated with zero Flutter/DB imports so it's trivially unit-testable. VitoMy's locked decisions (feature-first folders, Riverpod, Drift-behind-repositories, pure-Dart cycle math, materialized dose rows, gen-l10n) are a textbook instance of this pattern, and this research validates and sharpens each of those choices rather than proposing alternatives.
 
 ### System Overview
 
@@ -39,7 +39,7 @@ Local-first Flutter trackers (habit trackers, dose/medication trackers, fitness 
 │  DATA LAYER (core/db/) — one interface implementation                 │
 │  ┌───────────────────────────────────────────────────────────────┐   │
 │  │  DriftSupplementRepository / DriftRegimenRepository /           │   │
-│  │  DriftIntakeRepository  →  BoostqueDb (Drift over SQLite)       │   │
+│  │  DriftIntakeRepository  →  VitomyDb (Drift over SQLite)       │   │
 │  │  Tables: Supplements, Regimens, RegimenSlots, IntakeLogs        │   │
 │  │  All: UUID pk, createdAt, updatedAt, deletedAt (soft delete)    │   │
 │  └───────────────────────────────────────────────────────────────┘   │
@@ -202,7 +202,7 @@ Research on Flutter date handling confirms the locked decision (`DateTime.utc(y,
 
 Research into local-first sync (CRDTs vs. last-write-wins) confirms **last-write-wins (LWW) is the correct default to design for**, not full CRDTs, and that the locked schema (UUID PKs, `createdAt`/`updatedAt`, soft `deletedAt`) is precisely the LWW-ready shape:
 
-- **CRDTs solve a problem this app doesn't have.** CRDTs earn their complexity for *concurrent multi-writer* editing (shared documents, collaborative lists) where two actors edit the same field simultaneously and neither write should be silently lost. Boostque v1 is single-user, single-device; even a future "sync across your own two phones" scenario is dominated by one writer at a time. LWW field/row-level (`updatedAt` timestamp wins) is simple, well-understood, and sufficient — full CRDTs would be premature complexity with no corresponding user value.
+- **CRDTs solve a problem this app doesn't have.** CRDTs earn their complexity for *concurrent multi-writer* editing (shared documents, collaborative lists) where two actors edit the same field simultaneously and neither write should be silently lost. VitoMy v1 is single-user, single-device; even a future "sync across your own two phones" scenario is dominated by one writer at a time. LWW field/row-level (`updatedAt` timestamp wins) is simple, well-understood, and sufficient — full CRDTs would be premature complexity with no corresponding user value.
 - **What LWW needs, and what's already locked in:** (1) a stable identity that doesn't collide across devices → UUID PKs (not autoincrement ints) ✓ already locked; (2) a per-row `updatedAt` to compare on conflict → present on every table via `SyncColumns` ✓; (3) deletes that can be *propagated* rather than silently vanishing (a hard `DELETE` gives sync nothing to diff against) → soft `deletedAt` ✓ already locked, with the correct consequence that **every repository read query must filter `deletedAt IS NULL`** (already true in the plan's Drift queries).
 - **One gap worth flagging for a later phase, not v1:** LWW at the *row* level (e.g., "last full edit to this Regimen wins") is coarser than field-level LWW ("only the `paused` field's own timestamp is compared"). The locked schema doesn't need field-level granularity now — row-level `updatedAt` is sufficient for a single-device app — but if a later milestone adds multi-device sync, revisit whether `Regimen.upsert` (which replaces all slots wholesale) needs slot-level timestamps too, since two devices editing different slots of the same regimen concurrently would otherwise clobber each other under row-level LWW. Not a v1 concern; flagging for the future sync milestone's own research.
 - **No monotonic/logical clock is needed for v1** — plain wall-clock `updatedAt` timestamps are fine for a single-writer app; logical (Lamport/vector) clocks only start mattering once concurrent multi-device writes are real, which is explicitly out of scope.
@@ -211,7 +211,7 @@ Research into local-first sync (CRDTs vs. last-write-wins) confirms **last-write
 
 Not in the locked v1 scope, but worth noting for roadmap sequencing since it's a near-certain fast-follow once users have real data in a local-only app with "no accounts, no network":
 
-- The standard Flutter pattern is: close/checkpoint the Drift/SQLite connection (or use Drift's built-in export), copy the single `.sqlite` file via `path_provider`'s app-documents directory, and hand it to the OS share sheet or a chosen destination; restore is the inverse (copy file back, reopen `BoostqueDb`).
+- The standard Flutter pattern is: close/checkpoint the Drift/SQLite connection (or use Drift's built-in export), copy the single `.sqlite` file via `path_provider`'s app-documents directory, and hand it to the OS share sheet or a chosen destination; restore is the inverse (copy file back, reopen `VitomyDb`).
 - Because the schema already uses UUID PKs and soft deletes, a JSON export (rows → JSON, keyed by UUID) is also cheap to add later and is more portable across schema-version changes than a raw `.sqlite` file copy — worth keeping in mind if backup/export becomes a v1.x feature, but doesn't require any v1 architecture change.
 - This has no bearing on the locked v1 architecture — repositories and the Drift schema already provide everything an export feature would need (typed queries per table, filtered by `deletedAt IS NULL` or not, depending on whether "export includes soft-deleted rows" is a future product decision).
 
@@ -309,7 +309,7 @@ This mirrors the already-approved implementation plan's task ordering, which ind
 - [Beyond Offline-First: The Nightmare of Data Synchronization & CRDTs — Engin Bolat, Medium](https://medium.com/@engin.bolat/beyond-offline-first-the-nightmare-of-data-synchronization-crdts-c69501a96c8d)
 - [Handling Time Zones Correctly In Flutter Calendars And Scheduling — Vibe Studio](https://vibe-studio.ai/insights/handling-time-zones-correctly-in-flutter-calendars-and-scheduling)
 - [Converting DateTime with IANA Timezone to UTC in Dart — Ataxan Rahimli, Medium](https://arahimli.medium.com/converting-datetime-with-iana-timezone-to-utc-in-dart-flutter-safe-way-eb5522142412)
-- Project-internal (HIGH confidence, authoritative for this codebase): `docs/superpowers/specs/2026-08-14-boostque-v1-design.md`, `docs/superpowers/plans/2026-08-14-boostque-v1.md`, `.planning/PROJECT.md`
+- Project-internal (HIGH confidence, authoritative for this codebase): `docs/superpowers/specs/2026-08-14-vitomy-v1-design.md`, `docs/superpowers/plans/2026-08-14-vitomy-v1.md`, `.planning/PROJECT.md`
 
 ---
 *Architecture research for: local-first Flutter supplement stack/dose tracker (iOS + Android)*

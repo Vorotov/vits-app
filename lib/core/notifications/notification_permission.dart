@@ -22,8 +22,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boostque/core/notifications/notification_providers.dart';
-import 'package:boostque/core/providers.dart';
+import 'package:vitomy/core/notifications/notification_providers.dart';
+import 'package:vitomy/core/providers.dart';
 
 /// The key remembering that the ask has already happened, beside the language
 /// override in the same small key-value store.
@@ -188,7 +188,7 @@ class NotificationPermission extends Notifier<bool?> {
       FlutterErrorDetails(
         exception: error,
         stack: stack,
-        library: 'boostque',
+        library: 'vitomy',
         context: what,
       ),
     );

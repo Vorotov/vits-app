@@ -6,11 +6,11 @@ tags: [flutter, riverpod, drift, fonts, scaffold]
 
 requires: []
 provides:
-  - Buildable Flutter project `boostque` (org com.boostque) at repo root, iOS + Android
+  - Buildable Flutter project `vitomy` (org app.vitomy) at repo root, iOS + Android
   - Locked dependency set installed via pub (flutter_riverpod, drift, drift_flutter, path_provider, uuid, shared_preferences, flutter_localizations, intl; dev: build_runner, drift_dev, flutter_lints, mocktail)
-  - Minimal ProviderScope entry point (`BoostqueApp`) + green smoke widget test
+  - Minimal ProviderScope entry point (`VitomyApp`) + green smoke widget test
   - Instrument Sans + JetBrains Mono variable fonts bundled under assets/fonts/ with OFL licenses, declared as single-entry pubspec families
-  - Platform config: com.boostque.dev bundle/application id, Android targetSdk 36, no network permission
+  - Platform config: app.vitomy bundle/application id, Android targetSdk 36, no network permission
 affects: [01-02, 01-03, 01-04, 01-05, 01-06, 01-07]
 
 actuals:
@@ -51,14 +51,14 @@ requirements-completed: [DATA-01]
 
 coverage:
   - id: D1
-    description: "Flutter project scaffold at repo root with locked deps, com.boostque.dev ids, targetSdk 36, minimal ProviderScope app compiling for iOS simulator and Android debug"
+    description: "Flutter project scaffold at repo root with locked deps, app.vitomy ids, targetSdk 36, minimal ProviderScope app compiling for iOS simulator and Android debug"
     requirement: DATA-01
     verification:
       - kind: other
         ref: "flutter analyze && flutter test test/smoke_test.dart && flutter build ios --simulator --debug && flutter build apk --debug"
         status: pass
       - kind: other
-        ref: "grep gates: targetSdk 36, applicationId com.boostque.dev, 3x PRODUCT_BUNDLE_IDENTIFIER com.boostque.dev, no INTERNET permission, approved-package allowlist + networking-package denylist in pubspec.yaml"
+        ref: "grep gates: targetSdk 36, applicationId app.vitomy, 3x PRODUCT_BUNDLE_IDENTIFIER app.vitomy, no INTERNET permission, approved-package allowlist + networking-package denylist in pubspec.yaml"
         status: pass
     human_judgment: false
   - id: D2
@@ -82,7 +82,7 @@ status: complete
 
 # Phase 1 Plan 01: Tracer Scaffold Summary
 
-**Buildable boostque Flutter skeleton (iOS + Android, com.boostque.dev, targetSdk 36) with the full locked Phase-1 dependency set and both variable fonts bundled offline**
+**Buildable vitomy Flutter skeleton (iOS + Android, app.vitomy, targetSdk 36) with the full locked Phase-1 dependency set and both variable fonts bundled offline**
 
 ## Performance
 
@@ -94,26 +94,26 @@ status: complete
 
 ## Accomplishments
 
-- Scaffolded `boostque` at repo root via `flutter create` (org com.boostque, platforms ios+android), preserving the pre-existing `.DS_Store` gitignore line
+- Scaffolded `vitomy` at repo root via `flutter create` (org app.vitomy, platforms ios+android), preserving the pre-existing `.DS_Store` gitignore line
 - Installed the entire D-04 locked dependency set through `flutter pub add` (resolver-validated); intl SDK-resolved, no networking package, no sqlite3_flutter_libs
-- Set com.boostque.dev on both platforms (3 Runner pbxproj entries + applicationId) and explicit `targetSdk = 36`
-- Proved the thinnest end-to-end slice: minimal `ProviderScope(child: BoostqueApp())` analyzes clean, smoke widget test green, and both `flutter build ios --simulator --debug` and `flutter build apk --debug` compile
+- Set app.vitomy on both platforms (3 Runner pbxproj entries + applicationId) and explicit `targetSdk = 36`
+- Proved the thinnest end-to-end slice: minimal `ProviderScope(child: VitomyApp())` analyzes clean, smoke widget test green, and both `flutter build ios --simulator --debug` and `flutter build apk --debug` compile
 - Bundled Instrument Sans `[wdth,wght]` and JetBrains Mono `[wght]` variable TTFs (sfnt magic verified, >100KB each) with OFL licenses; declared exactly one `fonts:` entry per family with no `weight:` fanning
 
 ## Task Commits
 
 Each task was committed atomically:
 
-1. **Task 1: Scaffold boostque, platform ids, locked deps, both platform builds (tracer)** - `9e9d113` (feat)
+1. **Task 1: Scaffold vitomy, platform ids, locked deps, both platform builds (tracer)** - `9e9d113` (feat)
 2. **Task 2: Bundle variable fonts + pubspec declaration** - `d8df262` (feat)
 
 ## Files Created/Modified
 
 - `pubspec.yaml` - Locked dependency set + two single-entry font family declarations
-- `lib/main.dart` - `main()` → `runApp(ProviderScope(child: BoostqueApp()))`; empty offline-safe MaterialApp (rewired by plan 01-06)
-- `test/smoke_test.dart` - Pumps ProviderScope + BoostqueApp, asserts one MaterialApp (Wave-0 test-harness proof)
-- `android/app/build.gradle.kts` - `applicationId = "com.boostque.dev"`, `targetSdk = 36`
-- `ios/Runner.xcodeproj/project.pbxproj` - 3x `PRODUCT_BUNDLE_IDENTIFIER = com.boostque.dev` (RunnerTests left as generated)
+- `lib/main.dart` - `main()` → `runApp(ProviderScope(child: VitomyApp()))`; empty offline-safe MaterialApp (rewired by plan 01-06)
+- `test/smoke_test.dart` - Pumps ProviderScope + VitomyApp, asserts one MaterialApp (Wave-0 test-harness proof)
+- `android/app/build.gradle.kts` - `applicationId = "app.vitomy"`, `targetSdk = 36`
+- `ios/Runner.xcodeproj/project.pbxproj` - 3x `PRODUCT_BUNDLE_IDENTIFIER = app.vitomy` (RunnerTests left as generated)
 - `assets/fonts/InstrumentSans[wdth,wght].ttf`, `assets/fonts/JetBrainsMono[wght].ttf` - Variable fonts from canonical google/fonts paths
 - `assets/fonts/OFL-InstrumentSans.txt`, `assets/fonts/OFL-JetBrainsMono.txt` - Font licenses
 - `.gitignore` - Flutter template + preserved `.DS_Store` line
@@ -128,7 +128,7 @@ None - plan executed exactly as written.
 
 ## Known Stubs
 
-- `lib/main.dart` renders `Scaffold(body: SizedBox.shrink())` — intentional tracer minimum; plan 01-06 rewires `BoostqueApp` with theme + l10n + app shell (declared in this plan's output spec, not a defect)
+- `lib/main.dart` renders `Scaffold(body: SizedBox.shrink())` — intentional tracer minimum; plan 01-06 rewires `VitomyApp` with theme + l10n + app shell (declared in this plan's output spec, not a defect)
 
 ## Issues Encountered
 

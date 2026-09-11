@@ -10,9 +10,9 @@ import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:boostque/core/l10n/gen/app_localizations.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/features/stack/catalog.dart';
+import 'package:vitomy/core/l10n/gen/app_localizations.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/features/stack/catalog.dart';
 
 void main() {
   final AppLocalizations uk = lookupAppLocalizations(const Locale('uk'));

@@ -16,12 +16,12 @@
 /// fails the instant a materializing import sneaks back in.
 library;
 
-import 'package:boostque/core/db/database.dart' show BoostqueDb, IntakeLog;
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/today_controller.dart';
-import 'package:boostque/features/calendar/planner_providers.dart';
-import 'package:boostque/features/calendar/planner_view_model.dart';
+import 'package:vitomy/core/db/database.dart' show VitomyDb, IntakeLog;
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/today_controller.dart';
+import 'package:vitomy/features/calendar/planner_providers.dart';
+import 'package:vitomy/features/calendar/planner_view_model.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -33,7 +33,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late ProviderContainer container;
-  late BoostqueDb db;
+  late VitomyDb db;
 
   final today = DateTime.utc(2026, 8, 13);
 
@@ -41,7 +41,7 @@ void main() {
     container = ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
-          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          final database = VitomyDb.forTesting(NativeDatabase.memory());
           ref.onDispose(database.close);
           db = database;
           return database;
@@ -208,7 +208,7 @@ void main() {
       container = ProviderContainer(
         overrides: [
           dbProvider.overrideWith((ref) {
-            final database = BoostqueDb.forTesting(NativeDatabase.memory());
+            final database = VitomyDb.forTesting(NativeDatabase.memory());
             ref.onDispose(database.close);
             db = database;
             return database;

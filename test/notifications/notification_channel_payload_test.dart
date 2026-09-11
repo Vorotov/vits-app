@@ -25,10 +25,10 @@ library;
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:boostque/core/l10n/gen/app_localizations.dart';
-import 'package:boostque/core/notifications/notification_constants.dart';
-import 'package:boostque/core/notifications/notification_service.dart';
-import 'package:boostque/core/notifications/tz_conversion.dart';
+import 'package:vitomy/core/l10n/gen/app_localizations.dart';
+import 'package:vitomy/core/notifications/notification_constants.dart';
+import 'package:vitomy/core/notifications/notification_service.dart';
+import 'package:vitomy/core/notifications/tz_conversion.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';

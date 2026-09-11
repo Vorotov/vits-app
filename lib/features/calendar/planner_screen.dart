@@ -25,20 +25,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/core/today_controller.dart';
-import 'package:boostque/core/widgets/bq_segmented.dart';
-import 'package:boostque/core/widgets/bq_settings_gear_row.dart';
-import 'package:boostque/features/calendar/planner_gantt.dart';
-import 'package:boostque/features/calendar/planner_load_chart.dart';
-import 'package:boostque/features/calendar/planner_month_detail.dart';
-import 'package:boostque/features/calendar/planner_providers.dart';
-import 'package:boostque/features/calendar/planner_view_model.dart';
-import 'package:boostque/features/calendar/planner_week_detail.dart';
-import 'package:boostque/features/calendar/planner_year_grid.dart';
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/core/today_controller.dart';
+import 'package:vitomy/core/widgets/bq_segmented.dart';
+import 'package:vitomy/core/widgets/bq_settings_gear_row.dart';
+import 'package:vitomy/features/calendar/planner_gantt.dart';
+import 'package:vitomy/features/calendar/planner_load_chart.dart';
+import 'package:vitomy/features/calendar/planner_month_detail.dart';
+import 'package:vitomy/features/calendar/planner_providers.dart';
+import 'package:vitomy/features/calendar/planner_view_model.dart';
+import 'package:vitomy/features/calendar/planner_week_detail.dart';
+import 'package:vitomy/features/calendar/planner_year_grid.dart';
 
 /// Screen horizontal padding — the same edge the Calendar screen runs down
 /// (mockup lines 286, 294).

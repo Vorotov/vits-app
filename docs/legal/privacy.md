@@ -4,15 +4,15 @@ Last updated: [LAST_UPDATED]
 
 ## Who we are and what this covers
 
-[APP_NAME] is a planner and tracker for the supplements and vitamins you
+VitoMy is a planner and tracker for the supplements and vitamins you
 choose to take. It is developed and operated by an independent team of
-individuals working from different countries (the "[APP_NAME] team", "we",
+individuals working from different countries (the "VitoMy team", "we",
 "us"). The team is not yet incorporated as a company; the Terms of Use say
 what happens if that changes.
 
 This policy covers:
 
-- the [APP_NAME] mobile app on iOS and Android (the "App"); and
+- the VitoMy mobile app on iOS and Android (the "App"); and
 - the support address [CONTACT_EMAIL] (together with the App, the
   "Services").
 

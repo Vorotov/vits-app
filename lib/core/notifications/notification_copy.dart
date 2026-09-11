@@ -19,7 +19,7 @@ import 'dart:ui' show Locale;
 
 import 'package:intl/intl.dart';
 
-import 'package:boostque/core/l10n/gen/app_localizations.dart';
+import 'package:vitomy/core/l10n/gen/app_localizations.dart';
 
 /// The reminder's title in [locale].
 ///

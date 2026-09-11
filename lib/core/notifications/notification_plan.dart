@@ -16,13 +16,13 @@
 /// set and the Today screen disagree about the same day.
 library;
 
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/core/domain/models.dart';
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/core/domain/models.dart';
 // The seam's PENDING-REQUEST value type only, and it is pure: this file imports
 // nothing that imports anything (`notification_scheduler.dart` has no imports
 // at all). `reconcile` compares against the platform's own record, so it has to
 // name the type the platform's record arrives as.
-import 'package:boostque/core/notifications/notification_scheduler.dart';
+import 'package:vitomy/core/notifications/notification_scheduler.dart';
 
 /// One reminder the app wants the operating system to be holding.
 ///

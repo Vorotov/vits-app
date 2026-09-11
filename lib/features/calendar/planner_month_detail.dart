@@ -19,15 +19,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:boostque/core/domain/repositories.dart' show StackEntry;
-import 'package:boostque/core/l10n/casing.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/features/calendar/planner_providers.dart';
-import 'package:boostque/features/calendar/planner_view_model.dart';
-import 'package:boostque/features/stack/schedule_summary_text.dart';
-import 'package:boostque/features/stack/stack_status.dart';
+import 'package:vitomy/core/domain/repositories.dart' show StackEntry;
+import 'package:vitomy/core/l10n/casing.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/features/calendar/planner_providers.dart';
+import 'package:vitomy/features/calendar/planner_view_model.dart';
+import 'package:vitomy/features/stack/schedule_summary_text.dart';
+import 'package:vitomy/features/stack/stack_status.dart';
 
 /// Card padding (mockup line 439).
 const double _cardPadding = 16;

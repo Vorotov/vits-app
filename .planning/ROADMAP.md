@@ -1,8 +1,8 @@
-# Roadmap: Boostque
+# Roadmap: VitoMy
 
 ## Overview
 
-Boostque ships as five phases moving from a themed, localized, database-backed app skeleton to the complete daily supplement-tracking loop. Phase 1 builds the foundation everything else depends on (project shell, DST-safe cycle math, sync-ready local database) without yet exposing any tracked feature. Phase 2 lets a user build their supplement stack and configure regimens. Phase 3 delivers the core value — today's doses, grouped and checkable, correct across cycle boundaries — and is where the full plan-see-mark-taken loop first runs end-to-end on both iOS and Android. Phase 4 adds the Cycles gantt and Year matrix, the product's structural differentiator, once there's real regimen data to visualize. Phase 5 closes the loop on localization: verifying every screen built in Phases 2-4 is genuinely bilingual and wiring the in-app language override. Toolchain setup (CocoaPods/Java/Android SDK) is already complete and is not part of this roadmap.
+VitoMy ships as five phases moving from a themed, localized, database-backed app skeleton to the complete daily supplement-tracking loop. Phase 1 builds the foundation everything else depends on (project shell, DST-safe cycle math, sync-ready local database) without yet exposing any tracked feature. Phase 2 lets a user build their supplement stack and configure regimens. Phase 3 delivers the core value — today's doses, grouped and checkable, correct across cycle boundaries — and is where the full plan-see-mark-taken loop first runs end-to-end on both iOS and Android. Phase 4 adds the Cycles gantt and Year matrix, the product's structural differentiator, once there's real regimen data to visualize. Phase 5 closes the loop on localization: verifying every screen built in Phases 2-4 is genuinely bilingual and wiring the in-app language override. Toolchain setup (CocoaPods/Java/Android SDK) is already complete and is not part of this roadmap.
 
 That is v1. Two milestones follow it, each with its own section below: v1.1 (Phases 6-7 — shell simplification and dose reminders) and v1.2 (Phases 8-9 — onboarding, then five more languages and the pre-release test gate).
 
@@ -76,7 +76,7 @@ Plans:
 
 ### Phase 3: Daily Tracking
 
-**Goal**: A user can see exactly what to take today (and browse recent days) and mark each dose taken or skipped with one tap — the daily loop that is Boostque's core value — running correctly end-to-end on both platforms.
+**Goal**: A user can see exactly what to take today (and browse recent days) and mark each dose taken or skipped with one tap — the daily loop that is VitoMy's core value — running correctly end-to-end on both platforms.
 **Depends on**: Phase 2
 **Requirements**: TRACK-01, TRACK-02, TRACK-03, TRACK-04, DATA-03
 **Success Criteria** (what must be TRUE):
@@ -178,7 +178,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 # Milestone v1.1
 
-Spec: `docs/superpowers/specs/2026-08-17-boostque-v1.1-design.md`
+Spec: `docs/superpowers/specs/2026-08-17-vitomy-v1.1-design.md`
 
 - [x] **Phase 6: Shell & Simplification** - Slim three-tab navigation with settings moved out, a floating add button everywhere, and the editorial substance limit removed
 - [~] **Phase 7: Dose Reminders** - Local notifications on iOS and Android, grouped per time-of-day, correct across cycles, DST and platform limits (all six plans executed 2026-08-17; the device pass is unfinished, so the phase is not closed)
@@ -252,7 +252,7 @@ iOS half is blocked on a human tapping **Allow**, which has no shell equivalent.
 
 # Milestone v1.2
 
-Spec: `docs/superpowers/specs/2026-08-26-boostque-onboarding-design.md`
+Spec: `docs/superpowers/specs/2026-08-26-vitomy-onboarding-design.md`
 (its D-1 and *Screens* sections superseded 2026-08-31 — see that file's
 *What shipped* section)
 

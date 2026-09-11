@@ -24,8 +24,8 @@ library;
 
 import 'package:flutter/material.dart';
 
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/features/stack/add_supplement_sheet.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/features/stack/add_supplement_sheet.dart';
 
 /// The floating «Додати добавку» control mounted on the shell's [Scaffold].
 class BqAddFab extends StatefulWidget {

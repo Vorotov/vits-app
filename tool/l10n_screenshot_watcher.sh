@@ -10,7 +10,7 @@
 #   tool/l10n_screenshot_watcher.sh android <emulator-id>   <out-dir> [prefix] [seconds]
 #
 # iOS reads the simulator's data container straight off disk. Android goes
-# through `adb ... run-as com.boostque.dev`, which works because the
+# through `adb ... run-as app.vitomy`, which works because the
 # integration-test build is debuggable.
 set -u
 PLATFORM="${1:?usage: $0 <ios|android> <device-id> <out-dir> [prefix] [seconds]}"
@@ -18,7 +18,7 @@ DEVICE="${2:?device id required}"
 OUT="${3:?output directory required}"
 PREFIX="${4:-}"
 END=$((SECONDS + ${5:-900}))
-PKG="com.boostque.dev"
+PKG="app.vitomy"
 mkdir -p "$OUT"
 command -v adb >/dev/null 2>&1 || PATH="$HOME/Library/Android/sdk/platform-tools:$PATH"
 

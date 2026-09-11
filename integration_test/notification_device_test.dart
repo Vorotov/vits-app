@@ -14,7 +14,7 @@
 /// Flutter view hierarchy; `WidgetTester` can neither see nor tap them.
 ///
 /// - **Android:** grant it from the host shell before the run —
-///   `adb shell pm grant com.boostque.dev android.permission.POST_NOTIFICATIONS`
+///   `adb shell pm grant app.vitomy android.permission.POST_NOTIFICATIONS`
 ///   (an emulator below API 33 needs no grant: the permission does not exist
 ///   there and `areNotificationsEnabled()` answers true).
 /// - **iOS:** a person launches the app by hand, saves one regimen, and answers
@@ -89,16 +89,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/notifications/notification_plan.dart';
-import 'package:boostque/core/notifications/notification_providers.dart';
-import 'package:boostque/core/notifications/notification_scheduler.dart';
-import 'package:boostque/core/notifications/notification_service.dart';
-import 'package:boostque/core/notifications/tz_conversion.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/today_controller.dart';
-import 'package:boostque/core/widgets/bq_nav_bar.dart';
-import 'package:boostque/main.dart' show BoostqueApp;
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/notifications/notification_plan.dart';
+import 'package:vitomy/core/notifications/notification_providers.dart';
+import 'package:vitomy/core/notifications/notification_scheduler.dart';
+import 'package:vitomy/core/notifications/notification_service.dart';
+import 'package:vitomy/core/notifications/tz_conversion.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/today_controller.dart';
+import 'package:vitomy/core/widgets/bq_nav_bar.dart';
+import 'package:vitomy/main.dart' show VitomyApp;
 
 /// Prefix every supplement this test creates carries.
 const String _namePrefix = 'NOTIF-07 Тест';
@@ -134,13 +134,13 @@ void main() {
             timeZoneLoaderProvider.overrideWithValue(initTimeZones),
             deviceZoneReaderProvider.overrideWithValue(deviceZoneIdentifier),
           ],
-          child: const BoostqueApp(),
+          child: const VitomyApp(),
         ),
       );
       await _pump(tester, 20);
 
       final container = ProviderScope.containerOf(
-        tester.element(find.byType(BoostqueApp)),
+        tester.element(find.byType(VitomyApp)),
         listen: false,
       );
 
@@ -186,7 +186,7 @@ void main() {
             'THE PERMISSION PRE-STEP WAS NOT PERFORMED ON THIS DEVICE. It is '
             'not something this test can do: both platforms\' permission '
             'dialogs are OS surfaces the test driver cannot see or tap.\n'
-            '  Android: adb shell pm grant com.boostque.dev '
+            '  Android: adb shell pm grant app.vitomy '
             'android.permission.POST_NOTIFICATIONS\n'
             '  iOS:     launch the app by hand, save one regimen, answer the '
             'system dialog Allow.\n'

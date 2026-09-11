@@ -1,5 +1,5 @@
-/// Design tokens for Boostque, transcribed verbatim from the approved mockup
-/// (`claude_design_mockup/Boostque v0.1.dc.html`) and locked in
+/// Design tokens for VitoMy, transcribed verbatim from the approved mockup
+/// (`claude_design_mockup/VitoMy v0.1.dc.html`) and locked in
 /// 01-CONTEXT.md (D-06, D-07).
 ///
 /// TOKEN-ONLY RULE (D-07): every later phase styles UI exclusively through

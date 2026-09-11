@@ -10,10 +10,10 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/app_shell.dart';
-import 'package:boostque/features/onboarding/onboarding_controller.dart';
-import 'package:boostque/features/onboarding/onboarding_screen.dart';
-import 'package:boostque/features/stack/add_supplement_sheet.dart';
+import 'package:vitomy/app_shell.dart';
+import 'package:vitomy/features/onboarding/onboarding_controller.dart';
+import 'package:vitomy/features/onboarding/onboarding_screen.dart';
+import 'package:vitomy/features/stack/add_supplement_sheet.dart';
 
 class OnboardingGate extends ConsumerWidget {
   const OnboardingGate({super.key});

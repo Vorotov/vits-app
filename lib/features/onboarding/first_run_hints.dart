@@ -21,7 +21,7 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/core/providers.dart';
+import 'package:vitomy/core/providers.dart';
 
 /// The hints this app knows how to show. Ids are stable storage values, never
 /// rendered, so they are never translated.
@@ -83,7 +83,7 @@ class FirstRunHints extends Notifier<Set<String>> {
         FlutterErrorDetails(
           exception: error,
           stack: stack,
-          library: 'boostque',
+          library: 'vitomy',
           context: ErrorDescription('persisting a dismissed first-run hint'),
         ),
       );

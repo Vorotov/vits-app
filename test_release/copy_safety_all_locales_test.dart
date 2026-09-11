@@ -32,7 +32,7 @@ import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:boostque/core/l10n/gen/app_localizations.dart';
+import 'package:vitomy/core/l10n/gen/app_localizations.dart';
 
 // The uk + en lists and the surface renderer are IMPORTED, not retyped. The
 // fast gate is the source of truth for those two languages, and a copy here

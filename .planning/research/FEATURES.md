@@ -4,7 +4,7 @@
 **Researched:** 2026-08-14
 **Confidence:** MEDIUM-HIGH (based on public app-store listings, marketing pages, and comparison articles for Medisafe, MyTherapy, Round Health, Dose Streak, Zareva, DoseNote, BodySitRep, JanusMed, SuppCo, Supplements AI, Vitamin & Supplement Tracker, Cronometer/MyFitnessPal; no direct hands-on trials, no primary user-research data — treat quantitative claims (e.g. abandonment rates) as directional, not verified)
 
-## Context: What Boostque v1 Already Decided
+## Context: What VitoMy v1 Already Decided
 
 v1 scope (from PROJECT.md / design spec) is: stack management (bundled catalog + manual add/edit/delete), dosing regimens (cyclic on/off + one-time course, multiple time slots, pause/resume), Today view (check off taken/skipped, day progress), Cycles planner (gantt + weekly load chart), Year planner (12-month matrix), uk+en i18n, local-only storage. Explicitly deferred: Advisor/recommendations tab, camera/OCR label scanning, home-screen widgets, dose notifications, cloud sync/accounts, interaction/risk scoring, monetization, onboarding flow.
 
@@ -31,11 +31,11 @@ Features users assume exist in *any* dose-tracking product (supplement or medica
 
 ### Differentiators (Competitive Advantage)
 
-Features that set a product apart. Valuable, but a v1 without them is still complete and shippable — these are where Boostque could win *after* v1, or where its existing scope already beats competitors without extra work.
+Features that set a product apart. Valuable, but a v1 without them is still complete and shippable — these are where VitoMy could win *after* v1, or where its existing scope already beats competitors without extra work.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Cycles gantt + weekly concurrent-load chart | No competitor reviewed visualizes multi-supplement cycle overlap this way — Medisafe/MyTherapy/Round Health are single-list-of-meds apps with no "what's stacked when" view; this is Boostque's structural bet | HIGH | **Already v1 scope** — this is the product's actual differentiator, not a nice-to-have. Protect it from scope-cutting pressure more than any other v1 item. |
+| Cycles gantt + weekly concurrent-load chart | No competitor reviewed visualizes multi-supplement cycle overlap this way — Medisafe/MyTherapy/Round Health are single-list-of-meds apps with no "what's stacked when" view; this is VitoMy's structural bet | HIGH | **Already v1 scope** — this is the product's actual differentiator, not a nice-to-have. Protect it from scope-cutting pressure more than any other v1 item. |
 | Year planner (12-month coverage matrix) | Long-horizon supplement protocols (e.g. seasonal, quarterly cycling) have no equivalent in medication-reminder apps, which assume indefinite daily use | HIGH | **Already v1 scope.** Genuinely novel relative to the competitor set researched. |
 | Streaks / adherence-consistency visualization | Round Health and Dose Streak both center their entire value prop on this (streak, year-heatmap); shown to be motivating for gamification-receptive users | LOW-MEDIUM | **Not in v1 scope — correctly deferred.** Cheap to add later once IntakeLog has real history (pure derived query, no schema change), but risks feeling punitive/guilt-inducing for a supplement-cycling context where "off" days are *intentional*, not missed doses — needs care so cycle-off days don't count against a streak. Good v1.1 candidate, not urgent. |
 | Home-screen widgets (mark-as-taken from widget) | "Supplement & Vitamin Tracker" explicitly markets this; removes a full app-open just to check off | MEDIUM-HIGH (native platform work, per-OS) | **Correctly deferred per PROJECT.md**, and the "dose occurrences materialized as DB rows" decision is exactly right — it's what makes this cheap to bolt on later. Ranked here as high-value-but-not-day-one because it multiplies native platform surface area (iOS WidgetKit + Android App Widgets = real engineering, not incremental). |
@@ -54,7 +54,7 @@ Features that seem good but create problems for *this specific product* (a self-
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|------------------|-------------|
 | Aggressive default notification cadence (multiple reminders per dose, escalating alerts) | Feels like it should improve adherence, mirrors clinical alert systems | Documented alert fatigue: repeated/irrelevant alerts drive notification dismissal and app deletion; clinical alert-fatigue research generalizes directly to consumer health apps | When notifications ship (post-v1), default to exactly one reminder per scheduled time slot, snoozable, with an easy per-supplement or global off switch — never stack multiple nags per dose |
-| Guilt-oriented streak/adherence messaging on intentional cycle-off days | Gamification is proven motivating (Round Health, Dose Streak) | Boostque's cycles are *by design* — a week "off" is correct behavior, not a lapse; a naive streak counter would punish the exact feature (cycling) that differentiates the product | If/when streaks are added, compute them only over scheduled/"on" days, explicitly excluding cycle-off periods from both numerator and denominator |
+| Guilt-oriented streak/adherence messaging on intentional cycle-off days | Gamification is proven motivating (Round Health, Dose Streak) | VitoMy's cycles are *by design* — a week "off" is correct behavior, not a lapse; a naive streak counter would punish the exact feature (cycling) that differentiates the product | If/when streaks are added, compute them only over scheduled/"on" days, explicitly excluding cycle-off periods from both numerator and denominator |
 | Naive/lightweight interaction warnings built ad hoc (e.g. static keyword matching) as a cheap stand-in for full interaction checking | Feels achievable without licensing a real interaction database | False negatives create real safety risk and liability; every legitimate competitor treats this as a heavy, disclaimer-wrapped, professionally-sourced feature — a cut-rate version is worse than none because it implies false confidence | Keep this fully deferred until it can be built properly (licensed database, pharmacist-reviewed, clear disclaimers) as part of the future Advisor tab; never ship a partial version |
 | Social/sharing features (public stacks, following other users' regimens) | Common growth-hacking instinct for consumer health apps | Supplement regimens are sensitive personal-health data; none of the competitors reviewed in this niche ship social features, and it invites both privacy and medical-liability exposure with no evidence of demand in this category | None needed for this product; if community discovery is ever wanted, keep it read-only/editorial (e.g. curated protocol templates), never user-to-user sharing of personal logs |
 | Auto-adjusting "smart" reminder times based on inferred behavior/location | Marketed by "Supplements AI" as an AI differentiator | Adds complexity and unpredictability to the one thing users most need to trust (does my reminder fire when I expect); opaque "smart" scheduling erodes trust faster than it builds convenience for a low-frequency-use case like supplements | Simple, user-set, fully predictable reminder times per slot — if convenience features are wanted later, make timing adjustments explicit and user-confirmed, not silent |
@@ -152,7 +152,7 @@ Cloud sync / accounts (deferred)
 
 ## Competitor Feature Analysis
 
-| Feature | Medisafe / MyTherapy (medication-reminder leaders) | SuppCo / Supplements AI (supplement-stack apps) | Round Health / Dose Streak (adherence-gamification apps) | Boostque's Approach |
+| Feature | Medisafe / MyTherapy (medication-reminder leaders) | SuppCo / Supplements AI (supplement-stack apps) | Round Health / Dose Streak (adherence-gamification apps) | VitoMy's Approach |
 |---------|------|------|------|------|
 | Scheduling model | Daily/weekday/interval rules; single-med focus | Daily/weekday/interval/cycle rules; stack-of-items focus | Simple daily rules, adherence-first | Richer: explicit weeks-on/weeks-off cycles + one-time courses, multi-slot — most rigorous of the set |
 | Multi-item visualization | List-based; no overlap/timeline view | List/timeline (Supplements AI has a daily timeline) | List-based | Gantt (Cycles) + 12-month matrix (Year) — no competitor reviewed has this |
@@ -190,8 +190,8 @@ Cloud sync / accounts (deferred)
 - [Medication safety alert fatigue may be reduced via interaction design and clinical role tailoring: a systematic review (JAMIA, Oxford Academic)](https://academic.oup.com/jamia/article/26/10/1141/5519579)
 - [Prescription Refill Reminder App Comparison: 4 Best Options](https://www.yougot.ai/blog/health/medication-reminders/prescription-refill-reminder-app)
 - [13 Best Medication Reminder Apps (2026 Review) — Caring Village](https://caringvillage.com/blog/caregiver-tech/medication-reminder-apps/)
-- Internal: `/Users/dima/supplements/.planning/PROJECT.md`, `/Users/dima/supplements/docs/superpowers/specs/2026-08-14-boostque-v1-design.md`
+- Internal: `/Users/dima/supplements/.planning/PROJECT.md`, `/Users/dima/supplements/docs/superpowers/specs/2026-08-14-vitomy-v1-design.md`
 
 ---
-*Feature research for: consumer mobile supplement/medication tracker (Boostque)*
+*Feature research for: consumer mobile supplement/medication tracker (VitoMy)*
 *Researched: 2026-08-14*

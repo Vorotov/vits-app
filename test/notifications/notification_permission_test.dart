@@ -9,9 +9,9 @@ library;
 
 import 'dart:io';
 
-import 'package:boostque/core/notifications/notification_permission.dart';
-import 'package:boostque/core/notifications/notification_providers.dart';
-import 'package:boostque/core/providers.dart';
+import 'package:vitomy/core/notifications/notification_permission.dart';
+import 'package:vitomy/core/notifications/notification_providers.dart';
+import 'package:vitomy/core/providers.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

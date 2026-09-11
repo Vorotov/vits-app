@@ -58,13 +58,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/notifications/notification_permission.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/features/onboarding/first_run_hints.dart';
-import 'package:boostque/features/onboarding/onboarding_controller.dart';
-import 'package:boostque/features/settings/language_picker.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/notifications/notification_permission.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/features/onboarding/first_run_hints.dart';
+import 'package:vitomy/features/onboarding/onboarding_controller.dart';
+import 'package:vitomy/features/settings/language_picker.dart';
 
 /// The Settings screen (UI-SPEC S7).
 class SettingsScreen extends StatelessWidget {

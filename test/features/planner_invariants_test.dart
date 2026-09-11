@@ -24,15 +24,15 @@ library;
 
 import 'dart:io';
 
-import 'package:boostque/core/db/database.dart' show BoostqueDb;
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/today_controller.dart';
-import 'package:boostque/core/widgets/bq_segmented.dart';
-import 'package:boostque/features/calendar/planner_providers.dart';
-import 'package:boostque/features/calendar/planner_screen.dart';
+import 'package:vitomy/core/db/database.dart' show VitomyDb;
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/today_controller.dart';
+import 'package:vitomy/core/widgets/bq_segmented.dart';
+import 'package:vitomy/features/calendar/planner_providers.dart';
+import 'package:vitomy/features/calendar/planner_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -301,9 +301,9 @@ void main() {
       expect(
         imports,
         const [
-          'package:boostque/core/domain/cycle_math.dart',
-          'package:boostque/core/domain/models.dart',
-          'package:boostque/core/domain/repositories.dart',
+          'package:vitomy/core/domain/cycle_math.dart',
+          'package:vitomy/core/domain/models.dart',
+          'package:vitomy/core/domain/repositories.dart',
         ],
         reason: 'the import list IS the proof that no materializing path is '
             'reachable from the model at all: with no persistence and no '
@@ -353,7 +353,7 @@ void main() {
 
   group('planner rendered-tree invariants', () {
     final today = DateTime.utc(2026, 8, 13);
-    late BoostqueDb db;
+    late VitomyDb db;
 
     setUp(() {
       SharedPreferences.setMockInitialValues({});
@@ -363,7 +363,7 @@ void main() {
       return ProviderContainer(
         overrides: [
           dbProvider.overrideWith((ref) {
-            final database = BoostqueDb.forTesting(NativeDatabase.memory());
+            final database = VitomyDb.forTesting(NativeDatabase.memory());
             ref.onDispose(database.close);
             db = database;
             return database;

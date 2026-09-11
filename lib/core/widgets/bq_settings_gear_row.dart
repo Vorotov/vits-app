@@ -24,9 +24,9 @@ library;
 
 import 'package:flutter/material.dart';
 
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/features/settings/settings_screen.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/features/settings/settings_screen.dart';
 
 /// Pushes Settings as a full-screen route, covering the nav bar (UI-SPEC S12).
 void _openSettings(BuildContext context) => Navigator.of(context).push(

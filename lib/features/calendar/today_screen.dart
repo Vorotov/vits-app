@@ -30,19 +30,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-import 'package:boostque/core/domain/repositories.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/core/widgets/bq_hint_card.dart';
-import 'package:boostque/features/onboarding/first_run_hints.dart';
-import 'package:boostque/core/today_controller.dart';
-import 'package:boostque/features/calendar/calendar_providers.dart';
-import 'package:boostque/features/calendar/day_block_section.dart';
-import 'package:boostque/features/calendar/day_progress_ring.dart';
-import 'package:boostque/features/calendar/day_view_model.dart';
-import 'package:boostque/features/calendar/week_strip.dart';
-import 'package:boostque/core/widgets/bq_settings_gear_row.dart';
+import 'package:vitomy/core/domain/repositories.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/core/widgets/bq_hint_card.dart';
+import 'package:vitomy/features/onboarding/first_run_hints.dart';
+import 'package:vitomy/core/today_controller.dart';
+import 'package:vitomy/features/calendar/calendar_providers.dart';
+import 'package:vitomy/features/calendar/day_block_section.dart';
+import 'package:vitomy/features/calendar/day_progress_ring.dart';
+import 'package:vitomy/features/calendar/day_view_model.dart';
+import 'package:vitomy/features/calendar/week_strip.dart';
+import 'package:vitomy/core/widgets/bq_settings_gear_row.dart';
 
 /// Screen horizontal padding — the mockup-exact override used by both the
 /// header and the scroll body, so one edge runs down the whole screen

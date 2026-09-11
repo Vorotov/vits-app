@@ -1,4 +1,4 @@
-/// Riverpod provider graph for Boostque (D-22, D-23).
+/// Riverpod provider graph for VitoMy (D-22, D-23).
 ///
 /// ## Dispose policy (D-23) — decided once for the whole app, recorded here
 ///
@@ -24,7 +24,7 @@ library;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'db/database.dart' show BoostqueDb;
+import 'db/database.dart' show VitomyDb;
 import 'db/drift_repositories.dart';
 import 'domain/cycle_math.dart' show dateOnly;
 import 'domain/models.dart';
@@ -34,8 +34,8 @@ import 'domain/repositories.dart';
 /// paths that never touch persistence (the Phase-1 shell, widget tests)
 /// never open the on-disk file (D-19). Overridden with an in-memory
 /// database in tests.
-final dbProvider = Provider<BoostqueDb>((ref) {
-  final db = BoostqueDb.open();
+final dbProvider = Provider<VitomyDb>((ref) {
+  final db = VitomyDb.open();
   ref.onDispose(db.close);
   return db;
 });

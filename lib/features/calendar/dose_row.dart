@@ -30,14 +30,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/features/calendar/day_view_model.dart';
-import 'package:boostque/features/calendar/dose_action_sheet.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/features/calendar/day_view_model.dart';
+import 'package:vitomy/features/calendar/dose_action_sheet.dart';
 
 /// The five exhaustive row states of the S4 table. No sixth combination may
 /// render, and no two may render at once.

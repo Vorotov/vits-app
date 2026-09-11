@@ -8,7 +8,7 @@
 /// no plugin and no notification layer present at all.
 library;
 
-import 'package:boostque/core/selected_tab_controller.dart';
+import 'package:vitomy/core/selected_tab_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 

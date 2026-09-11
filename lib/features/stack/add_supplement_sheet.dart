@@ -28,13 +28,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/core/widgets/bq_segmented.dart';
-import 'package:boostque/features/stack/catalog.dart';
-import 'package:boostque/features/stack/regimen_editor_screen.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/core/widgets/bq_segmented.dart';
+import 'package:vitomy/features/stack/catalog.dart';
+import 'package:vitomy/features/stack/regimen_editor_screen.dart';
 
 /// Opens the modal add-supplement sheet above [context]'s navigator.
 Future<void> showAddSupplementSheet(BuildContext context) {

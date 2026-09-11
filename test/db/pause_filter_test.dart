@@ -8,22 +8,22 @@
 /// excludes soft-deleted log rows.
 library;
 
-import 'package:boostque/core/db/database.dart'
-    show BoostqueDb, IntakeLogsCompanion;
-import 'package:boostque/core/db/drift_repositories.dart';
-import 'package:boostque/core/domain/models.dart';
+import 'package:vitomy/core/db/database.dart'
+    show VitomyDb, IntakeLogsCompanion;
+import 'package:vitomy/core/db/drift_repositories.dart';
+import 'package:vitomy/core/domain/models.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  late BoostqueDb db;
+  late VitomyDb db;
   late DriftSupplementRepository supps;
   late DriftRegimenRepository regs;
   late DriftIntakeRepository intake;
 
   setUp(() {
-    db = BoostqueDb.forTesting(NativeDatabase.memory());
+    db = VitomyDb.forTesting(NativeDatabase.memory());
     supps = DriftSupplementRepository(db);
     regs = DriftRegimenRepository(db);
     intake = DriftIntakeRepository(db);

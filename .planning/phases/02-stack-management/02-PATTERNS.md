@@ -37,8 +37,8 @@
 ```dart
 import 'package:flutter/material.dart';
 
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/theme/tokens.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/theme/tokens.dart';
 
 // body:
 Padding(
@@ -48,7 +48,7 @@ Padding(
       style: Theme.of(context).textTheme.headlineSmall),
 )
 ```
-Note: feature files use `package:boostque/...` absolute imports; `core/` internals use relative imports. Follow that split.
+Note: feature files use `package:vitomy/...` absolute imports; `core/` internals use relative imports. Follow that split.
 
 **Provider consumption pattern** — `stackEntriesProvider` is `Provider<AsyncValue<List<StackEntry>>>` (providers.dart:76-88). Widget becomes `ConsumerWidget`, reads `ref.watch(stackEntriesProvider)` and switches on `AsyncValue.when(data/loading/error)`. Do NOT create new stream providers (D-23 — providers.dart:1-22 doc comment is the policy record).
 
@@ -154,7 +154,7 @@ uk file mirrors with all four CLDR forms (one/few/many/other — see `app_uk.arb
 **Apply to:** `cascade_delete_test.dart`, `pause_filter_test.dart`
 ```dart
 setUp(() {
-  db = BoostqueDb.forTesting(NativeDatabase.memory());
+  db = VitomyDb.forTesting(NativeDatabase.memory());
   supps = DriftSupplementRepository(db);
   regs = DriftRegimenRepository(db);
   intake = DriftIntakeRepository(db);
@@ -172,7 +172,7 @@ Soft-delete survival is proven with raw table reads (lines 100-103): `final raw 
 ```dart
 container = ProviderContainer(overrides: [
   dbProvider.overrideWith((ref) {
-    final db = BoostqueDb.forTesting(NativeDatabase.memory());
+    final db = VitomyDb.forTesting(NativeDatabase.memory());
     ref.onDispose(db.close);
     return db;
   }),

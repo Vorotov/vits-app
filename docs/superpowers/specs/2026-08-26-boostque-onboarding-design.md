@@ -1,4 +1,4 @@
-# Boostque onboarding — design
+# VitoMy onboarding — design
 
 **Date:** 2026-08-26
 **Status:** approved for planning — **built as written, then partly superseded
@@ -13,7 +13,7 @@ document is that revisit. The row is amended, not silently contradicted.
 
 ## Problem
 
-A first-time user launches Boostque into an empty Stack screen. Nothing
+A first-time user launches VitoMy into an empty Stack screen. Nothing
 explains what the app is for, and — more importantly — nothing explains
 the one thing that makes it different from a checklist: **cycles**, the
 on/off week arithmetic the whole planner is built around. The app is also
@@ -55,7 +55,7 @@ it hands the user directly into adding their first supplement.
 ```
 main()
   └─ prefs (already resolved, 0 new awaits)
-      └─ BoostqueApp / MaterialApp
+      └─ VitomyApp / MaterialApp
           └─ OnboardingGate            <- new
               ├─ onboardingSeen == false  ->  OnboardingScreen
               └─ onboardingSeen == true   ->  _FirstAddLauncher(child: AppShell)
@@ -77,7 +77,7 @@ main()
 
 | File | Change |
 |---|---|
-| `lib/main.dart` | One line: `BoostqueApp`'s `home:` (line 171) becomes `OnboardingGate` instead of `AppShell`. Nothing above `runApp` changes — the await count is unchanged and its two gates stay green. |
+| `lib/main.dart` | One line: `VitomyApp`'s `home:` (line 171) becomes `OnboardingGate` instead of `AppShell`. Nothing above `runApp` changes — the await count is unchanged and its two gates stay green. |
 | `lib/core/l10n/arb/app_en.arb`, `app_uk.arb` | New copy keys (below). |
 | `.planning/REQUIREMENTS.md` | Amend the Out-of-Scope row; add the ONBO requirements. |
 | `.planning/ROADMAP.md` | Add Phase 8. |

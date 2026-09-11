@@ -1,4 +1,4 @@
-# Cross-Phase Integration Check — Boostque v1
+# Cross-Phase Integration Check — VitoMy v1
 
 Scope: Phases 1–5 (Foundation, Stack Management, Daily Tracking, Planner Views,
 Localization & Settings). Method: static trace of each E2E flow across phase

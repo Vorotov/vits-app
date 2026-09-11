@@ -22,22 +22,22 @@
 /// raw table reads prove DB state.
 library;
 
-import 'package:boostque/core/db/database.dart' show BoostqueDb;
-import 'package:boostque/core/db/drift_repositories.dart';
-import 'package:boostque/core/domain/cycle_math.dart' show isActiveOn;
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart' show DayDose;
+import 'package:vitomy/core/db/database.dart' show VitomyDb;
+import 'package:vitomy/core/db/drift_repositories.dart';
+import 'package:vitomy/core/domain/cycle_math.dart' show isActiveOn;
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart' show DayDose;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  late BoostqueDb db;
+  late VitomyDb db;
   late DriftSupplementRepository supps;
   late DriftRegimenRepository regs;
   late DriftIntakeRepository intake;
 
   setUp(() {
-    db = BoostqueDb.forTesting(NativeDatabase.memory());
+    db = VitomyDb.forTesting(NativeDatabase.memory());
     supps = DriftSupplementRepository(db);
     regs = DriftRegimenRepository(db);
     intake = DriftIntakeRepository(db);

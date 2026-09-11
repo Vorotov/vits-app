@@ -45,21 +45,21 @@
 /// explicit `Directionality`, which is a different and narrower claim.
 library;
 
-import 'package:boostque/app_shell.dart';
-import 'package:boostque/core/db/database.dart' show BoostqueDb;
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/today_controller.dart';
-import 'package:boostque/features/calendar/calendar_providers.dart';
-import 'package:boostque/features/calendar/dose_row.dart';
-import 'package:boostque/features/calendar/planner_gantt.dart';
-import 'package:boostque/features/calendar/planner_load_chart.dart';
-import 'package:boostque/features/calendar/planner_screen.dart';
-import 'package:boostque/features/calendar/planner_year_grid.dart';
-import 'package:boostque/features/settings/settings_screen.dart';
-import 'package:boostque/features/stack/stack_screen.dart';
+import 'package:vitomy/app_shell.dart';
+import 'package:vitomy/core/db/database.dart' show VitomyDb;
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/today_controller.dart';
+import 'package:vitomy/features/calendar/calendar_providers.dart';
+import 'package:vitomy/features/calendar/dose_row.dart';
+import 'package:vitomy/features/calendar/planner_gantt.dart';
+import 'package:vitomy/features/calendar/planner_load_chart.dart';
+import 'package:vitomy/features/calendar/planner_screen.dart';
+import 'package:vitomy/features/calendar/planner_year_grid.dart';
+import 'package:vitomy/features/settings/settings_screen.dart';
+import 'package:vitomy/features/stack/stack_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -158,7 +158,7 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           dbProvider.overrideWith((ref) {
-            final db = BoostqueDb.forTesting(NativeDatabase.memory());
+            final db = VitomyDb.forTesting(NativeDatabase.memory());
             ref.onDispose(db.close);
             return db;
           }),

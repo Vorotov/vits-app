@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.boostque.boostque"
+    namespace = "app.vitomy"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -23,8 +23,9 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.boostque.dev"
+        // Reverse-DNS of the domain the project owns, vitomy.app. Permanent:
+        // the Play Console and App Store Connect records are keyed on it.
+        applicationId = "app.vitomy"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

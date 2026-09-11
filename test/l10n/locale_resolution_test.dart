@@ -32,7 +32,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:boostque/core/l10n/l10n.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
 
 /// Locale-distinctive copy: `tabStack` reads 'Stack' in English and 'Стек' in
 /// Ukrainian, so the rendered string names the delivered language without any

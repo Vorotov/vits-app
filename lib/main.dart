@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boostque/features/onboarding/onboarding_gate.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/l10n/locale_controller.dart';
-import 'package:boostque/core/notifications/notification_locale.dart';
-import 'package:boostque/core/notifications/notification_providers.dart';
-import 'package:boostque/core/notifications/notification_scheduler.dart';
-import 'package:boostque/core/notifications/notification_service.dart';
-import 'package:boostque/core/notifications/notification_sync.dart';
-import 'package:boostque/core/notifications/tz_conversion.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/selected_tab_controller.dart';
-import 'package:boostque/core/theme/theme.dart';
+import 'package:vitomy/features/onboarding/onboarding_gate.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/l10n/locale_controller.dart';
+import 'package:vitomy/core/notifications/notification_locale.dart';
+import 'package:vitomy/core/notifications/notification_providers.dart';
+import 'package:vitomy/core/notifications/notification_scheduler.dart';
+import 'package:vitomy/core/notifications/notification_service.dart';
+import 'package:vitomy/core/notifications/notification_sync.dart';
+import 'package:vitomy/core/notifications/tz_conversion.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/selected_tab_controller.dart';
+import 'package:vitomy/core/theme/theme.dart';
 
 Future<void> main() async {
   // The store is resolved BEFORE the first frame so [LocaleController] can
@@ -36,7 +36,7 @@ Future<void> main() async {
       FlutterErrorDetails(
         exception: error,
         stack: stack,
-        library: 'boostque',
+        library: 'vitomy',
         context: ErrorDescription('resolving SharedPreferences in main()'),
       ),
     );
@@ -70,7 +70,7 @@ Future<void> main() async {
         timeZoneLoaderProvider.overrideWithValue(initTimeZones),
         deviceZoneReaderProvider.overrideWithValue(deviceZoneIdentifier),
       ],
-      child: const BoostqueApp(),
+      child: const VitomyApp(),
     ),
   );
 }
@@ -103,7 +103,7 @@ Future<String?> _launchNotificationPayload() async {
       FlutterErrorDetails(
         exception: error,
         stack: stack,
-        library: 'boostque',
+        library: 'vitomy',
         context: ErrorDescription('reading the notification launch details'),
       ),
     );
@@ -129,8 +129,8 @@ NotificationScheduler _pluginScheduler(Ref ref) => PluginNotificationScheduler()
 /// `l10n.yaml` DECLARES it. Without that declaration gen-l10n emits the list
 /// alphabetically and the fallback would move the day an earlier-sorting ARB
 /// landed (PF-1, L10N-02).
-class BoostqueApp extends ConsumerWidget {
-  const BoostqueApp({super.key});
+class VitomyApp extends ConsumerWidget {
+  const VitomyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

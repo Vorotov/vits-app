@@ -11,26 +11,26 @@
 /// `PlannerScreen` directly, so the tap path under test is the real one.
 library;
 
-import 'package:boostque/app_shell.dart';
-import 'package:boostque/core/db/database.dart' show BoostqueDb;
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/domain/repositories.dart' show StackEntry;
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/core/today_controller.dart';
-import 'package:boostque/features/calendar/calendar_providers.dart';
-import 'package:boostque/features/calendar/today_screen.dart';
-import 'package:boostque/core/widgets/bq_nav_bar.dart';
-import 'package:boostque/core/widgets/bq_segmented.dart';
-import 'package:boostque/features/calendar/planner_gantt.dart';
-import 'package:boostque/features/calendar/planner_load_chart.dart';
-import 'package:boostque/features/calendar/planner_providers.dart';
-import 'package:boostque/features/calendar/planner_screen.dart';
-import 'package:boostque/features/calendar/planner_year_grid.dart';
-import 'package:boostque/features/calendar/week_strip.dart';
-import 'package:boostque/features/settings/settings_screen.dart';
+import 'package:vitomy/app_shell.dart';
+import 'package:vitomy/core/db/database.dart' show VitomyDb;
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/domain/repositories.dart' show StackEntry;
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/core/today_controller.dart';
+import 'package:vitomy/features/calendar/calendar_providers.dart';
+import 'package:vitomy/features/calendar/today_screen.dart';
+import 'package:vitomy/core/widgets/bq_nav_bar.dart';
+import 'package:vitomy/core/widgets/bq_segmented.dart';
+import 'package:vitomy/features/calendar/planner_gantt.dart';
+import 'package:vitomy/features/calendar/planner_load_chart.dart';
+import 'package:vitomy/features/calendar/planner_providers.dart';
+import 'package:vitomy/features/calendar/planner_screen.dart';
+import 'package:vitomy/features/calendar/planner_year_grid.dart';
+import 'package:vitomy/features/calendar/week_strip.dart';
+import 'package:vitomy/features/settings/settings_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 // `RenderParagraph` — the only thing that can prove a Text is not ellipsized
@@ -77,7 +77,7 @@ void main() {
 
   final today = DateTime.utc(2026, 8, 13);
 
-  late BoostqueDb db;
+  late VitomyDb db;
   late SharedPreferences prefs;
 
   setUp(() async {
@@ -105,7 +105,7 @@ void main() {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         dbProvider.overrideWith((ref) {
-          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          final database = VitomyDb.forTesting(NativeDatabase.memory());
           ref.onDispose(database.close);
           db = database;
           return database;

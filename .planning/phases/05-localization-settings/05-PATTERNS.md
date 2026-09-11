@@ -126,8 +126,8 @@ Target shape is given verbatim in RESEARCH "Code Examples → `LocaleController`
 /// paths that never touch persistence (the Phase-1 shell, widget tests)
 /// never open the on-disk file (D-19). Overridden with an in-memory
 /// database in tests.
-final dbProvider = Provider<BoostqueDb>((ref) {
-  final db = BoostqueDb.open();
+final dbProvider = Provider<VitomyDb>((ref) {
+  final db = VitomyDb.open();
   ref.onDispose(db.close);
   return db;
 });
@@ -143,7 +143,7 @@ Copy the **docstring shape**: what it is, the dispose/lifetime stance, and the "
 **Analog:** itself, lines 9-33 (quoted in full):
 ```dart
 void main() {
-  runApp(const ProviderScope(child: BoostqueApp()));
+  runApp(const ProviderScope(child: VitomyApp()));
 }
 
 /// Root app widget: theme + l10n + locale resolution (D-10, D-11).
@@ -152,7 +152,7 @@ void main() {
 /// (null lets the system locale flow through), then system uk/en matched
 /// against [MaterialApp.supportedLocales], else English — `Locale('en')` is
 /// listed FIRST so any unsupported system language falls back to it.
-class BoostqueApp extends ConsumerWidget {
+class VitomyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
@@ -452,7 +452,7 @@ setUp(() {
 **Analog C — in-memory Drift container:** `stack_screen_test.dart:52-60` / `app_shell_test.dart:28-39`:
 ```dart
 dbProvider.overrideWith((ref) {
-  final db = BoostqueDb.forTesting(NativeDatabase.memory());
+  final db = VitomyDb.forTesting(NativeDatabase.memory());
   ref.onDispose(db.close);
   return db;
 }),

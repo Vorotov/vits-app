@@ -19,7 +19,7 @@ while [ $SECONDS -lt $END ]; do
     if [ "$name" = "p3-ios-05-marked" ]; then
       # Out-of-process proof: dump the live on-device SQLite file from the host
       # while the app still holds the marks the test just wrote.
-      db="$(dirname "$f")/boostque.sqlite"
+      db="$(dirname "$f")/vitomy.sqlite"
       cp "$db" "$OUT/p3-ios-db-snapshot.sqlite" 2>/dev/null
       sqlite3 "$OUT/p3-ios-db-snapshot.sqlite" \
         "select s.name, r.kind, r.start_date, r.on_days, r.off_days from supplements s join regimens r on r.supplement_id = s.id;" \

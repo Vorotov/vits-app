@@ -1,4 +1,4 @@
-/// Boostque app theme — the single ThemeData factory (D-06).
+/// VitoMy app theme — the single ThemeData factory (D-06).
 ///
 /// Built EXCLUSIVELY from `tokens.dart` constants: this file contains zero
 /// raw color hex literals (D-07 token-only rule applied to the theme itself).

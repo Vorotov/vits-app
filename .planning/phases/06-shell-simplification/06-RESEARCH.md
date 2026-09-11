@@ -12,7 +12,7 @@
 
 No `06-CONTEXT.md` exists yet (`/gsd-discuss-phase` has not run for this phase). The binding constraints are therefore the approved spec and `CLAUDE.md`.
 
-### Locked Decisions (from `docs/superpowers/specs/2026-08-17-boostque-v1.1-design.md` §1, §3, §4 — approved in chat 2026-08-17)
+### Locked Decisions (from `docs/superpowers/specs/2026-08-17-vitomy-v1.1-design.md` §1, §3, §4 — approved in chat 2026-08-17)
 
 - The bottom bar is replaced by a hand-built `BqNavBar`: **56dp base + safe-area**, 22dp icon over a 10sp label, selected state = `BqColors.accent` + weight 400→600, background `surfaceAlt` with the hairline top border unchanged. [CITED: spec §1.1]
 - **The bar keeps labels.** Icon-only is rejected as an accessibility and localization regression. [CITED: spec §1.1]
@@ -615,7 +615,7 @@ Scaffold(
 | `test/features/calendar_screen_test.dart` | 71 | 2 `CalendarScreen` references → `TodayScreen`. **Zero** `plannerTitle` references [VERIFIED: `grep -c` returned 0], so the header-action deletion costs almost nothing here. `backToToday` tests (`:482`, `:504`, `:3206`) all survive. |
 | `test/features/planner_invariants_test.dart` | 10 | Glob floor (`:124-130`) re-verified; the "no excluded mockup content" render pass (`:455`) and both-segments pass (`:512`) updated for the removed chrome. |
 | `test/features/stack_screen_test.dart` | 23 | ~6 references to the full-width `addSupplement` button (`:767`, `:787-789`, `:861-863`, `:1064`) → retarget at the FAB; `:767` `findsOneWidget` must **not** silently start matching the FAB's label and pass for the wrong reason. |
-| `test/features/settings_screen_test.dart` | 26 | 3 `AppShell`/`BoostqueApp` mounts → push route; add a back-control test. |
+| `test/features/settings_screen_test.dart` | 26 | 3 `AppShell`/`VitomyApp` mounts → push route; add a back-control test. |
 | `test/l10n/planner_copy_safety_test.dart` | 4 groups + 1 | `plannerCopy()` map loses 13 entries; `plannerKeysExact` loses 4; the `>= 40` floor re-derived; `negationOnly*` deleted; forbidden list widened; the trailing `weekNoteOverLimit` test deleted. |
 | `test/l10n/plurals_test.dart` | — | Delete the `cyclesCount` / `slotsCount` / `substancesLimitCount` / `weekLoadLabel` tests (`:80-123`). |
 | `test/theme/theme_test.dart` | — | `navigationBarTheme` assertions → either deleted or replaced by `BqNavBar` styling assertions; check for a `thresholdDash` token assertion. |
@@ -730,7 +730,7 @@ No missing dependency blocks this phase.
 
 ### Secondary (spec / roadmap — authoritative for intent, not for code facts)
 
-- `docs/superpowers/specs/2026-08-17-boostque-v1.1-design.md` §1, §3, §4, §5, §6, §7
+- `docs/superpowers/specs/2026-08-17-vitomy-v1.1-design.md` §1, §3, §4, §5, §6, §7
 - `.planning/ROADMAP.md` — Phase 6 goal and five success criteria
 - `.planning/phases/04-planner-views/04-UI-SPEC.md` §"Forbidden vocabulary", S4-amendment, S6
 - `.claude/CLAUDE.md` — locked stack and constraints

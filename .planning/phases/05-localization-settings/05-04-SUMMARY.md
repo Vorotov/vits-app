@@ -96,7 +96,7 @@ No golden-file snapshots were added anywhere (P-8's rejection is part of the con
 
 **2. Picker chrome split into two tests per locale instead of one.** After a picker route is dismissed, the page it was opened from stops responding to further synthetic taps in this harness (the second `tester.tap` hit-tests into the dismissed route's scope). Chaining date → time in one body would have silently proven only that the time picker never opened. Each picker now gets its own freshly pumped editor; the claim is unchanged and the reason is recorded in the file.
 
-**3. App-shell folding.** The plan asked that the existing English shell test become a matrix member rather than a duplicate. Both single-locale label-render tests were folded into the matrix; what the English test uniquely claimed — that `BoostqueApp` with no stored override follows the system locale, and that tabs switch in place — is kept as its own test.
+**3. App-shell folding.** The plan asked that the existing English shell test become a matrix member rather than a duplicate. Both single-locale label-render tests were folded into the matrix; what the English test uniquely claimed — that `VitomyApp` with no stored override follows the system locale, and that tabs switch in place — is kept as its own test.
 
 **4. Empty-day matrix case waits on the no-stack body, not the title.** The Calendar deliberately assumes a non-empty stack until `stackEntriesProvider` resolves, so waiting on `emptyDayTitle` alone asserted against the neutral copy one frame too early. The wait now targets `emptyDayBodyNoStack`, which is the state the case claims.
 

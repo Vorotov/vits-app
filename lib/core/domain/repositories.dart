@@ -1,4 +1,4 @@
-/// Repository contracts and view models for Boostque (D-22).
+/// Repository contracts and view models for VitoMy (D-22).
 ///
 /// Pure Dart: imports only the domain models — no Flutter, no Drift, no I/O.
 /// UI and state code (Phases 2-5) depend exclusively on these interfaces;

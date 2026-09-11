@@ -5,7 +5,7 @@
 **Confidence:** HIGH (all Phase-1 code and the mockup were read line-by-line this session; Flutter picker/SegmentedButton APIs fetched from api.flutter.dev this session; Riverpod-3 family syntax verified via riverpod.dev migration docs; a small number of copy/translation items flagged ASSUMED)
 
 <user_constraints>
-## User Constraints (no CONTEXT.md exists — sources: approved design spec `docs/superpowers/specs/2026-08-14-boostque-v1-design.md`, `.claude/CLAUDE.md`, Phase-1 locked decisions)
+## User Constraints (no CONTEXT.md exists — sources: approved design spec `docs/superpowers/specs/2026-08-14-vitomy-v1-design.md`, `.claude/CLAUDE.md`, Phase-1 locked decisions)
 
 ### Locked Decisions
 - Flutter + Dart single codebase; Riverpod + Drift; UI depends on repository interfaces only (`SupplementRepository`/`RegimenRepository`/`IntakeRepository`) — Drift types never appear in `features/`
@@ -16,7 +16,7 @@
 - Riverpod dispose policy (D-23): app-lifetime repo/stream providers NOT autoDispose; screen-scoped state MAY be autoDispose — recorded in `core/providers.dart`, do not re-litigate
 - Token-only styling (D-07): all UI styled exclusively via `BqColors`/`BqRadii`/`BqSpace`/`bqTheme()` — no ad-hoc hex literals in feature code
 - No new packages without strong justification (D-04); no google_fonts; never hand-pin intl
-- Mockup `claude_design_mockup/Boostque v0.1.dc.html` is the authoritative visual reference (screens 01 and 05 for this phase)
+- Mockup `claude_design_mockup/VitoMy v0.1.dc.html` is the authoritative visual reference (screens 01 and 05 for this phase)
 - v1 scope: Stack + Calendar tabs (+ Settings shell); Advisor tab, camera/OCR label scanning, scores, subscriptions, notifications are OUT of v1
 
 ### Claude's Discretion
@@ -28,7 +28,7 @@
 ### Deferred Ideas (OUT OF SCOPE)
 - Camera · етикетка tab in the add sheet (SCAN-01, v2) — mockup shows it; v1 replaces it with manual entry
 - Interaction notes/warnings in catalog entries ("1 взаємодія з вашим профілем", "перевірте з сертраліном") — naive interaction checking is explicitly never-ship (REQUIREMENTS Out of Scope)
-- Quality scores (`score:` fields in mockup data), Free-plan banner / Boostque Plus, Радник/Профіль tabs
+- Quality scores (`score:` fields in mockup data), Free-plan banner / VitoMy Plus, Радник/Профіль tabs
 - Notifications, widgets, export, sync
 </user_constraints>
 
@@ -52,7 +52,7 @@
 - Follow GSD workflow for all file changes; tech stack and package set is locked (no `google_fonts`, no `sqlite3_flutter_libs`, no hand-pinned `intl`, `mocktail` not `mockito`)
 - `flutter analyze` clean and `flutter test` green are exit criteria for every plan
 - Custom-painted/plain-widget UI for bespoke layouts rather than generic packages (locked reasoning in "What NOT to Use": no `table_calendar`-style packages; `showDatePicker`/`showTimePicker` reserved for "the one place a genuine picker is needed — the Dosing Schedule editor's time-slot input" — i.e., THIS phase is that place)
-- Bundle id placeholder `com.boostque.dev`; no store-release work in this phase
+- Bundle id placeholder `app.vitomy`; no store-release work in this phase
 
 ## Summary
 
@@ -145,7 +145,7 @@ const _entries = <CatalogEntry>[ /* 15 entries, table below */ ];
 
 **Copy-on-add semantics (important):** selecting a catalog entry copies the *currently-active locale's* name/doseText into the `Supplement` row via `supplementRepo.upsert`. From that moment it is user data — switching the app language later must NOT rename supplements already in the stack. Document this in the plan so Phase 5's l10n verification doesn't misread it as a bug.
 
-**Catalog content for v1** — extracted verbatim from the mockup [VERIFIED: claude_design_mockup/Boostque v0.1.dc.html:596-605 (`CATALOG`), 587-595 (`BASE_STACK`), 630-638 (`PLAN` colors)]. Mockup quotes:
+**Catalog content for v1** — extracted verbatim from the mockup [VERIFIED: claude_design_mockup/VitoMy v0.1.dc.html:596-605 (`CATALOG`), 587-595 (`BASE_STACK`), 630-638 (`PLAN` colors)]. Mockup quotes:
 
 ```
 CATALOG: 'Ашваганда KSM-66', 'Креатин моногідрат', 'Мелатонін 3 мг', 'NMN 250 мг',
@@ -428,7 +428,7 @@ catalog{Entry}Name / catalog{Entry}Dose  × 15 entries                 (P-1)
 
 ```dart
 test('softDeleteCascade hides supplement+regimen and future pending logs, keeps history', () async {
-  final db = BoostqueDb.forTesting(NativeDatabase.memory());
+  final db = VitomyDb.forTesting(NativeDatabase.memory());
   // seed: supplement s1, cyclic regimen r1 (start D-2, offDays 0), slot 08:00
   await intake.ensureLogsForDay(DateTime.utc(2026, 8, 12)); // past
   await intake.setStatus(pastLogId, DoseStatus.taken);
@@ -460,7 +460,7 @@ test('softDeleteCascade hides supplement+regimen and future pending logs, keeps 
 ### Test Framework
 | Property | Value |
 |----------|-------|
-| Framework | `flutter_test` (SDK) + in-memory Drift (`BoostqueDb.forTesting(NativeDatabase.memory())`) — pattern established in Phase 1 |
+| Framework | `flutter_test` (SDK) + in-memory Drift (`VitomyDb.forTesting(NativeDatabase.memory())`) — pattern established in Phase 1 |
 | Config file | `analysis_options.yaml` exists (Phase 1) |
 | Quick run command | `flutter test test/features/<file>_test.dart` |
 | Full suite command | `flutter analyze && flutter test` |
@@ -529,13 +529,13 @@ No blocking gaps.
 
 ### Primary (HIGH confidence)
 - Project code read line-by-line this session: `lib/core/domain/{models,cycle_math,repositories}.dart`, `lib/core/db/{database,drift_repositories}.dart`, `lib/core/providers.dart`, `lib/core/theme/tokens.dart`, `lib/features/stack/stack_screen.dart`, `lib/core/l10n/arb/app_en.arb` — all line citations above refer to these reads
-- `claude_design_mockup/Boostque v0.1.dc.html` — full 991-line read this session; all mockup line citations verbatim
+- `claude_design_mockup/VitoMy v0.1.dc.html` — full 991-line read this session; all mockup line citations verbatim
 - [api.flutter.dev — showDatePicker](https://api.flutter.dev/flutter/material/showDatePicker.html), [showTimePicker](https://api.flutter.dev/flutter/material/showTimePicker.html), [SegmentedButton](https://api.flutter.dev/flutter/material/SegmentedButton-class.html) — fetched this session, quoted above
 - `.planning/phases/01-foundation/01-RESEARCH.md` — Riverpod 3 Notifier/StreamProvider syntax, insertOrIgnore semantics, gen-l10n config (same-day verification carried forward)
 
 ### Secondary (MEDIUM confidence)
 - [riverpod.dev/docs/3.0_migration](https://riverpod.dev/docs/3.0_migration) + [riverpod.dev/docs/whats_new](https://riverpod.dev/docs/whats_new) (via WebSearch summary this session) — FamilyNotifier removal, constructor-arg family pattern
-- `docs/superpowers/plans/2026-08-14-boostque-v1.md` Tasks 8–9 — screen structures, ARB key naming, test skeletons (superseded where Phase-1 outcomes differ: no `google_fonts`, ARB catalog over JSON asset, `Provider<AsyncValue>` composition over `StreamProvider` combine helper)
+- `docs/superpowers/plans/2026-08-14-vitomy-v1.md` Tasks 8–9 — screen structures, ARB key naming, test skeletons (superseded where Phase-1 outcomes differ: no `google_fonts`, ARB catalog over JSON asset, `Provider<AsyncValue>` composition over `StreamProvider` combine helper)
 
 ### Tertiary (LOW confidence)
 - gen-l10n's generated `lookupAppLocalizations` being synchronous and public in the output file — standard generator behavior, not re-verified against 3.47's generator output this session; if the symbol is private in the generated file, fall back to `AppLocalizations.delegate.load` (async) or duplicate en names in the descriptor list

@@ -10,17 +10,17 @@
 /// 4. Soft delete: freshly-inserted rows have deletedAt == null.
 library;
 
-import 'package:boostque/core/db/database.dart';
-import 'package:boostque/core/domain/models.dart';
+import 'package:vitomy/core/db/database.dart';
+import 'package:vitomy/core/domain/models.dart';
 import 'package:drift/drift.dart' hide isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  late BoostqueDb db;
+  late VitomyDb db;
 
   setUp(() {
-    db = BoostqueDb.forTesting(NativeDatabase.memory());
+    db = VitomyDb.forTesting(NativeDatabase.memory());
     addTearDown(db.close);
   });
 

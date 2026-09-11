@@ -28,18 +28,18 @@ library;
 import 'dart:async';
 import 'dart:io';
 
-import 'package:boostque/core/db/database.dart' show BoostqueDb;
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart' show StackEntry;
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/l10n/locale_controller.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/today_controller.dart';
-import 'package:boostque/core/widgets/bq_add_fab.dart';
-import 'package:boostque/features/settings/settings_screen.dart';
-import 'package:boostque/features/stack/regimen_editor_screen.dart';
-import 'package:boostque/features/stack/stack_screen.dart';
+import 'package:vitomy/core/db/database.dart' show VitomyDb;
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart' show StackEntry;
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/l10n/locale_controller.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/today_controller.dart';
+import 'package:vitomy/core/widgets/bq_add_fab.dart';
+import 'package:vitomy/features/settings/settings_screen.dart';
+import 'package:vitomy/features/stack/regimen_editor_screen.dart';
+import 'package:vitomy/features/stack/stack_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -85,7 +85,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
-          final db = BoostqueDb.forTesting(NativeDatabase.memory());
+          final db = VitomyDb.forTesting(NativeDatabase.memory());
           ref.onDispose(db.close);
           return db;
         }),

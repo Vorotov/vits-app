@@ -10,7 +10,7 @@ class AppLocalizationsHi extends AppLocalizations {
   AppLocalizationsHi([String locale = 'hi']) : super(locale);
 
   @override
-  String get appTitle => 'Boostque';
+  String get appTitle => 'VitoMy';
 
   @override
   String get tabStack => 'स्टैक';

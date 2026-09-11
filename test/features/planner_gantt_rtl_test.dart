@@ -47,12 +47,12 @@
 /// laid out.
 library;
 
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart' show StackEntry;
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/features/calendar/planner_gantt.dart';
-import 'package:boostque/features/calendar/planner_view_model.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart' show StackEntry;
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/features/calendar/planner_gantt.dart';
+import 'package:vitomy/features/calendar/planner_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

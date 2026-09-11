@@ -8,16 +8,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boostque/app_shell.dart';
-import 'package:boostque/core/db/database.dart' show BoostqueDb;
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/widgets/bq_add_fab.dart';
-import 'package:boostque/core/widgets/bq_nav_bar.dart';
-import 'package:boostque/features/calendar/calendar_providers.dart';
-import 'package:boostque/features/settings/settings_screen.dart';
-import 'package:boostque/main.dart';
+import 'package:vitomy/app_shell.dart';
+import 'package:vitomy/core/db/database.dart' show VitomyDb;
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/widgets/bq_add_fab.dart';
+import 'package:vitomy/core/widgets/bq_nav_bar.dart';
+import 'package:vitomy/features/calendar/calendar_providers.dart';
+import 'package:vitomy/features/settings/settings_screen.dart';
+import 'package:vitomy/main.dart';
 
 import '../support/locale_matrix.dart';
 
@@ -39,7 +39,7 @@ import '../support/locale_matrix.dart';
 /// label-render claim is asserted once, by the locale × text-scale matrix at
 /// the bottom, in BOTH languages at BOTH scales. The two former single-locale
 /// label tests were folded into it rather than left alongside as duplicates;
-/// what the English test uniquely claimed — that [BoostqueApp] with no stored
+/// what the English test uniquely claimed — that [VitomyApp] with no stored
 /// override follows the system locale, and that tabs switch in place — is
 /// kept below as its own test.
 void main() {
@@ -52,7 +52,7 @@ void main() {
     // sharedPreferencesProvider — which throws unless overridden — so the
     // instance is resolved here and handed to every scope below.
     // `onboarding_seen` is seeded: every case here models a RETURNING user
-    // (BoostqueApp now opens through the onboarding gate, and an empty store
+    // (VitomyApp now opens through the onboarding gate, and an empty store
     // would render the intro instead of the shell). The first-launch branch
     // has its own suite (onboarding_gate_test.dart).
     SharedPreferences.setMockInitialValues({'onboarding_seen': true});
@@ -64,7 +64,7 @@ void main() {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(prefs),
         dbProvider.overrideWith((ref) {
-          final db = BoostqueDb.forTesting(NativeDatabase.memory());
+          final db = VitomyDb.forTesting(NativeDatabase.memory());
           ref.onDispose(db.close);
           return db;
         }),
@@ -114,9 +114,9 @@ void main() {
   }
 
   testWidgets(
-      'en: BoostqueApp with no stored override follows the system locale and '
+      'en: VitomyApp with no stored override follows the system locale and '
       'switches tabs in place', (tester) async {
-    await tester.pumpWidget(scoped(const BoostqueApp()));
+    await tester.pumpWidget(scoped(const VitomyApp()));
     await tester.pumpAndSettle();
 
     // Three en destination labels present; initial tab shows the Stack screen
@@ -150,7 +150,7 @@ void main() {
       // (P-4 Option A).
       sharedPreferencesProvider.overrideWithValue(prefs),
       dbProvider.overrideWith((ref) {
-        final db = BoostqueDb.forTesting(NativeDatabase.memory());
+        final db = VitomyDb.forTesting(NativeDatabase.memory());
         ref.onDispose(db.close);
         return db;
       }),
@@ -328,7 +328,7 @@ void main() {
   //
   // The shell is the frame every other screen is read inside, and before this
   // plan it had been rendered in English exactly once, at scale 1.0, through
-  // BoostqueApp's system-locale path — never with the locale pinned, never at
+  // VitomyApp's system-locale path — never with the locale pinned, never at
   // an accessibility scale.
   // ---------------------------------------------------------------------
 

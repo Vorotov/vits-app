@@ -13,7 +13,7 @@ library;
 
 import 'dart:async';
 
-import 'package:boostque/core/notifications/notification_scheduler.dart';
+import 'package:vitomy/core/notifications/notification_scheduler.dart';
 
 /// One call the seam received, flattened to the fields a test asserts on.
 class SchedulerCall {

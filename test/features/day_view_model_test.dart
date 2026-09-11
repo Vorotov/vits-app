@@ -10,9 +10,9 @@
 /// moving a boundary is a one-line change that a test catches.
 library;
 
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart';
-import 'package:boostque/features/calendar/day_view_model.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart';
+import 'package:vitomy/features/calendar/day_view_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

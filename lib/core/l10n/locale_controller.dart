@@ -3,8 +3,8 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/core/l10n/gen/app_localizations.dart';
-import 'package:boostque/core/providers.dart';
+import 'package:vitomy/core/l10n/gen/app_localizations.dart';
+import 'package:vitomy/core/providers.dart';
 
 /// Persists the user's manual language override (SharedPreferences key
 /// `app_locale`, per D-10).
@@ -44,7 +44,7 @@ class LocaleController extends Notifier<Locale?> {
     // `get` (Object?), never `getString`: `getString` is an unguarded
     // `as String?` downcast (shared_preferences 2.5.x), so a non-String value
     // under this key throws a TypeError HERE — inside the build that
-    // `BoostqueApp` watches, which parks the provider in a permanent error
+    // `VitomyApp` watches, which parks the provider in a permanent error
     // state and bricks the launch across restarts. The type of untrusted
     // storage is as untrusted as its content, so both are checked (CR-01).
     //
@@ -108,7 +108,7 @@ class LocaleController extends Notifier<Locale?> {
         FlutterErrorDetails(
           exception: error,
           stack: stack,
-          library: 'boostque',
+          library: 'vitomy',
           context: ErrorDescription('persisting the language override'),
         ),
       );

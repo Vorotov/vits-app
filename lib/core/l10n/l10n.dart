@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-import 'package:boostque/core/l10n/gen/app_localizations.dart';
+import 'package:vitomy/core/l10n/gen/app_localizations.dart';
 
-export 'package:boostque/core/l10n/gen/app_localizations.dart';
+export 'package:vitomy/core/l10n/gen/app_localizations.dart';
 
 /// Shorthand for reading localized strings: `context.l10n.tabStack`.
 ///

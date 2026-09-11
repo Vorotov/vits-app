@@ -23,13 +23,13 @@ created: 2026-08-14
 | Preset | not applicable |
 | Component library | Flutter Material 3 widgets (`Scaffold`, `IndexedStack`, `NavigationBar`) themed via a custom `ThemeData` built in `lib/core/theme/theme.dart` |
 | Icon library | Material Symbols via Flutter's built-in `Icons` class (outlined variant unselected, filled variant selected) — Claude's Discretion per 01-CONTEXT.md; the mockup renders tab icons as plain placeholder shapes, not a real icon font, so there is no exact glyph to match. Use: Stack → `Icons.inventory_2_outlined` / `Icons.inventory_2`; Calendar → `Icons.calendar_today_outlined` / `Icons.calendar_today`; Settings → `Icons.settings_outlined` / `Icons.settings`. Size 24px (Material 3 NavigationBar default). |
-| Font | Instrument Sans (weights 400/500/600/700 — general UI text) + JetBrains Mono (weights 400/500 — numerics, mono labels, badges). Both bundled as local `.ttf` assets in `pubspec.yaml` `fonts:` — **no `google_fonts` package**, no runtime fetch (offline requirement). Source: `claude_design_mockup/Boostque v0.1.dc.html` Google Fonts `@import` URL; locked in 01-CONTEXT.md. |
+| Font | Instrument Sans (weights 400/500/600/700 — general UI text) + JetBrains Mono (weights 400/500 — numerics, mono labels, badges). Both bundled as local `.ttf` assets in `pubspec.yaml` `fonts:` — **no `google_fonts` package**, no runtime fetch (offline requirement). Source: `claude_design_mockup/VitoMy v0.1.dc.html` Google Fonts `@import` URL; locked in 01-CONTEXT.md. |
 
 ---
 
 ## Design Tokens (Full Palette — `lib/core/theme/tokens.dart`)
 
-Authoritative source: `claude_design_mockup/Boostque v0.1.dc.html` inline CSS, locked in 01-CONTEXT.md. All later phases use ONLY these tokens — no ad-hoc hex values anywhere in the codebase.
+Authoritative source: `claude_design_mockup/VitoMy v0.1.dc.html` inline CSS, locked in 01-CONTEXT.md. All later phases use ONLY these tokens — no ad-hoc hex values anywhere in the codebase.
 
 | Token | Hex | Usage |
 |-------|-----|-------|
@@ -83,7 +83,7 @@ No exceptions to the 8-point scale itself in Phase 1 — the scale above applies
 
 ### Component-specific hard-coded pixel overrides (mockup-exact, exempt from the token spacing scale by design)
 
-These NavigationBar values are locked, pixel-exact measurements taken directly from the authoritative mockup (`claude_design_mockup/Boostque v0.1.dc.html`) and do NOT map onto the 8pt scale. They are intentionally out of scope for the spacing-token system — do not round them to the nearest 4px, and do not add them to the token table above. Hardcode them directly in the NavigationBar theming/widget only:
+These NavigationBar values are locked, pixel-exact measurements taken directly from the authoritative mockup (`claude_design_mockup/VitoMy v0.1.dc.html`) and do NOT map onto the 8pt scale. They are intentionally out of scope for the spacing-token system — do not round them to the nearest 4px, and do not add them to the token table above. Hardcode them directly in the NavigationBar theming/widget only:
 
 | Override | Value | Usage |
 |----------|-------|-------|
@@ -107,7 +107,7 @@ Phase 1 uses three of the four roles (tab label, stub-screen heading, and a capt
 
 Mono numerals rule (for later phases building on this shell): any numeric/counter/timestamp text uses JetBrains Mono with `font-feature-settings: 'tnum'` equivalent (tabular figures) — not applicable to any Phase 1 screen since no numerals render yet, but the font is bundled now so this rule is ready to use.
 
-**Font-weight exception (locked, exempt from the 2-weight guideline):** the GSD default guideline caps typography at 2 declared font weights. This project's mockup uses three Instrument Sans weights — 400 (body/caption), 500 (nav labels), and 600 (headings) — sourced from `claude_design_mockup/Boostque v0.1.dc.html` and locked as-is in 01-CONTEXT.md. This is a deliberate, user-locked deviation from the 2-weight guideline: the mockup's design system genuinely differentiates nav labels (500) from headings (600) and body text (400), and none of the three values may be collapsed or substituted. Do not reduce to two weights in implementation.
+**Font-weight exception (locked, exempt from the 2-weight guideline):** the GSD default guideline caps typography at 2 declared font weights. This project's mockup uses three Instrument Sans weights — 400 (body/caption), 500 (nav labels), and 600 (headings) — sourced from `claude_design_mockup/VitoMy v0.1.dc.html` and locked as-is in 01-CONTEXT.md. This is a deliberate, user-locked deviation from the 2-weight guideline: the mockup's design system genuinely differentiates nav labels (500) from headings (600) and body text (400), and none of the three values may be collapsed or substituted. Do not reduce to two weights in implementation.
 
 ---
 

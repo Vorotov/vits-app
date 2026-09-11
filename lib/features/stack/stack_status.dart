@@ -23,9 +23,9 @@
 /// - otherwise -> [StackStatus.active]
 library;
 
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart';
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart';
 
 /// Status chip category for a stack card (mockup chips + D10 finished).
 enum StackStatus { fresh, active, paused, planned, finished }

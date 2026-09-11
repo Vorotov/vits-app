@@ -13,7 +13,7 @@ created: 2026-08-17
 
 > **Scope note — this phase draws almost nothing.** Phase 7 ships **zero new screens, zero new widgets, zero new tokens and zero new in-app copy**. Its entire user-visible surface is (a) text the **operating system** renders on a lock screen, (b) a permission dialog the **operating system** owns, (c) one row in **Android's own** notification settings, and (d) a change to which tab is selected. The only thing this phase adds to the Flutter tree is an app-lifetime tab-index notifier that replaces `_AppShellState._selectedIndex` (`app_shell.dart:29`) — geometry-neutral, pixel-neutral.
 >
-> **Authoritative sources:** `docs/superpowers/specs/2026-08-17-boostque-v1.1-design.md` §2 (approved architecture — locked, not re-opened) and `.planning/phases/07-dose-reminders/07-RESEARCH.md` (verified, executed research — trusted). House style and structure follow `.planning/phases/06-shell-simplification/06-UI-SPEC.md`.
+> **Authoritative sources:** `docs/superpowers/specs/2026-08-17-vitomy-v1.1-design.md` §2 (approved architecture — locked, not re-opened) and `.planning/phases/07-dose-reminders/07-RESEARCH.md` (verified, executed research — trusted). House style and structure follow `.planning/phases/06-shell-simplification/06-UI-SPEC.md`.
 >
 > **Precedence rule used throughout:** where the spec and 07-RESEARCH.md conflict on a *code fact*, **research wins**. Where **both** are contradicted by the shipped 22.3.0 source read for this contract, the **source wins** and the divergence is recorded in § 10. Exactly one such correction exists (§ 10 / DECIDED-14): the Android channel **name and description are mutable**, so research Pitfall 8 / Q-2 is wrong and its recommended remedy (version the channel id to relocalize) would be actively harmful.
 >
@@ -113,7 +113,7 @@ The notification has **both** a title and a body. The title is a **fixed string 
 
 Rationale:
 
-- **The title must not carry the app name.** Both platforms already print it in chrome the app does not control — Android in the notification header row, iOS in the banner header. A title reading "Boostque" would spend the most valuable line in the notification restating the one fact the OS has already stated for free.
+- **The title must not carry the app name.** Both platforms already print it in chrome the app does not control — Android in the notification header row, iOS in the banner header. A title reading "VitoMy" would spend the most valuable line in the notification restating the one fact the OS has already stated for free.
 - **The title must not carry the count or the time either.** Both are variable, and a title that changes on every delivery loses the thing a title is for: instant, pre-reading recognition. With a constant title, three stacked reminders read as one family of the same kind of thing, and the differences sit exactly where the eye goes second.
 - **Body-only was rejected.** A title-less notification renders the body in the title slot on both platforms, which works — but it throws away a free line and it makes the *variable* text the recognition line, which is the inversion of the point above. iOS also truncates the title more aggressively than the body, so putting the numerals there is the wrong trade.
 - **Title-only was rejected** for the same reason in reverse: it forces count + time into a line that truncates first.
@@ -181,7 +181,7 @@ Ukrainian carries **all four CLDR forms** (`one` / `few` / `many` / `other`), fo
   },
   "doseChannelName": "Dose reminders",
   "@doseChannelName": {
-    "description": "Name of the Android notification channel `doses_v1`, user-visible in the OS's own Settings > Apps > Boostque > Notifications list. It is UI copy rendered by Android, so it is localized like everything else. Android's createNotificationChannel updates the name and description of an existing channel id, so this is re-applied at startup and on every language change WITHOUT versioning the id — versioning it would reset the user's own channel customizations (DECIDED-14)"
+    "description": "Name of the Android notification channel `doses_v1`, user-visible in the OS's own Settings > Apps > VitoMy > Notifications list. It is UI copy rendered by Android, so it is localized like everything else. Android's createNotificationChannel updates the name and description of an existing channel id, so this is re-applied at startup and on every language change WITHOUT versioning the id — versioning it would reset the user's own channel customizations (DECIDED-14)"
   },
   "doseChannelDescription": "One reminder for each dose time in your schedule.",
   "@doseChannelDescription": {
@@ -379,7 +379,7 @@ A notification can outlive its cause: the supplement was deleted, the regimen pa
 
 ## 6. The Android channel — UI copy the OS renders
 
-The channel name and description are visible in **Android's own** Settings › Apps › Boostque › Notifications. They are user-visible copy and are localized like everything else.
+The channel name and description are visible in **Android's own** Settings › Apps › VitoMy › Notifications. They are user-visible copy and are localized like everything else.
 
 ### DECIDED-14 — Localized, refreshed on locale change, id NOT versioned. ⚖️ Corrects 07-RESEARCH Pitfall 8 / Q-2.
 
@@ -452,7 +452,7 @@ A notification sitting in the shade or Notification Center in the previous langu
 
 | Setting | Value | Reason |
 |---|---|---|
-| Android small icon | `@mipmap/ic_launcher` via `AndroidInitializationSettings` | The only icon the project has (`android/app/src/main/res/mipmap-*/ic_launcher.png`). Android renders the status-bar icon as a **monochrome silhouette**, so a full-colour launcher icon becomes a white blob. Accepted for v1.1: the app icon *itself* is still the Flutter default and the bundle id is still the placeholder `com.boostque.dev` (07-RESEARCH Pitfall 12). A dedicated white-on-transparent 24dp `drawable/ic_stat_dose` joins **the same pre-release checklist** as the app name, bundle id and app icon — it is polish for the same milestone, not this phase |
+| Android small icon | `@mipmap/ic_launcher` via `AndroidInitializationSettings` | The only icon the project has (`android/app/src/main/res/mipmap-*/ic_launcher.png`). Android renders the status-bar icon as a **monochrome silhouette**, so a full-colour launcher icon becomes a white blob. Accepted for v1.1: the app icon *itself* is still the Flutter default and the bundle id is still the placeholder `app.vitomy` (07-RESEARCH Pitfall 12). A dedicated white-on-transparent 24dp `drawable/ic_stat_dose` joins **the same pre-release checklist** as the app name, bundle id and app icon — it is polish for the same milestone, not this phase |
 | `AndroidNotificationDetails.color` | **not set** | § Color above — the accent budget is an in-app contract; a notification is not an app surface |
 | `DarwinNotificationDetails.badgeNumber` | **not set** (`null` ⇒ the badge is not modified) | The app has no unread concept. A badge that only clears when the user opens the app is a persistent nagging surface, which spec §2.5 rules out. Consistent with `requestBadgePermission: false` |
 | Android `groupKey` / iOS `threadIdentifier` | **neither set** | Both platforms already bundle same-app notifications automatically. An explicit Android group wants a summary notification, which means a second, differently-worded message and another id against nothing; iOS groups by app by default. Recorded so an executor does not add either speculatively |

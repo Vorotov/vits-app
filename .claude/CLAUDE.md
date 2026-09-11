@@ -2,9 +2,9 @@
 
 ## Project
 
-**Boostque**
+**VitoMy**
 
-Boostque is a mobile supplement stack planner and tracker for iOS and Android, built as a single Flutter codebase. Users define the supplements they take, schedule doses — including week-based on/off cycles and one-time courses — and track intake in a calendar with Today, Cycles, and Year views. The visual design exists as an approved HTML mockup (`claude_design_mockup/Boostque v0.1.dc.html`, 5 screens, Ukrainian-first).
+VitoMy is a mobile supplement stack planner and tracker for iOS and Android, built as a single Flutter codebase. Users define the supplements they take, schedule doses — including week-based on/off cycles and one-time courses — and track intake in a calendar with Today, Cycles, and Year views. The visual design exists as an approved HTML mockup (`claude_design_mockup/VitoMy v0.1.dc.html`, 5 screens, Ukrainian-first).
 
 **Core Value:** A user can see exactly what to take today and check it off, with cycles and breaks computed correctly — the daily loop of plan → see → mark taken must always work.
 
@@ -16,7 +16,10 @@ Boostque is a mobile supplement stack planner and tracker for iOS and Android, b
 - **Sync-ready data**: UUID primary keys, createdAt/updatedAt, soft deletes on every table
 - **i18n**: gen-l10n with ARB files; zero hardcoded user-visible strings; ICU plurals (Ukrainian one/few/many); locale-aware date/number formatting; no fixed-width text containers; direction-neutral padding (RTL-ready)
 - **Dates**: date-only values normalized as `DateTime.utc(y,m,d)` — DST safety for cycle math
-- **Bundle id**: placeholder `com.boostque.dev` — final app name and bundle id must be decided before first store release
+- **App name and bundle id**: **VitoMy**, `app.vitomy` — reverse-DNS of the
+  project's domain vitomy.app, decided 2026-09-11. Permanent from the moment
+  the App Store Connect and Play Console records are created; changing it later
+  means a new app, not an update.
 
 <!-- GSD:project-end -->
 
@@ -331,7 +334,7 @@ estimated) and `flutter analyze` is clean. Keep both true.
 - Tear down explicitly: pump an empty tree, pump, `container.dispose()`, pump
   twice more (`tearDownTree` in `test/features/today_screen_test.dart`). A
   pending midnight timer otherwise fails the test at teardown.
-- **Seed `SharedPreferences` in any test that pumps `BoostqueApp` or a screen
+- **Seed `SharedPreferences` in any test that pumps `VitomyApp` or a screen
   that reads first-run state**:
   `SharedPreferences.setMockInitialValues({'onboarding_seen': true, ...})`
   (add `'first_run_hints_seen'` when the screen carries a hint) and override
@@ -352,8 +355,8 @@ estimated) and `flutter analyze` is clean. Keep both true.
 
 ### Design and UI
 
-Anything user-visible goes through the `boostque-design` skill
-(`.claude/skills/boostque-design/SKILL.md`): token-only colour, ARB-only copy,
+Anything user-visible goes through the `vitomy-design` skill
+(`.claude/skills/vitomy-design/SKILL.md`): token-only colour, ARB-only copy,
 directional padding, the copy constraints that carry liability. Load it before
 writing a widget.
 <!-- GSD:conventions-end -->
@@ -449,7 +452,7 @@ in the app — the release manifest carries no INTERNET permission and
 payload before the first frame and does nothing else notification-shaped; the
 timezone database load, the plugin's `initialize()` and the channel creation all
 sit behind the first frame, started by `notificationBootstrapProvider`.
-`BoostqueApp` watches that provider and `notificationSyncProvider` purely to
+`VitomyApp` watches that provider and `notificationSyncProvider` purely to
 keep them alive — an unlistened provider is PAUSED in this Riverpod version, so
 without the watch production would silently schedule nothing with every test
 still green. Scheduling uses `inexactAllowWhileIdle`: no exact-alarm
@@ -470,17 +473,17 @@ rendering, observed rather than re-derived.
 ### Design system
 
 The visual language is transcribed from the approved mockup
-(`claude_design_mockup/Boostque v0.1.dc.html`) into `lib/core/theme/tokens.dart`,
+(`claude_design_mockup/VitoMy v0.1.dc.html`) into `lib/core/theme/tokens.dart`,
 which is the only file in the app permitted a hex literal; `theme.dart` is built
 exclusively from it. The full set of rules — including the ones a test enforces
-— is the `boostque-design` skill.
+— is the `vitomy-design` skill.
 <!-- GSD:architecture-end -->
 
 <!-- GSD:skills-start source:skills/ -->
 
 ## Project Skills
 
-- **boostque-design** (`.claude/skills/boostque-design/SKILL.md`) — the design
+- **vitomy-design** (`.claude/skills/vitomy-design/SKILL.md`) — the design
   system, the machine-enforced UI rules, and the copy constraints that carry
   liability. Load it before writing or editing ANY user-visible Flutter UI.
 <!-- GSD:skills-end -->

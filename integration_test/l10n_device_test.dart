@@ -9,7 +9,7 @@
 ///
 /// ## Why this file exists next to `data03_loop_test.dart`
 ///
-/// `data03_loop_test.dart` pumps `BoostqueApp` itself. It therefore proves the
+/// `data03_loop_test.dart` pumps `VitomyApp` itself. It therefore proves the
 /// core loop but says NOTHING about the async `main()` bootstrap that plan
 /// 05-01 introduced (`WidgetsFlutterBinding.ensureInitialized()` →
 /// `await SharedPreferences.getInstance()` → `runApp` with
@@ -84,19 +84,19 @@ import 'package:integration_test/integration_test.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boostque/core/domain/repositories.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/l10n/locale_controller.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/widgets/bq_add_fab.dart';
-import 'package:boostque/core/widgets/bq_nav_bar.dart';
-import 'package:boostque/features/calendar/week_strip.dart';
-import 'package:boostque/features/settings/language_picker.dart';
-import 'package:boostque/features/settings/settings_screen.dart';
-import 'package:boostque/features/stack/regimen_editor_screen.dart';
-import 'package:boostque/features/stack/stack_screen.dart';
-import 'package:boostque/main.dart' as app;
-import 'package:boostque/main.dart' show BoostqueApp;
+import 'package:vitomy/core/domain/repositories.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/l10n/locale_controller.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/widgets/bq_add_fab.dart';
+import 'package:vitomy/core/widgets/bq_nav_bar.dart';
+import 'package:vitomy/features/calendar/week_strip.dart';
+import 'package:vitomy/features/settings/language_picker.dart';
+import 'package:vitomy/features/settings/settings_screen.dart';
+import 'package:vitomy/features/stack/regimen_editor_screen.dart';
+import 'package:vitomy/features/stack/stack_screen.dart';
+import 'package:vitomy/main.dart' as app;
+import 'package:vitomy/main.dart' show VitomyApp;
 
 /// The SharedPreferences key `LocaleController` owns (D-10).
 const String _prefsKey = 'app_locale';
@@ -117,20 +117,20 @@ void main() {
       // =================================================================
       // (a) launch through the REAL entry point
       // =================================================================
-      // Not `pumpWidget(BoostqueApp())`: the whole point of this file is the
+      // Not `pumpWidget(VitomyApp())`: the whole point of this file is the
       // async bootstrap in main() — ensureInitialized, the awaited
       // SharedPreferences load, and the provider override handed to runApp.
       await app.main();
       final launchFrames = await _pumpUntilShell(tester);
       debugPrint('L10N (a): main() painted the shell after $launchFrames frame(s)');
 
-      expect(find.byType(BoostqueApp), findsOneWidget, reason: 'runApp ran');
+      expect(find.byType(VitomyApp), findsOneWidget, reason: 'runApp ran');
       expect(find.byType(BqNavBar), findsOneWidget, reason: 'app shell');
       expect(find.byType(StackScreen), findsOneWidget);
       expect(tester.takeException(), isNull, reason: 'clean bootstrap');
 
       final container = ProviderScope.containerOf(
-        tester.element(find.byType(BoostqueApp)),
+        tester.element(find.byType(VitomyApp)),
         listen: false,
       );
       // The SAME store main() resolved — a second getInstance() returns the
@@ -539,7 +539,7 @@ void main() {
       // Tear the tree down, then boot the app again through main() itself.
       await tester.pumpWidget(const SizedBox());
       await _pump(tester, 20);
-      expect(find.byType(BoostqueApp), findsNothing);
+      expect(find.byType(VitomyApp), findsNothing);
 
       await app.main();
       // Assert on the FIRST frame that contains the shell — and fail if any

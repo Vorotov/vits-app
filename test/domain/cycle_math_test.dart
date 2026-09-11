@@ -1,7 +1,7 @@
 import 'dart:math';
 
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/core/domain/models.dart';
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/core/domain/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Regimen cyclic({

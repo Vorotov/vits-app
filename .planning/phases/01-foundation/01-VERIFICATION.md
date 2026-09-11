@@ -6,13 +6,13 @@ score: 27/27 must-haves verified (structural/automated); 4 items routed to human
 behavior_unverified: 0
 overrides_applied: 0
 human_verification:
-  - test: "Launch the app on an iOS simulator AND an Android emulator; visually compare the tab bar, stub headers, and overall palette/radii/typography against claude_design_mockup/Boostque v0.1.dc.html screen 01's footer."
+  - test: "Launch the app on an iOS simulator AND an Android emulator; visually compare the tab bar, stub headers, and overall palette/radii/typography against claude_design_mockup/VitoMy v0.1.dc.html screen 01's footer."
     expected: "Three-tab shell (Stack/Calendar/Settings) renders with paper background, accent-selected tab, textFaint-unselected tabs, surfaceAlt bar with hairline top border — matching the mockup."
     why_human: "Visual fidelity to a design mockup cannot be pixel-asserted by widget tests; this is the explicit <human-check> in 01-06-PLAN.md and matches ROADMAP Success Criterion 1."
   - test: "In the same run, switch the device/simulator system language to Ukrainian and inspect the 'Налаштування' NavigationBar label."
     expected: "Label does not clip or truncate inside the ~66px destination column at 10px/w500."
     why_human: "01-06's UI-SPEC backstop truth (verification: backstop) was NOT implemented literally as FittedBox(fit: BoxFit.scaleDown) — the executor substituted a 'theme equivalence' (10px/w500 labelTextStyle) plus a passing no-overflow widget test, and explicitly deferred final confirmation to a visual simulator check (01-06-SUMMARY.md, 01-06-PLAN.md <human-check>). Automated widget tests confirm no RenderFlex overflow exception is thrown, which is strong but not equivalent to a visual clipping check on real font metrics."
-  - test: "Launch the app on a wiped/fresh iOS simulator and Android emulator; confirm the three-tab shell opens with no errors and no data, then background/foreground it; locate boostque.sqlite under the platform app-documents directory."
+  - test: "Launch the app on a wiped/fresh iOS simulator and Android emulator; confirm the three-tab shell opens with no errors and no data, then background/foreground it; locate vitomy.sqlite under the platform app-documents directory."
     expected: "Clean launch, no crash, no data; the DB file exists in the OS-backup-included default location (iOS NSDocumentDirectory / Android internal app data)."
     why_human: "Filesystem location and full-app first-run behavior are runtime/platform-specific and cannot be asserted from unit or widget tests — explicit <human-check> in both 01-05-PLAN.md and 01-07-PLAN.md, and this is ROADMAP Success Criterion 3's on-device half."
   - test: "Review `flutter pub deps --style=compact` output against the Package Legitimacy Audit table in 01-RESEARCH.md."
@@ -35,7 +35,7 @@ human_verification:
 |---|-------|--------|----------|
 | 1 | App launches on iOS sim / Android emulator to a mockup-styled three-tab shell, no network permission, no login | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (structural evidence VERIFIED, visual launch PENDING HUMAN) | `flutter build ios --simulator --debug` and `flutter build apk --debug` both succeed (independently re-run, not just SUMMARY claims); `AppShell`/`main.dart` wire `bqTheme()` + three `NavigationDestination`s correctly (code read); no `INTERNET` permission in `AndroidManifest.xml` (grep); no auth/login code anywhere in `lib/`. Visual on-device/simulator confirmation against the mockup is an explicit outstanding `<human-check>` (01-06-PLAN.md) — not yet performed. |
 | 2 | Shell/tab labels render from active locale (uk/en), no hardcoded strings, uk text doesn't clip | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (test evidence VERIFIED, visual clip-check PENDING HUMAN) | `flutter test test/widget/app_shell_test.dart` passes 3/3 (en labels + switching, uk labels with `tester.takeException()==null`, uk switching without exception) — independently re-run. Grep gates confirm zero literal `Text('...')` strings and only `EdgeInsetsDirectional` in shell/features. The UI-SPEC backstop truth (`FittedBox` shrink-to-fit) was substituted with a theme-equivalence approach per 01-06-SUMMARY.md and explicitly deferred to a visual simulator check that has not yet been performed. |
-| 3 | User data survives reinstall via OS backup: UUID PKs, createdAt/updatedAt, soft-delete columns on every table, DB included in backups by default | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (schema structurally VERIFIED, on-device backup-path confirmation PENDING HUMAN) | `lib/core/db/database.dart` (read directly): all 4 tables (`Supplements`, `Regimens`, `RegimenSlots`, `IntakeLogs`) mix in `SyncColumns` (TEXT UUID id PK, createdAt, updatedAt, nullable deletedAt); no auto-increment column anywhere (grep). `test/db/database_test.dart` (6 tests) proves introspection, unique key, UTC round-trip, soft-delete column — all pass. Grep gates confirm `android:allowBackup="false"` absent and `NSURLIsExcludedFromBackupKey` absent. Actual on-device confirmation that `boostque.sqlite` lands in the app-documents directory is an explicit outstanding `<human-check>` (01-05-PLAN.md, 01-07-PLAN.md). |
+| 3 | User data survives reinstall via OS backup: UUID PKs, createdAt/updatedAt, soft-delete columns on every table, DB included in backups by default | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED (schema structurally VERIFIED, on-device backup-path confirmation PENDING HUMAN) | `lib/core/db/database.dart` (read directly): all 4 tables (`Supplements`, `Regimens`, `RegimenSlots`, `IntakeLogs`) mix in `SyncColumns` (TEXT UUID id PK, createdAt, updatedAt, nullable deletedAt); no auto-increment column anywhere (grep). `test/db/database_test.dart` (6 tests) proves introspection, unique key, UTC round-trip, soft-delete column — all pass. Grep gates confirm `android:allowBackup="false"` absent and `NSURLIsExcludedFromBackupKey` absent. Actual on-device confirmation that `vitomy.sqlite` lands in the app-documents directory is an explicit outstanding `<human-check>` (01-05-PLAN.md, 01-07-PLAN.md). |
 | 4 | Automated tests prove cycle-math computes correct active/inactive days across a DST transition and a year boundary, before any screen consumes it | ✓ VERIFIED | `lib/core/domain/cycle_math.dart` implements `isActiveOn`/`dateOnly` exactly per D-13/D-14 (UTC-only, no `DateTime.now`, verified by direct code read + grep gate). `flutter test test/domain/cycle_math_test.dart` — 17/17 pass, independently re-run, covering the CONTEXT exemplar 56on/28off cycle crossing the 2026-10-25 EU DST transition, explicit DST-parity assertions across both 2026 EU DST transitions, and the 2026→2027 year-boundary cyclic case. This is a behavior-dependent (state-transition) truth and it IS backed by passing behavioral tests, not just presence — fully VERIFIED. |
 
 **Score:** 1/4 ROADMAP truths fully machine-verified (#4); 3/4 have full structural/automated evidence but retain an explicit, plan-mandated human visual/on-device confirmation step that has not yet been executed.
@@ -46,7 +46,7 @@ All 27 declared `must_haves.truths` across 01-01 through 01-07 were checked agai
 
 | Plan | Must-have area | Status | Evidence |
 |------|----------------|--------|----------|
-| 01-01 | Buildable scaffold, com.boostque.dev, targetSdk 36, locked deps, no networking pkg, both platform builds | ✓ VERIFIED | `flutter build ios --simulator --debug` ✓, `flutter build apk --debug` ✓ (both re-run independently); `applicationId = "com.boostque.dev"`, `targetSdk = 36` (grep); 3× `PRODUCT_BUNDLE_IDENTIFIER = com.boostque.dev;` in pbxproj (grep); no `http/dio/cronet/sqlite3_flutter_libs/google_fonts` in pubspec.yaml (grep) |
+| 01-01 | Buildable scaffold, app.vitomy, targetSdk 36, locked deps, no networking pkg, both platform builds | ✓ VERIFIED | `flutter build ios --simulator --debug` ✓, `flutter build apk --debug` ✓ (both re-run independently); `applicationId = "app.vitomy"`, `targetSdk = 36` (grep); 3× `PRODUCT_BUNDLE_IDENTIFIER = app.vitomy;` in pbxproj (grep); no `http/dio/cronet/sqlite3_flutter_libs/google_fonts` in pubspec.yaml (grep) |
 | 01-01 | Fonts bundled as single variable-font TTFs, one pubspec entry per family | ✓ VERIFIED | `assets/fonts/InstrumentSans[wdth,wght].ttf` (194KB), `assets/fonts/JetBrainsMono[wght].ttf` (187KB) exist; pubspec `fonts:` block has exactly one asset entry per family (read directly) |
 | 01-01 | `flutter analyze` clean, smoke test green | ✓ VERIFIED | `flutter analyze` → "No issues found!" (re-run); `flutter test` → 82/82 pass including smoke test (re-run) |
 | 01-01 | Package legitimacy (D3, human_judgment declared in SUMMARY) | ? UNCERTAIN → human | No automated legitimacy seam ran; `flutter pub deps --style=compact` review against 01-RESEARCH.md audit table not yet performed (routed to human verification) |
@@ -64,13 +64,13 @@ All 27 declared `must_haves.truths` across 01-01 through 01-07 were checked agai
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `lib/main.dart` | ProviderScope + BoostqueApp, theme+l10n+locale wired, AppShell home | ✓ VERIFIED | Read directly; `theme: bqTheme()`, `locale: ref.watch(localeControllerProvider)`, `supportedLocales: [en, uk]`, `home: const AppShell()` |
+| `lib/main.dart` | ProviderScope + VitomyApp, theme+l10n+locale wired, AppShell home | ✓ VERIFIED | Read directly; `theme: bqTheme()`, `locale: ref.watch(localeControllerProvider)`, `supportedLocales: [en, uk]`, `home: const AppShell()` |
 | `lib/app_shell.dart` | IndexedStack + NavigationBar, 3 destinations | ✓ VERIFIED | Read directly; matches spec exactly incl. hairline border, mockup paddings |
 | `lib/core/domain/cycle_math.dart` | `dateOnly()`, `isActiveOn()` | ✓ VERIFIED | Read directly; exact D-14 semantics |
 | `lib/core/domain/models.dart` | Value models + enums | ✓ VERIFIED | Present, imported by cycle_math.dart and database.dart |
 | `lib/core/theme/tokens.dart`, `theme.dart` | BqColors/Radii/Space/Series + bqTheme() | ✓ VERIFIED | 27 hex literals; bqTheme wired from tokens only |
 | `lib/core/l10n/*` | gen-l10n output, ARB pair, LocaleController | ✓ VERIFIED | Generated files present and non-empty; ARB has all CLDR forms |
-| `lib/core/db/database.dart` | SyncColumns + 4 tables + BoostqueDb | ✓ VERIFIED | Read directly; matches D-17/D-18/D-19/D-21 |
+| `lib/core/db/database.dart` | SyncColumns + 4 tables + VitomyDb | ✓ VERIFIED | Read directly; matches D-17/D-18/D-19/D-21 |
 | `lib/core/db/drift_repositories.dart` | 3 Drift repo impls incl. ensureLogsForDay | ✓ VERIFIED | Read directly; insertOrIgnore-only materialization, transaction-wrapped slot reconciliation |
 | `lib/core/providers.dart` | Provider graph, dispose policy | ✓ VERIFIED | Read directly; matches D-22/D-23 |
 | `drift_schemas/drift_schema_v1.json` | Schema v1 snapshot | ✓ VERIFIED | 16.8KB, mentions intake_logs |
@@ -121,7 +121,7 @@ None. Scanned all files under `lib/` and `test/` for `TBD|FIXME|XXX|TODO|HACK|PL
 See YAML frontmatter `human_verification` — 4 items:
 1. Visual mockup-fidelity comparison on iOS simulator + Android emulator (ROADMAP SC1)
 2. uk `Налаштування` label clipping check in a real simulator (01-06 backstop truth, substituted implementation)
-3. Fresh-install launch + `boostque.sqlite` app-documents location confirmation on-device (ROADMAP SC3, 01-05/01-07 human-checks)
+3. Fresh-install launch + `vitomy.sqlite` app-documents location confirmation on-device (ROADMAP SC3, 01-05/01-07 human-checks)
 4. `flutter pub deps --style=compact` legitimacy review against 01-RESEARCH.md's audit table (01-01 D3)
 
 ### Gaps Summary

@@ -111,7 +111,7 @@ abstract class AppLocalizations {
   /// Application title
   ///
   /// In en, this message translates to:
-  /// **'Boostque'**
+  /// **'VitoMy'**
   String get appTitle;
 
   /// Bottom navigation tab label for the supplement stack screen
@@ -1085,7 +1085,7 @@ abstract class AppLocalizations {
   /// **'{time} · {count, plural, one{{count} dose} other{{count} doses}}'**
   String doseReminderBody(int count, String time);
 
-  /// Name of the Android notification channel `doses_v1`, user-visible in the OS's own Settings > Apps > Boostque > Notifications list. It is UI copy rendered by Android, so it is localized like everything else. Android's createNotificationChannel updates the name and description of an existing channel id, so this is re-applied at startup and on every language change WITHOUT versioning the id — versioning it would reset the user's own channel customizations (DECIDED-14)
+  /// Name of the Android notification channel `doses_v1`, user-visible in the OS's own Settings > Apps > VitoMy > Notifications list. It is UI copy rendered by Android, so it is localized like everything else. Android's createNotificationChannel updates the name and description of an existing channel id, so this is re-applied at startup and on every language change WITHOUT versioning the id — versioning it would reset the user's own channel customizations (DECIDED-14)
   ///
   /// In en, this message translates to:
   /// **'Dose reminders'**

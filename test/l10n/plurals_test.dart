@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:boostque/core/l10n/gen/app_localizations.dart';
+import 'package:vitomy/core/l10n/gen/app_localizations.dart';
 
 // Plural-form tests loaded via AppLocalizations.delegate.load — no widget
 // pump needed (01-RESEARCH.md Pattern 6).

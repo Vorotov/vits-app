@@ -10,8 +10,8 @@
 ### Locked Decisions
 
 **Project scaffold**
-- Flutter project at the repo root: `flutter create --project-name boostque --org com.boostque --platforms ios,android .`
-- Bundle id placeholder `com.boostque.dev` on both platforms (final id is a pre-release open item)
+- Flutter project at the repo root: `flutter create --project-name vitomy --org app.vitomy --platforms ios,android .`
+- Bundle id placeholder `app.vitomy` on both platforms (final id is a pre-release open item)
 - Android targetSdk 36 (SDK 36 already installed; Play deadline 2026-08-31)
 - Toolchain (CocoaPods, JDK, Android SDK 36) is ALREADY installed — `flutter doctor` is green; do not re-plan environment setup
 
@@ -21,7 +21,7 @@
 - Do NOT add sqlite3_flutter_libs (bundled by Drift ≥2.32); do NOT hand-pin intl (let flutter_localizations resolve it)
 - Do NOT use google_fonts (runtime HTTP fetch is wrong for offline app) — bundle Instrument Sans (400/500/600/700) and JetBrains Mono (400/500) as local .ttf assets declared in pubspec `fonts:`
 
-**Design tokens & theme (from claude_design_mockup/Boostque v0.1.dc.html)**
+**Design tokens & theme (from claude_design_mockup/VitoMy v0.1.dc.html)**
 - Single tokens file `lib/core/theme/tokens.dart` + `bqTheme()` in `lib/core/theme/theme.dart`
 - Palette: canvas #EAE9E4, paper #F7F6F3 (scaffold bg), surface #FFFFFF, surfaceAlt #FBFBF9, chip #F2F1EE, field #E4E3DD, ink #17171B, textSecondary #5C5C66, textMuted #8E8E99, textFaint #A0A0A9, accent #4A4E7C, accentPressed #3D4169, accentChipBg #EDEDF4, calm #3F7A6A/#E8F1ED, warn #B07A22/#FAF1E0, risk #A8443C/#F8EBE8
 - Series palette for supplement color tags: B08A2A, 2F3457, 3F7A6A, 6B6FA8, C4685E, 2F7A85, C07A3A, 4A4E7C
@@ -44,7 +44,7 @@
 **Database (Drift, lib/core/db/)**
 - Tables: Supplements, Regimens, RegimenSlots, IntakeLogs; SyncColumns mixin on every table: TEXT UUID id PK, createdAt, updatedAt, deletedAt nullable (soft delete)
 - IntakeLogs unique key (slotId, date); date stored as UTC-midnight DateTime; status int = DoseStatus.index
-- `BoostqueDb.forTesting(NativeDatabase.memory())` + `BoostqueDb.open()` via driftDatabase(name: 'boostque')
+- `VitomyDb.forTesting(NativeDatabase.memory())` + `VitomyDb.open()` via driftDatabase(name: 'vitomy')
 - Export drift schema snapshot (`drift_schema_v1.json`) at schema version 1 — migration discipline starts now
 - Verify DB file lives in default app-documents location included in OS backups (DATA-02); document this in code comment
 - Repository interfaces (SupplementRepository, RegimenRepository, IntakeRepository) in core/domain; Drift implementations in core/db; `ensureLogsForDay` idempotent materialization; StackEntry/DayDose view models; Riverpod providers in core/providers.dart
@@ -90,7 +90,7 @@ Phase 1 is a pure-scaffold phase: no network, no third-party backend, and every 
 
 ## Architectural Responsibility Map
 
-Boostque is a single-codebase mobile app (no server tier); the "tiers" below are the app's own internal layers, matching `ARCHITECTURE.md`'s system overview.
+VitoMy is a single-codebase mobile app (no server tier); the "tiers" below are the app's own internal layers, matching `ARCHITECTURE.md`'s system overview.
 
 | Capability | Primary Tier | Secondary Tier | Rationale |
 |------------|-------------|----------------|-----------|
@@ -139,7 +139,7 @@ Boostque is a single-codebase mobile app (no server tier); the "tiers" below are
 
 **Installation:**
 ```bash
-flutter create --project-name boostque --org com.boostque --platforms ios,android .
+flutter create --project-name vitomy --org app.vitomy --platforms ios,android .
 
 flutter pub add flutter_riverpod drift drift_flutter path_provider uuid shared_preferences
 flutter pub add flutter_localizations --sdk=flutter
@@ -178,7 +178,7 @@ flutter pub add -d build_runner drift_dev flutter_lints mocktail
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  App start                                                       │
-│  main() → ProviderScope → BoostqueApp (MaterialApp)              │
+│  main() → ProviderScope → VitomyApp (MaterialApp)              │
 │      resolves locale (system uk/en, fallback en)                 │
 └───────────────────────────┬───────────────────────────────────────┘
                              ▼
@@ -198,9 +198,9 @@ flutter pub add -d build_runner drift_dev flutter_lints mocktail
 ┌─────────────────────────────────────────────────────────────────┐
 │  Repository interfaces (core/domain/repositories.dart)            │
 │      ↕ implemented by                                             │
-│  Drift repository impls (core/db) → BoostqueDb (Drift/SQLite)     │
+│  Drift repository impls (core/db) → VitomyDb (Drift/SQLite)     │
 │      Tables: Supplements, Regimens, RegimenSlots, IntakeLogs      │
-│      file: getApplicationDocumentsDirectory()/boostque.sqlite     │
+│      file: getApplicationDocumentsDirectory()/vitomy.sqlite     │
 └───────────────────────────┬───────────────────────────────────────┘
                              │ calls into (pure functions, no I/O)
                              ▼
@@ -218,7 +218,7 @@ A reader can trace: app boot → locale resolution → shell renders three local
 ```
 lib/
 ├── core/
-│   ├── db/              # BoostqueDb (@DriftDatabase), tables, Drift-backed repo impls
+│   ├── db/              # VitomyDb (@DriftDatabase), tables, Drift-backed repo impls
 │   ├── domain/           # pure Dart: models, cycle_math.dart, repository interfaces
 │   ├── l10n/
 │   │   ├── arb/          # app_en.arb, app_uk.arb (source of truth)
@@ -249,7 +249,7 @@ test/
 ### Pattern 1: `driftDatabase(name:)` — the only supported way to open a Drift DB in Flutter
 
 **What:** `drift_flutter`'s `driftDatabase` function returns a platform-appropriate `QueryExecutor`. On native platforms (including iOS and Android) it resolves the file path via `path_provider`'s `getApplicationDocumentsDirectory()`, and stores the database as `$name.sqlite` inside that directory.
-**When to use:** The `BoostqueDb` constructor's `super(...)` call, for both `.open()` (real app) and never for `.forTesting()` (use `NativeDatabase.memory()` there instead).
+**When to use:** The `VitomyDb` constructor's `super(...)` call, for both `.open()` (real app) and never for `.forTesting()` (use `NativeDatabase.memory()` there instead).
 **Example:**
 ```dart
 // Source: https://pub.dev/documentation/drift_flutter/latest/drift_flutter/driftDatabase.html [CITED]
@@ -260,11 +260,11 @@ import 'package:drift_flutter/drift_flutter.dart';
 part 'database.g.dart';
 
 @DriftDatabase(tables: [Supplements, Regimens, RegimenSlots, IntakeLogs])
-class BoostqueDb extends _$BoostqueDb {
-  BoostqueDb() : super(driftDatabase(name: 'boostque'));
+class VitomyDb extends _$VitomyDb {
+  VitomyDb() : super(driftDatabase(name: 'vitomy'));
 
   // Test-only constructor — never touches disk, never touches OS backup paths.
-  BoostqueDb.forTesting(super.executor);
+  VitomyDb.forTesting(super.executor);
 
   @override
   int get schemaVersion => 1;
@@ -334,7 +334,7 @@ Note: `insertOnConflictUpdate` (`into(table).insertOnConflictUpdate(row)`) is th
 
 ### Pattern 4: Drift schema export — `dart run drift_dev schema dump`
 
-**What:** Exports the current schema (as defined by `schemaVersion` in `BoostqueDb`) to a versioned JSON file, giving migration tooling something to diff/test against from the very first version.
+**What:** Exports the current schema (as defined by `schemaVersion` in `VitomyDb`) to a versioned JSON file, giving migration tooling something to diff/test against from the very first version.
 **When to use:** Immediately after the Drift schema lands in this phase (schemaVersion = 1), and again every time `schemaVersion` is bumped in a later phase.
 **Example:**
 ```bash
@@ -413,7 +413,7 @@ Repository-level `StreamProvider`s (`_supplementsProvider`, `_regimensProvider` 
 // Source: standard gen-l10n testing pattern; delegate API confirmed via
 // Flutter's own gen_l10n-generated `LocalizationsDelegate` contract [CITED]
 import 'package:flutter_test/flutter_test.dart';
-import 'package:boostque/core/l10n/gen/app_localizations.dart';
+import 'package:vitomy/core/l10n/gen/app_localizations.dart';
 
 void main() {
   test('uk substancesCount covers all four CLDR forms + 11-14 exception', () async {
@@ -456,7 +456,7 @@ void main() {
 
 ### Pitfall 2: Assuming Instrument Sans/JetBrains Mono ship as 4/2 static-weight files
 **What goes wrong:** `google/fonts`'s repository stores only variable-font files for both families — `ofl/instrumentsans/InstrumentSans[wdth,wght].ttf` (+ `-Italic` variant) and `ofl/jetbrainsmono/JetBrainsMono[wght].ttf` (+ `-Italic` variant) [VERIFIED: `github.com/google/fonts` API directory listing fetched this session — filenames quoted verbatim above]. A task written to "download the 400/500/600/700 static files" will fail to find them.
-**Why it happens:** The mockup's CSS `@import` URL (`fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500`) [VERIFIED: read `claude_design_mockup/Boostque v0.1.dc.html` lines 12–16 this session] requests specific weight *instances* via the CSS API, which serves subset/converted files on the fly — it does not imply 4 separate source files exist in the font's own repo.
+**Why it happens:** The mockup's CSS `@import` URL (`fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500`) [VERIFIED: read `claude_design_mockup/VitoMy v0.1.dc.html` lines 12–16 this session] requests specific weight *instances* via the CSS API, which serves subset/converted files on the fly — it does not imply 4 separate source files exist in the font's own repo.
 **How to avoid:** Download the single variable-font file per family from `raw.githubusercontent.com/google/fonts/main/ofl/instrumentsans/InstrumentSans[wdth,wght].ttf` and `raw.githubusercontent.com/google/fonts/main/ofl/jetbrainsmono/JetBrainsMono[wght].ttf` (URL-encode `[`/`]`/`,` as `%5B`/`%5D`/`%2C` if fetching programmatically), commit into `assets/fonts/`, and declare **one** `fonts:` entry per family in `pubspec.yaml` (no `weight:` fanning needed — see Code Examples). Both fonts' variable weight axes cover the needed range (Instrument Sans: 400–700; JetBrains Mono: 100–800) [CITED: WebSearch of Google Fonts specimen pages], so 400/500/600/700 and 400/500 respectively render correctly from the single file.
 **Warning signs:** A task or file listing mentions `InstrumentSans-Medium.ttf`, `InstrumentSans-SemiBold.ttf`, etc. — those files do not exist in the upstream source.
 **Phase to address:** The font-bundling task in this phase.
@@ -469,7 +469,7 @@ void main() {
 flutter:
   generate: true
 ```
-**Warning signs:** `import 'package:boostque/core/l10n/gen/app_localizations.dart';` fails to resolve even though `l10n.yaml` looks correct; `lib/core/l10n/gen/` is empty after `flutter pub get`.
+**Warning signs:** `import 'package:vitomy/core/l10n/gen/app_localizations.dart';` fails to resolve even though `l10n.yaml` looks correct; `lib/core/l10n/gen/` is empty after `flutter pub get`.
 **Phase to address:** The i18n-infrastructure task in this phase.
 
 ### Pitfall 4: Confusing `insertOnConflictUpdate` with `insertOrIgnore` in materialization
@@ -491,7 +491,7 @@ Verified patterns from official sources (also see Architecture Patterns above fo
 ```bash
 # Source: CONTEXT.md locked decision, syntax cross-checked against
 # docs.flutter.dev create-command reference [CITED]
-flutter create --project-name boostque --org com.boostque --platforms ios,android .
+flutter create --project-name vitomy --org app.vitomy --platforms ios,android .
 ```
 
 ### `l10n.yaml` (matches CONTEXT.md's locked options exactly)
@@ -546,7 +546,7 @@ flutter:
 ```
 ```dart
 // Usage — no FontVariation needed, FontWeight alone selects the wght instance:
-Text('Boostque', style: TextStyle(fontFamily: 'Instrument Sans', fontWeight: FontWeight.w600))
+Text('VitoMy', style: TextStyle(fontFamily: 'Instrument Sans', fontWeight: FontWeight.w600))
 ```
 
 ## State of the Art
@@ -582,7 +582,7 @@ Text('Boostque', style: TextStyle(fontFamily: 'Instrument Sans', fontWeight: Fon
 
 2. **Whether to also bundle the italic variable-font files**
    - What we know: `google/fonts` ships `InstrumentSans-Italic[wdth,wght].ttf` and `JetBrainsMono-Italic[wght].ttf` alongside the uprights.
-   - What's unclear: The approved mockup (`claude_design_mockup/Boostque v0.1.dc.html`) was not audited this session for any `font-style: italic` usage — CONTEXT.md's font-weight list (400/500/600/700 and 400/500) does not mention italic.
+   - What's unclear: The approved mockup (`claude_design_mockup/VitoMy v0.1.dc.html`) was not audited this session for any `font-style: italic` usage — CONTEXT.md's font-weight list (400/500/600/700 and 400/500) does not mention italic.
    - Recommendation: Skip bundling italic files unless a planner-time grep of the mockup CSS finds `font-style:italic` in use; this is a small, cheap decision to defer to the planner/executor rather than research, since it's a one-line pubspec addition either way.
 
 ## Environment Availability
@@ -611,7 +611,7 @@ Text('Boostque', style: TextStyle(fontFamily: 'Instrument Sans', fontWeight: Fon
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
 | DATA-01 | App has zero network dependency (no `http`/`dio`/network package anywhere) | static/manual | `grep -rE "package:(http|dio|cronet)" lib/ pubspec.yaml` (expect no matches) — not expressible as a `flutter_test` unit test since it's an absence-of-dependency check, not a runtime behavior | ❌ Wave 0 — add as a documented manual/CI grep step, not a `test/` file |
-| DATA-01 | `BoostqueDb.open()` / repository calls succeed with no network I/O | integration (implicit) | `flutter test test/db/*_test.dart` using `BoostqueDb.forTesting(NativeDatabase.memory())` — passes with no network permission on the test runner, which is itself the proof | ❌ Wave 0 |
+| DATA-01 | `VitomyDb.open()` / repository calls succeed with no network I/O | integration (implicit) | `flutter test test/db/*_test.dart` using `VitomyDb.forTesting(NativeDatabase.memory())` — passes with no network permission on the test runner, which is itself the proof | ❌ Wave 0 |
 | DATA-02 | Every table has `id` (UUID TEXT PK), `createdAt`, `updatedAt`, `deletedAt` (nullable) | unit | `flutter test test/db/sync_columns_test.dart` — introspect `db.allTables` columns programmatically and assert the four `SyncColumns` fields exist on each | ❌ Wave 0 |
 | DATA-02 | `IntakeLogs` uniqueKeys `(slotId, date)` rejects duplicate materialization | unit | `flutter test test/db/materialization_test.dart` — call `ensureLogsForDay` twice for the same day, assert row count unchanged | ❌ Wave 0 |
 | DATA-02 | DB file lives in default OS-backup-included location; no `allowBackup="false"`/`NSURLIsExcludedFromBackupKey` set | manual-only | Manual review of generated `android/app/src/main/AndroidManifest.xml` and `ios/Runner/Info.plist` after `flutter create` — not automatable via `flutter_test`, since these are static config files, not runtime behavior | ❌ Wave 0 — add as a manual checklist item in the plan, justification: OS backup inclusion is a build-config property, not something `flutter_test` can introspect from a test-runner sandbox |
@@ -665,7 +665,7 @@ Text('Boostque', style: TextStyle(fontFamily: 'Instrument Sans', fontWeight: Fon
 - [github.com/google/fonts](https://github.com/google/fonts) `ofl/instrumentsans/` and `ofl/jetbrainsmono/` directory listings via GitHub Contents API — confirmed only variable-font `.ttf` files exist for both families, exact filenames quoted (fetched this session via `curl`)
 - [unicode.org/cldr/charts/49/supplemental/language_plural_rules.html](https://www.unicode.org/cldr/charts/49/supplemental/language_plural_rules.html) — Ukrainian plural rule formulas for `one`/`few`/`many`/`other`, quoted verbatim (fetched this session)
 - pub.dev direct fetch this session: [drift](https://pub.dev/packages/drift) 2.34.3 (publisher `simonbinder.eu`), [flutter_riverpod](https://pub.dev/packages/flutter_riverpod) 3.4.2 (publisher `dash-overflow.net`)
-- Project-internal, read this session: `/Users/dima/supplements/.planning/phases/01-foundation/01-CONTEXT.md`, `/Users/dima/supplements/.planning/REQUIREMENTS.md`, `/Users/dima/supplements/.planning/STATE.md`, `/Users/dima/supplements/.planning/research/STACK.md`, `/Users/dima/supplements/.planning/research/PITFALLS.md`, `/Users/dima/supplements/.planning/research/ARCHITECTURE.md`, `/Users/dima/supplements/.planning/config.json`, `/Users/dima/supplements/.claude/CLAUDE.md`, `/Users/dima/supplements/claude_design_mockup/Boostque v0.1.dc.html` (font `@import` line, quoted verbatim), `/Users/dima/supplements/.gitignore` (contents quoted verbatim)
+- Project-internal, read this session: `/Users/dima/supplements/.planning/phases/01-foundation/01-CONTEXT.md`, `/Users/dima/supplements/.planning/REQUIREMENTS.md`, `/Users/dima/supplements/.planning/STATE.md`, `/Users/dima/supplements/.planning/research/STACK.md`, `/Users/dima/supplements/.planning/research/PITFALLS.md`, `/Users/dima/supplements/.planning/research/ARCHITECTURE.md`, `/Users/dima/supplements/.planning/config.json`, `/Users/dima/supplements/.claude/CLAUDE.md`, `/Users/dima/supplements/claude_design_mockup/VitoMy v0.1.dc.html` (font `@import` line, quoted verbatim), `/Users/dima/supplements/.gitignore` (contents quoted verbatim)
 
 ### Secondary (MEDIUM confidence)
 - [pub.dev/documentation/path_provider](https://pub.dev/documentation/path_provider/latest/path_provider/getApplicationDocumentsDirectory.html) + corroborating WebSearch — `getApplicationDocumentsDirectory()` → iOS `NSDocumentDirectory` (iCloud-backed by default unless `NSURLIsExcludedFromBackupKey` set) and Android internal app-data directory (Auto Backup–eligible by default for targetSdk ≥23 unless `allowBackup="false"`)

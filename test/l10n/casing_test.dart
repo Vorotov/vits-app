@@ -15,7 +15,7 @@ library;
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:boostque/core/l10n/casing.dart';
+import 'package:vitomy/core/l10n/casing.dart';
 
 void main() {
   test('the shipped locales get the default Unicode mapping', () {

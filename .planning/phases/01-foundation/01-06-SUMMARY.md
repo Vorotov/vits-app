@@ -14,7 +14,7 @@ requires:
 provides:
   - AppShell — IndexedStack + NavigationBar three-tab shell (Stack / Calendar / Settings)
   - Three localized stub screens (heading-only designed Phase 1 state)
-  - Fully-wired BoostqueApp: bqTheme() + AppLocalizations delegates + locale resolution (override → system → en fallback)
+  - Fully-wired VitomyApp: bqTheme() + AppLocalizations delegates + locale resolution (override → system → en fallback)
   - Widget tests proving en + uk labels, tab switching, and overflow-free uk rendering
 affects: [02-stack-management, 03-calendar, 04-planners, 05-settings-l10n]
 
@@ -103,14 +103,14 @@ status: complete
 
 - AppShell: IndexedStack over three stub screens + NavigationBar with the mockup's flat hairline top border (BqColors.hairline, 1px, elevation 0 from theme) and mockup-exact paddings (top 10, start/end 22, EdgeInsetsDirectional, hardcoded per UI-SPEC exemption); UI-SPEC icon set (inventory_2 / calendar_today / settings, outlined→filled)
 - Three heading-only stub screens (the designed Phase 1 state) using context.l10n + textTheme.headlineSmall, no fixed-width text containers
-- BoostqueApp rewritten as ConsumerWidget: `theme: bqTheme()`, `locale: ref.watch(localeControllerProvider)` (null = system), `supportedLocales: [en, uk]` en-first fallback, `onGenerateTitle` via appTitle ARB key — zero literal user-visible strings
+- VitomyApp rewritten as ConsumerWidget: `theme: bqTheme()`, `locale: ref.watch(localeControllerProvider)` (null = system), `supportedLocales: [en, uk]` en-first fallback, `onGenerateTitle` via appTitle ARB key — zero literal user-visible strings
 - Widget tests (TDD): en labels + tab switching, uk labels (Стек/Календар/Налаштування) with overflow guard, uk tab-switch overflow guard — all green; full suite 55 tests green, `flutter analyze` 0 issues
 
 ## Task Commits
 
 1. **Task 1: AppShell + three stub screens** - `9431132` (feat)
 2. **Task 2 RED: failing widget tests** - `eb975fc` (test)
-3. **Task 2 GREEN: wire BoostqueApp** - `fa0a8dc` (feat)
+3. **Task 2 GREEN: wire VitomyApp** - `fa0a8dc` (feat)
 
 ## Files Created/Modified
 
@@ -118,7 +118,7 @@ status: complete
 - `lib/features/stack/stack_screen.dart` - Stack stub (localized heading only)
 - `lib/features/calendar/calendar_screen.dart` - Calendar stub (localized heading only)
 - `lib/features/settings/settings_screen.dart` - Settings stub (localized heading only)
-- `lib/main.dart` - BoostqueApp ConsumerWidget wiring theme + l10n + locale
+- `lib/main.dart` - VitomyApp ConsumerWidget wiring theme + l10n + locale
 - `test/widget/app_shell_test.dart` - en/uk label, switching, and overflow widget tests
 
 ## Decisions Made

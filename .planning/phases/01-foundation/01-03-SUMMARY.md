@@ -123,7 +123,7 @@ RED gate (`test(...)` commits 50d53f1, 4c433f8) and GREEN gate (`feat(...)` comm
 
 ## Issues Encountered
 
-- `claude_design_mockup/Boostque v0.1.dc.html` is untracked in git and therefore absent from the isolated worktree. Locked hex values from 01-CONTEXT.md / 01-UI-SPEC.md were used as ground truth (as the plan specifies); the mockup CSS was additionally cross-checked read-only from the main checkout — all hexes match.
+- `claude_design_mockup/VitoMy v0.1.dc.html` is untracked in git and therefore absent from the isolated worktree. Locked hex values from 01-CONTEXT.md / 01-UI-SPEC.md were used as ground truth (as the plan specifies); the mockup CSS was additionally cross-checked read-only from the main checkout — all hexes match.
 - Minor compile fix during Task 1 GREEN: `library;` directive had to precede the import in tokens.dart (caught by the test run before commit; not a deviation).
 
 ## Orchestrator Notes

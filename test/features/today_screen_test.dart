@@ -26,25 +26,25 @@ library;
 
 import 'dart:async';
 
-import 'package:boostque/core/db/database.dart' show BoostqueDb, IntakeLog;
-import 'package:boostque/core/db/drift_repositories.dart'
+import 'package:vitomy/core/db/database.dart' show VitomyDb, IntakeLog;
+import 'package:vitomy/core/db/drift_repositories.dart'
     show DriftIntakeRepository;
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart'
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart'
     show DayDose, IntakeRepository;
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/l10n/locale_controller.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/theme/tokens.dart';
-import 'package:boostque/core/today_controller.dart';
-import 'package:boostque/features/calendar/calendar_providers.dart';
-import 'package:boostque/features/calendar/today_screen.dart';
-import 'package:boostque/features/calendar/day_block_section.dart';
-import 'package:boostque/features/calendar/day_progress_ring.dart';
-import 'package:boostque/features/calendar/dose_row.dart';
-import 'package:boostque/features/calendar/week_strip.dart';
-import 'package:boostque/features/settings/settings_screen.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/l10n/locale_controller.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/theme/tokens.dart';
+import 'package:vitomy/core/today_controller.dart';
+import 'package:vitomy/features/calendar/calendar_providers.dart';
+import 'package:vitomy/features/calendar/today_screen.dart';
+import 'package:vitomy/features/calendar/day_block_section.dart';
+import 'package:vitomy/features/calendar/day_progress_ring.dart';
+import 'package:vitomy/features/calendar/dose_row.dart';
+import 'package:vitomy/features/calendar/week_strip.dart';
+import 'package:vitomy/features/settings/settings_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -64,7 +64,7 @@ void main() {
     note: '',
   );
 
-  late BoostqueDb db;
+  late VitomyDb db;
 
   late SharedPreferences seededPrefs;
 
@@ -101,7 +101,7 @@ void main() {
     return ProviderContainer(
       overrides: [
         dbProvider.overrideWith((ref) {
-          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          final database = VitomyDb.forTesting(NativeDatabase.memory());
           ref.onDispose(database.close);
           db = database;
           return database;
@@ -1600,7 +1600,7 @@ void main() {
         // TodayScreen reads the dismissed-hint set since v1.2.
         sharedPreferencesProvider.overrideWithValue(seededPrefs),
         dbProvider.overrideWith((ref) {
-          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          final database = VitomyDb.forTesting(NativeDatabase.memory());
           ref.onDispose(database.close);
           db = database;
           return database;
@@ -1968,7 +1968,7 @@ void main() {
         // TodayScreen reads the dismissed-hint set since v1.2.
         sharedPreferencesProvider.overrideWithValue(seededPrefs),
         dbProvider.overrideWith((ref) {
-          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          final database = VitomyDb.forTesting(NativeDatabase.memory());
           ref.onDispose(database.close);
           db = database;
           return database;
@@ -2842,7 +2842,7 @@ void main() {
         // TodayScreen reads the dismissed-hint set since v1.2.
         sharedPreferencesProvider.overrideWithValue(seededPrefs),
         dbProvider.overrideWith((ref) {
-          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          final database = VitomyDb.forTesting(NativeDatabase.memory());
           ref.onDispose(database.close);
           db = database;
           return database;
@@ -2959,7 +2959,7 @@ void main() {
           // TodayScreen reads the dismissed-hint set since v1.2.
           sharedPreferencesProvider.overrideWithValue(seededPrefs),
           dbProvider.overrideWith((ref) {
-            final database = BoostqueDb.forTesting(NativeDatabase.memory());
+            final database = VitomyDb.forTesting(NativeDatabase.memory());
             ref.onDispose(database.close);
             db = database;
             return database;
@@ -3509,7 +3509,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final container = ProviderContainer(overrides: [
         dbProvider.overrideWith((ref) {
-          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          final database = VitomyDb.forTesting(NativeDatabase.memory());
           ref.onDispose(database.close);
           db = database;
           return database;
@@ -3574,7 +3574,7 @@ void main() {
       // loading, AND an error surface localized like any other screen state.
       final container = ProviderContainer(overrides: [
         dbProvider.overrideWith((ref) {
-          final database = BoostqueDb.forTesting(NativeDatabase.memory());
+          final database = VitomyDb.forTesting(NativeDatabase.memory());
           ref.onDispose(database.close);
           db = database;
           return database;

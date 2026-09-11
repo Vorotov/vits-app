@@ -7,7 +7,7 @@
 /// flutter test integration_test/data03_loop_test.dart -d <device-id>
 /// ```
 ///
-/// It boots `package:boostque/main.dart` unchanged — the on-device SQLite file
+/// It boots `package:vitomy/main.dart` unchanged — the on-device SQLite file
 /// behind `dbProvider`, the real Drift streams, the real Riverpod graph — and
 /// walks the loop a user walks: add a supplement, schedule a two-slot cyclic
 /// regimen, see today's doses grouped into time blocks, mark one taken, skip
@@ -47,19 +47,19 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boostque/core/domain/cycle_math.dart' show dateOnly;
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/today_controller.dart';
-import 'package:boostque/core/widgets/bq_add_fab.dart';
-import 'package:boostque/core/widgets/bq_nav_bar.dart';
-import 'package:boostque/features/calendar/today_screen.dart';
-import 'package:boostque/features/calendar/day_progress_ring.dart';
-import 'package:boostque/features/calendar/dose_row.dart';
-import 'package:boostque/features/stack/regimen_editor_screen.dart';
-import 'package:boostque/features/stack/stack_screen.dart';
-import 'package:boostque/main.dart' show BoostqueApp;
+import 'package:vitomy/core/domain/cycle_math.dart' show dateOnly;
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/today_controller.dart';
+import 'package:vitomy/core/widgets/bq_add_fab.dart';
+import 'package:vitomy/core/widgets/bq_nav_bar.dart';
+import 'package:vitomy/features/calendar/today_screen.dart';
+import 'package:vitomy/features/calendar/day_progress_ring.dart';
+import 'package:vitomy/features/calendar/dose_row.dart';
+import 'package:vitomy/features/stack/regimen_editor_screen.dart';
+import 'package:vitomy/features/stack/stack_screen.dart';
+import 'package:vitomy/main.dart' show VitomyApp;
 
 /// Prefix every supplement this test creates carries.
 const String _namePrefix = 'DATA-03 Тест';
@@ -83,7 +83,7 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       ProviderScope bootScope() => ProviderScope(
             overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
-            child: const BoostqueApp(),
+            child: const VitomyApp(),
           );
 
       await tester.pumpWidget(bootScope());
@@ -100,7 +100,7 @@ void main() {
       expect(find.text('Мій стек'), findsOneWidget, reason: 'Stack tab shown');
 
       final container = ProviderScope.containerOf(
-        tester.element(find.byType(BoostqueApp)),
+        tester.element(find.byType(VitomyApp)),
         listen: false,
       );
       final today = container.read(todayProvider);
@@ -373,7 +373,7 @@ void main() {
       expect(find.byType(StackScreen), findsOneWidget, reason: 'app rebooted');
 
       final container2 = ProviderScope.containerOf(
-        tester.element(find.byType(BoostqueApp)),
+        tester.element(find.byType(VitomyApp)),
         listen: false,
       );
       final reloaded = await _stack(tester, container2);

@@ -13,9 +13,9 @@
 /// sealed [BlockTag] hierarchy and maps each case to an ARB key itself.
 library;
 
-import 'package:boostque/core/domain/cycle_math.dart';
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/domain/repositories.dart';
+import 'package:vitomy/core/domain/cycle_math.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/domain/repositories.dart';
 
 /// Start minute of each time block, in chronological order (DECIDED-1):
 /// Ранок 00:00-11:59, День 12:00-17:59, Вечір 18:00-21:59, Ніч 22:00-23:59.

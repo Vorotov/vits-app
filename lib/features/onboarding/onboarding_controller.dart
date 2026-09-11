@@ -6,7 +6,7 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:boostque/core/providers.dart';
+import 'package:vitomy/core/providers.dart';
 
 /// The persisted "onboarding shown" flag.
 ///
@@ -65,7 +65,7 @@ class OnboardingController extends Notifier<bool> {
         FlutterErrorDetails(
           exception: error,
           stack: stack,
-          library: 'boostque',
+          library: 'vitomy',
           context: ErrorDescription('persisting the onboarding seen flag'),
         ),
       );

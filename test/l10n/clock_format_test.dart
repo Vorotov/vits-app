@@ -13,9 +13,9 @@ library;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-import 'package:boostque/core/l10n/clock_format.dart';
-import 'package:boostque/core/l10n/gen/app_localizations.dart';
-import 'package:boostque/core/notifications/notification_copy.dart';
+import 'package:vitomy/core/l10n/clock_format.dart';
+import 'package:vitomy/core/l10n/gen/app_localizations.dart';
+import 'package:vitomy/core/notifications/notification_copy.dart';
 
 void main() {
   // `DateFormat` with an explicit locale needs that locale's symbols loaded.

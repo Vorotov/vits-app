@@ -6,10 +6,10 @@
 /// slot exactly at now" boundary a test rather than a race.
 library;
 
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/notifications/notification_constants.dart';
-import 'package:boostque/core/notifications/notification_plan.dart';
-import 'package:boostque/core/notifications/notification_scheduler.dart';
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/notifications/notification_constants.dart';
+import 'package:vitomy/core/notifications/notification_plan.dart';
+import 'package:vitomy/core/notifications/notification_scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 DoseSlot slot(int minutes, {String id = 'sl'}) =>

@@ -11,8 +11,8 @@ library;
 
 import 'package:flutter/material.dart';
 
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/theme/tokens.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/theme/tokens.dart';
 
 class BqHintCard extends StatelessWidget {
   const BqHintCard({super.key, required this.text, required this.onDismiss});

@@ -21,10 +21,10 @@ library;
 
 import 'dart:io';
 
-import 'package:boostque/core/l10n/gen/app_localizations.dart';
-import 'package:boostque/core/notifications/notification_copy.dart';
-import 'package:boostque/core/notifications/notification_locale.dart';
-import 'package:boostque/core/notifications/notification_providers.dart';
+import 'package:vitomy/core/l10n/gen/app_localizations.dart';
+import 'package:vitomy/core/notifications/notification_copy.dart';
+import 'package:vitomy/core/notifications/notification_locale.dart';
+import 'package:vitomy/core/notifications/notification_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

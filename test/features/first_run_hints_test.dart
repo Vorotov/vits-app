@@ -12,15 +12,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:boostque/core/db/database.dart' show BoostqueDb;
-import 'package:boostque/core/domain/models.dart';
-import 'package:boostque/core/l10n/l10n.dart';
-import 'package:boostque/core/providers.dart';
-import 'package:boostque/core/theme/theme.dart';
-import 'package:boostque/core/today_controller.dart';
-import 'package:boostque/core/widgets/bq_hint_card.dart';
-import 'package:boostque/features/calendar/today_screen.dart';
-import 'package:boostque/features/onboarding/first_run_hints.dart';
+import 'package:vitomy/core/db/database.dart' show VitomyDb;
+import 'package:vitomy/core/domain/models.dart';
+import 'package:vitomy/core/l10n/l10n.dart';
+import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/theme/theme.dart';
+import 'package:vitomy/core/today_controller.dart';
+import 'package:vitomy/core/widgets/bq_hint_card.dart';
+import 'package:vitomy/features/calendar/today_screen.dart';
+import 'package:vitomy/features/onboarding/first_run_hints.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -109,7 +109,7 @@ void main() {
         overrides: [
           sharedPreferencesProvider.overrideWithValue(prefs),
           dbProvider.overrideWith((ref) {
-            final db = BoostqueDb.forTesting(NativeDatabase.memory());
+            final db = VitomyDb.forTesting(NativeDatabase.memory());
             ref.onDispose(db.close);
             return db;
           }),

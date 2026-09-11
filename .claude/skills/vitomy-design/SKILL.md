@@ -1,9 +1,9 @@
 ---
-name: boostque-design
-description: Use when designing or building ANY user-visible Flutter UI in the Boostque app — new screens, widgets, copy, colours, spacing, or edits to existing ones. Encodes the design system, the machine-enforced rules, and the copy constraints that carry liability.
+name: vitomy-design
+description: Use when designing or building ANY user-visible Flutter UI in the VitoMy app — new screens, widgets, copy, colours, spacing, or edits to existing ones. Encodes the design system, the machine-enforced rules, and the copy constraints that carry liability.
 ---
 
-# Boostque design
+# VitoMy design
 
 The visual language is not yours to invent. It exists, it is transcribed
 from an approved artefact, and most of it is enforced by tests that will
@@ -13,7 +13,7 @@ fail your commit. Read this before writing a widget.
 
 | Thing | File | Status |
 |---|---|---|
-| The approved design | `claude_design_mockup/Boostque v0.1.dc.html` | 5 screens, Ukrainian-first. The source every token cites. |
+| The approved design | `claude_design_mockup/VitoMy v0.1.dc.html` | 5 screens, Ukrainian-first. The source every token cites. |
 | Colours, radii, spacing | `lib/core/theme/tokens.dart` | The only place a hex literal may appear. |
 | `ThemeData` | `lib/core/theme/theme.dart` | Built exclusively from tokens; contains zero hex literals itself. |
 | Shared widgets | `lib/core/widgets/` | `BqNavBar`, `BqAddFab`, `BqSegmented`, `BqSettingsGearRow`, `BqHintCard`. |

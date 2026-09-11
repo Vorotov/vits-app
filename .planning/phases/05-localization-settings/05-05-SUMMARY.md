@@ -182,7 +182,7 @@ Three items. Each needs a device identifier and a platform version recorded besi
 - With the picker open, tap a row: confirm **no perceptible lag and no flash** (the state-first ordering keeps the disk write off the repaint path).
 - Force-quit, then cold-start: confirm the stored language is on the **first painted frame**, with no system-language frame before it.
 - **Evidence required:** both observations, per platform, with device model and OS version.
-- **Why this one cannot be traded for anything cheaper — recorded per the plan's acceptance criterion (T-05-10):** *Backstop 15's physical cold start is the ONLY evidence covering the async `main()` bootstrap.* This phase made `main()` async and injected a `SharedPreferences` instance — exactly the class of change that breaks a real launch while every widget test stays green. `integration_test/data03_loop_test.dart` pumps `BoostqueApp` **directly** (lines 76/328) and never calls `main()`, so P1 proves the loop regression only and cannot substitute here. Neither can any widget test.
+- **Why this one cannot be traded for anything cheaper — recorded per the plan's acceptance criterion (T-05-10):** *Backstop 15's physical cold start is the ONLY evidence covering the async `main()` bootstrap.* This phase made `main()` async and injected a `SharedPreferences` instance — exactly the class of change that breaks a real launch while every widget test stays green. `integration_test/data03_loop_test.dart` pumps `VitomyApp` **directly** (lines 76/328) and never calls `main()`, so P1 proves the loop regression only and cannot substitute here. Neither can any widget test.
 
 ---
 

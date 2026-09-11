@@ -106,5 +106,5 @@ flutter pub add -d build_runner drift_dev riverpod_generator riverpod_lint custo
 - Flutter Gems / GitHub search on Gantt chart packages (`gantt_chart`, `legacy_gantt_chart`, `flutter_gantt`, `gantt_view`) — LOW confidence (small, low-adoption community packages); used only to confirm no dominant/canonical gantt package exists, supporting the recommendation to hand-build the Cycles/Year views instead
 
 ---
-*Stack research for: local-first Flutter supplement tracking app (Boostque)*
+*Stack research for: local-first Flutter supplement tracking app (VitoMy)*
 *Researched: 2026-08-14*
