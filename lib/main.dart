@@ -151,6 +151,11 @@ class VitomyApp extends ConsumerWidget {
     ref.watch(notificationBootstrapProvider);
     ref.watch(notificationSyncProvider);
     return MaterialApp(
+      // The banner only ever renders in a debug build, but every store
+      // screenshot and every demo recording is captured from one — the
+      // integration-test harness has no release mode. Off here rather than
+      // retouched out of a PNG afterwards.
+      debugShowCheckedModeBanner: false,
       onGenerateTitle: (context) => context.l10n.appTitle,
       theme: bqTheme(),
       locale: ref.watch(localeControllerProvider),
