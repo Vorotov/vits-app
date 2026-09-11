@@ -4,6 +4,7 @@ import '@fontsource-variable/jetbrains-mono';
 import '../styles/tokens.css';
 import '../styles/global.css';
 import { legalPages, supportEmail } from '../config';
+import Mark from '../components/Mark.astro';
 
 interface Props { title: string; description: string }
 const { title, description } = Astro.props;
@@ -43,7 +44,7 @@ const legalLinks = [
   </head>
   <body>
     <header class="site-header wrap">
-      <a class="site-header__brand" href="/">VitoMy</a>
+      <a class="site-header__brand" href="/"><Mark size={28} /> VitoMy</a>
       <nav class="site-header__nav" aria-label="Site">
         <a href="/support">Support</a>
         <a href="/privacy">Privacy</a>
@@ -53,7 +54,7 @@ const legalLinks = [
     <footer class="site-footer">
       <div class="wrap site-footer__row">
         <div>
-          <div class="site-header__brand">VitoMy</div>
+          <div class="site-header__brand"><Mark size={24} /> VitoMy</div>
           <p class="muted">© 2026 VitoMy</p>
         </div>
         <nav class="site-footer__links" aria-label="Legal and support">
