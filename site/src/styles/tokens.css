@@ -1,0 +1,36 @@
+/* Transcribed from lib/core/theme/tokens.dart. Change there first. */
+:root {
+  color-scheme: light dark;
+  --paper: #F7F6F3;                 /* BqColors.paper */
+  --canvas: #EAE9E4;                /* BqColors.canvas */
+  --panel: #FBFBF9;                 /* BqColors.surfaceAlt */
+  --ink: #17171B;                   /* BqColors.ink */
+  --ink-2: #5C5C66;                 /* BqColors.textSecondary */
+  --accent: #4A4E7C;                /* BqColors.accent */
+  --accent-pressed: #3D4169;        /* BqColors.accentPressed */
+  --hairline: rgb(23 23 27 / 0.08); /* BqColors.hairline */
+  --shadow: 0 24px 60px -24px rgb(23 23 27 / 0.25);
+
+  --font-sans: 'Instrument Sans Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --radius-panel: 20px;
+  --radius-screen: 14px;
+  --radius-pill: 999px;
+  --header-h: 64px;
+  --measure: 65ch;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #141417;
+    --canvas: #1C1C21;
+    --panel: #222228;
+    --ink: #EDECE8;
+    --ink-2: #A9A9B3;
+    --accent: #8D93B8;              /* the icon's lighter navy, VARIANTS['3b'].back_capsule[1] */
+    --accent-pressed: #A3A8C8;
+    --hairline: rgb(255 255 255 / 0.10);
+    --shadow: 0 24px 60px -24px rgb(0 0 0 / 0.5);
+  }
+}
