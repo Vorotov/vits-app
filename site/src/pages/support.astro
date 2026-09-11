@@ -28,6 +28,11 @@ import envelope from '@phosphor-icons/core/assets/regular/envelope.svg?raw';
 
 <style>
   .support { max-width: 68ch; padding-block: 3rem 2rem; }
+  /* The same cap Legal.astro puts on its own h1. Support and Privacy share
+     this 68ch column and sit beside each other in the footer nav, so the
+     sitewide display scale, which is the LANDING's h1 scale, made one of the
+     pair shout at about 68px while the other topped out at 48px. */
+  .support h1 { font-size: clamp(2rem, 4vw, 3rem); }
   .support__lead { margin-top: 0.75rem; color: var(--ink-2); }
   .support__mail { margin-top: 1.5rem; }
   .support__glyph { display: inline-flex; }
