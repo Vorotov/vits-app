@@ -153,6 +153,15 @@ Source: Claude Design project `dce8f720-1a6a-4152-90c2-6a6a76a471ac`, file
 CSS constants directly, so the design moving means four numbers change and
 nothing else does.
 
+One number is derived rather than transcribed. The document puts the pivot at
+0.88 of the capsule's length; the centre of the capsule's bottom cap is at
+`(h - w/2)/h` = 0.8645. Rotating about a point 2.6 units off that centre swings
+each cap sideways, the two caps miss each other, and the back capsule shows as a
+crescent under the front one at the bottom of the V — clearly visible above
+about 120px. On the cap centre, the rotation maps that circle onto itself, both
+capsules end in the same disc, and the V closes to one point.
+`store/icon/tip-before-after.png` is the comparison.
+
 The colours are the app's own supplement-tag palette, lightened for a mark that
 has to survive 40px: `#4b5079` is `BqSeriesColors.palette[7]`, `#b98a2e` is
 `palette[0]`, `#3f7d8c` is `palette[5]`, `#f6f3ec` is `BqColors.paper`. They are

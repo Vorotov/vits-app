@@ -42,16 +42,31 @@ DEFAULT_VARIANT = "3a"
 
 # --- geometry, transcribed from turn 3 of the design doc ------------------
 # Both capsules share one box and one pivot; only the rotation sign differs.
-# `PIVOT_Y_FRACTION` 0.88 is turn 3's whole point: raising the pivot inside the
-# capsule from turn 2's 1.02 makes the arms overlap deeper, so the V closes
-# into a single mark instead of reading as two objects leaning together.
+# Turn 3's whole point is raising the pivot INSIDE the capsule (turn 2 had it
+# just below, at 1.02), so the arms cross and the V closes into a single mark
+# rather than two objects leaning together. See the pivot note below.
 _GEOMETRY = {
     "capsule_w": 45.0,
     "capsule_h": 166.0,
     "bottom": 44.0,          # from the artboard's bottom edge
-    "pivot_y_fraction": 0.88,
     "rotation_deg": 26.0,
 }
+
+# The pivot is DERIVED, not transcribed. The design document uses 0.88, which is
+# close to the centre of the capsule's bottom cap but not on it: the cap is a
+# semicircle of radius w/2, so its centre sits at (h - w/2)/h = 0.8645 of the
+# length. Rotating about a point 2.6 units below that centre swings each cap
+# sideways by ~1.1, the two caps miss each other by ~2.3, and the back capsule
+# shows as a crescent sticking out from under the front one at the bottom of the
+# V — visible at any size above about 120px.
+#
+# Put the pivot ON the cap centre and the rotation maps that circle onto itself.
+# Both capsules then end in the SAME disc, whatever the angle, and the V closes
+# to one clean point. Deriving it rather than hard-coding 0.8645 keeps that true
+# if the capsule's width or length ever changes.
+_GEOMETRY["pivot_y_fraction"] = (
+    _GEOMETRY["capsule_h"] - _GEOMETRY["capsule_w"] / 2
+) / _GEOMETRY["capsule_h"]
 
 # Each capsule is (top colour, bottom colour); the second is drawn over the
 # first. Colours are the design's own, NOT snapped to lib/core/theme/tokens.dart
