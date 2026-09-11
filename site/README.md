@@ -1,0 +1,32 @@
+# vitomy.app
+
+The website. Rules in `CLAUDE.md`; design in
+`../docs/superpowers/specs/2026-09-11-vitomy-site-design.md`.
+
+Node lives at `~/.nvm/versions/node/v24.16.0/bin`; put it on PATH first.
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Astro dev server on :4321 (copies the three screenshots first) |
+| `npm run build` | Static build to `dist/`; fails if a listed legal document has a placeholder |
+| `npm test` | The gates, over `dist/`: meta, mark, placeholders, dashes, vocabulary, external, legal, stores, scene |
+| `npm run assets` | Regenerate the mark, favicon, OG image and touch icon from `tool/make_icons.py` |
+| `npm run deploy` | Build, gates, rsync to `bot:/var/www/vitomy`, Caddy vhost, reload, smoke test |
+
+## Switches (`src/config.ts`)
+
+- `stores.apple.url`, `stores.google.url`: `null` renders an inert "Coming soon" button. Set the URL and put the OFFICIAL badge in `public/badges/` (`app-store.svg`, `google-play.png`) on launch day.
+- `legalPages`: which of `../docs/legal/{privacy,terms}.md` are published. Add `'terms'` after `[NOMINAL_SUM]` is filled.
+
+## Server
+
+`ssh bot`, Caddy on 80/443, vhost `/etc/caddy/sites/vitomy.caddy`, root `/var/www/vitomy`. Other sites live on the same box; `deploy.sh` touches only those two paths and the one import line.
+
+DNS at Spaceship: `A @ 45.159.220.17`, `A www 45.159.220.17`.
+
+## Lighthouse
+
+Run `npm run preview`, then in another shell
+`npx lighthouse http://localhost:4321/ --preset=desktop --chrome-flags=--headless --output=json --output-path=/tmp/lh.json --quiet && node -e "const r=require('/tmp/lh.json').categories;console.log(Object.fromEntries(Object.entries(r).map(([k,v])=>[k,Math.round(v.score*100)])))"`.
+
+Last recorded: (filled in by Task 11)

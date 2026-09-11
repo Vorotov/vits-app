@@ -1,0 +1,28 @@
+# vitomy.app: static files from /var/www/vitomy. Included by the single
+# `import /etc/caddy/sites/*.caddy` line at the end of /etc/caddy/Caddyfile.
+# TLS is automatic (ACME); this domain is not behind Cloudflare.
+
+vitomy.app {
+	root * /var/www/vitomy
+	encode zstd gzip
+	try_files {path} {path}.html
+	file_server
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'none'"
+		-Server
+	}
+
+	handle_errors {
+		rewrite * /404.html
+		file_server
+	}
+}
+
+www.vitomy.app {
+	redir https://vitomy.app{uri} 308
+}
