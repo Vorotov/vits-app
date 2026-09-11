@@ -1,0 +1,17 @@
+---
+import { getCollection, render } from 'astro:content';
+import Legal from '../layouts/Legal.astro';
+import { legalPages } from '../config';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('legal', (e) => legalPages.includes(e.id));
+  return entries.map((entry) => ({ params: { legal: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const { Content, headings } = await render(entry);
+const title = headings.find((h) => h.depth === 1)?.text ?? entry.id;
+const description =
+  entry.id === 'privacy' ? 'The privacy policy for the VitoMy app.' : 'The terms of use for the VitoMy app.';
+---
+<Legal title={title} description={description}><Content /></Legal>
