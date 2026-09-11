@@ -13,7 +13,10 @@ vitomy.app {
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
-		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self' data:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'none'"
+		# font-src is 'self' with no data: term: the one face the site ships,
+		# Instrument Sans, is linked as .woff2 files and nothing is inlined as a
+		# data: URI. site/test/external.test.mjs fails the build if that changes.
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'none'"
 		-Server
 	}
 

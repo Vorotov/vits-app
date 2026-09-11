@@ -26,6 +26,17 @@ for (const p of htmlFiles()) {
   });
 }
 
+// The production CSP says `font-src 'self'`, with no `data:` term. It can say
+// that only while no font is inlined as a data: URI, which is a build artefact
+// of Vite's assetsInlineLimit, not a decision anyone makes per commit: a small
+// enough subset of any newly imported face lands inside the stylesheet and the
+// CSP silently starts blocking it. The comment in deploy/vitomy.caddy points
+// here. Undoing this means widening the CSP in the same commit, deliberately.
+test('no font is inlined as a data: URI, which is what keeps the CSP at font-src \'self\'', () => {
+  const bad = cssFiles().filter((c) => /url\(\s*["']?data:(?:font|application\/font|application\/x-font)/i.test(c.css));
+  assert.deepEqual(bad.map((c) => c.rel), []);
+});
+
 for (const c of cssFiles()) {
   test(`${c.rel}: no external url() or @import`, () => {
     const urls = [...c.css.matchAll(/url\(\s*["']?([^"')]+)["']?\s*\)/g)].map((m) => m[1]);

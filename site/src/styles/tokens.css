@@ -13,7 +13,6 @@
   --phone-border: #17171B;          /* the device chrome; ink in light, one step up from panel in dark */
 
   --font-sans: 'Instrument Sans Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', Menlo, monospace;
 
   --radius-panel: 20px;
   --radius-screen: 14px;

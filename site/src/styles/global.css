@@ -19,7 +19,6 @@ a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 0.15e
 
 .wrap { width: min(100% - 2rem, 1200px); margin-inline: auto; }
 .muted { color: var(--ink-2); }
-.mono { font-family: var(--font-mono); font-size: 0.8125rem; letter-spacing: 0.02em; }
 
 /* One pill button. Interactive feedback only where there is an actual link. */
 .pill {
