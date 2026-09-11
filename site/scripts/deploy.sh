@@ -15,10 +15,13 @@ echo "== build and gates"
 npm run build
 npm test
 
+# macOS ships openrsync, which rejects the octal form (D755,F644); the
+# symbolic form below sets the identical permissions and works on both.
+CHMOD='Du=rwx,Dg=rx,Do=rx,Fu=rw,Fg=r,Fo=r'
 echo "== rsync (dry run)"
-rsync -az --delete --chmod=D755,F644 --dry-run --itemize-changes dist/ "$HOST:$ROOT/"
+rsync -az --delete --chmod="$CHMOD" --dry-run --itemize-changes dist/ "$HOST:$ROOT/"
 echo "== rsync"
-rsync -az --delete --chmod=D755,F644 --stats dist/ "$HOST:$ROOT/" | grep -E 'Number of (regular files transferred|deleted files)|Total transferred'
+rsync -az --delete --chmod="$CHMOD" --stats dist/ "$HOST:$ROOT/" | grep -E 'Number of (regular files transferred|deleted files)|Total transferred'
 
 echo "== caddy vhost"
 ssh "$HOST" "mkdir -p /etc/caddy/sites"
