@@ -47,3 +47,14 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Third-party agent skills installed by `npx skills add` (Leonxlnx/taste-skill).
+# The installer drops them in the working tree and symlinks them into
+# .claude/skills/. They are local tooling, not project source: skills-lock.json
+# records the source and a content hash of each, so the set is reproducible
+# without carrying 6800 lines of someone else's design prose in this repo.
+# The negations keep our OWN skill and its README tracked.
+/.agents/
+.claude/skills/*
+!.claude/skills/vitomy-design/
+!.claude/skills/README.md
