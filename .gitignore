@@ -58,3 +58,8 @@ app.*.map.json
 .claude/skills/*
 !.claude/skills/vitomy-design/
 !.claude/skills/README.md
+
+# The website subproject (site/): dependencies and build output.
+/site/node_modules/
+/site/dist/
+/site/.astro/
