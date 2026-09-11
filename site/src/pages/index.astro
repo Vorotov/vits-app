@@ -1,8 +1,18 @@
 ---
 import Base from '../layouts/Base.astro';
+import StoreButton from '../components/StoreButton.astro';
 ---
 <Base title="VitoMy: Supplement Planner" description="Plan your supplement cycles, get reminders, mark what you take. All on-device.">
-  <section class="wrap" style="padding-block: 4rem">
+  <section class="wrap block">
     <h1>Plan what you take. See it laid out.</h1>
+    <div class="ctas"><StoreButton store="apple" /><StoreButton store="google" /></div>
+  </section>
+  <section class="wrap block">
+    <h2>Coming to iPhone and Android.</h2>
+    <div class="ctas"><StoreButton store="apple" /><StoreButton store="google" /></div>
   </section>
 </Base>
+<style>
+  .block { padding-block: 4rem; }
+  .ctas { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.5rem; }
+</style>

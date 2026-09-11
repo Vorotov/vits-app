@@ -1,0 +1,47 @@
+---
+import { existsSync } from 'node:fs';
+import { stores, type StoreId } from '../config';
+import appleLogo from '@phosphor-icons/core/assets/regular/apple-logo.svg?raw';
+import playLogo from '@phosphor-icons/core/assets/regular/google-play-logo.svg?raw';
+
+interface Props { store: StoreId }
+const { store } = Astro.props;
+const { url, label, badge } = stores[store];
+const glyph = store === 'apple' ? appleLogo : playLogo;
+
+// Apple and Google forbid altering their badges, so before launch the button
+// is our own; on launch day the OFFICIAL badge file must be present.
+if (url && !existsSync(new URL(`../../public${badge}`, import.meta.url))) {
+  throw new Error(`${store}: a store URL is set but public${badge} is missing. Download the official badge first.`);
+}
+---
+{url ? (
+  <a class="store store--live" href={url} rel="noopener">
+    <img src={badge} alt={`Get VitoMy on ${label}`} width="180" height="60" />
+  </a>
+) : (
+  <span class="pill store store--soon" role="img" aria-label={`${label}, coming soon`}>
+    <span class="store__glyph" set:html={glyph} />
+    <span class="store__text">
+      <span class="store__name">{label}</span>
+      <span class="store__soon">Coming soon</span>
+    </span>
+  </span>
+)}
+
+<style>
+  .store--live img { width: 180px; height: 60px; }
+  .store--soon {
+    background: color-mix(in oklab, var(--accent) 14%, transparent);
+    color: var(--accent);
+    border: 1px solid color-mix(in oklab, var(--accent) 30%, transparent);
+    cursor: default;
+    user-select: none;
+    padding-block: 0.4rem;
+  }
+  .store__glyph { display: inline-flex; }
+  .store__glyph :global(svg) { width: 24px; height: 24px; fill: currentColor; }
+  .store__text { display: flex; flex-direction: column; line-height: 1.15; }
+  .store__name { font-weight: 600; }
+  .store__soon { font-size: 0.75rem; font-weight: 500; opacity: 0.85; }
+</style>
