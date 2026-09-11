@@ -1,7 +1,8 @@
 # Store listing copy
 
 English only for now — it is the app's primary language and its fallback.
-Character limits are the store's, counted and noted.
+Character limits are the store's, counted and noted; the validator named
+under Keywords checks them.
 
 Two constraints run through all of it, and neither is stylistic:
 
@@ -43,51 +44,85 @@ name clean; the longer form is worth more in search.
 **Subtitle** (30 max)
 
 ```
-Plan cycles, mark what you take
+Vitamin tracker with reminders
 ```
-30 characters exactly.
+30 characters. The subtitle is the second-heaviest indexed field after the
+name, so it is search copy, not a tagline: paired with `VitoMy: Supplement
+Planner` it matches "supplement tracker", "vitamin tracker", "supplement
+reminders", "vitamin reminders" and "vitamin planner" — the mainstream
+queries — and frees `cycle` for the keyword field. The fallback, for an owner
+who prefers the descriptive line, is `Plan cycles, mark what's taken` (30). In
+that case `cycle` must leave the keyword field — the subtitle then carries
+"cycles", and Apple treats the plural as a duplicate — and
+`vitamins,tracker,reminder` go back in. The naive result is 119 characters, so
+it needs a cut; one that passes the validator is
+`stack,schedule,routine,log,daily,creatine,protocol,habit,intake,regimen,vitamins,tracker,reminder`
+(97; drops `biohacking` and `nootropics`). Any other cut must be re-run
+through the validator.
 
 **Promotional text** (170 max, editable without a new build)
 
 ```
-Everything stays on your device. No account, no server, no sign-up. Set a schedule once, including on and off weeks, and VitoMy keeps the calendar for you.
+Set each schedule once, on and off weeks included, and VitoMy keeps the calendar for you. No account, no server, no sign-up. Everything stays on your device.
 ```
-152 characters.
+157 characters.
 
 **Description** (4000 max)
 
 ```
-VitoMy plans what you take and keeps track of it.
+VitoMy shows you what to take today and lets you check it off. Set each schedule once, breaks included, and the calendar works the cycles out for you.
 
-Add what is in your stack, set when you take it, and see today's list ready to check off. Schedules can repeat with breaks built in — eight weeks on, four weeks off, or whatever pattern you actually follow — and the calendar works the cycle out for you.
+Built for anyone who runs a stack: a few daily basics, a course that ends on a set date, or a protocol with on and off phases. Eight weeks on and four weeks off, or whatever pattern you actually follow. VitoMy keeps it straight.
 
 WHAT IT DOES
 
-Today — everything due today in one list, with the time beside it. Tap to mark it taken.
+Today. Everything due today in one list, with the time beside it. Tap to mark it taken.
 
-Cycles — every schedule laid out across the months as bars, so you can see at a glance which weeks are on, which are breaks, and where they overlap.
+Cycles. Every schedule laid out across the months as bars, so you can see at a glance which weeks are on, which are breaks, and where they overlap.
 
-Year — twelve months at once, showing how much of each is covered.
+Year. Twelve months at once, showing how much of each month is covered.
 
-Reminders — a local notification at each time you set. Reminders never name what you take, so nothing appears on your lock screen that you would not want a stranger to read.
+Reminders. A local notification at each time you set. Reminders never name what you take, so nothing appears on your lock screen that you would not want a stranger to read.
 
 YOUR DATA STAYS YOURS
 
-There is no account and nothing to sign up for. The app has no network client at all — everything you enter is written to your own device and never leaves it. Delete the app and the data goes with it.
+There is no account and nothing to sign up for. Everything you enter is written to your own device and never leaves it. Delete the app and the data goes with it. No ads, no subscription.
 
 SEVEN LANGUAGES
 
 English, Arabic, Spanish, French, Hindi, Ukrainian and Chinese, including full right-to-left layout.
 
-VitoMy is a planner. It records what you decide to take and when. It does not suggest what to take, how much, or whether to take anything at all — those decisions are yours.
+VitoMy is a planner. It records what you decide to take and when. It does not suggest what to take, how much, or whether to take anything at all. Those decisions are yours.
 ```
+1383 characters. The earlier sentence claiming the app has no network client
+at all was dropped ahead of the RevenueCat tip jar (SHIP-01): once a purchases
+SDK lands, the app does have a network client, and the description should not
+have to change in the same release as the App Privacy label does. What
+remains — what you enter never leaves the device; no account; no ads; no
+subscription — stays true after a one-time tip.
 
 **Keywords** (100 max, comma-separated, no spaces after commas)
 
 ```
-supplement,vitamin,stack,tracker,planner,cycle,schedule,reminder,routine,intake,log,habit,daily
+stack,cycle,schedule,routine,log,daily,creatine,protocol,biohacking,habit,intake,regimen,nootropics
 ```
-94 characters.
+99 characters, 13 terms. Apple indexes only the app name, the subtitle and
+the keyword field for search (Apple's App Store search page, and the `aso`
+skill at `.claude/skills/aso/SKILL.md`); the description and promotional text
+are conversion copy, not indexed. The rules applied: 100 characters, commas
+with no spaces, never repeat a word already in the name, subtitle or category
+(Lifestyle), no plural of a word already present (a duplicate to Apple), no
+generic words such as "app". The previous field repeated supplement, planner
+and cycle — 24 wasted characters. `pill` and `dose` are left out on purpose:
+"pill reminder" is the medication-management reading (guideline 1.4.1, Health
+& Fitness) the whole listing is built to stay outside of; "dose" is in the
+app's own UI and no gate bans it, but it pulls the same direction. Both are a
+one-line decision the owner can reverse. `python3
+.planning/quick/260911-mms-app-store-listing-fix-the-31-char-subtit/260911-mms-validate.py
+store/listing.md` checks the limits in characters and UTF-8 bytes, the keyword
+rules above, and the vocabulary stems derived from
+`test_release/legal_copy_safety_test.dart` and
+`test/l10n/planner_copy_safety_test.dart`; it must print `RESULT: PASS`.
 
 **Support URL** — required, and still a blocker. App Store Connect takes a URL
 here, not an address: a `mailto:` is rejected, so `support@vitomy.app` does not
@@ -108,6 +143,20 @@ True today and only today: the first release that adds RevenueCat, analytics
 or crash reporting must change this label in the same release. That is
 LEGAL-01 in `.planning/STATE.md`.
 
+**Screenshots** — App Store Connect's default iPhone card is the 6.5-inch
+Display, which accepts 1284x2778 or 1242x2688 and rejected the 1320x2868
+captures with "Screenshots dimensions should be: 1242 × 2688px, 2688 × 1242px,
+1284 × 2778px or 2778 × 1284px". Upload `store/screenshots/ios-6.5/` there, in
+file order: 01-stack, 02-today, 03-cycles, 04-year, 05-schedule. The 6.9-inch
+originals in `store/screenshots/ios-6.9/` (1320x2868) go into the 6.9-inch
+card, reachable only through "View All Sizes in Media Manager" — optional,
+because Apple's screenshot specification fills a missing 6.5-inch set by
+scaling the 6.9-inch set, and the 6.5-inch files ARE that scaling:
+`tool/make_screenshots.sh` derives them by resizing to 1284 wide (2790 high)
+and centre-cropping 6px off top and bottom to 2778, the two aspect ratios
+differing by 0.4%. Only the first three screenshots show in search results, so
+the order carries the pitch. Both sets are generated; never hand-edit a PNG.
+
 ---
 
 ## Google Play
@@ -123,7 +172,7 @@ VitoMy: Supplement Planner
 ```
 Plan your supplement cycles, get reminders, mark what you take. All on-device.
 ```
-77 characters.
+78 characters.
 
 **Full description** (4000 max) — the App Store description above works
 verbatim. Play renders plain text with line breaks, so the section headings
@@ -241,5 +290,6 @@ URL is not: Play asks for a link, and an address does not substitute.
 | Play icon 512x512 | `store/icon/3b/play-icon-512.png` | Ships |
 | Icon legibility check | `store/icon/comparison-3a-3b.png` | Both colourways at 260/180/120/60/40 px |
 | Feature graphic 1024x500 | Play, **required** | Not made yet |
-| iPhone 6.9" screenshots | `store/screenshots/ios-6.9/` | Generated by `tool/make_screenshots.sh` |
+| iPhone 6.9" screenshots | `store/screenshots/ios-6.9/` | Captured by `tool/make_screenshots.sh`; goes in the 6.9-inch card only |
+| iPhone 6.5" screenshots | `store/screenshots/ios-6.5/` | Derived from the 6.9-inch set by `tool/make_screenshots.sh`; ASC's default iPhone card |
 | Play phone screenshots | min 2 | The iOS set works; Play accepts any phone aspect |
