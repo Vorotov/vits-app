@@ -7,7 +7,12 @@ import { legalPages, supportEmail } from '../config';
 
 interface Props { title: string; description: string }
 const { title, description } = Astro.props;
-const canonical = new URL(Astro.url.pathname, Astro.site);
+// build.format is 'file' (astro.config.mjs), so Astro.url.pathname for the
+// index page is literally "/index.html" and every other page is
+// "/<name>.html". Strip that back to the served pretty URL Caddy actually
+// answers on ("/" and "/<name>") so canonical and og:url never end in .html.
+const path = Astro.url.pathname.replace(/index\.html$/, '').replace(/\.html$/, '');
+const canonical = new URL(path, Astro.site);
 const ogImage = new URL('/og.png', Astro.site);
 const legalLinks = [
   { id: 'privacy', label: 'Privacy' },

@@ -17,6 +17,19 @@ for (const p of pages) {
     assert.match(p.html, /<meta property="og:image" content="https:\/\/vitomy\.app\/og\.png"/);
   });
 
+  test(`${p.rel}: canonical and og:url never end in .html`, () => {
+    const [canonical] = p.html.match(/<link rel="canonical" href="([^"]*)"/)?.slice(1) ?? [];
+    const [ogUrl] = p.html.match(/<meta property="og:url" content="([^"]*)"/)?.slice(1) ?? [];
+    assert.ok(canonical, 'no canonical link found');
+    assert.ok(ogUrl, 'no og:url meta found');
+    assert.doesNotMatch(canonical, /\.html$/, `canonical ends in .html: ${canonical}`);
+    assert.doesNotMatch(ogUrl, /\.html$/, `og:url ends in .html: ${ogUrl}`);
+    if (p.rel === 'index.html') {
+      assert.equal(canonical, 'https://vitomy.app/');
+      assert.equal(ogUrl, 'https://vitomy.app/');
+    }
+  });
+
   test(`${p.rel}: every <img> has alt, width and height; no inline script`, () => {
     for (const img of p.html.match(/<img\b[^>]*>/g) ?? []) {
       for (const a of ['alt', 'width', 'height']) {
