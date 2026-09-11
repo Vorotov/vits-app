@@ -30,10 +30,7 @@ See: .planning/PROJECT.md (updated 2026-08-14)
 Milestone: v1.2 — shipped 2026-09-01
 Phase: 9 (Languages & the Release Gate) — complete
 Plan: none in flight
-Last activity: 2026-09-11 — store-readiness pass: renamed to **VitoMy**, bundle
-id `app.vitomy`, real release signing, the approved icon, listing screenshots
-and copy, support address. First Google Play **internal testing** upload in
-progress (`d7e82fc`)
+Last activity: 2026-09-11 - Completed quick task 260911-mms: App Store listing: fix the 31-char subtitle and refresh promotional text, description and keywords in store/listing.md with ASO rationale; document the 6.5-inch ASC slot; make tool/make_screenshots.sh derive the 6.5-inch set; commit store/screenshots/ios-6.5
 
 Progress: [██████████] 9 phases, 8 closed — Phase 7 (Dose Reminders) is executed but not closed
 
@@ -240,7 +237,13 @@ starting — what follows is a pointer, not a substitute.
 - Gantt label truncation at 14px week columns → accepted for v1 with
   measurements in `04-UAT.md`; revisit only on user feedback.
 
-### Blockers/Concerns
+#### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260911-mms | App Store listing: fix the 31-char subtitle and refresh promotional text, description and keywords in store/listing.md with ASO rationale; document the 6.5-inch ASC slot; make tool/make_screenshots.sh derive the 6.5-inch set; commit store/screenshots/ios-6.5 | 2026-09-11 | f18a84e, f097461, 82350a7 | [260911-mms-app-store-listing-fix-the-31-char-subtit](./quick/260911-mms-app-store-listing-fix-the-31-char-subtit/) |
+
+## Blockers/Concerns
 
 - **Phase 7 is executed but not closed.** Every plan ran and every automated
   gate is green; what is missing is device evidence that a reminder actually
