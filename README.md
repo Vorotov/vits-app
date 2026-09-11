@@ -24,6 +24,27 @@ flutter test test_release/    # release-only gates; run before a store build
 `flutter test` with no arguments reads `test/` only, so `test_release/` is a
 deliberate second command, not an oversight. See `test_release/README.md`.
 
+## Release signing (Android)
+
+Release builds are signed with an upload key that is **not** in this
+repository. `android/key.properties` points at it and is gitignored, as are
+`**/*.jks` and `**/*.keystore`:
+
+```properties
+storePassword=...
+keyPassword=...
+keyAlias=upload
+storeFile=/absolute/path/to/vitomy-upload-keystore.jks
+```
+
+Without that file a release build fails with a message saying so. It does not
+fall back to the debug keystore — that key ships with the Flutter SDK, so a
+release signed with it can be impersonated by anyone.
+`test/platform_config_test.dart` asserts all of this.
+
+Google Play holds the app signing key; the file above is only the *upload*
+key, and Google can reset it if it is lost. Back it up anyway.
+
 ## Where the rules live
 
 `.claude/CLAUDE.md` carries the conventions and architecture. Anything

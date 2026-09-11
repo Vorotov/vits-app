@@ -336,27 +336,114 @@ void main() {
     });
   });
 
-  group('release signing — pre-release blocker, asserted so it cannot be forgotten',
-      () {
-    test('records that release builds still use the debug keystore', () {
-      final gradle =
-          File('android/app/build.gradle.kts').readAsStringSync();
-      final usesDebugKeys =
-          gradle.contains('signingConfigs.getByName("debug")');
+  group('release signing', () {
+    // Release builds were signed with the Flutter template's DEBUG keystore
+    // until 2026-09-11. That keystore ships with the SDK, so its private key is
+    // public: anyone could forge an update for such a build outside the store.
+    // The blocker was asserted here so it could not be forgotten, and these
+    // tests are what that assertion turned into once it was fixed. They guard
+    // the fix in both directions — the config is right, AND it cannot quietly
+    // degrade back to the debug key when the keystore is absent.
+    late String gradle;
 
-      // This is the Flutter template default and is harmless for local runs,
-      // but a debug-signed release APK is signed with a publicly known key:
-      // anyone can forge an update for it outside the Play Store.
-      //
-      // When a real keystore is wired up, this expectation flips to isFalse and
-      // the test becomes a permanent guard against regressing to debug keys.
-      expect(
-        usesDebugKeys,
-        isTrue,
-        reason: 'android/app/build.gradle.kts no longer signs release builds '
-            'with the debug keystore — good. Flip this expectation to isFalse '
-            'so the suite now guards the real signing config.',
+    setUp(() {
+      gradle = _stripCodeComments(
+        File('android/app/build.gradle.kts').readAsStringSync(),
       );
-    }, skip: false);
+    });
+
+    test('release builds are not signed with the debug keystore', () {
+      expect(
+        gradle.contains('signingConfigs.getByName("debug")'),
+        isFalse,
+        reason: 'android/app/build.gradle.kts signs a build with the debug '
+            'keystore again. That key is public; a release signed with it can '
+            'be impersonated by anyone.',
+      );
+    });
+
+    test('release builds use a signing config read from key.properties', () {
+      expect(
+        gradle.contains('signingConfigs.getByName("release")'),
+        isTrue,
+        reason: 'the release build type no longer points at the "release" '
+            'signing config, so the output is unsigned and no store will take '
+            'it.',
+      );
+      for (final key in const [
+        'keyAlias',
+        'keyPassword',
+        'storeFile',
+        'storePassword',
+      ]) {
+        expect(
+          gradle.contains('keystoreProperties.getProperty("$key")'),
+          isTrue,
+          reason: 'the release signing config no longer reads "$key" from '
+              'key.properties. All four come from that file precisely so none '
+              'of them is ever committed.',
+        );
+      }
+    });
+
+    test('a missing key.properties fails a release build, never falls back', () {
+      expect(
+        gradle.contains('throw GradleException'),
+        isTrue,
+        reason: 'android/app/build.gradle.kts no longer refuses to build a '
+            'release without key.properties. Without the refusal a machine '
+            'that lacks the keystore produces an unsigned or debug-signed '
+            'artifact and says nothing — which is how the original blocker '
+            'survived for months.',
+      );
+      expect(
+        gradle.contains('gradle.startParameter.taskNames'),
+        isTrue,
+        reason: 'the refusal is no longer scoped to release tasks. Throwing at '
+            'configuration time unconditionally breaks `flutter run` for any '
+            'contributor who has no keystore, which is not the point.',
+      );
+    });
+
+    test('the keystore and its passwords can never be committed', () {
+      final ignore = File('android/.gitignore').readAsStringSync();
+      for (final pattern in const [
+        'key.properties',
+        '**/*.jks',
+        '**/*.keystore',
+      ]) {
+        expect(
+          ignore.contains(pattern),
+          isTrue,
+          reason: 'android/.gitignore no longer ignores "$pattern". The upload '
+              'key and its passwords must stay out of the repository.',
+        );
+      }
+      // The ignore rules are the intent; this is the fact. A file can be
+      // tracked despite a later .gitignore entry, and that is exactly how a
+      // secret gets committed once and stays committed.
+      final tracked = Process.runSync(
+        'git',
+        ['ls-files', 'android/key.properties', '*.jks', '*.keystore'],
+      ).stdout.toString().trim();
+      expect(
+        tracked,
+        isEmpty,
+        reason: 'git tracks $tracked. The upload key or its passwords are in '
+            'the repository; rotate them, because history keeps them.',
+      );
+    });
+
+    test('no password literal is written into the build file', () {
+      for (final key in const ['storePassword', 'keyPassword']) {
+        expect(
+          RegExp('$key\\s*=\\s*"').hasMatch(gradle),
+          isFalse,
+          reason: 'android/app/build.gradle.kts assigns $key a string literal. '
+              'Passwords belong in key.properties, which is gitignored; a '
+              'literal here would be committed and is unrotatable once pushed.',
+        );
+      }
+    });
   });
 }

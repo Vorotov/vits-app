@@ -302,14 +302,17 @@ variant opts out of OS backup, the Android main manifest declares **exactly**
 nothing else, no variant declares an exact-alarm permission, both plugin
 receivers are declared non-exported, core-library desugaring is on with its
 runtime, the iOS notification-centre delegate is wired and `Info.plist` stays
-bare. One test deliberately asserts a **known release blocker** — release
-builds still sign with the debug keystore. When a real keystore is wired up,
-flip that expectation to `isFalse` so the test starts guarding the real config.
-Do not delete it.
+bare. Its `release signing` group is what the old debug-keystore blocker turned
+into once that was fixed on 2026-09-11: release builds must use the `release`
+signing config, all four of its values must come from the gitignored
+`android/key.properties`, a missing key.properties must FAIL a release build
+rather than fall back, no password literal may appear in the Gradle file, and
+`git ls-files` must not track the keystore or its passwords. Do not weaken it;
+the original blocker survived for months precisely because nothing failed.
 
 ### Testing
 
-The suite is **1089 tests in `test/` plus 41 in `test_release/`** (measured, not
+The suite is **1108 tests in `test/` plus 46 in `test_release/`** (measured, not
 estimated) and `flutter analyze` is clean. Keep both true.
 
 - Widget tests run against a real in-memory Drift database behind the
