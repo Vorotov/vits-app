@@ -43,5 +43,12 @@ if (url && !existsSync(new URL(`../../public${badge}`, import.meta.url))) {
   .store__glyph :global(svg) { width: 24px; height: 24px; fill: currentColor; }
   .store__text { display: flex; flex-direction: column; line-height: 1.15; }
   .store__name { font-weight: 600; }
-  .store__soon { font-size: 0.75rem; font-weight: 500; opacity: 0.85; }
+  /* No opacity here. At 0.75rem this line is small text, so it owes WCAG AA
+     4.5:1, and measured on the built page an 0.85 alpha over the 14% tint gave
+     3.70:1 in dark and 3.90:1 in light against the band. The size and the
+     lighter weight already separate it from the store name; fading it as well
+     is the part that cost the ratio. Raising the tint is the wrong lever: the
+     text IS the accent, so more accent behind it lowers contrast in BOTH
+     schemes, not just one. */
+  .store__soon { font-size: 0.75rem; font-weight: 500; }
 </style>

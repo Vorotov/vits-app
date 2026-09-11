@@ -54,6 +54,36 @@ import today from '../assets/screens/today.png';
   .band { background: var(--canvas); padding-block: 5rem; margin-top: 4rem; }
   .band .muted { margin-top: 1rem; }
 
+  /* The band reveals itself as it enters, driven by the scroll position of
+     its own children rather than by a listener: `animation-timeline: view()`
+     is the CSS scroll-driven form, so there is no JavaScript on this page
+     outside the pinned scene. Both gates are load-bearing. `@supports` keeps
+     Safari and Firefox, which do not implement it yet, showing the band as
+     it is rather than stuck at `opacity: 0` forever, and the reduced-motion
+     query is the same promise the hero and the scene make.
+
+     LONGHANDS, deliberately, and not `animation: rise linear both`. The
+     `animation` shorthand cannot carry a timeline: scroll-animations-1 took
+     `<single-animation-timeline>` back out of it, so the shorthand only ever
+     RESETS the timeline to `auto`. Written as a shorthand plus a following
+     `animation-timeline` longhand the source is correct, but the build's
+     minifier folds the pair back into `animation: linear both rise view()`,
+     which Chrome parses as invalid and drops whole: measured on the built
+     page, `animationName` came back `none` and `animationTimeline` `auto`
+     while the untouched `animation-range` stayed. Five longhands give the
+     minifier nothing to fold and survive the build byte for byte. */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .band .wrap > * {
+        animation-name: rise;
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 40%;
+      }
+    }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .hero__copy > *, .hero__phone { animation: rise 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
     .hero__copy > :nth-child(2) { animation-delay: 0.08s; }
