@@ -6,7 +6,7 @@ current_phase: 9
 current_phase_name: Languages & the Release Gate
 status: milestone_shipped_pending_device_pass
 stopped_at: Phase 9 shipped (fc7bfd3); no phase in flight
-last_updated: "2026-09-11T14:14:39.106Z"
+last_updated: "2026-09-11T18:27:28.383Z"
 last_activity: 2026-09-11
 last_activity_desc: "Completed quick task 260911-mms: App Store listing: fix the 31-char subtitle and refresh promotional text, description and keywords in store/listing.md with ASO rationale; document the 6.5-inch ASC slot; make tool/make_screenshots.sh derive the 6.5-inch set; commit store/screenshots/ios-6.5"
 progress:
@@ -284,7 +284,7 @@ starting — what follows is a pointer, not a substitute.
 - ~~The bundle id is a placeholder and the app name is undecided.~~
   **Closed 2026-09-11**: **VitoMy**, `app.vitomy`.
 
-- **Play wants a rising versionCode.** `pubspec.yaml` is at `1.0.0+1` and the
+- **Play wants a rising versionCode.** `pubspec.yaml` is at `1.0.0+2` (build 2 is the iPhone-only iOS upload of 2026-09-11; the Play internal-testing bundle was built at +1) and the
   first internal-testing upload consumes versionCode 1. Every later upload
   needs a higher one: `flutter build appbundle --release --build-number=N`, or
   bump the `+N` in pubspec.
@@ -305,6 +305,7 @@ starting — what follows is a pointer, not a substitute.
 |---|-------------|------|--------|-----------|
 | 260911-mms | App Store listing: fix the 31-char subtitle and refresh promotional text, description and keywords in store/listing.md with ASO rationale; document the 6.5-inch ASC slot; make tool/make_screenshots.sh derive the 6.5-inch set; commit store/screenshots/ios-6.5 | 2026-09-11 | f18a84e, f097461, 82350a7 | [260911-mms-app-store-listing-fix-the-31-char-subtit](./quick/260911-mms-app-store-listing-fix-the-31-char-subtit/) |
 | 2 | Tighten the App Store description in store/listing.md: no 'runs a stack', more supplement/vitamin wording, languages and data sections removed (owner request) | 2026-09-11 | fc79674 | — |
+| 3 | Google Play listing assets and copy (feature graphic, 1080x1920 phone screenshots, texts); iOS 1.0 iPhone-only, pubspec 1.0.0+2, platform_config_test assertion (commits 92d185f, 77f649b, 204cc28) | 2026-09-11 | 204cc28 | — |
 
 ## Waiting on a human
 
