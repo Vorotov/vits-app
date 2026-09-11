@@ -1,0 +1,41 @@
+---
+import Base from '../layouts/Base.astro';
+import { supportEmail } from '../config';
+import envelope from '@phosphor-icons/core/assets/regular/envelope.svg?raw';
+---
+<Base title="Support | VitoMy" description="How to reach VitoMy support, and what to include so a problem can be looked at.">
+  <section class="support wrap">
+    <h1>Support</h1>
+    <p class="support__lead">Questions and problems go to one address.</p>
+    <a class="pill pill--solid support__mail" href={`mailto:${supportEmail}`}>
+      <span class="support__glyph" set:html={envelope} />
+      {supportEmail}
+    </a>
+
+    <h2>What to include</h2>
+    <ul>
+      <li>The phone model and the OS version.</li>
+      <li>What was expected, and what happened instead.</li>
+      <li>A screenshot, if there is one.</li>
+    </ul>
+
+    <h2>What VitoMy is</h2>
+    <p>VitoMy is a planner. It records what you decide to take and when, and reminds you at the times you set. It does not suggest what to take, how much, or whether to take anything at all.</p>
+
+    <p class="support__legal">The <a href="/privacy">Privacy Policy</a> describes what the app stores and where.</p>
+  </section>
+</Base>
+
+<style>
+  .support { max-width: 68ch; padding-block: 3rem 2rem; }
+  .support__lead { margin-top: 0.75rem; color: var(--ink-2); }
+  .support__mail { margin-top: 1.5rem; }
+  .support__glyph { display: inline-flex; }
+  .support__glyph :global(svg) { width: 22px; height: 22px; fill: currentColor; }
+  .support h2 { font-size: 1.5rem; margin-top: 3rem; }
+  .support ul { padding-inline-start: 1.25rem; margin-top: 1rem; }
+  .support li { margin-top: 0.5rem; }
+  .support p { margin-top: 1rem; }
+  .support__legal { margin-top: 2rem; }
+  .support a:not(.pill) { color: var(--accent); }
+</style>
