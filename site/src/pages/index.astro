@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import StoreButton from '../components/StoreButton.astro';
 import PhoneFrame from '../components/PhoneFrame.astro';
+import Scene from '../components/Scene.astro';
 import today from '../assets/screens/today.png';
 ---
 <Base title="VitoMy: Supplement Planner" description="Plan your supplement cycles, get reminders, mark what you take. All on-device.">
@@ -13,6 +14,8 @@ import today from '../assets/screens/today.png';
     </div>
     <PhoneFrame class="hero__phone" src={today} alt="The Today screen: the doses due today in one list, each with its time, ready to mark taken" priority />
   </section>
+
+  <Scene />
 
   <section class="band">
     <div class="wrap">

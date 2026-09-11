@@ -1,0 +1,91 @@
+---
+import PhoneFrame from './PhoneFrame.astro';
+import today from '../assets/screens/today.png';
+import cycles from '../assets/screens/cycles.png';
+import year from '../assets/screens/year.png';
+
+const steps = [
+  { h: 'Everything due today, in one list.', p: 'Tap to mark it taken. The time sits beside each one.', src: today, alt: "The Today screen with the day's doses listed by time" },
+  { h: 'Eight weeks on, four off. Drawn, not remembered.', p: 'Every schedule is a bar across the months, breaks included.', src: cycles, alt: 'The Cycles screen: each schedule as a bar across four months, with a break shown hatched' },
+  { h: 'Twelve months at a glance.', p: 'How much of each month is covered, on one screen.', src: year, alt: 'The Year screen: twelve month cards showing how much of each is covered' },
+];
+---
+<section class="scene wrap" data-scene aria-label="What VitoMy shows">
+  <div class="scene__pin">
+    <div class="scene__copy">
+      {steps.map((s, i) => (
+        <div class={`scene__step scene__step--${i}`}>
+          <h2>{s.h}</h2>
+          <p class="muted">{s.p}</p>
+        </div>
+      ))}
+    </div>
+    <div class="scene__shots">
+      {steps.map((s, i) => (
+        <PhoneFrame class={`scene__shot scene__shot--${i}`} src={s.src} alt={s.alt} />
+      ))}
+    </div>
+  </div>
+</section>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-scene]');
+  const wants = matchMedia('(min-width: 1024px) and (prefers-reduced-motion: no-preference)');
+  if (root && wants.matches) {
+    const io = new IntersectionObserver(
+      async ([entry]) => {
+        if (!entry.isIntersecting) return;
+        io.disconnect();
+        const { mountScene } = await import('./Scene');
+        mountScene(root);
+      },
+      { rootMargin: '300px 0px' },
+    );
+    io.observe(root);
+  }
+</script>
+
+<style>
+  /* Default (phones, tablets, reduced motion, no JS): three plain rows, copy
+     above its screenshot. The two columns dissolve with display:contents and
+     `order` interleaves them. This is the section's mobile design, not a
+     degradation of the pinned one. The index lives in a class, not a
+     `style="--i:0"` attribute: the CSP is `style-src 'self'`, which blocks a
+     style attribute exactly as it blocks an inline stylesheet. */
+  .scene { padding-block: 4rem; }
+  .scene__pin { display: grid; gap: 2.5rem 3rem; }
+  .scene__copy, .scene__shots { display: contents; }
+  .scene__step p { margin-top: 0.75rem; max-width: 36ch; }
+  .scene__shots :global(.scene__shot) { justify-self: center; }
+
+  .scene__step--0 { order: 0; }
+  .scene__shots :global(.scene__shot--0) { order: 1; }
+  .scene__step--1 { order: 2; }
+  .scene__shots :global(.scene__shot--1) { order: 3; }
+  .scene__step--2 { order: 4; }
+  .scene__shots :global(.scene__shot--2) { order: 5; }
+
+  /* Pinned (class added by Scene.ts at >= 1024px, motion allowed): one
+     viewport, copy stacked in the left cell, screens stacked in the right. */
+  .scene--pinned { padding-block: 0; }  /* the trigger's top IS the pinned element's top, which is what makes start:'top top' land at the top of the viewport rather than 4rem below it */
+  .scene--pinned .scene__pin {
+    grid-template-columns: 5fr 7fr; align-items: center;
+    height: 100dvh; gap: 3rem;
+  }
+  .scene--pinned .scene__copy { display: grid; }
+  .scene--pinned .scene__step { grid-area: 1 / 1; order: 0; }
+  .scene--pinned .scene__shots {
+    display: grid; justify-self: center;
+    border-radius: var(--radius-panel); box-shadow: var(--shadow);
+  }
+  /* One shadow for the stack, on the container, so three frames sitting on
+     the same cell do not compound it into a dark smear. */
+  .scene--pinned .scene__shots :global(.scene__shot) {
+    grid-area: 1 / 1; order: 0; box-shadow: none;
+    /* Same derivation as the hero: the screenshot is 1320x2868, so a frame
+       that must fit inside one 100dvh viewport is at most
+       (available height) * 0.46 wide. Without it a 900px laptop clips the
+       bottom of a pinned frame, which cannot be scrolled away from. */
+    width: min(100%, 360px, calc((100dvh - 6rem) * 0.46));
+  }
+</style>
