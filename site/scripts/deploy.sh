@@ -41,10 +41,10 @@ echo "caddy reloaded"
 
 echo "== smoke"
 if [ -n "$(dig +short A vitomy.app)" ]; then RESOLVE=(); else RESOLVE=(--resolve "vitomy.app:443:$IP"); echo "(no A record yet; using --resolve, TLS may fail)"; fi
-code() { curl -sk -o /dev/null -w '%{http_code}' "${RESOLVE[@]}" "https://vitomy.app$1"; }
+code() { curl -sk -o /dev/null -w '%{http_code}' ${RESOLVE[@]+"${RESOLVE[@]}"} "https://vitomy.app$1"; }
 printf '%-12s %s\n' path status
 for p in / /privacy /support /terms /does-not-exist; do printf '%-12s %s\n' "$p" "$(code "$p")"; done
-html=$(curl -sk "${RESOLVE[@]}" https://vitomy.app/)
+html=$(curl -sk ${RESOLVE[@]+"${RESOLVE[@]}"} https://vitomy.app/)
 grep -q '\[[A-Z_]*\]' <<<"$html" && { echo "placeholder on the live page"; exit 1; }
 grep -q -e '—' -e '–' <<<"$html" && { echo "dash on the live page"; exit 1; }
 grep -oE '(src|href)="https?://[^"]+"' <<<"$html" | grep -vE 'https://vitomy\.app/' && { echo "external resource on the live page"; exit 1; }
