@@ -50,9 +50,13 @@ Two deliberate overrides of that skill, recorded so nobody "fixes" them:
   the palette of `lib/core/theme/tokens.dart` and of the shipped icon
   (colourway 3b). The site and the app must read as one product. Ochre is
   confined to the mark; the page accent is the navy.
-- **Instrument Sans is the display and body face.** It is the app's bundled
-  font (OFL), so the site uses it too. JetBrains Mono, the app's other face,
-  is used only for the few numerals and the single eyebrow.
+- **Instrument Sans is the display and body face, and the only face.** It is
+  the app's bundled font (OFL), so the site uses it too. The spec first paired
+  it with JetBrains Mono for numerals and an eyebrow; the page ended up with
+  neither, so the mono font was dropped in `03f2b04`. It was 57% of the
+  render-blocking CSS and its inlined subset was the only reason the CSP
+  needed `font-src 'self' data:`. A gate in `site/test/external.test.mjs` now
+  fails the build if any built stylesheet inlines a font.
 
 ## Pages and URLs
 
@@ -86,9 +90,10 @@ One accent on the whole page. The ochre (`#E2B95C` / `#B98A2E`) appears only
 inside the SVG mark. No pure white, no pure black. Dark mode follows
 `prefers-color-scheme` with no manual toggle.
 
-**Type.** `@fontsource-variable/instrument-sans` and
-`@fontsource-variable/jetbrains-mono`, self-hosted, `font-display: swap`,
-preloaded on every page. Display: weight 600, `letter-spacing: -0.02em`,
+**Type.** `@fontsource-variable/instrument-sans`, self-hosted,
+`font-display: swap`. Fontsource hashes its file names, so a static
+`<link rel="preload">` cannot name them; the swap plus a metric-compatible
+fallback stack is what ships. Display: weight 600, `letter-spacing: -0.02em`,
 `line-height: 1.05`. Body: weight 400, 17px, `line-height: 1.55`, measure
 capped at 65ch. Headline scale `clamp(2.5rem, 6vw, 4.25rem)`.
 
@@ -397,7 +402,7 @@ site/
   CLAUDE.md                  the short rules; written
   README.md                  how to run, test, deploy; Lighthouse record
   package.json               astro, @astrojs/sitemap, gsap, @phosphor-icons/core,
-                             @fontsource-variable/instrument-sans, @fontsource-variable/jetbrains-mono
+                             @fontsource-variable/instrument-sans
   astro.config.mjs
   src/
     config.ts                stores, legalPages

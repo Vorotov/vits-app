@@ -52,8 +52,8 @@ palette with an automatic dark theme under `prefers-color-scheme`.
 ## Design in one paragraph
 
 Palette and type come from the app: paper `#F7F6F3`, canvas `#EAE9E4`, ink
-`#17171B`, navy accent `#4A4E7C`; Instrument Sans for everything, JetBrains
-Mono for the few numerals. The ochre of the icon appears in the mark only.
+`#17171B`, navy accent `#4A4E7C`; Instrument Sans for everything. The ochre
+of the icon appears in the mark only.
 One accent colour on the whole page, one radius system (pill buttons, 20px
 panels), no elevation beyond a soft shadow tinted to the paper. Dials from the
 `design-taste-frontend` skill: `DESIGN_VARIANCE 7 / MOTION_INTENSITY 6 /
