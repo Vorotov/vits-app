@@ -40,12 +40,34 @@ ssh "$HOST" "caddy validate --config $CADDYFILE --adapter caddyfile >/dev/null &
 echo "caddy reloaded"
 
 echo "== smoke"
-if [ -n "$(dig +short A vitomy.app)" ]; then RESOLVE=(); else RESOLVE=(--resolve "vitomy.app:443:$IP"); echo "(no A record yet; using --resolve, TLS may fail)"; fi
-code() { curl -sk -o /dev/null -w '%{http_code}' ${RESOLVE[@]+"${RESOLVE[@]}"} "https://vitomy.app$1"; }
-printf '%-12s %s\n' path status
-for p in / /privacy /support /terms /does-not-exist; do printf '%-12s %s\n' "$p" "$(code "$p")"; done
-html=$(curl -sk ${RESOLVE[@]+"${RESOLVE[@]}"} https://vitomy.app/)
-grep -q '\[[A-Z_]*\]' <<<"$html" && { echo "placeholder on the live page"; exit 1; }
+# The origin refuses every address outside Cloudflare's ranges, which is the
+# point of putting the domain behind the proxy, so there is no way to smoke
+# test the site except through Cloudflare itself. Before the A records exist
+# there is nothing to test; say so rather than reporting a row of zeros that
+# looks like a failure.
+if [ -z "$(dig +short A vitomy.app)" ]; then
+  echo "no A record for vitomy.app yet, so nothing public to test."
+  echo "Add at Cloudflare: A @ -> $IP proxied, A www -> $IP proxied, then rerun."
+  echo "deployed, smoke skipped"
+  exit 0
+fi
+
+code() { curl -s -o /dev/null -w '%{http_code}' "https://vitomy.app$1"; }
+printf '%-16s %s\n' path status
+for p in / /privacy /support /terms /does-not-exist; do printf '%-16s %s\n' "$p" "$(code "$p")"; done
+echo "(expect 200 200 200 404 404)"
+
+html=$(curl -s https://vitomy.app/)
+[ -n "$html" ] || { echo "the live page came back empty"; exit 1; }
+grep -q '\[[A-Z_]\+\]' <<<"$html" && { echo "placeholder on the live page"; exit 1; }
 grep -q -e '—' -e '–' <<<"$html" && { echo "dash on the live page"; exit 1; }
 grep -oE '(src|href)="https?://[^"]+"' <<<"$html" | grep -vE 'https://vitomy\.app/' && { echo "external resource on the live page"; exit 1; }
+
+# The address must not answer a direct request. A 000 (refused) is the pass.
+direct=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 8 --resolve "vitomy.app:443:$IP" https://vitomy.app/ || true)
+if [ "$direct" = "000" ]; then
+  echo "direct hit on the origin: refused, as intended"
+else
+  echo "WARNING: the origin answered a direct request with $direct; the Cloudflare allowlist is not doing its job"
+fi
 echo "smoke clean"

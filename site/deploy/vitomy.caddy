@@ -1,8 +1,33 @@
 # vitomy.app: static files from /var/www/vitomy. Included by the single
 # `import /etc/caddy/sites/*.caddy` line at the end of /etc/caddy/Caddyfile.
-# TLS is automatic (ACME); this domain is not behind Cloudflare.
+#
+# This domain sits BEHIND Cloudflare, like rin.live and shukaybook.com on this
+# box. Two consequences, both deliberate:
+#
+#  1. TLS is a Cloudflare Origin Certificate, not ACME. Cloudflare terminates
+#     the visitor's connection and opens its own to us, so a publicly trusted
+#     certificate buys nothing here and ACME through the proxy is one more
+#     thing that can fail. The origin certificate runs to 2041 and is issued
+#     for vitomy.app and *.vitomy.app only; the neighbours'
+#     /etc/ssl/cloudflare/origin.pem covers rin.live and does NOT cover us.
+#  2. Only Cloudflare may reach us. Hiding the server's address is the whole
+#     point of the proxy, and an address that still answers a direct request
+#     carrying the right Host header is not hidden. The list below is
+#     Cloudflare's published set, fetched 2026-09-12 from cloudflare.com/ips-v4
+#     and /ips-v6. Cloudflare changes it rarely; when it does, visitors see a
+#     dead site, so re-fetch both lists and redeploy.
+#
+# `trusted_proxies` is deliberately NOT set. Without it `remote_ip` tests the
+# real TCP peer, which is exactly what the allowlist needs. The cost is that
+# access logs carry Cloudflare's address rather than the visitor's, and nothing
+# here reads them.
 
 vitomy.app {
+	tls /etc/ssl/cloudflare/vitomy-origin.pem /etc/ssl/cloudflare/vitomy-origin.key
+
+	@direct not remote_ip 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+	abort @direct
+
 	root * /var/www/vitomy
 	encode zstd gzip
 	try_files {path} {path}.html
@@ -13,9 +38,10 @@ vitomy.app {
 		X-Content-Type-Options nosniff
 		Referrer-Policy strict-origin-when-cross-origin
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
-		# font-src is 'self' with no data: term: the one face the site ships,
-		# Instrument Sans, is linked as .woff2 files and nothing is inlined as a
-		# data: URI. site/test/external.test.mjs fails the build if that changes.
+		# font-src is 'self' with no data: term. The one face the site ships,
+		# Instrument Sans, is served as its own file, and
+		# site/test/external.test.mjs fails the build if a built stylesheet
+		# ever inlines a font again.
 		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'none'"
 		-Server
 	}
@@ -27,5 +53,10 @@ vitomy.app {
 }
 
 www.vitomy.app {
+	tls /etc/ssl/cloudflare/vitomy-origin.pem /etc/ssl/cloudflare/vitomy-origin.key
+
+	@direct not remote_ip 173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+	abort @direct
+
 	redir https://vitomy.app{uri} 308
 }

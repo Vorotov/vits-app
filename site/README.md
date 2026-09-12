@@ -22,7 +22,14 @@ Node lives at `~/.nvm/versions/node/v24.16.0/bin`; put it on PATH first.
 
 `ssh bot`, Caddy on 80/443, vhost `/etc/caddy/sites/vitomy.caddy`, root `/var/www/vitomy`. Other sites live on the same box; `deploy.sh` touches only those two paths and the one import line.
 
-DNS at Spaceship: `A @ 45.159.220.17`, `A www 45.159.220.17`.
+The domain sits behind Cloudflare, so the server's address stays private. Two things follow, and the vhost's own comments carry the reasoning:
+
+- TLS is a Cloudflare Origin Certificate at `/etc/ssl/cloudflare/vitomy-origin.pem` and `.key`, valid to 2041, issued for `vitomy.app` and `*.vitomy.app`. The neighbours' `origin.pem` covers rin.live and does not cover this name.
+- Only Cloudflare's published address ranges may reach the origin; anything else is refused. Cloudflare changes that list rarely, and when it does the site goes dark, so the fix is to re-fetch `cloudflare.com/ips-v4` and `/ips-v6` into the vhost and redeploy.
+
+Because of the second point there is no way to test the site except through Cloudflare: a direct request to the address is supposed to fail, and the smoke test asserts exactly that.
+
+DNS lives at Cloudflare: `A @ 45.159.220.17` proxied, `A www 45.159.220.17` proxied, with the two Spaceship MX records kept and left unproxied so mail to `support@vitomy.app` still arrives. The nameservers at Spaceship point at Cloudflare.
 
 ## Lighthouse
 
