@@ -137,6 +137,33 @@ True today and only today: the first release that adds RevenueCat, analytics
 or crash reporting must change this label in the same release. That is
 LEGAL-01 in `.planning/STATE.md`.
 
+**App Review notes** (App Review Information → Notes, and the Resolution
+Center reply) — the first submission, build 1.0.0 (2) on 2026-09-13, came back
+with Guideline 2.1 "Information Needed – New App Submission": the form letter
+Apple sends developer accounts with little review history, not a finding
+about the app. It asks for six things, answered below in Apple's order. The
+screen recording (item 1) is captured on a physical iPhone on the current iOS,
+starting at launch, and attached to the reply; the text goes into the Notes
+field as well, which Apple asks for so later submissions skip the letter.
+Keep it true: item 4 says "no network requests at all", which the RevenueCat
+tip jar (SHIP-01) will falsify — rewrite it in the same release.
+
+```
+Answers to the "Information Needed – New App Submission" request, in the same order.
+
+1. Screen recording: attached, captured on a physical iPhone running the current iOS. It starts at launch and shows the typical flow: the two intro pages, adding a supplement with a schedule (eight weeks on, four weeks off, one time per day), the Today list, marking a dose taken, the Cycles and Year views on the Calendar tab, and Settings. The app has no account or registration, no user-generated content that is shared with anyone, and no paid content or in-app purchases in this build.
+
+2. Purpose and target audience: VitoMy is a planner and log for supplements and vitamins. Users enter what they take, set when they take it (every day, on set dates, or in on/off cycles measured in weeks), and check items off each day; the calendar works out which weeks are on and which are breaks. It is for adults who take several supplements on schedules and want one place to see what is due today and when each cycle pauses. The app records the user's own decisions. It does not suggest what to take, how much, or whether to take anything, and it makes no claims about outcomes.
+
+3. Setup and access: no login, no credentials, no sample files. Install and open. The first launch shows two intro pages; tap through them. On the Stack tab, tap + to add a supplement (a name and a schedule are all that is required). The Today tab lists what is due and marks items taken with one tap; the Calendar tab holds the Cycles and Year views. Reminders are local notifications; the permission prompt appears when the first reminder time is saved, and every feature works if it is declined.
+
+4. External services, tools and platforms: none. The app has no server, no account system, no analytics, no advertising, no payment processor and no AI service. It makes no network requests at all; all data is stored in a local SQLite database on the device and never leaves it. Reminders use iOS local notifications only (no push notifications, no APNs).
+
+5. Regional differences: none. The app functions identically in every region. The interface follows the device language and is localised into English, Arabic, Spanish, French, Hindi, Ukrainian and Chinese; features and content are the same in all of them.
+
+6. Regulated industry or protected material: not applicable. The app provides no advice or recommendations of any kind, sells nothing, contains no third-party or licensed material, does not use HealthKit, and reads no external data. Every piece of content is entered by the user.
+```
+
 **Screenshots** — App Store Connect's default iPhone card is the 6.5-inch
 Display, which accepts 1284x2778 or 1242x2688 and rejected the 1320x2868
 captures with "Screenshots dimensions should be: 1242 × 2688px, 2688 × 1242px,
