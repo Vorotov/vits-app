@@ -513,6 +513,35 @@ exclusively from it. The full set of rules — including the ones a test enforce
 — is the `vitomy-design` skill.
 <!-- GSD:architecture-end -->
 
+## The website subproject
+
+`site/` holds the marketing and legal website, live at `https://vitomy.app`
+since 2026-09-12. It is a separate program that happens to share this
+repository: Astro 7, static output, English only, no backend. **Read
+`site/CLAUDE.md` before touching anything under `site/`.** Its rules are not
+this file's rules.
+
+Two facts make it load bearing rather than decorative. `https://vitomy.app/privacy`
+and `/support` are the URLs both app stores require, so breaking either breaks
+a live listing. And the legal pages are not authored there: they render at
+build time from `docs/legal/*.md`, which stays the single source, with a build
+integration that refuses to publish a document still holding a `[PLACEHOLDER]`.
+
+The two suites do not see each other. `flutter test` reads `test/` only and
+`flutter analyze` ignores non-Dart files, so nothing in `site/` can turn the
+app's suites red. The site has its own gates: `npm test` from `site/`, run over
+the built `dist/`, covering placeholders, dashes, medical vocabulary (the stem
+list is read out of `test_release/legal_copy_safety_test.dart`, so the app and
+the site cannot drift), external resources, store buttons, legal heading
+parity, metadata, the mark's parity with `tool/make_icons.py`, and the pinned
+scene's fixes.
+
+Deploy with `npm run deploy` from `site/`, never by hand. The server also hosts
+other people's sites, and the domain sits behind Cloudflare with the origin
+refusing every non-Cloudflare address; `site/README.md` and the vhost's own
+comments carry the reasoning.
+
+
 <!-- GSD:skills-start source:skills/ -->
 
 ## Project Skills

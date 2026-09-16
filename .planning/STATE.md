@@ -50,10 +50,9 @@ Progress: [██████████] 9 phases, 8 closed — Phase 7 (Dose 
   quoting.
 
 - **The only open work is human-only.** No code is blocked on a decision.
-  Four items need a person at a device or an account — listed under *Waiting on
-  a human* below, and in the Deferred Items table. The sharpest one is a public
-  URL: Apple's Support URL and both stores' privacy-policy fields take a URL,
-  and `support@vitomy.app` closes Play's contact field but not Apple's.
+  Three items need a person at a device or an account — listed under *Waiting on
+  a human* below, and in the Deferred Items table. The URL blocker is closed:
+  `https://vitomy.app/privacy` and `/support` went live 2026-09-12.
 
 - **Store assets are generated, never hand-edited.** `tool/make_icons.py`
   builds every icon size for both platforms from one geometry;
@@ -323,11 +322,9 @@ an account:
    banking and tax forms** — the second blocks even a sandbox purchase, and the
    tax forms only appear once the agreement is signed. Neither is code.
 
-4. **A public URL for `docs/legal/privacy.md`.** Both stores require a privacy
-   policy link and Apple additionally requires a Support URL; neither field is
-   optional, and the project has no site yet.
-
 Closed 2026-09-11: the signing keystore, and the app name and bundle id.
+Closed 2026-09-12: the public URL both stores require. `https://vitomy.app`
+serves the privacy policy and the support page; see `SITE-01` below.
 
 ## Deferred Items
 
@@ -347,7 +344,7 @@ Items acknowledged and carried forward rather than done:
 | Release | Android release, after Shipaton — the Play 12-testers-for-14-days clock can start any time; `purchases_ui_flutter` would raise minSdk 21 → 24 and `MainActivity` must extend `FlutterFragmentActivity` | Deferred past 2026-09-30 | 2026-09-09 |
 | Legal | LEGAL-01 — the release that adds analytics, crash reporting or a subscription must extend `docs/legal/privacy.md` + `terms.md` (clause bank in `docs/legal/2026-09-07-privacy-and-terms-research.md` §7) and update both store privacy labels in the same release | Standing; blocks any SDK addition | 2026-09-07 |
 | Legal | Governing law and forum absent from `terms.md`; `[NOMINAL_SUM]` still a placeholder (`[APP_NAME]` and `[CONTACT_EMAIL]` filled 2026-09-11, the website references were removed; `[LAST_UPDATED]` was filled in `privacy.md` on 2026-09-11 for the site and remains only in `terms.md`) | Owner-only; the sum comes with the legal entity, the date with publication | 2026-09-07 |
-| Site | `SITE-01` vitomy.app: Astro static site in `site/`, spec `docs/superpowers/specs/2026-09-11-vitomy-site-design.md`, plan `docs/superpowers/plans/2026-09-11-vitomy-site.md`. Closes Apple's Support URL and both stores' privacy-policy URL. `/terms` waits on `[NOMINAL_SUM]`; store buttons inert until launch | Dima adds two A records at Spaceship; deploy via `site-deployer` | 2026-09-11 |
+| Site | `SITE-01` **done and live 2026-09-12**: `https://vitomy.app` serves the landing, `/privacy` and `/support`, behind Cloudflare with the origin refusing every non-Cloudflare address. Astro in `site/`, spec and plan under `docs/superpowers/`, 53 gates, Lighthouse 100 across the board. Two launch-day switches remain in `site/src/config.ts`: the store URLs and the official badge files. `/terms` stays unemitted until `[NOMINAL_SUM]` is filled | Closed; reopen only for the launch-day switches | 2026-09-12 |
 | Copy | `saveAndStart` ("Add and start cycle") is the regimen editor's primary CTA on BOTH the add path and the EDIT path — editing an existing schedule offers to add it. Unconditional at `regimen_editor_screen.dart:903`, wrong in all seven languages. Found 2026-09-11 while reviewing a store screenshot | Open — needs a second ARB key in 7 files plus a conditional; not a correctness bug | 2026-09-11 |
 | Review | 6 Info-level review findings and 4 lower-severity security items | Documented, deliberately unfixed; none affect correctness or privacy | 2026-08-16 |
 

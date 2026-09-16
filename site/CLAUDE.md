@@ -1,9 +1,13 @@
 # vitomy.app, the website
 
-The marketing and legal site for VitoMy. A subproject of the app repository:
-it lives in `site/`, it ships as static files, and it is deployed by rsync to
-the server `bot` behind Caddy. It has no backend, no analytics, no cookies and
-no third-party request of any kind.
+The marketing and legal site for VitoMy, live at `https://vitomy.app` since
+2026-09-12. A subproject of the app repository: it lives in `site/`, it ships
+as static files, and it is deployed by rsync to the server `bot` behind Caddy,
+which in turn sits behind Cloudflare. It has no backend, no analytics, no
+cookies and no third-party request of any kind.
+
+`/privacy` and `/support` are the URLs both app stores require. Breaking either
+one breaks a live store listing, so treat them as production.
 
 Spec: `docs/superpowers/specs/2026-09-11-vitomy-site-design.md`. Read it
 before changing a page. Everything below is the short form.

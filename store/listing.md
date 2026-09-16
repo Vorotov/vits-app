@@ -118,11 +118,12 @@ rules above, and the vocabulary stems derived from
 `test_release/legal_copy_safety_test.dart` and
 `test/l10n/planner_copy_safety_test.dart`; it must print `RESULT: PASS`.
 
-**Support URL** — required, and still a blocker. App Store Connect takes a URL
-here, not an address: a `mailto:` is rejected, so `support@vitomy.app` does not
-close this field. It needs a page.
-**Marketing URL** — optional; leave blank until vitomy.app has a page.
-**Privacy Policy URL** — required. `docs/legal/privacy.md`, once hosted.
+**Support URL** — `https://vitomy.app/support`. Live since 2026-09-12. App
+Store Connect takes a URL here, not an address: a `mailto:` is rejected, which
+is why `support@vitomy.app` could never close this field on its own.
+**Marketing URL** — optional. `https://vitomy.app` if you want it filled.
+**Privacy Policy URL** — `https://vitomy.app/privacy`, rendered at build time
+from `docs/legal/privacy.md` so the page and the document cannot drift.
 **App Review contact** — `support@vitomy.app`. This one is private to Apple and
 is a separate field from the public Support URL.
 
@@ -254,7 +255,7 @@ reminders survive a restart. No exact-alarm permission is declared.
 **Content rating (IARC)** — the questionnaire is about content, same reasoning
 as Apple's above.
 
-**Privacy policy URL** — required. Same blocker.
+**Privacy policy URL** — `https://vitomy.app/privacy`. Same page Apple gets.
 
 **Contact email** — `support@vitomy.app`. Play shows this publicly on the
 listing and it is the one required contact field, so Play needs no support

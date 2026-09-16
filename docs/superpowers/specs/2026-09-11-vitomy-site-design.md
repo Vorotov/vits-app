@@ -1,6 +1,9 @@
 # vitomy.app website, design spec
 
-Date: 2026-09-11. Status: awaiting Dima's review.
+Date: 2026-09-11. Status: **built and live since 2026-09-12** at
+`https://vitomy.app`. Where the shipped site departs from this document the
+departure is recorded in place; the plan is
+`docs/superpowers/plans/2026-09-11-vitomy-site.md`.
 
 ## What this is
 

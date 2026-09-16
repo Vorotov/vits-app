@@ -1,7 +1,23 @@
 # vitomy.app
 
-The website. Rules in `CLAUDE.md`; design in
+**Live since 2026-09-12.** `https://vitomy.app` serves the landing, `/privacy`
+and `/support`. Those last two are the URLs both app stores require, so the
+site is load bearing, not decorative: breaking `/privacy` breaks a store
+listing.
+
+Rules in `CLAUDE.md`; design in
 `../docs/superpowers/specs/2026-09-11-vitomy-site-design.md`.
+
+Two things are still switched off, both in `src/config.ts`. The store buttons
+are inert until the two URLs are set and the official badges are in
+`public/badges/`. `/terms` is not emitted until `[NOMINAL_SUM]` is filled in
+`../docs/legal/terms.md` and `'terms'` joins `legalPages`.
+
+One item of hygiene is outstanding: the origin certificate's private key was
+pasted into a chat transcript on 2026-09-12. The exposure is bounded, since the
+key only proves our identity to Cloudflare and not to visitors, but revoking
+and reissuing it from SSL/TLS, Origin Server costs two clicks and one
+`npm run deploy`.
 
 Node lives at `~/.nvm/versions/node/v24.16.0/bin`; put it on PATH first.
 
