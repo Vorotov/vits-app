@@ -133,6 +133,17 @@ answering it honestly gives 4+. Setting the store rating to 17+ to match the
 Terms costs reach and is not what the questionnaire is asking. Worth a
 deliberate decision rather than either default.
 
+**In-app purchase review screenshots** — App Store Connect will not let a
+product be submitted without a screenshot showing where it appears in the app,
+and the app cannot show a real price until the product exists. That circle is
+broken by `tool/make_iap_screenshot.sh`, which pumps the REAL support screen
+with the price fetch stubbed at the three prices being configured, and writes
+`store/screenshots/iap-review/tip-review.png` at 1320x2868. **One image goes
+in all three products' Review Screenshot fields**: the three tips share a
+screen, and what Apple asks for is where the purchase appears. Re-run it if
+the prices or the copy change, or the picture starts describing something that
+is not for sale.
+
 **App Privacy (nutrition label)** — **Purchases, Purchase History**, purposes
 **Analytics** and **App Functionality**, **not linked to identity**, and
 nothing else in any other category.
