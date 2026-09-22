@@ -65,6 +65,7 @@ import 'package:vitomy/core/theme/tokens.dart';
 import 'package:vitomy/features/onboarding/first_run_hints.dart';
 import 'package:vitomy/features/onboarding/onboarding_controller.dart';
 import 'package:vitomy/features/settings/language_picker.dart';
+import 'package:vitomy/features/support/support_screen.dart';
 
 /// The Settings screen (UI-SPEC S7).
 class SettingsScreen extends StatelessWidget {
@@ -170,6 +171,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             const _RemindersSection(),
             const _ShowIntroAgainRow(),
+            const _SupportRow(),
           ],
         ),
       ),
@@ -421,6 +423,60 @@ class _ShowIntroAgainRow extends ConsumerWidget {
                 ),
                 const Icon(
                   Icons.refresh,
+                  size: 18,
+                  color: BqColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The way to the support screen (SHIP-01).
+///
+/// Last in the list, below the intro reset, and that placement is the decision
+/// worth recording: an ask for money at the top of Settings is the first thing
+/// a user sees every time they come here to change a language. At the bottom it
+/// is findable and not insistent, which is the same restraint the rest of this
+/// app's copy rules describe.
+///
+/// A private widget in this file rather than a file of its own, for the reason
+/// `_RemindersSection` gives: the feature's source glob expects the two files
+/// it has. The screen it pushes lives under `lib/features/support/`, which is
+/// its own feature and carries its own gates.
+class _SupportRow extends StatelessWidget {
+  const _SupportRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(top: BqSpace.sm),
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: BqColors.surface,
+          border: Border.all(color: BqColors.cardBorder),
+          borderRadius: BorderRadius.circular(BqRadii.card),
+        ),
+        child: InkWell(
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const SupportScreen()),
+          ),
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 15, 16, 15),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    context.l10n.settingsSupportRow,
+                    style: const TextStyle(fontSize: 15, color: BqColors.ink),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right,
                   size: 18,
                   color: BqColors.textSecondary,
                 ),

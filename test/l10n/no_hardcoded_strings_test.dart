@@ -412,6 +412,17 @@ bool _isNotificationPlatformIdentifier(Literal l) =>
 /// this prefix rather than trusting a gate alone, because a gate protects the
 /// repository while the comparison protects a build made from a dirty tree.
 /// It is a wire format, not a word, and there is nothing here to translate.
+/// The three App Store Connect product identifiers.
+///
+/// Scoped by VALUE and by path, for the reason spelled out above
+/// [_isNotificationPlatformIdentifier]. These are a wire format shared with
+/// App Store Connect, the RevenueCat dashboard and every StoreKit receipt: the
+/// same bytes have to appear in four places or a purchase does not resolve.
+/// They are never rendered, and translating one would break the thing it names.
+bool _isStoreProductIdentifier(Literal l) =>
+    l.path == 'lib/core/purchases/tip_products.dart' &&
+    l.value.startsWith('app.vitomy.tip.');
+
 bool _isVendorKeyPrefix(Literal l) =>
     l.path == 'lib/core/purchases/revenuecat_gateway.dart' &&
     l.value == 'test_';
@@ -537,6 +548,15 @@ const stringLiteralAllowlist = <({
         'format rather than a word. Scoped by VALUE and by path, so the '
         'exemption stays the size of its own reason',
     allows: _isVendorKeyPrefix,
+  ),
+  (
+    name: 'App Store Connect product identifiers',
+    why: 'the same bytes have to appear in App Store Connect, the RevenueCat '
+        'dashboard, a StoreKit receipt and this file or a purchase does not '
+        'resolve. They are never rendered and a translation would break the '
+        'product it names, which is the same category as the notification '
+        'platform identifiers above. Scoped by VALUE prefix and by path',
+    allows: _isStoreProductIdentifier,
   ),
 ];
 

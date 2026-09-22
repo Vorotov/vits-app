@@ -1104,6 +1104,12 @@ void main() {
     /// EXACT rather than loosened to a superset — the point of this test is
     /// that the reminders section adds nothing while its answer is unknown,
     /// and that claim only means something if every other row is enumerated.
+    ///
+    /// [l10n.settingsSupportRow] joined it on 2026-09-22 with the tip screen,
+    /// for the same reason and by the same rule: a row that ships in every
+    /// build is enumerated here. The alternative — relaxing this to a superset
+    /// so new rows land silently — would retire the only assertion in the
+    /// repository that says what this screen contains.
     Set<String> languageOnlyText(AppLocalizations l10n) => <String>{
           l10n.settingsTitle,
           l10n.settingsLanguageTitle,
@@ -1112,6 +1118,7 @@ void main() {
             lookupAppLocalizations(locale).languageName,
           '✓',
           l10n.settingsShowIntroAgain,
+          l10n.settingsSupportRow,
         };
 
     testWidgets(
