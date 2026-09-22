@@ -64,3 +64,10 @@ app.*.map.json
 /site/dist/
 /site/.astro/
 /site/src/assets/screens/
+
+# Apple private keys. The App Store Connect and In-App Purchase keys are real
+# secrets, unlike the RevenueCat SDK key in lib/core/purchases/revenuecat_key.dart
+# which is public by design and compiled into every binary. Apple lets a .p8 be
+# downloaded exactly once, so a committed one cannot be rotated quietly.
+# They belong outside the repository, beside the upload keystore in ~/keys/.
+*.p8
