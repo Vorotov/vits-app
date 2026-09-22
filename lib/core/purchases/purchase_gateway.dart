@@ -63,8 +63,12 @@ class TipProduct {
   @override
   int get hashCode => Object.hash(id, priceString);
 
+  // The two fields and nothing else, deliberately: a type name here would be a
+  // word-carrying literal, and `no_hardcoded_strings_test.dart` is right to
+  // flag those wherever they sit — today out of sight, tomorrow rendered. The
+  // id already names what this is, so the type name earns nothing.
   @override
-  String toString() => 'TipProduct($id, $priceString)';
+  String toString() => '$id $priceString';
 }
 
 /// What came of asking the store to sell one tip.
