@@ -741,4 +741,33 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get onboardingNext => 'Suivant';
+
+  @override
+  String get settingsSupportRow => 'Soutenir le développeur';
+
+  @override
+  String get supportTitle => 'Soutenir le développeur';
+
+  @override
+  String get supportBody =>
+      'VitoMy est fait par une seule personne. Pas de publicité, pas de compte, et votre liste n\'est envoyée nulle part. Un pourboire est une façon de dire que l\'application mérite d\'être gardée. Il ne débloque rien et rien ne change ensuite.';
+
+  @override
+  String get supportTipSmall => 'Petit pourboire';
+
+  @override
+  String get supportTipMedium => 'Pourboire moyen';
+
+  @override
+  String get supportTipLarge => 'Gros pourboire';
+
+  @override
+  String get supportThanks => 'Merci. Cela compte beaucoup.';
+
+  @override
+  String get supportUnavailable =>
+      'Les pourboires ne sont pas disponibles pour le moment. Vérifiez la connexion et réessayez plus tard.';
+
+  @override
+  String get supportFailed => 'Cela n\'a pas abouti. Rien n\'a été débité.';
 }

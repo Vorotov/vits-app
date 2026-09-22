@@ -715,4 +715,32 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get onboardingNext => '下一步';
+
+  @override
+  String get settingsSupportRow => '支持开发者';
+
+  @override
+  String get supportTitle => '支持开发者';
+
+  @override
+  String get supportBody =>
+      'VitoMy 由一个人开发。没有广告，没有账号，你的清单也不会被发送到任何地方。打赏只是表示这个应用值得留下。它不会解锁任何内容，之后也不会有任何变化。';
+
+  @override
+  String get supportTipSmall => '小额打赏';
+
+  @override
+  String get supportTipMedium => '中等打赏';
+
+  @override
+  String get supportTipLarge => '大额打赏';
+
+  @override
+  String get supportThanks => '谢谢，这很有意义。';
+
+  @override
+  String get supportUnavailable => '目前无法打赏。请检查网络连接，稍后再试。';
+
+  @override
+  String get supportFailed => '未能完成，没有扣款。';
 }

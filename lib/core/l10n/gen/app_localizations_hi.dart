@@ -740,4 +740,33 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get onboardingNext => 'आगे';
+
+  @override
+  String get settingsSupportRow => 'डेवलपर को सहयोग दें';
+
+  @override
+  String get supportTitle => 'डेवलपर को सहयोग दें';
+
+  @override
+  String get supportBody =>
+      'VitoMy को एक ही व्यक्ति बनाता है। यहाँ न विज्ञापन हैं और न कोई खाता, और आपकी सूची कहीं नहीं भेजी जाती। टिप यह कहने का एक तरीका है कि ऐप रखने लायक है। इससे कुछ नहीं खुलता, और उसके बाद कुछ नहीं बदलता।';
+
+  @override
+  String get supportTipSmall => 'छोटी टिप';
+
+  @override
+  String get supportTipMedium => 'मध्यम टिप';
+
+  @override
+  String get supportTipLarge => 'बड़ी टिप';
+
+  @override
+  String get supportThanks => 'धन्यवाद। यह बहुत मायने रखता है।';
+
+  @override
+  String get supportUnavailable =>
+      'टिप अभी उपलब्ध नहीं हैं। कनेक्शन जाँचें और बाद में फिर कोशिश करें।';
+
+  @override
+  String get supportFailed => 'यह पूरा नहीं हुआ। कोई राशि नहीं ली गई।';
 }

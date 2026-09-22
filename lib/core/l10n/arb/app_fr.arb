@@ -176,5 +176,14 @@
   "onboardingPage2Title": "Le calendrier voit tout en même temps",
   "onboardingPage2Body": "Le calendrier montre où vous en êtes dans chaque cycle, ce qui se chevauche avec quoi et quand commence le prochain repos.",
   "onboardingIllustrationSemantics2": "Exemple de calendrier : trois compléments dont les semaines de prise se chevauchent en partie",
-  "onboardingNext": "Suivant"
+  "onboardingNext": "Suivant",
+  "settingsSupportRow": "Soutenir le développeur",
+  "supportTitle": "Soutenir le développeur",
+  "supportBody": "VitoMy est fait par une seule personne. Pas de publicité, pas de compte, et votre liste n'est envoyée nulle part. Un pourboire est une façon de dire que l'application mérite d'être gardée. Il ne débloque rien et rien ne change ensuite.",
+  "supportTipSmall": "Petit pourboire",
+  "supportTipMedium": "Pourboire moyen",
+  "supportTipLarge": "Gros pourboire",
+  "supportThanks": "Merci. Cela compte beaucoup.",
+  "supportUnavailable": "Les pourboires ne sont pas disponibles pour le moment. Vérifiez la connexion et réessayez plus tard.",
+  "supportFailed": "Cela n'a pas abouti. Rien n'a été débité."
 }

@@ -176,5 +176,14 @@
   "onboardingPage2Title": "El calendario lo ve todo a la vez",
   "onboardingPage2Body": "El calendario muestra en qué punto de cada ciclo estás, qué se solapa con qué y cuándo empieza el próximo descanso.",
   "onboardingIllustrationSemantics2": "Ejemplo de calendario: tres suplementos cuyas semanas de toma se solapan en parte",
-  "onboardingNext": "Siguiente"
+  "onboardingNext": "Siguiente",
+  "settingsSupportRow": "Apoyar al desarrollador",
+  "supportTitle": "Apoyar al desarrollador",
+  "supportBody": "VitoMy lo hace una sola persona. No hay anuncios ni cuenta, y tu lista nunca se envía a ningún sitio. Una propina es una forma de decir que vale la pena conservar la aplicación. No desbloquea nada y después no cambia nada.",
+  "supportTipSmall": "Propina pequeña",
+  "supportTipMedium": "Propina mediana",
+  "supportTipLarge": "Propina grande",
+  "supportThanks": "Gracias. Significa mucho.",
+  "supportUnavailable": "Las propinas no están disponibles ahora. Comprueba la conexión e inténtalo más tarde.",
+  "supportFailed": "No se ha completado. No se ha cobrado nada."
 }

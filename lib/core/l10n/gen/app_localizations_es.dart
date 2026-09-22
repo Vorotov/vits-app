@@ -745,4 +745,33 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get onboardingNext => 'Siguiente';
+
+  @override
+  String get settingsSupportRow => 'Apoyar al desarrollador';
+
+  @override
+  String get supportTitle => 'Apoyar al desarrollador';
+
+  @override
+  String get supportBody =>
+      'VitoMy lo hace una sola persona. No hay anuncios ni cuenta, y tu lista nunca se envía a ningún sitio. Una propina es una forma de decir que vale la pena conservar la aplicación. No desbloquea nada y después no cambia nada.';
+
+  @override
+  String get supportTipSmall => 'Propina pequeña';
+
+  @override
+  String get supportTipMedium => 'Propina mediana';
+
+  @override
+  String get supportTipLarge => 'Propina grande';
+
+  @override
+  String get supportThanks => 'Gracias. Significa mucho.';
+
+  @override
+  String get supportUnavailable =>
+      'Las propinas no están disponibles ahora. Comprueba la conexión e inténtalo más tarde.';
+
+  @override
+  String get supportFailed => 'No se ha completado. No se ha cobrado nada.';
 }

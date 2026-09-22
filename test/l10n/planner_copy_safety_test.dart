@@ -134,6 +134,12 @@ const plannerKeyPrefixes = <String>[
   // second intro page: a hint sits closer to the user's real decision than
   // any intro screen did, so it needs the ban MORE, not less.
   'hint',
+  // And the support screen, for the sharpest version of the same reason. It
+  // is the one place in the app where somebody is being asked for money, and
+  // therefore the one place where a rewrite would reach for a justification
+  // ("it keeps you healthy", "it is safer than guessing"). The vocabulary ban
+  // has to reach a purchase screen more than it reaches a planner.
+  'support',
 ];
 
 /// Planner-rendered keys no prefix catches, because they are SHARED with
@@ -142,6 +148,12 @@ const plannerKeysExact = <String>{
   'substancesCount',
   'periodsCount',
   'disclaimerEducational',
+  // The Settings row that reaches the support screen. Named for the surface it
+  // sits on rather than the one it opens, which is this repository's settings
+  // convention (settingsShowIntroAgain, settingsRemindersTitle), so the
+  // 'support' prefix cannot catch it. It carries the same words as
+  // supportTitle and belongs under the same ban.
+  'settingsSupportRow',
 };
 
 /// Whether [key] names copy the planner renders.
@@ -212,6 +224,15 @@ Map<String, String> plannerCopy(AppLocalizations l10n) {
     'hintDismiss': l10n.hintDismiss,
     'hintCycle': l10n.hintCycle,
     'hintMarkDose': l10n.hintMarkDose,
+    'settingsSupportRow': l10n.settingsSupportRow,
+    'supportTitle': l10n.supportTitle,
+    'supportBody': l10n.supportBody,
+    'supportTipSmall': l10n.supportTipSmall,
+    'supportTipMedium': l10n.supportTipMedium,
+    'supportTipLarge': l10n.supportTipLarge,
+    'supportThanks': l10n.supportThanks,
+    'supportUnavailable': l10n.supportUnavailable,
+    'supportFailed': l10n.supportFailed,
   };
 }
 

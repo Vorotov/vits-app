@@ -774,4 +774,33 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get onboardingNext => 'التالي';
+
+  @override
+  String get settingsSupportRow => 'ادعم المطور';
+
+  @override
+  String get supportTitle => 'ادعم المطور';
+
+  @override
+  String get supportBody =>
+      'يصنع VitoMy شخص واحد. لا إعلانات ولا حساب، وقائمتك لا تُرسل إلى أي مكان. الإكرامية طريقة لقول إن التطبيق يستحق البقاء. لا تفتح شيئًا، ولا يتغير شيء بعدها.';
+
+  @override
+  String get supportTipSmall => 'إكرامية صغيرة';
+
+  @override
+  String get supportTipMedium => 'إكرامية متوسطة';
+
+  @override
+  String get supportTipLarge => 'إكرامية كبيرة';
+
+  @override
+  String get supportThanks => 'شكرًا لك. هذا يعني الكثير.';
+
+  @override
+  String get supportUnavailable =>
+      'الإكراميات غير متاحة الآن. تحقق من الاتصال وحاول لاحقًا.';
+
+  @override
+  String get supportFailed => 'لم تتم العملية. لم يُخصم أي مبلغ.';
 }

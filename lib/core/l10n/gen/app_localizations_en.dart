@@ -741,4 +741,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingNext => 'Next';
+
+  @override
+  String get settingsSupportRow => 'Support the developer';
+
+  @override
+  String get supportTitle => 'Support the developer';
+
+  @override
+  String get supportBody =>
+      'VitoMy is built by one person, with no ads and no account, and your stack is never sent anywhere. A tip is a way to say the app is worth keeping. It unlocks nothing, and nothing changes afterwards.';
+
+  @override
+  String get supportTipSmall => 'Small tip';
+
+  @override
+  String get supportTipMedium => 'Medium tip';
+
+  @override
+  String get supportTipLarge => 'Large tip';
+
+  @override
+  String get supportThanks => 'Thank you. That means a lot.';
+
+  @override
+  String get supportUnavailable =>
+      'Tips are not available right now. Check the connection and try again later.';
+
+  @override
+  String get supportFailed => 'That did not go through. Nothing was charged.';
 }

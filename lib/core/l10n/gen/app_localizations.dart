@@ -1174,6 +1174,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Next'**
   String get onboardingNext;
+
+  /// Row in Settings that pushes the support screen, where a one-off tip can be left. Placed below the intro-reset row. The word is SUPPORT or TIP and never DONATE: Apple guideline 3.2.2(iv) bans in-app fundraising for charities, and a planner asking for donations reads as one
+  ///
+  /// In en, this message translates to:
+  /// **'Support the developer'**
+  String get settingsSupportRow;
+
+  /// Title of the support screen. Deliberately the same string as settingsSupportRow, so the control and its destination can never disagree, the same pairing settingsTitle already has with the gear's semantics label
+  ///
+  /// In en, this message translates to:
+  /// **'Support the developer'**
+  String get supportTitle;
+
+  /// The one paragraph on the support screen. Three claims, each literally true and each checked elsewhere: no advertising SDK ships (test/purchases/network_dependency_test.dart), there is no account of any kind, and supplement data never reaches the network (test/purchases/purchase_privacy_test.dart). The last sentence is not modesty, it is the product: the tips are consumables with no entitlement, so a reviewer reading this and a user reading it are told the same thing
+  ///
+  /// In en, this message translates to:
+  /// **'VitoMy is built by one person, with no ads and no account, and your stack is never sent anywhere. A tip is a way to say the app is worth keeping. It unlocks nothing, and nothing changes afterwards.'**
+  String get supportBody;
+
+  /// Label of the first of three tip rows. The PRICE is never in the copy: it comes from the store already formatted for the user's own storefront, currency and separator included
+  ///
+  /// In en, this message translates to:
+  /// **'Small tip'**
+  String get supportTipSmall;
+
+  /// Label of the second tip row. See supportTipSmall on the absent price
+  ///
+  /// In en, this message translates to:
+  /// **'Medium tip'**
+  String get supportTipMedium;
+
+  /// Label of the third tip row. See supportTipSmall on the absent price
+  ///
+  /// In en, this message translates to:
+  /// **'Large tip'**
+  String get supportTipLarge;
+
+  /// Replaces the three rows after a purchase goes through. Terminal for the life of the screen: a consumable tip is an event, so there is nothing to undo and nothing to return to. No guilt framing and no ask for another, which would be the obvious and wrong next sentence
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you. That means a lot.'**
+  String get supportThanks;
+
+  /// Shown instead of the rows when the store has nothing to offer. Reached three honest ways: the device has never been online, the products are still in review in App Store Connect, or configuring the purchase SDK failed. All three are the same fact to a user, so they get one sentence rather than a diagnostic
+  ///
+  /// In en, this message translates to:
+  /// **'Tips are not available right now. Check the connection and try again later.'**
+  String get supportUnavailable;
+
+  /// Shown under the rows after a FAILED purchase, never after a cancelled one. A user who swipes the system sheet away has done nothing wrong and sees nothing at all. The second sentence is the one that matters: after a failed payment the first question is whether money left
+  ///
+  /// In en, this message translates to:
+  /// **'That did not go through. Nothing was charged.'**
+  String get supportFailed;
 }
 
 class _AppLocalizationsDelegate

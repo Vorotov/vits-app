@@ -759,4 +759,33 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get onboardingNext => 'Далі';
+
+  @override
+  String get settingsSupportRow => 'Підтримати розробника';
+
+  @override
+  String get supportTitle => 'Підтримати розробника';
+
+  @override
+  String get supportBody =>
+      'VitoMy робить одна людина. Тут немає реклами й немає облікового запису, а ваш перелік нікуди не надсилається. Чайові це спосіб сказати, що застосунок вартий того, щоб лишитися. Вони нічого не відкривають, і після них нічого не змінюється.';
+
+  @override
+  String get supportTipSmall => 'Малі чайові';
+
+  @override
+  String get supportTipMedium => 'Середні чайові';
+
+  @override
+  String get supportTipLarge => 'Великі чайові';
+
+  @override
+  String get supportThanks => 'Дякуємо. Це багато важить.';
+
+  @override
+  String get supportUnavailable =>
+      'Зараз чайові недоступні. Перевірте зʼєднання і спробуйте пізніше.';
+
+  @override
+  String get supportFailed => 'Не вдалося. Кошти не списано.';
 }
