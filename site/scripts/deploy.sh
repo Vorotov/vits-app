@@ -61,7 +61,9 @@ html=$(curl -s https://vitomy.app/)
 [ -n "$html" ] || { echo "the live page came back empty"; exit 1; }
 grep -q '\[[A-Z_]\+\]' <<<"$html" && { echo "placeholder on the live page"; exit 1; }
 grep -q -e '—' -e '–' <<<"$html" && { echo "dash on the live page"; exit 1; }
-grep -oE '(src|href)="https?://[^"]+"' <<<"$html" | grep -vE 'https://vitomy\.app/' && { echo "external resource on the live page"; exit 1; }
+# The store links are the one sanctioned external href (same allowance as
+# test/external.test.mjs); everything else on the page must be ours.
+grep -oE '(src|href)="https?://[^"]+"' <<<"$html" | grep -vE 'https://(vitomy\.app/|apps\.apple\.com/|play\.google\.com/)' && { echo "external resource on the live page"; exit 1; }
 
 # The address must not answer a direct request. A 000 (refused) is the pass.
 direct=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 8 --resolve "vitomy.app:443:$IP" https://vitomy.app/ || true)

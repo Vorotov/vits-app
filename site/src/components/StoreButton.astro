@@ -1,5 +1,6 @@
 ---
 import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { stores, type StoreId } from '../config';
 import appleLogo from '@phosphor-icons/core/assets/regular/apple-logo.svg?raw';
 import playLogo from '@phosphor-icons/core/assets/regular/google-play-logo.svg?raw';
@@ -10,8 +11,10 @@ const { url, label, badge } = stores[store];
 const glyph = store === 'apple' ? appleLogo : playLogo;
 
 // Apple and Google forbid altering their badges, so before launch the button
-// is our own; on launch day the OFFICIAL badge file must be present.
-if (url && !existsSync(new URL(`../../public${badge}`, import.meta.url))) {
+// is our own; on launch day the OFFICIAL badge file must be present. Resolve
+// from the project root, not import.meta.url: at build time this component is
+// a chunk under dist/.prerender/, so a relative URL never reaches public/.
+if (url && !existsSync(join(process.cwd(), 'public', badge))) {
   throw new Error(`${store}: a store URL is set but public${badge} is missing. Download the official badge first.`);
 }
 ---

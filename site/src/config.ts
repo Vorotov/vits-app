@@ -4,7 +4,11 @@
  *  renders the OFFICIAL badge from public/badges/ and links to it. Set both
  *  on launch day. */
 export const stores = {
-  apple: { url: null as string | null, label: 'App Store', badge: '/badges/app-store.svg' },
+  apple: {
+    url: 'https://apps.apple.com/us/app/vitomy-supps-vits-tracker/id6811004977' as string | null,
+    label: 'App Store',
+    badge: '/badges/app-store.svg',
+  },
   google: { url: null as string | null, label: 'Google Play', badge: '/badges/google-play.png' },
 } as const;
 
