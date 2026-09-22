@@ -12,6 +12,9 @@ import 'package:vitomy/core/notifications/notification_service.dart';
 import 'package:vitomy/core/notifications/notification_sync.dart';
 import 'package:vitomy/core/notifications/tz_conversion.dart';
 import 'package:vitomy/core/providers.dart';
+import 'package:vitomy/core/purchases/purchase_gateway.dart';
+import 'package:vitomy/core/purchases/purchase_providers.dart';
+import 'package:vitomy/core/purchases/revenuecat_gateway.dart';
 import 'package:vitomy/core/selected_tab_controller.dart';
 import 'package:vitomy/core/theme/theme.dart';
 
@@ -59,8 +62,11 @@ Future<void> main() async {
   // exactly two awaits may. The zone database is about a megabyte to parse and
   // initialize() plus the channel creation are two platform round trips; none of
   // them has a frame-1 dependency, so all three stay in the post-first-frame
-  // path. The three overrides below merely INSTALL values — the provider bodies
-  // are lazy and nothing runs here.
+  // path. The overrides below merely INSTALL values — the provider bodies are
+  // lazy and nothing runs here. That is also why the purchase gateway joins
+  // them rather than getting a line of its own anywhere above: configuring the
+  // RevenueCat SDK is a network round trip, and it is scheduled by
+  // `PurchaseBootstrap`'s own post-first-frame callback, not from this window.
   runApp(
     ProviderScope(
       overrides: [
@@ -69,6 +75,7 @@ Future<void> main() async {
         notificationSchedulerProvider.overrideWith(_pluginScheduler),
         timeZoneLoaderProvider.overrideWithValue(initTimeZones),
         deviceZoneReaderProvider.overrideWithValue(deviceZoneIdentifier),
+        purchaseGatewayProvider.overrideWith(_revenueCatGateway),
       ],
       child: const VitomyApp(),
     ),
@@ -119,6 +126,14 @@ Future<String?> _launchNotificationPayload() async {
 /// source gate — and a reviewer's grep — can find whatever the formatter does
 /// with the line.
 NotificationScheduler _pluginScheduler(Ref ref) => PluginNotificationScheduler();
+
+/// The RevenueCat-backed gateway, constructed LAZILY by the provider for the
+/// same reason `_pluginScheduler` is: nothing plugin-shaped exists before the
+/// first frame. A named top-level function rather than an inline closure so the
+/// override reads as one contiguous `purchaseGatewayProvider.overrideWith(...)`
+/// that a source gate — and a reviewer's grep — can find whatever the formatter
+/// does with the line.
+PurchaseGateway _revenueCatGateway(Ref ref) => const RevenueCatGateway();
 
 /// Root app widget: theme + l10n + locale resolution (D-10, D-11).
 ///

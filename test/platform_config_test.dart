@@ -161,10 +161,14 @@ void main() {
         'android.permission.USE_EXACT_ALARM': 'same, and this one is the '
             'restricted variant that requires a policy declaration',
         'android.permission.INTERNET':
-            'the release build is fully offline; INTERNET belongs to the debug '
-                'manifest only',
-        'android.permission.ACCESS_NETWORK_STATE': 'the app makes no network '
-            'requests at all',
+            'the app declares no network permission of its OWN. Since 2026-09-22 '
+                'purchases_flutter brings INTERNET into the merged manifest '
+                'through its own library manifest, which is expected and is '
+                'covered by test/purchases/network_dependency_test.dart. What '
+                'this assertion still holds is the narrower and still useful '
+                'fact that no network capability was declared here, by hand',
+        'android.permission.ACCESS_NETWORK_STATE': 'same: brought in by the '
+            'purchases plugin at merge time, never declared by this app',
         'android.permission.USE_FULL_SCREEN_INTENT':
             'a dose reminder is not an alarm clock and this permission is '
                 'review-gated',
@@ -247,12 +251,22 @@ void main() {
         internetVariants,
         <String>{'debug', 'profile'},
         reason: 'INTERNET must be declared by the development manifests and by '
-            'nothing else. This app is fully offline — no client, no '
-            'serialization package, no endpoint — and the notification phase '
-            'added none of the three: reminders are scheduled by the operating '
-            'system on the device, not fetched. INTERNET reaching the shipped '
-            'manifest would be a capability the app never uses and a '
-            'permission a reviewer would ask about.',
+            'nothing else. Read what this does and does NOT claim, because the '
+            'difference is the whole reason the assertion was rewritten on '
+            '2026-09-22 rather than left alone.\n\n'
+            'It reads the SOURCE manifests under android/app/src/. It cannot '
+            'see the merged manifest a build produces. purchases_flutter\'s '
+            'own library manifest declares INTERNET and ACCESS_NETWORK_STATE, '
+            'and they merge in automatically — so an Android release build now '
+            'ships with INTERNET while this assertion stays green. That is '
+            'correct and intended; what would NOT be correct is this gate '
+            'continuing to advertise a fully offline app, which is how a test '
+            'keeps passing and quietly stops meaning anything.\n\n'
+            'So the claim here is narrow: the app declares no network '
+            'permission by hand, in any shipping variant. The claim about what '
+            'the app actually reaches over that network lives in '
+            'test/purchases/network_dependency_test.dart, which asserts there '
+            'is exactly one network-capable dependency and names it.',
       );
     });
 

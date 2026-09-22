@@ -400,6 +400,22 @@ bool _isNotificationPlatformIdentifier(Literal l) =>
     l.path.startsWith('lib/core/notifications/') &&
     const {'doses_v1', 'today', '@mipmap/ic_launcher'}.contains(l.value);
 
+/// The RevenueCat key prefix the gateway refuses to configure with.
+///
+/// Scoped by VALUE and by path, in that order of importance, for the reason
+/// spelled out above [_isNotificationPlatformIdentifier]: a path-only predicate
+/// would permanently bless every literal in the purchase layer.
+///
+/// `test_` is a vendor-defined prefix. RevenueCat issues Test Store keys under
+/// it, they route every purchase to a simulator modal and take no money, and
+/// their own documentation forbids shipping one. The gateway compares against
+/// this prefix rather than trusting a gate alone, because a gate protects the
+/// repository while the comparison protects a build made from a dirty tree.
+/// It is a wire format, not a word, and there is nothing here to translate.
+bool _isVendorKeyPrefix(Literal l) =>
+    l.path == 'lib/core/purchases/revenuecat_gateway.dart' &&
+    l.value == 'test_';
+
 /// Literal categories that are NOT user-visible copy, each with the reason it
 /// is not. Extend HERE, never by loosening a pattern.
 const stringLiteralAllowlist = <({
@@ -511,6 +527,16 @@ const stringLiteralAllowlist = <({
         'small-icon name is translatable under the word pattern and matches no '
         'other predicate)',
     allows: _isNotificationPlatformIdentifier,
+  ),
+  (
+    name: 'the RevenueCat Test Store key prefix',
+    why: 'a vendor-defined key prefix the gateway refuses to configure with. '
+        'RevenueCat forbids shipping a Test Store key, a build carrying one '
+        'takes no money while looking from the inside exactly like a working '
+        'build, and this repository was handed one on 2026-09-22. It is a wire '
+        'format rather than a word. Scoped by VALUE and by path, so the '
+        'exemption stays the size of its own reason',
+    allows: _isVendorKeyPrefix,
   ),
 ];
 
