@@ -31,10 +31,8 @@ library;
 /// The iOS public SDK key, from the RevenueCat dashboard under Project
 /// settings, API keys, the App Store app's **public** key.
 ///
-/// Empty until it is filled in. Empty is a deliberate, gated state: the app
-/// launches, the support screen reports that tips are unavailable, and the
-/// release gate refuses the build.
-const String revenueCatIosKey = '';
+/// Filled 2026-09-22.
+const String revenueCatIosKey = 'appl_tHaMLJaZlflFHRMyAJkHdeMbadm';
 
 /// The Android public SDK key, prefixed `goog_`.
 ///

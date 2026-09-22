@@ -412,6 +412,23 @@ bool _isNotificationPlatformIdentifier(Literal l) =>
 /// this prefix rather than trusting a gate alone, because a gate protects the
 /// repository while the comparison protects a build made from a dirty tree.
 /// It is a wire format, not a word, and there is nothing here to translate.
+/// The public RevenueCat SDK keys.
+///
+/// Scoped by VALUE prefix and by path. Public by design: a RevenueCat SDK key
+/// is compiled into every binary the store distributes and RevenueCat's own
+/// documentation says to embed it. It authorizes reading an offering and
+/// starting a purchase the store then authenticates. The SECRET key never
+/// enters this repository, and neither does the App Store Connect .p8, which
+/// the root .gitignore refuses.
+///
+/// Nothing renders it and translating one would break every purchase.
+/// `test/purchases/revenuecat_key_test.dart` independently asserts that no
+/// other file in lib/ carries an appl_ or goog_ literal, which is what keeps
+/// this exemption the size of its own reason.
+bool _isRevenueCatSdkKey(Literal l) =>
+    l.path == 'lib/core/purchases/revenuecat_key.dart' &&
+    (l.value.startsWith('appl_') || l.value.startsWith('goog_'));
+
 /// The three App Store Connect product identifiers.
 ///
 /// Scoped by VALUE and by path, for the reason spelled out above
@@ -557,6 +574,15 @@ const stringLiteralAllowlist = <({
         'product it names, which is the same category as the notification '
         'platform identifiers above. Scoped by VALUE prefix and by path',
     allows: _isStoreProductIdentifier,
+  ),
+  (
+    name: 'the public RevenueCat SDK key',
+    why: 'public by design and compiled into every distributed binary, which '
+        'is what the vendor documents. It is never rendered, and translating '
+        'it would break every purchase. The secret key and the App Store '
+        'Connect .p8 are not in this repository at all. Scoped by VALUE prefix '
+        'and by path',
+    allows: _isRevenueCatSdkKey,
   ),
 ];
 
