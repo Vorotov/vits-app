@@ -195,18 +195,30 @@ of `purchases_flutter`, nine ARB keys in all seven languages, the support
 screen under `lib/features/support/` with its row in Settings, and four source
 gates keeping the narrowed privacy claim true. `flutter test` is 1167 green.
 
+*Closed 2026-09-22:* the Paid Apps Agreement, the iOS SDK key
+(`appl_tHaMLJaZlflFHRMyAJkHdeMbadm`, verified against the live service — a
+throwaway integration test configured the real SDK with it and `configure()`
+returned), the three consumables in App Store Connect, and the RevenueCat app
+record. `flutter test test_release/` is 48 green. **Build 1.1.0 (3) uploaded
+2026-09-22**, Delivery UUID `e8aa6193-8be1-476a-a72d-ddaf21b1b8af`.
+
 *What the owner still has to do, in order:*
 
-1. **Paid Apps Agreement, banking and tax forms.** Not started as of
-   2026-09-22. Nothing can be tested even in the sandbox until the bank status
-   reads Clear.
-2. **The real iOS SDK key.** `lib/core/purchases/revenuecat_key.dart` holds an
-   empty placeholder, and `flutter test test_release/` is RED on exactly that
-   until it is filled. The key handed over on 2026-09-22 was a
-   `test_`-prefixed Test Store key, which RevenueCat forbids shipping; three
-   gates now refuse one.
-3. Create the three consumables in App Store Connect, wire the In-App Purchase
-   Key and the shared secret into RevenueCat, make one Offering current.
+1. **Create the 1.1.0 version record in App Store Connect, spelled exactly
+   `1.1.0`.** The build is `1.1.0` from pubspec, and a record spelled `1.1`
+   does not list it in the build picker. That trap already cost time on 1.0.
+2. **Install the TestFlight build on a real iPhone and open Settings, Support.**
+   This is the only honest pre-review check that the offering resolves: a
+   simulator has no access to the live App Store API, so `getOfferings()`
+   returns CONFIGURATION_ERROR there however correct the dashboard is. A
+   TestFlight purchase runs in sandbox against the tester's own Apple ID, so
+   no sandbox-tester account has to be created. If the three tips show with
+   prices, App Review sees them too; if the screen says unavailable, the
+   dashboard is not finished and a rejection cycle has been avoided. Newly
+   created products can take up to 24 hours to become fetchable.
+3. **Redeploy the site before hitting Submit**, one command from `site/`:
+   `npm run deploy`. `https://vitomy.app/privacy` renders from
+   `docs/legal/privacy.md`, and Apple reads that URL during review.
 4. Flip the Apple privacy label, which `store/listing.md` now states.
 
 Full research, with every version, quote and citation:
