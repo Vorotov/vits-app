@@ -138,7 +138,7 @@ void main() {
     test('fetches the offering once readiness flips, and offers it', () async {
       final gateway = RecordingPurchaseGateway(offered: [small, medium]);
       final container = containerOver(gateway);
-      container.listen(supportControllerProvider, (_, __) {});
+      container.listen(supportControllerProvider, (_, _) {});
       await container.read(purchaseReadinessProvider.notifier).bootstrap();
       await Future<void>.delayed(Duration.zero);
       final state = container.read(supportControllerProvider);
@@ -150,7 +150,7 @@ void main() {
     test('an empty offering is UNAVAILABLE, not an error', () async {
       final gateway = RecordingPurchaseGateway();
       final container = containerOver(gateway);
-      container.listen(supportControllerProvider, (_, __) {});
+      container.listen(supportControllerProvider, (_, _) {});
       await container.read(purchaseReadinessProvider.notifier).bootstrap();
       await Future<void>.delayed(Duration.zero);
       expect(
@@ -166,7 +166,7 @@ void main() {
       captureReports();
       final gateway = RecordingPurchaseGateway(throwOnConfigure: true);
       final container = containerOver(gateway);
-      container.listen(supportControllerProvider, (_, __) {});
+      container.listen(supportControllerProvider, (_, _) {});
       await container.read(purchaseReadinessProvider.notifier).bootstrap();
       await Future<void>.delayed(Duration.zero);
       expect(container.read(supportControllerProvider).phase,
@@ -179,7 +179,7 @@ void main() {
       final reported = captureReports();
       final gateway = RecordingPurchaseGateway(throwOnTips: true);
       final container = containerOver(gateway);
-      container.listen(supportControllerProvider, (_, __) {});
+      container.listen(supportControllerProvider, (_, _) {});
       await container.read(purchaseReadinessProvider.notifier).bootstrap();
       await Future<void>.delayed(Duration.zero);
       expect(container.read(supportControllerProvider).phase,
@@ -194,7 +194,7 @@ void main() {
     /// can start from.
     Future<ProviderContainer> offering(RecordingPurchaseGateway gateway) async {
       final container = containerOver(gateway);
-      container.listen(supportControllerProvider, (_, __) {});
+      container.listen(supportControllerProvider, (_, _) {});
       await container.read(purchaseReadinessProvider.notifier).bootstrap();
       await Future<void>.delayed(Duration.zero);
       expect(container.read(supportControllerProvider).phase,
