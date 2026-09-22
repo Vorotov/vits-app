@@ -56,7 +56,26 @@ There are none. The App does not require registration, and everything you
 enter stays on your device. You are responsible for your device, for who has
 access to it, and for keeping your own backup if you want one.
 
-## 5. Acceptable use
+## 5. Tips and purchases
+
+The App is free. It contains one optional purchase: a tip you can leave
+towards its development, from the support screen in Settings.
+
+A tip is a one-off payment. It unlocks nothing, enables nothing and changes
+nothing in the App. There is no subscription, nothing renews, and there is
+nothing to restore if you reinstall.
+
+Tips are sold and charged by Apple through the App Store, under Apple's own
+terms, in the currency and at the price Apple shows you before you confirm.
+We never see your payment details.
+
+Because a tip delivers no content and unlocks no feature, we cannot reverse
+it ourselves. Refunds are handled by Apple under its own policy, so request
+one through Apple's support rather than from us. Where the law where you live
+gives you a right to cancel or to a refund, that right applies and nothing
+here limits it.
+
+## 6. Acceptable use
 
 You agree to use the Services only for their intended purpose: planning and
 tracking your own intake. You must not:
@@ -74,7 +93,7 @@ tracking your own intake. You must not:
   other malicious code; or
 - remove, obscure or alter any proprietary notice in the Services.
 
-## 6. Permissions and device access
+## 7. Permissions and device access
 
 The App asks for permission to show notifications, so it can deliver the
 reminders you schedule. On Android it also declares that it may run after a
@@ -82,7 +101,7 @@ restart, so scheduled reminders survive a reboot. You can manage these in
 your device settings. Without the notification permission, reminders do not
 appear; the rest of the App keeps working.
 
-## 7. Intellectual property and licence
+## 8. Intellectual property and licence
 
 All rights, title and interest in and to the Services (including software,
 designs, logos, the "VitoMy" name and branding, text, graphics, the
@@ -101,15 +120,16 @@ in the Services are the property of their respective owners.
 The entries you make in the App are yours. Because they never leave your
 device through the App, we claim no licence to them.
 
-## 8. Third-party services
+## 9. Third-party services
 
 The App is distributed through the Apple App Store and Google Play, and runs
 on operating systems provided by Apple and Google, including their
-notification and backup services. Those services are governed by their own
-terms and privacy policies. We do not control and are not responsible for
-third-party services.
+notification and backup services. The optional tip described in Section 5 is
+managed for us by RevenueCat, Inc. and charged by Apple. Those services are
+governed by their own terms and privacy policies. We do not control and are
+not responsible for third-party services.
 
-## 9. Apple App Store and Google Play additional terms
+## 10. Apple App Store and Google Play additional terms
 
 These terms apply where you obtain the App through the Apple App Store or
 Google Play.
@@ -137,12 +157,12 @@ Google Play.
   Apple devices. Similar third-party-beneficiary rights apply to Google
   where required by Google Play terms.
 
-## 10. Privacy
+## 11. Privacy
 
 Our Privacy Policy describes what the App stores on your device, what we
 receive, and what we do not do. By using the Services you acknowledge it.
 
-## 11. Your data and deletion
+## 12. Your data and deletion
 
 You can stop using the App at any time. Deleting the App from your device
 deletes everything it stored there; your device backup may still hold a copy
@@ -150,7 +170,7 @@ until you remove it, under Apple's or Google's terms. Because we hold no copy
 of your entries, we cannot restore them and we cannot delete them for you.
 For the rights you have over the little we do hold, see the Privacy Policy.
 
-## 12. Changes to the Services and to these Terms
+## 13. Changes to the Services and to these Terms
 
 We may modify, update, suspend or discontinue any part of the Services, with
 or without notice, and we may update these Terms. When we make material
@@ -161,7 +181,7 @@ days where the law requires a longer period. Your continued use of the
 Services after updated Terms take effect constitutes acceptance. If you do
 not agree, stop using the Services and delete the App.
 
-## 13. Term and termination
+## 14. Term and termination
 
 You may stop using the App at any time. We may suspend or terminate your
 access, with or without notice, if you materially or repeatedly breach these
@@ -172,7 +192,7 @@ On termination, your licence to use the App ends immediately. Sections that
 by their nature should survive termination (including Sections 3, 7, 8, 9,
 14, 15, 16, 17 and 18) will survive.
 
-## 14. Disclaimers
+## 15. Disclaimers
 
 The Services are provided "as is" and "as available", without warranties of
 any kind, whether express or implied, including implied warranties of
@@ -189,7 +209,7 @@ You are responsible for the device and services you need to use the App. We
 have no obligation to provide support, though we may do so at our
 discretion.
 
-## 15. Limitation of liability
+## 16. Limitation of liability
 
 To the maximum extent permitted by applicable law, the VitoMy team will
 not be liable for any indirect, incidental, special, consequential or
@@ -206,7 +226,7 @@ statutory rights of consumers. Some jurisdictions do not allow the exclusion
 or limitation of certain damages; where that is the case, the exclusions
 above apply only to the extent permitted.
 
-## 16. Indemnity
+## 17. Indemnity
 
 To the extent permitted by law, you agree to indemnify and hold harmless the
 VitoMy team from and against any claims, liabilities, damages, losses
@@ -214,7 +234,7 @@ and expenses (including reasonable legal fees) arising out of or related to
 your use of the Services, your violation of these Terms, or your violation
 of any law or the rights of a third party.
 
-## 17. Disputes
+## 18. Disputes
 
 Informal resolution first. Before bringing any formal claim, please contact
 us at support@vitomy.app so we can try to resolve the issue. Most concerns can
@@ -226,7 +246,7 @@ the mandatory rules of law of the country in which you live.
 <!-- Governing law and forum are deliberately absent in this version. Add
 them together with the legal entity; see docs/legal/2026-09-07-privacy-and-terms-research.md §9. -->
 
-## 18. Team structure and assignment
+## 19. Team structure and assignment
 
 VitoMy is currently developed and operated by a distributed team of
 individual creators and is not yet incorporated as a separate legal entity.
@@ -239,7 +259,7 @@ You may not assign or transfer your rights or obligations under these Terms
 without our prior written consent; we may assign these Terms in connection
 with a merger, acquisition, reorganisation or sale of the Services.
 
-## 19. Miscellaneous
+## 20. Miscellaneous
 
 - Entire agreement. These Terms and the Privacy Policy are the entire
   agreement between you and the VitoMy team regarding the Services and
@@ -251,17 +271,17 @@ with a merger, acquisition, reorganisation or sale of the Services.
 - Force majeure. We are not liable for delays or failures caused by events
   beyond our reasonable control.
 - Notices. We may give notice by a message in the App, or by email if you
-  have written to us. You may contact us as set out in Section 21.
+  have written to us. You may contact us as set out in Section 22.
 - Electronic agreement. By tapping a button labelled "Continue", "I agree"
   or similar, you agree to these Terms electronically, with the same effect
   as a signature.
 
-## 20. Language
+## 21. Language
 
 These Terms are written in English. Translations may be provided for
 convenience; if a translation and the English version differ, the English
 version prevails.
 
-## 21. Contact
+## 22. Contact
 
 For questions, complaints, or legal and privacy notices: support@vitomy.app.

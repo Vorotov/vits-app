@@ -183,8 +183,31 @@ picking this up now has to know:
 
 ### Pending Todos
 
-**SHIP-01 — RevenueCat plus a developer tip, for Shipaton 2026. In flight.
-Hard deadline 30 September 2026, 11:45pm PDT.**
+**SHIP-01 — RevenueCat plus a developer tip, for Shipaton 2026. Code COMPLETE
+2026-09-22; blocked on paperwork and one key. Hard deadline 30 September 2026,
+11:45pm PDT, and Devpost requires the app to be PUBLIC in the store by then,
+not merely submitted.**
+
+*Built 2026-09-22*, plan `docs/superpowers/plans/2026-09-22-vitomy-developer-tip.md`:
+the `PurchaseGateway` seam and its no-op, the provider graph with a
+three-valued readiness enum, `RevenueCatGateway` behind it as the one importer
+of `purchases_flutter`, nine ARB keys in all seven languages, the support
+screen under `lib/features/support/` with its row in Settings, and four source
+gates keeping the narrowed privacy claim true. `flutter test` is 1167 green.
+
+*What the owner still has to do, in order:*
+
+1. **Paid Apps Agreement, banking and tax forms.** Not started as of
+   2026-09-22. Nothing can be tested even in the sandbox until the bank status
+   reads Clear.
+2. **The real iOS SDK key.** `lib/core/purchases/revenuecat_key.dart` holds an
+   empty placeholder, and `flutter test test_release/` is RED on exactly that
+   until it is filled. The key handed over on 2026-09-22 was a
+   `test_`-prefixed Test Store key, which RevenueCat forbids shipping; three
+   gates now refuse one.
+3. Create the three consumables in App Store Connect, wire the In-App Purchase
+   Key and the shared secret into RevenueCat, make one Offering current.
+4. Flip the Apple privacy label, which `store/listing.md` now states.
 
 Full research, with every version, quote and citation:
 `docs/research/2026-09-09-revenuecat-shipaton.md`. Read §6 through §9 before
@@ -292,11 +315,19 @@ starting — what follows is a pointer, not a substitute.
   `test_release/` sweep proves the tree laid out right-to-left and threw no
   layout exception; it cannot tell you whether the screen reads well.
 
-- **The app's offline claim is about to narrow.** SHIP-01 adds the first
-  network-capable dependency the app has ever had. The honest replacement claim
-  is that supplement data never leaves the device and the only traffic is the
-  purchase; `docs/legal/privacy.md` still says the app does not connect to the
-  internet at all.
+- ~~The app's offline claim is about to narrow.~~ **Done 2026-09-22.** Both
+  legal documents were rewritten in the same commit that added the dependency,
+  which is what LEGAL-01 asks for. `privacy.md` now carries an "If you leave a
+  tip" section naming RevenueCat as a processor, and `terms.md` gained a
+  section 5 on tips and purchases (sections 5 to 21 renumbered to 6 to 22, and
+  the one cross-reference updated).
+
+  **The site is deliberately NOT redeployed yet.** `https://vitomy.app/privacy`
+  renders from that markdown at build time, so publishing now would put a
+  policy describing a tip in front of everyone running 1.0.0, which has no
+  purchases in it. The trigger is the submission of the tip build: the policy
+  has to be live before Apple reviews it, and not meaningfully before that.
+  One command when the moment comes, from `site/`: `npm run deploy`.
 
 ### Quick Tasks Completed
 

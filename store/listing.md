@@ -133,10 +133,22 @@ answering it honestly gives 4+. Setting the store rating to 17+ to match the
 Terms costs reach and is not what the questionnaire is asking. Worth a
 deliberate decision rather than either default.
 
-**App Privacy (nutrition label)** — **Data Not Collected**, every category.
-True today and only today: the first release that adds RevenueCat, analytics
-or crash reporting must change this label in the same release. That is
-LEGAL-01 in `.planning/STATE.md`.
+**App Privacy (nutrition label)** — **Purchases, Purchase History**, purposes
+**Analytics** and **App Functionality**, **not linked to identity**, and
+nothing else in any other category.
+
+It was "Data Not Collected" until 2026-09-22, and the note here said that was
+true only until RevenueCat landed. It has landed, so the label changes with
+this release: the developer tip means purchase and receipt history reaches
+RevenueCat as our processor. "Not linked to identity" is correct and is worth
+keeping correct: the app uses RevenueCat's anonymous ids only, never calls
+`logIn`, and never sets a subscriber attribute, which
+`test/purchases/purchase_privacy_test.dart` holds. The day an advertising
+integration is enabled, Device ID joins the label.
+
+Nothing else moves. No analytics SDK, no crash-reporting SDK and no
+advertising SDK ships, and `test/purchases/network_dependency_test.dart`
+asserts there is exactly one network-capable dependency in the whole project.
 
 **App Review notes** (App Review Information → Notes, and the Resolution
 Center reply) — the first submission, build 1.0.0 (2) on 2026-09-13, came back
@@ -256,6 +268,12 @@ reminders survive a restart. No exact-alarm permission is declared.
 as Apple's above.
 
 **Privacy policy URL** — `https://vitomy.app/privacy`. Same page Apple gets.
+
+**Data safety** — **Purchase history**, collected, **not** shared, encrypted in
+transit, and not deletable on request because it is Apple's and RevenueCat's
+record of a payment rather than ours. Mirrors the Apple label above, and
+changes with it. Play's form is only reached when Android ships, which is
+after the hackathon.
 
 **Contact email** — `support@vitomy.app`. Play shows this publicly on the
 listing and it is the one required contact field, so Play needs no support
