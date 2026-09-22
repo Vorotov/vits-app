@@ -3,7 +3,7 @@
 /// The render matrix at textScaler 1.0 / 1.6 / 2.0 in both locales is the
 /// house requirement for a new screen, and it is not ceremony here: the
 /// paragraph is the longest single string in the app, the tip rows put a label
-/// and a price on one line, and a price string can be anything from `$2.99` to
+/// and a price on one line, and a price string can be anything from `$0.99` to
 /// `2 990 руб.` to a right-to-left currency. Overflow is the most common defect
 /// in this codebase's review history.
 library;
@@ -24,9 +24,9 @@ void main() {
   final en = lookupAppLocalizations(const Locale('en'));
   final uk = lookupAppLocalizations(const Locale('uk'));
 
-  const small = TipProduct(id: tipSmallId, priceString: r'$2.99');
-  const medium = TipProduct(id: tipMediumId, priceString: r'$4.99');
-  const large = TipProduct(id: tipLargeId, priceString: r'$9.99');
+  const small = TipProduct(id: tipSmallId, priceString: r'$0.99');
+  const medium = TipProduct(id: tipMediumId, priceString: r'$1.99');
+  const large = TipProduct(id: tipLargeId, priceString: r'$4.99');
 
   /// The screen under a scope over [gateway], with the post-frame bootstrap
   /// left ON so the pump drives the real path a device takes.
@@ -119,8 +119,8 @@ void main() {
       expect(find.text(en.supportTipSmall), findsOneWidget);
       expect(find.text(en.supportTipMedium), findsOneWidget);
       expect(find.text(en.supportTipLarge), findsOneWidget);
-      expect(find.text(r'$2.99'), findsOneWidget);
-      expect(find.text(r'$9.99'), findsOneWidget);
+      expect(find.text(r'$0.99'), findsOneWidget);
+      expect(find.text(r'$4.99'), findsOneWidget);
       expect(find.text(en.supportUnavailable), findsNothing);
     });
 

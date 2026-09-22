@@ -16,8 +16,8 @@ import 'package:vitomy/core/purchases/purchase_providers.dart';
 import 'recording_gateway.dart';
 
 void main() {
-  const small = TipProduct(id: 'app.vitomy.tip.small', priceString: r'$2.99');
-  const medium = TipProduct(id: 'app.vitomy.tip.medium', priceString: r'$4.99');
+  const small = TipProduct(id: 'app.vitomy.tip.small', priceString: r'$0.99');
+  const medium = TipProduct(id: 'app.vitomy.tip.medium', priceString: r'$1.99');
 
   /// A container over the recorder, with the post-frame trigger disabled so
   /// each test drives the bootstrap itself. Without the override the notifier

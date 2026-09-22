@@ -55,9 +55,9 @@ const Duration _screenshotWait = Duration(seconds: 8);
 /// Change these together with the prices in the dashboard, or the screenshot
 /// starts describing a product that is not for sale.
 const _offering = <TipProduct>[
-  TipProduct(id: tipSmallId, priceString: r'$2.99'),
-  TipProduct(id: tipMediumId, priceString: r'$4.99'),
-  TipProduct(id: tipLargeId, priceString: r'$9.99'),
+  TipProduct(id: tipSmallId, priceString: r'$0.99'),
+  TipProduct(id: tipMediumId, priceString: r'$1.99'),
+  TipProduct(id: tipLargeId, priceString: r'$4.99'),
 ];
 
 /// A gateway that answers from [_offering] and refuses to buy anything.
@@ -140,14 +140,14 @@ void main() {
       tester,
       () =>
           find.byType(SupportScreen).evaluate().isNotEmpty &&
-          find.text(r'$9.99').evaluate().isNotEmpty,
+          find.text(r'$4.99').evaluate().isNotEmpty,
       'the support screen with all three tips priced',
     );
     // All three must be on screen, or the picture does not show the product it
     // is filed against.
-    expect(find.text(r'$2.99'), findsOneWidget);
+    expect(find.text(r'$0.99'), findsOneWidget);
+    expect(find.text(r'$1.99'), findsOneWidget);
     expect(find.text(r'$4.99'), findsOneWidget);
-    expect(find.text(r'$9.99'), findsOneWidget);
 
     await _screenshot(tester, 'tip-review');
     debugPrint('iap screenshot: done');

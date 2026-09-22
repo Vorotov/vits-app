@@ -22,8 +22,9 @@ Task 2 and section 5 before Task 6.
 
 ## Global Constraints
 
-- **Three consumables, no entitlement.** `app.vitomy.tip.small` 2.99,
-  `app.vitomy.tip.medium` 4.99, `app.vitomy.tip.large` 9.99. Nothing in the app
+- **Three consumables, no entitlement.** `app.vitomy.tip.small` 0.99,
+  `app.vitomy.tip.medium` 1.99, `app.vitomy.tip.large` 4.99 (lowered from
+  2.99 / 4.99 / 9.99 on 2026-09-22, at the owner's call). Nothing in the app
   unlocks. The `vitomy_supps_vits_tracker_pro` entitlement and the Monthly and
   Yearly products exist in the RevenueCat dashboard and are deliberately unused.
 - **No `purchases_ui_flutter`.** RevenueCat Paywalls do not support consumables,

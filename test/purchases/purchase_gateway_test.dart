@@ -49,7 +49,7 @@ void main() {
 
   group('the value types', () {
     test('a tip carries the store\'s own formatted price, not a number', () {
-      const tip = TipProduct(id: 'app.vitomy.tip.medium', priceString: r'$4.99');
+      const tip = TipProduct(id: 'app.vitomy.tip.medium', priceString: r'$1.99');
       expect(tip.priceString, isA<String>());
       expect(
         tip.priceString,
@@ -63,15 +63,15 @@ void main() {
     });
 
     test('two tips with the same id and price are equal', () {
-      const a = TipProduct(id: 'app.vitomy.tip.small', priceString: r'$2.99');
-      const b = TipProduct(id: 'app.vitomy.tip.small', priceString: r'$2.99');
+      const a = TipProduct(id: 'app.vitomy.tip.small', priceString: r'$0.99');
+      const b = TipProduct(id: 'app.vitomy.tip.small', priceString: r'$0.99');
       expect(a, b);
       expect(a.hashCode, b.hashCode);
     });
 
     test('a price change makes a tip unequal to its old self', () {
-      const before = TipProduct(id: 'app.vitomy.tip.small', priceString: r'$2.99');
-      const after = TipProduct(id: 'app.vitomy.tip.small', priceString: r'$3.49');
+      const before = TipProduct(id: 'app.vitomy.tip.small', priceString: r'$0.99');
+      const after = TipProduct(id: 'app.vitomy.tip.small', priceString: r'$1.49');
       expect(
         before,
         isNot(after),
