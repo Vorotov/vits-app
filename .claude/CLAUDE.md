@@ -287,10 +287,13 @@ flutter test test_release/
 
 Run it before a production build. Nothing else runs it: `flutter test` with no
 arguments reads `test/` only, so the sibling directory IS the mechanism — a
-tag or a config filter could be switched off in one line. 41 tests: the
-medical-vocabulary sweep across all seven languages, and every main screen in
-all seven languages at text scales 1.0 / 1.6 / 2.0, with Arabic under real
-locale-derived RTL (the only whole-screen RTL coverage in the repository).
+tag or a config filter could be switched off in one line. 48 tests: the
+medical-vocabulary sweep across all seven languages, every main screen in
+all seven languages at text scales 1.0 / 1.6 / 2.0 with Arabic under real
+locale-derived RTL (the only whole-screen RTL coverage in the repository), and
+the two purchase-release assertions — that the RevenueCat SDK key is filled in
+at all, which is the one thing a debug run cannot notice, and that the Android
+key is still deliberately absent.
 Read `test_release/README.md` before touching it; in particular, never turn a
 red cell green by dropping a language, a scale or a vocabulary stem.
 
@@ -343,7 +346,7 @@ the original blocker survived for months precisely because nothing failed.
 
 ### Testing
 
-The suite is **1108 tests in `test/` plus 46 in `test_release/`** (measured, not
+The suite is **1167 tests in `test/` plus 48 in `test_release/`** (measured, not
 estimated) and `flutter analyze` is clean. Keep both true.
 
 - Widget tests run against a real in-memory Drift database behind the
@@ -422,12 +425,16 @@ lib/
     widgets/                 BqNavBar, BqAddFab, BqSegmented, BqSettingsGearRow, BqHintCard
     notifications/           plan, scheduler, service, sync, copy, permission, locale
                              observer, tz conversion, providers
+    purchases/               the PurchaseGateway seam and its no-op, the provider graph,
+                             the RevenueCat implementation (the ONE importer of
+                             purchases_flutter), the product ids, the public SDK key
   features/
     stack/                   stack list, add-supplement sheet, catalog, regimen editor
     calendar/                today screen, week strip, dose row/sheet, and the planner
                              (gantt, year grid, load chart, week/month detail)
     onboarding/              two-page intro + gate, one-time contextual hints
     settings/                settings screen, language picker
+    support/                 the developer-tip screen, reached from Settings
 ```
 
 **Dependency rule:** `features/` may import `core/`; `core/` may never import
@@ -480,9 +487,17 @@ than with user intent.
 
 ### Notifications
 
-Local only. No network client, no serialization package, no endpoint anywhere
-in the app — the release manifest carries no INTERNET permission and
-`test/platform_config_test.dart` keeps it that way. `main()` reads the launch
+Local only, and that is still literally true of the notification layer: no
+network client, no serialization package, no endpoint. What changed on
+2026-09-22 is the app around it. `purchases_flutter` is now the one
+network-capable dependency, and `purchases-android` merges `INTERNET` into the
+built Android manifest from its own library manifest. The app still declares
+no network permission by hand, which is all
+`test/platform_config_test.dart` can see and now all it claims; the real
+guarantee moved to `test/purchases/network_dependency_test.dart`. See
+**Purchases** below before writing anything that reaches the network.
+
+`main()` reads the launch
 payload before the first frame and does nothing else notification-shaped; the
 timezone database load, the plugin's `initialize()` and the channel creation all
 sit behind the first frame, started by `notificationBootstrapProvider`.
@@ -492,6 +507,51 @@ without the watch production would silently schedule nothing with every test
 still green. Scheduling uses `inexactAllowWhileIdle`: no exact-alarm
 permission, roughly 10–15 minutes of doze jitter accepted as a stated cost,
 which is why the reminder body restates the scheduled time.
+
+### Purchases
+
+The app sells **three consumable developer tips that unlock nothing**. No
+entitlement, no feature gate, no Restore control, no paywall package. That is a
+decision, not a stage: RevenueCat Paywalls do not support consumables, and a
+feature gate would be a product change (SHIP-01, `.planning/STATE.md`). An
+auto-renewing subscription, if one is ever wanted, adds methods to the seam
+rather than reshaping it.
+
+`PurchaseGateway` (`lib/core/purchases/purchase_gateway.dart`) is the fifth
+interface in this codebase whose job is to keep a plugin out of the tests, and
+it follows `NotificationScheduler` exactly: a no-op default, the real
+implementation installed in `main()`, and **`package:purchases_flutter`
+importable from exactly one file**. The seam speaks product ids and
+already-formatted price strings, never RevenueCat types — which is what lets
+the support screen be pumped with three hand-built products and no plugin
+anywhere. The no-op reports a purchase as FAILED where the notification no-op
+silently succeeds; a no-op scheduler costs a reminder, a no-op gateway claiming
+success would tell a user their money arrived.
+
+**Never format a price.** `StoreProduct.priceString` arrives with the user's
+storefront currency, its symbol, its placement and its separator already
+right. There is no price literal in `lib/` or in any ARB file, and the support
+row is a `Wrap` rather than a `Row` because a long storefront price overflowed
+one by 85px at textScaler 2.0.
+
+Configure runs behind the first frame from `PurchaseBootstrap`'s own post-frame
+callback, so the purchase layer adds nothing to the pre-`runApp` window two
+gates already police. Its readiness is a three-valued enum, because "not yet"
+and "tried and failed" render differently. **Calling any SDK method before
+configure completes throws `There is no singleton instance`** — that ordering is
+structural, not documented: the only path to `tips()` runs off a readiness
+value that is already `ready`.
+
+Four gates in `test/purchases/purchase_privacy_test.dart` keep the privacy
+claim true by construction: nothing in `lib/` sets a subscriber attribute or
+identifies a user, the purchase layer cannot reach the database, the domain or
+either supplement stream, and the plugin stays behind its seam. The claim they
+protect is the narrowed one both legal documents now make, so **a change here
+changes `docs/legal/privacy.md` in the same release** (LEGAL-01). The public
+SDK key lives in `revenuecat_key.dart` and nowhere else; a `test_`-prefixed Test
+Store key is refused by three gates and by the gateway itself, because a build
+carrying one takes no money while looking, from the inside, exactly like a
+build that works.
 
 ### Locale resolution
 

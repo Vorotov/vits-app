@@ -216,10 +216,16 @@ record. `flutter test test_release/` is 48 green. **Build 1.1.0 (3) uploaded
    prices, App Review sees them too; if the screen says unavailable, the
    dashboard is not finished and a rejection cycle has been avoided. Newly
    created products can take up to 24 hours to become fetchable.
-3. **Redeploy the site before hitting Submit**, one command from `site/`:
-   `npm run deploy`. `https://vitomy.app/privacy` renders from
-   `docs/legal/privacy.md`, and Apple reads that URL during review.
+3. ~~Redeploy the site before hitting Submit.~~ **Done 2026-09-22.**
+   `https://vitomy.app/privacy` now carries the tip section and no longer
+   claims the app stays off the internet. The rsync dry run showed zero
+   deletions and zero additions, with content changing in exactly one file, so
+   the App Store button a parallel session had put live was not disturbed;
+   both neighbouring sites on the box still answer 200.
 4. Flip the Apple privacy label, which `store/listing.md` now states.
+5. Submit, then **watch for the App Review reply**. The reviewer tests the
+   purchase, so an unconfigured offering is a rejection rather than a quiet
+   failure.
 
 Full research, with every version, quote and citation:
 `docs/research/2026-09-09-revenuecat-shipaton.md`. Read §6 through §9 before
@@ -387,7 +393,7 @@ Items acknowledged and carried forward rather than done:
 | Release | Android release, after Shipaton — the Play 12-testers-for-14-days clock can start any time; `purchases_ui_flutter` would raise minSdk 21 → 24 and `MainActivity` must extend `FlutterFragmentActivity` | Deferred past 2026-09-30 | 2026-09-09 |
 | Legal | LEGAL-01 — the release that adds analytics, crash reporting or a subscription must extend `docs/legal/privacy.md` + `terms.md` (clause bank in `docs/legal/2026-09-07-privacy-and-terms-research.md` §7) and update both store privacy labels in the same release | Standing; blocks any SDK addition | 2026-09-07 |
 | Legal | Governing law and forum absent from `terms.md`; `[NOMINAL_SUM]` still a placeholder (`[APP_NAME]` and `[CONTACT_EMAIL]` filled 2026-09-11, the website references were removed; `[LAST_UPDATED]` was filled in `privacy.md` on 2026-09-11 for the site and remains only in `terms.md`) | Owner-only; the sum comes with the legal entity, the date with publication | 2026-09-07 |
-| Site | `SITE-01` **done and live 2026-09-12**: `https://vitomy.app` serves the landing, `/privacy` and `/support`, behind Cloudflare with the origin refusing every non-Cloudflare address. Astro in `site/`, spec and plan under `docs/superpowers/`, 53 gates, Lighthouse 100 across the board. Two launch-day switches remain in `site/src/config.ts`: the store URLs and the official badge files. `/terms` stays unemitted until `[NOMINAL_SUM]` is filled | Closed; reopen only for the launch-day switches | 2026-09-12 |
+| Site | `SITE-01` **done and live 2026-09-12**: `https://vitomy.app` serves the landing, `/privacy` and `/support`, behind Cloudflare with the origin refusing every non-Cloudflare address. Astro in `site/`, spec and plan under `docs/superpowers/`, 53 gates, Lighthouse 100 across the board. The Apple half of the launch-day switch is live (`stores.apple.url` and the official badge); `stores.google.url` stays null until Android ships. `/terms` stays unemitted until `[NOMINAL_SUM]` is filled | Closed; reopen only for the launch-day switches | 2026-09-12 |
 | Copy | `saveAndStart` ("Add and start cycle") is the regimen editor's primary CTA on BOTH the add path and the EDIT path — editing an existing schedule offers to add it. Unconditional at `regimen_editor_screen.dart:903`, wrong in all seven languages. Found 2026-09-11 while reviewing a store screenshot | Open — needs a second ARB key in 7 files plus a conditional; not a correctness bug | 2026-09-11 |
 | UX | The time-slots block sits below periodicity and the cycle sliders in the regimen editor (`regimen_editor_screen.dart`, the `timeSlotsLabel` section around line 142). Times are the field a person edits most often and it is the one they have to scroll to. Move it higher in the form | Open — layout change, needs the render matrix at 1.0/1.6/2.0 re-run | 2026-09-18 |
 | UX | No way into the supplement or schedule editor from the daily dose sheet (`lib/features/calendar/dose_action_sheet.dart`). Tapping a dose on Today offers marking only, so correcting a time or a name means going back to the Stack tab. Add an edit entry point to that sheet | Open — new action plus its semantics equivalent | 2026-09-18 |

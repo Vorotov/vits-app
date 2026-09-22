@@ -1,6 +1,6 @@
 # `test_release/` — the pre-release gate
 
-Three checks that are worth running, and are not worth running on every edit.
+Four checks that are worth running, and are not worth running on every edit.
 
 ```
 flutter test test_release/
@@ -58,6 +58,28 @@ onboarding screens and first-run hints (suppressed by the seeded preferences —
 they have their own suites in `test/features/`), the regimen editor, the
 add-supplement sheet, the dose action sheet, and the planner's week and month
 detail sheets.
+
+## `purchase_release_test.dart`
+
+Two assertions about the release that sells something.
+
+**The iOS SDK key is filled in.** `lib/core/purchases/revenuecat_key.dart`
+ships with an empty placeholder, and empty is a legitimate state of the tree:
+the app launches, the support screen says tips are unavailable, and nothing
+crashes. That is precisely why it belongs here and not in `test/`. A build
+uploaded with an empty key looks, from every angle a debug run can see, exactly
+like a build that works — and from the outside, a permanently unavailable tip
+screen is indistinguishable from a store outage. This is the one gate that
+catches it, and it catches it at the only moment worth catching it.
+
+The prefix checks that refuse a `test_`-prefixed RevenueCat Test Store key run
+on every ordinary `flutter test`, in `test/purchases/revenuecat_key_test.dart`.
+They are not here, because they are cheap and because shipping one is a
+disaster rather than an oversight.
+
+**The Android key is deliberately absent.** Not a placeholder left behind:
+Android ships after the hackathon, and Play's twelve-testers-for-fourteen-days
+clock has not been started. When it is, this is the assertion to invert.
 
 ## If a cell goes red
 

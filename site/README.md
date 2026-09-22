@@ -8,10 +8,16 @@ listing.
 Rules in `CLAUDE.md`; design in
 `../docs/superpowers/specs/2026-09-11-vitomy-site-design.md`.
 
-Two things are still switched off, both in `src/config.ts`. The store buttons
-are inert until the two URLs are set and the official badges are in
-`public/badges/`. `/terms` is not emitted until `[NOMINAL_SUM]` is filled in
-`../docs/legal/terms.md` and `'terms'` joins `legalPages`.
+The App Store button went live with the 1.0 release; Google Play is still the
+inert "Coming soon" pill, because Android ships after the hackathon. `/terms`
+is not emitted until `[NOMINAL_SUM]` is filled in `../docs/legal/terms.md` and
+`'terms'` joins `legalPages`.
+
+`/privacy` is not authored here and it is not decorative: it renders from
+`../docs/legal/privacy.md` at build time, Apple reads it during App Review, and
+both stores link to it. **A release that changes what the app sends anywhere
+changes that markdown and redeploys this site in the same release** — that is
+LEGAL-01, and it is what the 2026-09-22 deploy was.
 
 One item of hygiene is outstanding: the origin certificate's private key was
 pasted into a chat transcript on 2026-09-12. The exposure is bounded, since the
@@ -31,7 +37,7 @@ Node lives at `~/.nvm/versions/node/v24.16.0/bin`; put it on PATH first.
 
 ## Switches (`src/config.ts`)
 
-- `stores.apple.url`, `stores.google.url`: `null` renders an inert "Coming soon" button. Set the URL and put the OFFICIAL badge in `public/badges/` (`app-store.svg`, `google-play.png`) on launch day.
+- `stores.apple.url`, `stores.google.url`: `null` renders an inert "Coming soon" button. Apple is set; Google waits for the Play release. Set the URL and put the OFFICIAL badge in `public/badges/` (`app-store.svg`, `google-play.png`) at the same time, or the build fails on the missing badge.
 - `legalPages`: which of `../docs/legal/{privacy,terms}.md` are published. Add `'terms'` after `[NOMINAL_SUM]` is filled.
 
 ## Server

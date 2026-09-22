@@ -45,12 +45,26 @@ release signed with it can be impersonated by anyone.
 Google Play holds the app signing key; the file above is only the *upload*
 key, and Google can reset it if it is lost. Back it up anyway.
 
+## Apple keys
+
+Two different things that are easy to confuse.
+
+The **RevenueCat SDK key** in `lib/core/purchases/revenuecat_key.dart` is
+public by design: it is compiled into every binary the store distributes, and
+the vendor documents embedding it. It is committed.
+
+The **App Store Connect and In-App Purchase keys** are real secrets, they live
+in `~/keys/` and `~/.appstoreconnect/private_keys/`, and `*.p8` is gitignored
+at the repository root. Apple allows a `.p8` to be downloaded exactly once, so
+a committed one cannot be rotated quietly.
+
 ## Store assets
 
 ```sh
 python3 tool/make_icons.py          # every icon size, both platforms
 python3 tool/make_icons.py 3a       # ...in the other approved colourway
 tool/make_screenshots.sh            # listing screenshots from a 6.9" simulator
+tool/make_iap_screenshot.sh         # the review screenshot each in-app purchase needs
 ```
 
 Both write generated files. Re-run a script rather than editing a PNG.

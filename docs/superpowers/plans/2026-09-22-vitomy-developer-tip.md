@@ -2,6 +2,21 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Status: executed and shipped 2026-09-22.** All eight tasks are committed,
+`flutter test` is 1167 green and `flutter test test_release/` 48, build
+1.1.0 (3) is uploaded to App Store Connect (Delivery UUID
+`e8aa6193-8be1-476a-a72d-ddaf21b1b8af`) and the site was redeployed with the
+rewritten privacy policy. What remains is not code: the 1.1.0 version record,
+a TestFlight check that the offering resolves on a real device, the Apple
+privacy label, and Submit. See SHIP-01 in `.planning/STATE.md`.
+
+Two deliberate deviations from the plan below, both recorded in their commits:
+readiness is a three-valued enum rather than the bool Task 2 names, because a
+bool cannot separate "not yet" from "tried and failed" and the screen renders
+those differently; and the support screen's tip row is a `Wrap` rather than a
+`Row`, because the render matrix caught an 85px overflow at textScaler 2.0 with
+a long storefront price.
+
 **Goal:** Sell three consumable developer tips through RevenueCat, from a
 screen reached out of Settings, and keep every privacy claim the app makes
 true in the same release.
