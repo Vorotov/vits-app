@@ -1,11 +1,16 @@
 ## Inspiration
 
-Half of what people take runs on a cycle: eight weeks on, four weeks off, or a
-course that ends on a date. Every tracker I tried treats a supplement as a
-checkbox that repeats forever, so the cycle lives in your head and the breaks
-get missed. That is a calendar problem, not a list problem.
+I take supplements in courses, and I kept losing the thread of them. When did I
+start this one? When did it end? When is it fair to begin the next cycle? And
+then, in the middle of an ordinary loaded day: did I already take it this
+morning, or am I about to take it twice?
 
-VitoMy answers one question: what do I take today, and when does this one stop?
+Notes apps lasted about a week each. So I built the thing I actually wanted:
+something that holds the start date, the length, the break, and the question of
+whether today is done.
+
+I built it for myself first. Putting it in the store is the part that might turn
+out to be useful to somebody else.
 
 ## What it does
 
@@ -22,77 +27,58 @@ Reminders are local notifications that never name a supplement, in the title or
 the body, because a lock screen is public.
 
 Everything stays on the device. No account, no server, no analytics. The app
-ships in seven languages, Arabic included, with real right-to-left layout and a
-gantt painter mirrored by hand.
+ships in seven languages, Arabic included, with real right-to-left layout.
 
 ## How I built it
 
-One Flutter codebase. Riverpod for state with hand-written providers, Drift over
-SQLite for storage, UUID keys and soft deletes on every row so a sync backend can
-arrive later without touching a screen. Screens depend on repository interfaces;
-Drift is one implementation, wired in a single file. That rule is what made
-RevenueCat cheap to add.
+Most of the code was written with Claude Code, on Flutter, so one codebase
+covers iPhone and Android.
 
-RevenueCat powers three consumable tips that unlock nothing, and each part of
-that was decided rather than defaulted:
+My design skills are weak, so the visual side leaned on AI too. The whole app
+was drawn as a mockup first and then transcribed into a fixed set of tokens, so
+no screen gets to invent its own colours or spacing later.
 
-- A tip is consumable, so it repeats, and Apple permits developer tips under
-  guideline 3.1.1. Consumables are not restorable, which removes the Restore
-  control and the anonymous-reinstall problem with it.
-- No entitlement. Attaching a consumable to one makes RevenueCat report it
-  unlocked forever after a single purchase.
-- No Paywalls SDK, because Paywalls do not support consumables. The tip screen
-  is built from the app's own design tokens like every other screen.
-- `purchases_flutter` is importable from exactly one file, behind a
-  `PurchaseGateway` interface. Tests keep it there, and assert the purchase
-  layer cannot reach the database, the domain, or either supplement stream.
-  That is what lets the privacy policy say the stack never leaves the device
-  and mean it.
-
-1167 tests run on every commit, plus 48 more before a release: a vocabulary
-sweep across all seven languages, and every main screen at text scales 1.0, 1.6
-and 2.0.
+RevenueCat handles the purchase side: three consumable tips, no entitlement and
+no paywall, because there is nothing to unlock. The suite that keeps the rest
+honest runs over a thousand tests, including a copy check in all seven
+languages.
 
 ## Challenges I ran into
 
-Apple rejected the build under guideline 2.1(b): the in-app purchases were not
-available at review time. Everything in App Store Connect was correct, so the
-obvious readings were all wrong.
+The interesting one was design, and it was selfish. I wanted the app to be
+pleasant for me, and the part I actually wanted to solve was the timelines. A
+supplement course is a bar with a hole in it, and several of them at once is a
+small gantt chart. Nothing off the shelf draws that, so the Cycles view and the
+year grid are built by hand, and it took several passes before a break read as a
+break rather than as missing data.
 
-The app reads `offerings.current`, and a missing offering returns an empty list
-that the screen renders as "unavailable", which looks exactly like a network
-failure. So I wrote a throwaway diagnostic that asked the same question twice on
-a real device: `getOfferings()`, which goes through the dashboard, and
-`getProducts(ids)`, which bypasses it and asks StoreKit.
-
-`getProducts` returned all three with real prices. `getOfferings` threw
-CONFIGURATION_ERROR: no App Store products registered for your offerings. The
-products had never been attached to the offering. One dashboard fix, no code
-change, verified on the device before resubmitting.
-
-A quieter one: the platform-config test asserted the app declares no INTERNET
-permission, and it kept passing after RevenueCat landed, because
-`purchases-android` declares INTERNET in its own library manifest and it merges
-in at build time while the test reads the source manifests. That assertion now
-claims only what it can see, and the real guarantee moved to a test that names
-the one network-capable dependency.
+The other challenge is still in front of me: Google. Play wants twelve testers
+opted in for fourteen consecutive days before a personal account can publish
+anything, and its own review on top. Apple was the faster door.
 
 ## What I learned
 
-`getProducts` and `getOfferings` disagreeing is the sharpest diagnostic in the
-SDK. One asks the store, the other asks your dashboard, and the gap between them
-says which side is broken.
+The hardest part of a tracking app is not the tracking. It is the wording.
+
+A dose you did not mark has to be called something, and the obvious word is
+"skipped". But the app has no idea what happened: maybe you took it and forgot
+to tap, maybe you decided not to, maybe the bottle was empty. "Skipped" makes
+the app a judge. "Not marked" keeps it a record. Changing that one word changed
+how it feels to open the thing, which I did not expect from a copy decision.
 
 ## What's next
 
-Android, once the Play closed-testing clock has run. A subscription if there is
-ever something worth charging for; the gateway was shaped so one can be added
-without reshaping it.
+Android, once the Play testing clock has run.
+
+The direction I actually want is an assistant: describe what you are planning
+and it helps you put the stack together and lay the schedule out, instead of you
+entering five courses by hand. That is the feature a subscription would be for,
+and the purchase layer was built so one can be added without reshaping anything.
 
 ## A note for judges
 
 The rules ask for a free trial or a promo code so judges can unlock the in-app
-purchase and test the premium features. VitoMy has neither. The whole app is
-free and the three tips unlock nothing, so there is nothing to gate and no code
-to hand you. The purchase to test is the tip itself, under Settings > Support
-the developer.
+purchase and test the premium features. VitoMy has neither, because it has no
+premium features yet. The app is free, the three tips unlock nothing, and every
+screen is already open to you. Premium is the assistant above, and it is not
+built.
