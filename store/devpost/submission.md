@@ -95,41 +95,29 @@ release, not manual.
 ### RevenueCat Design Award
 
 Judged on innovative ideas and aesthetics, separately from business viability.
-Worth entering; this is the category the app was built for.
+This is the category the app was built for.
 
 ```
-VitoMy is transcribed from a single approved mockup into one token file, and
-that file is the only place in the codebase allowed to hold a colour value. A
-test pins every token to the line of the mockup it came from, so the design
-cannot drift screen by screen.
+The Cycles view is the piece to judge. A supplement course is a bar with a hole
+in it, and several at once is a small gantt: on weeks solid, breaks hatched,
+overlaps readable at a glance. Nothing off the shelf draws that, so it is a
+hand-written painter, and it mirrors itself under Arabic, hatch and all.
 
-The piece I would point judges at is the Cycles view. A supplement course is a
-bar with a hole in it, and several running at once is a small gantt: on weeks
-solid, breaks hatched, overlaps visible at a glance. Nothing off the shelf
-draws that, so it is a hand-written painter. It also reads the text direction
-and mirrors itself for Arabic, hatch included, because a chart that keeps its
-left-to-right mapping under a right-to-left header is not a cosmetic bug, it is
-a chart stating something false.
+Everything else follows one rule. The whole app comes from a single mockup,
+transcribed into one token file, and a test pins each token to the mockup line
+it came from. Colour cannot drift screen by screen.
 
-There is no elevation anywhere in the app, in any state. Grouping is done with
-hairlines, spacing and one accent, not with floating cards.
+There is no elevation anywhere, in any state. Grouping is hairlines and space.
 
-Typography carries a constraint most apps never meet: three of the seven
-shipped languages have no upper and lower case at all, so an all-caps mono
-eyebrow reads as ordinary text there. Nothing in the layout depends on that
-signal alone.
+Three of the seven shipped languages have no upper and lower case, so no layout
+leans on a small-caps label to carry meaning.
 
-Every main screen renders in all seven languages at text scales 1.0, 1.6 and
-2.0, and that is a test, not an intention. Arabic runs under real
-locale-derived right-to-left.
+Every main screen is tested in all seven languages at text scales 1.0, 1.6 and
+2.0, Arabic under real right-to-left.
 
-Copy is treated as design. A dose you did not mark is "not marked", never
-"skipped", because the app does not know what happened. There are no streaks,
-no red for a missed day, and a cycle break never reads as failure.
-
-First-run help is a single inline card that appears beside its subject the
-first time that subject exists, and never again. There is no tour and no
-sequence of coach marks.
+Copy is design here too. A dose you did not mark is called "not marked", never
+"skipped", because the app does not know what happened. No streaks, no red
+days.
 ```
 
 ### RevenueCat Peace Prize
@@ -138,48 +126,40 @@ Judged on impact and feasibility. A long shot against projects aimed at bigger
 problems, but the field costs nothing to fill.
 
 ```
-VitoMy is built so that a record of what you take cannot leak, because it is
-never collected. No account, no sign-up, no server, no analytics, and the only
-network call the app makes is the one that offers a tip. The privacy policy
-says the stack never leaves the device, and four tests enforce that by
-construction rather than by promise.
+A record of what you take cannot leak here, because it is never collected. No
+account, no server, no analytics, and the only network call the app makes is
+the one that offers a tip. Four tests enforce that, which makes the privacy
+policy a description instead of a promise.
 
-That matters for a category of user who is not usually designed for: a phone is
-often shared, and a lock screen is public. Reminders therefore never name a
-supplement, in the title or the body, only the time and how many doses are due.
+Phones get shared and lock screens are public, so a reminder gives the time and
+the number of doses due, never the supplement.
 
-It ships in English, Arabic, Spanish, French, Hindi, Ukrainian and Chinese, at
-launch rather than later, with real right-to-left layout for Arabic. Most
-trackers of this kind ship English only. Every screen is also verified at 200%
-text size, so poor eyesight does not cost you the app.
+Seven languages at launch: English, Arabic, Spanish, French, Hindi, Ukrainian,
+Chinese, with real right-to-left layout for Arabic. Every screen also works at
+200% text size.
 ```
 
 ### Influencer Award
 
-One category only. The dropdown offers Productivity (Christopher Lawley),
-Nutrition & Healthy Eating (Abbey's Kitchen), Yoga & Fitness (Simone Sharice),
-Career Coaching (Leadership Heather) and Gaming (Mr Lewis Blogs Gaming).
+One category only. The five are Productivity (Christopher Lawley), Nutrition &
+Healthy Eating (Abbey's Kitchen), Yoga & Fitness (Simone Sharice), Career
+Coaching (Leadership Heather) and Gaming (Mr Lewis Blogs Gaming).
 
-Pick **Yoga & Fitness — Simone Sharice**, whose brief is a wellness app that
-answers "what should I do today?" without information overload. That is the
-Today screen's entire job. The other four briefs are a snippets manager, a
-meal-planning app, a manager-training app and a gaming backlog tracker, and
-none of them describes this product.
+Pick **Yoga & Fitness, Simone Sharice**, whose brief is a wellness app that
+answers "what should I do today?" without information overload. The other four
+are a snippets manager, a meal planner, a manager-training app and a gaming
+backlog.
 
 ```
-Simone's brief asks for an app that answers "what should I do today?" without
-burying the answer. That is the whole of VitoMy's Today screen: the doses due
-now, the time beside each, a tap to mark one done, and nothing else on the
-page. No feed, no dashboard, no numbers to interpret.
+Simone's brief is "what should I do today?" without the overload. That is the
+Today screen: the doses due now, the time beside each, one tap to mark one
+done. Nothing else on the page.
 
-The planning happens once, somewhere else. You set a schedule with its on
-weeks and its break, and after that the app answers the daily question for
-you, including the weeks when the answer is "nothing, you are in a break".
+The planning happens once, elsewhere. You set a schedule with its on weeks and
+its break, and from then on the app answers the daily question for you,
+including the weeks when the answer is "nothing, you are in a break".
 
-It is deliberately not a coach. It makes no claim about your body, gives no
-advice, and scores nothing. An unmarked dose is called "not marked", never
-"skipped", because the app does not know what happened, and there are no
-streaks to break. The whole tone is built so that opening it after a bad week
-costs nothing.
+It is not a coach. It makes no claim about your body and scores nothing. A dose
+you did not mark is "not marked", never "skipped", and there are no streaks to
+break, so opening it after a bad week costs nothing.
 ```
-
