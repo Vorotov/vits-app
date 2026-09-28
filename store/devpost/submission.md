@@ -37,18 +37,33 @@ swift, ios, xcode, app-store-connect, astro, caddy, cloudflare, python
 
 ## Project media
 
-**Image gallery** — `store/devpost/gallery/`, six 1800x1200 cards (3:2, the
-ratio Devpost recommends), built by the script in this directory from the
-listing screenshots. Upload in order; the first is the thumbnail.
+**Image gallery** — eleven images, in this order. Devpost's own checkboxes ask
+for an unframed screenshot and a 1024x1024 icon, and the raw files are what
+answer them honestly: the six composed cards carry the pitch, the five raw
+captures carry no frame, no bezel and no mock-up of any kind.
 
-| File | Shows |
+| # | File | Shows |
+|---|---|---|
+| 1 | `store/devpost/gallery/01-stack.png` | My stack, composed 3:2 card (this is the thumbnail) |
+| 2 | `store/devpost/gallery/02-today.png` | Today, marking a dose |
+| 3 | `store/devpost/gallery/03-cycles.png` | The gantt, with a break hatched |
+| 4 | `store/devpost/gallery/04-year.png` | The year grid |
+| 5 | `store/devpost/gallery/05-schedule.png` | The cycle editor |
+| 6 | `store/devpost/gallery/06-support.png` | The three tips |
+| 7-11 | `store/screenshots/ios-6.9/0*.png` | The same five screens raw, 1320x2868, no device frame |
+
+The icon goes up as its own image: `store/icon/3b/appstore-icon-1024.png`,
+1024x1024, no alpha channel, uncropped.
+
+## The checkbox block
+
+| Question | Answer |
 |---|---|
-| `01-stack.png` | My stack |
-| `02-today.png` | Today, marking a dose |
-| `03-cycles.png` | The gantt, with a break hatched |
-| `04-year.png` | The year grid |
-| `05-schedule.png` | The cycle editor |
-| `06-support.png` | The three tips |
+| 1024x1024 uncropped icon attached | Yes, the file above |
+| Screenshot WITHOUT device frames attached | Yes, images 7-11 |
+| First version released between 1 August and 30 September 2026 | Yes, 1.0 went live in September |
+| Employee of RevenueCat or a Shipaton sponsor | No, leave unticked |
+| What type of app | iOS (iPhone and/or iPad) only. Android is not published yet |
 
 **Video demo link** — YouTube or Vimeo, required. Built from
 `build/demo/demo.mp4`, 46 seconds, 1920x1080, silent; see
