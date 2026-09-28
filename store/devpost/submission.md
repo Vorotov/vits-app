@@ -51,8 +51,14 @@ listing screenshots. Upload in order; the first is the thumbnail.
 | `06-support.png` | The three tips |
 
 **Video demo link** — YouTube or Vimeo, required. Built from
-`build/demo/demo.mp4`; see `tool/make_demo_video.sh`. Upload it unlisted and
-paste the URL.
+`build/demo/demo.mp4`, 46 seconds, 1920x1080, silent; see
+`tool/make_demo_video.sh`. Upload it unlisted and paste the URL.
+
+The cut is title card, Stack, the cycle editor, the dose times that become
+reminders, Today with a dose marked on camera, Cycles, Year, end card. The tip
+screen is deliberately NOT in it: a simulator cannot reach the live App Store,
+so filming it means filming a stub, and the offering is better shown by gallery
+card `06-support.png` or by a clip taken on a real device.
 
 ## Try it out links
 

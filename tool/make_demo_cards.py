@@ -55,10 +55,8 @@ CAPS = [
      "Breaks hatched, overlaps visible, at four-month range."),
     ("year",     "A whole year at a glance",
      "Which months are covered, and where the gaps are."),
-    ("private",  "No ads. No account. No server.",
-     "Seven languages, and the stack never leaves the device."),
-    ("tips",     "Three tips, powered by RevenueCat",
-     "Consumables that unlock nothing. There is no paywall."),
+    ("notif",    "A reminder at every dose time",
+     "Local, and it never names what you take. A lock screen is public."),
 ]
 f_head = font(SANS, 76, 650)
 f_sub  = font(SANS, 36, 400)
@@ -95,7 +93,7 @@ d.text((200, 330), "VitoMy", font=font(SANS, 104, 700), fill=INK)
 lines = [
     "Free on the App Store, iPhone and iPad",
     "Flutter · Riverpod · Drift · RevenueCat",
-    "Three consumable tips that unlock nothing",
+    "Everything stays on the device",
 ]
 y = 480
 for line in lines:
