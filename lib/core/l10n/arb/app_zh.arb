@@ -51,6 +51,7 @@
   "slotIntervalSingle": "每天一个时间点。",
   "saveAndStart": "添加并开始周期",
   "saveWhilePaused": "保存，周期暂停",
+  "saveChanges": "保存",
   "pause": "暂停",
   "resume": "继续周期",
   "delete": "删除",

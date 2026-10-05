@@ -51,6 +51,7 @@
   "slotIntervalSingle": "Une seule heure par jour.",
   "saveAndStart": "Ajouter et lancer le cycle",
   "saveWhilePaused": "Enregistrer, cycle en pause",
+  "saveChanges": "Enregistrer",
   "pause": "Pause",
   "resume": "Reprendre le cycle",
   "delete": "Supprimer",

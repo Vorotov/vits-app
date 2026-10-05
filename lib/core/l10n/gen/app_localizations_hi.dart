@@ -241,6 +241,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get saveWhilePaused => 'सहेजें, चक्र रुका हुआ';
 
   @override
+  String get saveChanges => 'सहेजें';
+
+  @override
   String get pause => 'रोकें';
 
   @override

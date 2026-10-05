@@ -51,6 +51,7 @@
   "slotIntervalSingle": "Один слот на день.",
   "saveAndStart": "Додати й запустити цикл",
   "saveWhilePaused": "Зберегти, цикл на паузі",
+  "saveChanges": "Зберегти",
   "pause": "Пауза",
   "resume": "Відновити цикл",
   "delete": "Видалити",

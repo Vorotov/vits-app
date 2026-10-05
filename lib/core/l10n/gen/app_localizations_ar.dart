@@ -260,6 +260,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get saveWhilePaused => 'حفظ، والدورة متوقفة';
 
   @override
+  String get saveChanges => 'حفظ';
+
+  @override
   String get pause => 'إيقاف مؤقت';
 
   @override

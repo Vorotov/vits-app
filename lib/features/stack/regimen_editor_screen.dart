@@ -17,6 +17,16 @@
 ///   never hidden); course end unpickable before start (`firstDate`).
 /// - UI-SPEC #18: the body is ONE scroll view; the footer is pinned via
 ///   `bottomNavigationBar` and never scrolls away.
+/// - DOSE TIMES sits ABOVE PERIODICITY in the body column (quick task
+///   261005-nc6, reversing the mockup's order). The slot times are the field a
+///   person edits most often and they used to sit below the two cycle sliders,
+///   so correcting a time meant scrolling past the controls nobody came for.
+///   The 22px section gap between the blocks is the same single widget it was
+///   before the swap. `BqHint.cycle` travelled DOWN with the sliders because it
+///   renders inside `_PeriodicityPanel` — a hint belongs beside the subject it
+///   explains, so this is the right place for it, not a side effect to undo.
+///   `test/features/regimen_editor_test.dart` pins the order by comparing the
+///   two eyebrows' `.dy`; nothing else holds it.
 /// - D-07 token-only styling: no raw color literals; the only hardcoded
 ///   pixel values are the mockup-exact overrides enumerated in 02-UI-SPEC.
 library;
@@ -111,22 +121,6 @@ class RegimenEditorScreen extends ConsumerWidget {
                       // Section gap (editor) — mockup-exact 22px.
                       const SizedBox(height: 22),
                     ],
-                    _Eyebrow(text: l10n.periodicityLabel),
-                    const SizedBox(height: 11),
-                    BqSegmented(
-                      labels: [l10n.cyclicTab, l10n.courseTab],
-                      selectedIndex: draft.kind == RegimenKind.cyclic ? 0 : 1,
-                      onChanged: (i) => controller.setKind(
-                        i == 0 ? RegimenKind.cyclic : RegimenKind.course,
-                      ),
-                    ),
-                    const SizedBox(height: 11),
-                    _PeriodicityPanel(
-                      draft: draft,
-                      controller: controller,
-                      supplementId: supplementId,
-                    ),
-                    const SizedBox(height: 22),
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,
@@ -171,6 +165,22 @@ class RegimenEditorScreen extends ConsumerWidget {
                         height: 1.5,
                         color: BqColors.textMuted,
                       ),
+                    ),
+                    const SizedBox(height: 22),
+                    _Eyebrow(text: l10n.periodicityLabel),
+                    const SizedBox(height: 11),
+                    BqSegmented(
+                      labels: [l10n.cyclicTab, l10n.courseTab],
+                      selectedIndex: draft.kind == RegimenKind.cyclic ? 0 : 1,
+                      onChanged: (i) => controller.setKind(
+                        i == 0 ? RegimenKind.cyclic : RegimenKind.course,
+                      ),
+                    ),
+                    const SizedBox(height: 11),
+                    _PeriodicityPanel(
+                      draft: draft,
+                      controller: controller,
+                      supplementId: supplementId,
                     ),
                   ],
                 ),
@@ -836,6 +846,33 @@ class _DashedBorderPainter extends CustomPainter {
 /// confirmation dialog; the cascade call lives solely in the dialog's
 /// confirm handler (UI-SPEC #19, threat T-02-04).
 ///
+/// The save label is a THREE-way, not the two-way the paused contract above
+/// describes on its own (quick task 261005-nc6, closing a defect found
+/// 2026-09-11 while reviewing a store screenshot). `saveAndStart` ("Add and
+/// start cycle") was unconditional on the unpaused branch, so editing a
+/// schedule that is already running offered to add it. The create-vs-edit
+/// signal is `draft.regimenId`: `RegimenEditorController._draftFrom` sets it
+/// from the persisted `r.id`, `_defaults()` leaves it null — so non-null means
+/// this draft came off a stored regimen and the button says Save.
+///
+/// Two deliberate non-changes:
+/// - **The paused branch stays one string.** `saveWhilePaused` ("Save, cycle
+///   paused") already says Save and states the state, so it is correct on both
+///   paths; splitting it would be a fourth variant saying the same thing.
+/// - **The save hint gets no edit variant** (D-2). `saveHintActive` describes
+///   what THIS save does — slots appear from {start}, pause removes them
+///   without losing settings — which is equally true of a new regimen and a
+///   changed one, and its pause clause is more relevant on the edit path, not
+///   less. A create/edit × active/paused matrix would be four strings across
+///   seven languages for a sentence whose content does not move.
+///
+/// One edge, so a later reader does not file it as a new bug: on the WR-03
+/// blind-seed path (`_seedWasBlind`, stack graph not yet warm) `regimenId` is
+/// null even though a regimen exists, so the button reads as create until the
+/// first save is refused — and that refusal re-seeds the draft from the store,
+/// which corrects the label on the next frame. That matches the rest of that
+/// path; it does not want a second signal.
+///
 /// A CONSUMER stateful widget since plan 07-05, for one reason: the first
 /// successful save is where the app asks the operating system for permission to
 /// post reminders, and the notifier that owns that ask is app-lifetime while
@@ -900,7 +937,11 @@ class _EditorFooterState extends ConsumerState<_EditorFooter> {
               ),
               onPressed: _saving ? null : () => _save(context),
               child: Text(
-                draft.paused ? l10n.saveWhilePaused : l10n.saveAndStart,
+                draft.paused
+                    ? l10n.saveWhilePaused
+                    : draft.regimenId != null
+                        ? l10n.saveChanges
+                        : l10n.saveAndStart,
               ),
             ),
           ),

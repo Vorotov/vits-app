@@ -391,6 +391,167 @@ void main() {
     });
   });
 
+  // -------------------------------------------------------------------
+  // Quick task 261005-nc6 — the two things nothing else in this file holds.
+  // -------------------------------------------------------------------
+
+  /// An existing cyclic regimen for [neutralSupplement], so the controller
+  /// seeds its draft from the STORE (`_draftFrom`) and `regimenId` is non-null
+  /// — which is the create-vs-edit signal the footer label reads.
+  Regimen seededRegimen() => Regimen(
+        id: 'r1',
+        supplementId: 's1',
+        kind: RegimenKind.cyclic,
+        startDate: DateTime.utc(2026, 1, 1),
+        endDate: null,
+        onDays: 5,
+        offDays: 2,
+        paused: false,
+        slots: const [
+          DoseSlot(id: 'sl1', minutesFromMidnight: 480, doseLabel: ''),
+        ],
+      );
+
+  group('body order: DOSE TIMES above PERIODICITY (261005-nc6)', () {
+    for (final locale in const ['uk', 'en']) {
+      for (final scaler in const [TextScaler.noScaling, TextScaler.linear(1.6)])
+      {
+        testWidgets(
+            '$locale: the time-slots eyebrow renders above the periodicity '
+            'eyebrow at textScaler ${scaler.scale(1)}', (tester) async {
+          usePhoneSurface(tester);
+          final l10n = lookupAppLocalizations(Locale(locale));
+          final container =
+              await makeContainer(tester, seed: neutralSupplement);
+          await tester.pumpWidget(
+            app(container, locale: locale, textScaler: scaler),
+          );
+          await tester.pump();
+
+          expect(
+            tester.getCenter(find.text(l10n.timeSlotsLabel)).dy <
+                tester.getCenter(find.text(l10n.periodicityLabel)).dy,
+            isTrue,
+            reason: 'the slot times are the field a person edits most often '
+                'and they used to sit below the two cycle sliders, so '
+                'correcting a time meant scrolling past the controls nobody '
+                'came for. Nothing else in this repository asserts vertical '
+                'position in this screen, so this comparison is the only '
+                'thing standing between the fix and a silent revert',
+          );
+          expect(tester.takeException(), isNull,
+              reason: 'the reorder must not overflow at either scale — the '
+                  'blocks moved, the 22px section gap did not multiply');
+
+          await tearDownTree(tester, container);
+        });
+      }
+    }
+  });
+
+  /// Seeds [seededRegimen] and does not return until `stackEntriesProvider`
+  /// actually CARRIES it, over a throwaway tree, before the editor is pumped.
+  ///
+  /// `RegimenEditorController.build` is a one-shot `ref.read` and never
+  /// re-seeds: a draft built while the stack graph is still `AsyncLoading` is
+  /// a WR-03 blind seed with a null `regimenId` whatever is in the database by
+  /// the next frame. Pumping the editor straight after the upsert therefore
+  /// renders the CREATE label over an existing regimen — which is how the
+  /// first draft of this test passed for the wrong reason, and why the wait
+  /// is a separate step rather than a longer loop around the assertion. It
+  /// also models production honestly: both v1 entry points open the editor
+  /// over a warm stack graph.
+  Future<void> pumpEditorOverSeededRegimen(
+    WidgetTester tester,
+    ProviderContainer container, {
+    String locale = 'uk',
+  }) async {
+    await container.read(regimenRepoProvider).upsert(seededRegimen());
+    await tester.pumpWidget(
+      app(container, locale: locale, home: const SizedBox()),
+    );
+    var warm = false;
+    for (var i = 0; i < 100 && !warm; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+      if (container.read(stackEntriesProvider)
+          case AsyncData(value: final List<StackEntry> list)) {
+        warm = list.any((e) => e.supplement.id == 's1' && e.regimen != null);
+      }
+    }
+    expect(warm, isTrue,
+        reason: 'the stack graph must carry the seeded regimen BEFORE the '
+            'editor mounts, or the draft is blind-seeded and this test '
+            'asserts the create branch while believing it asserts the edit '
+            'one');
+    await tester.pumpWidget(app(container, locale: locale));
+    await tester.pump();
+  }
+
+  group('save label: create vs edit (261005-nc6)', () {
+    for (final locale in const ['uk', 'en']) {
+      testWidgets(
+          '$locale: a draft seeded from a PERSISTED regimen says Save, not '
+          '"add and start"', (tester) async {
+        usePhoneSurface(tester);
+        final l10n = lookupAppLocalizations(Locale(locale));
+        final container = await makeContainer(tester, seed: neutralSupplement);
+        await pumpEditorOverSeededRegimen(tester, container, locale: locale);
+
+        expect(find.text(l10n.saveChanges), findsOneWidget,
+            reason: 'editing a schedule that is already running must not '
+                'offer to add it — the defect this closes was visible in a '
+                'shipped store screenshot');
+        expect(find.text(l10n.saveAndStart), findsNothing,
+            reason: 'the create label must be GONE, not merely joined');
+        expect(tester.takeException(), isNull);
+
+        await tearDownTree(tester, container);
+      });
+
+      testWidgets(
+          '$locale: a draft with NO stored regimen still says "add and start"',
+          (tester) async {
+        usePhoneSurface(tester);
+        final l10n = lookupAppLocalizations(Locale(locale));
+        final container = await makeContainer(tester, seed: neutralSupplement);
+        await tester.pumpWidget(app(container, locale: locale));
+        await tester.pump();
+
+        expect(find.text(l10n.saveAndStart), findsOneWidget,
+            reason: 'the create path is untouched by this change');
+        expect(find.text(l10n.saveChanges), findsNothing);
+        expect(tester.takeException(), isNull);
+
+        await tearDownTree(tester, container);
+      });
+    }
+
+    testWidgets(
+        'uk: pausing an EDIT draft still reads the paused label — the paused '
+        'branch did not split', (tester) async {
+      usePhoneSurface(tester);
+      final l10n = lookupAppLocalizations(const Locale('uk'));
+      final container = await makeContainer(tester, seed: neutralSupplement);
+      await pumpEditorOverSeededRegimen(tester, container);
+      expect(find.text(l10n.saveChanges), findsOneWidget,
+          reason: 'the edit path is the premise of this case');
+
+      await tester.tap(find.text(l10n.pause));
+      await tester.pump();
+
+      expect(find.text(l10n.saveWhilePaused), findsOneWidget,
+          reason: 'saveWhilePaused already says Save and states the state, so '
+              'it is correct on BOTH paths — a fourth variant would say the '
+              'same thing twice');
+      expect(find.text(l10n.saveChanges), findsNothing);
+      expect(find.text(l10n.saveHintPaused), findsOneWidget,
+          reason: 'the save HINT gets no edit variant either (D-2)');
+      expect(tester.takeException(), isNull);
+
+      await tearDownTree(tester, container);
+    });
+  });
+
   group('footer actions (Task 2)', () {
     testWidgets(
         'save persists a course regimen with an inclusive end date (REGI-02)',

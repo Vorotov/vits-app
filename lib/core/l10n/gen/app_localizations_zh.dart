@@ -234,6 +234,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get saveWhilePaused => '保存，周期暂停';
 
   @override
+  String get saveChanges => '保存';
+
+  @override
   String get pause => '暂停';
 
   @override

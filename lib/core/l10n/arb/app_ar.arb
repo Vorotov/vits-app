@@ -51,6 +51,7 @@
   "slotIntervalSingle": "وقت واحد في اليوم.",
   "saveAndStart": "إضافة وبدء الدورة",
   "saveWhilePaused": "حفظ، والدورة متوقفة",
+  "saveChanges": "حفظ",
   "pause": "إيقاف مؤقت",
   "resume": "استئناف الدورة",
   "delete": "حذف",

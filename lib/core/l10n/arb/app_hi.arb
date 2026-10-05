@@ -51,6 +51,7 @@
   "slotIntervalSingle": "दिन में एक स्लॉट।",
   "saveAndStart": "जोड़ें और चक्र शुरू करें",
   "saveWhilePaused": "सहेजें, चक्र रुका हुआ",
+  "saveChanges": "सहेजें",
   "pause": "रोकें",
   "resume": "चक्र फिर से शुरू करें",
   "delete": "हटाएँ",

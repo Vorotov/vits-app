@@ -241,6 +241,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get saveWhilePaused => 'Enregistrer, cycle en pause';
 
   @override
+  String get saveChanges => 'Enregistrer';
+
+  @override
   String get pause => 'Pause';
 
   @override

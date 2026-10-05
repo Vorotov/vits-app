@@ -242,6 +242,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveWhilePaused => 'Save, cycle paused';
 
   @override
+  String get saveChanges => 'Save';
+
+  @override
   String get pause => 'Pause';
 
   @override

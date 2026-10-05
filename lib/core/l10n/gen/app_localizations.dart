@@ -414,6 +414,12 @@ abstract class AppLocalizations {
   /// **'Save, cycle paused'**
   String get saveWhilePaused;
 
+  /// Editor footer primary CTA while the draft is NOT paused AND is editing a regimen that already exists; the create-path counterpart is saveAndStart. The paused branch does not split — saveWhilePaused already says Save and states the state, so it is correct on both paths
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get saveChanges;
+
   /// Editor footer secondary button pausing the regimen draft
   ///
   /// In en, this message translates to:

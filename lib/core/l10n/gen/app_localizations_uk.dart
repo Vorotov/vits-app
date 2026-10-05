@@ -251,6 +251,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get saveWhilePaused => 'Зберегти, цикл на паузі';
 
   @override
+  String get saveChanges => 'Зберегти';
+
+  @override
   String get pause => 'Пауза';
 
   @override
