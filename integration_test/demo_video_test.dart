@@ -213,7 +213,11 @@ void main() {
     );
     await _hold(tester, 1);
 
-    // ---- 3. Today, and marking a dose --------------------------------
+    // ---- 3. Today: marking a dose, and the dose sheet ----------------
+    // Two beats on the same row. The tap is the one-gesture mark; the long
+    // press is the labelled alternative, and the only route from a dose into
+    // the dosing schedule behind it. The row is a PAST dose, so it has a long
+    // press at all — a future row deliberately has none.
     await _tap(tester, find.text('Today'));
     await _pumpUntil(
       tester,
@@ -226,6 +230,39 @@ void main() {
     if (pending != null && find.text(pending).evaluate().isNotEmpty) {
       await _tap(tester, find.text(pending));
       await _hold(tester, 4);
+
+      // That tap left the row `taken`, so the sheet offers three rows: mark
+      // skipped, undo, and the unconditional schedule row last.
+      await _longPress(tester, find.text(pending));
+      await _pumpUntil(
+        tester,
+        () => find.text('Open dosing schedule').evaluate().isNotEmpty,
+        'the dose action sheet',
+      );
+      await _hold(tester, 4);
+      await _tap(tester, find.text('Open dosing schedule'));
+      await _pumpUntil(
+        tester,
+        () => find.byType(RegimenEditorScreen).evaluate().isNotEmpty,
+        'the dosing schedule, opened from the dose sheet',
+      );
+      await _hold(tester, 5);
+      await _tap(
+        tester,
+        find.ancestor(
+          of: find.byIcon(Icons.arrow_back_ios_new),
+          matching: find.byType(IconButton),
+        ),
+      );
+      // Asserted on the editor being GONE, not on TodayScreen being present:
+      // the route under a pushed one stays in the tree, so finding it again
+      // would pass before the pop animation had even started.
+      await _pumpUntil(
+        tester,
+        () => find.byType(RegimenEditorScreen).evaluate().isEmpty,
+        "today's doses again",
+      );
+      await _hold(tester, 1);
     } else {
       debugPrint('demo: no pending dose to tap ($pending)');
       await _hold(tester, 2);
@@ -411,5 +448,14 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
   await tester.ensureVisible(finder.first);
   await _pump(tester, 4);
   await tester.tap(finder.first);
+  await _pump(tester, 10);
+}
+
+/// The same shape as [_tap], gesture apart — so the two beats on one dose row
+/// are paced identically on camera.
+Future<void> _longPress(WidgetTester tester, Finder finder) async {
+  await tester.ensureVisible(finder.first);
+  await _pump(tester, 4);
+  await tester.longPress(finder.first);
   await _pump(tester, 10);
 }
