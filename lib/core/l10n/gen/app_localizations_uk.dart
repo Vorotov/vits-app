@@ -478,6 +478,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get undoMark => 'Зняти позначку';
 
   @override
+  String get openSchedule => 'Відкрити розклад прийому';
+
+  @override
   String get backToToday => 'Сьогодні';
 
   @override

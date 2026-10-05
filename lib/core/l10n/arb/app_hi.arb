@@ -112,6 +112,7 @@
   "markTaken": "लिया हुआ चिह्नित करें",
   "markSkipped": "छोड़ा हुआ चिह्नित करें",
   "undoMark": "चिह्न हटाएँ",
+  "openSchedule": "खुराक शेड्यूल खोलें",
   "backToToday": "आज",
   "doseSheetSubtitle": "{time} · {dose}",
   "doseSheetSubtitleTimeOnly": "{time}",

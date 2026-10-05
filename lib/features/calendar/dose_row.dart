@@ -15,6 +15,16 @@
 /// site, dropping the gestures AND the custom semantics actions here closes
 /// the write completely — there is no second path to guard.
 ///
+/// That guarantee has a cost, and it is accepted rather than overlooked: the
+/// dosing-schedule editor the sheet now offers (quick task 261005-nc6) is
+/// unreachable from a FUTURE row, because the row has no long press at all.
+/// Exposing it there would mean the sheet learning the row state and
+/// suppressing its three mark rows, which reopens exactly the guarantee this
+/// comment exists to protect — a sheet that sometimes writes and sometimes
+/// does not is a second path to audit. The editor stays reachable from the
+/// Stack tab and from any non-future row of the same supplement, which is
+/// every day up to and including today.
+///
 /// The destructive palette is never referenced in this file (Phase 3 adds no
 /// destructive action), and the warn palette is reachable only from the overdue
 /// branch, which is already today-gated (TRACK-03 neutrality mandate).
@@ -38,6 +48,7 @@ import 'package:vitomy/core/theme/theme.dart';
 import 'package:vitomy/core/theme/tokens.dart';
 import 'package:vitomy/features/calendar/day_view_model.dart';
 import 'package:vitomy/features/calendar/dose_action_sheet.dart';
+import 'package:vitomy/features/stack/regimen_editor_screen.dart';
 
 /// The five exhaustive row states of the S4 table. No sixth combination may
 /// render, and no two may render at once.
@@ -133,9 +144,34 @@ class _DoseRowState extends ConsumerState<DoseRow> {
   /// (WR-03).
   Future<void> _onLongPress() async {
     if (_busy) return;
+    // Resolved BEFORE the await, the same stance `_apply` takes with its
+    // messenger: no BuildContext survives the sheet gap, which is arbitrarily
+    // long (WR-03).
+    final navigator = Navigator.of(context);
     final chosen = await showDoseActionSheet(context, widget.dose);
     if (chosen == null || !mounted) return;
-    await _apply(chosen);
+    switch (chosen) {
+      case DoseSheetMark(status: final status):
+        await _apply(status);
+      case DoseSheetOpenSchedule():
+        _openSchedule(navigator);
+    }
+  }
+
+  /// Pushes this supplement's dosing schedule. One method for both routes in,
+  /// so the gesture path and the Semantics path cannot drift apart.
+  ///
+  /// [navigator] is passed in rather than resolved here because the gesture
+  /// path reaches this across the sheet's async gap. Writes nothing: choosing
+  /// to go and read the schedule is not a statement about the dose.
+  void _openSchedule(NavigatorState navigator) {
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => RegimenEditorScreen(
+          supplementId: widget.dose.supplement.id,
+        ),
+      ),
+    );
   }
 
   /// Resolution order is the whole guarantee that exactly one state renders.
@@ -286,6 +322,13 @@ class _DoseRowState extends ConsumerState<DoseRow> {
       if (state != _RowState.future && dose.status != DoseStatus.pending)
         CustomSemanticsAction(label: l10n.undoMark): () =>
             _apply(DoseStatus.pending),
+      // Gated on the row state ONLY, never on `dose.status`: unlike a mark,
+      // reading the schedule is valid whatever happened to this dose. It
+      // still goes behind the future gate with the other three, because a
+      // future row offers no long press for it to be the equivalent of.
+      if (state != _RowState.future)
+        CustomSemanticsAction(label: l10n.openSchedule): () =>
+            _openSchedule(Navigator.of(context)),
     };
 
     return MergeSemantics(

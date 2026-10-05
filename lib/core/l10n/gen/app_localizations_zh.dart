@@ -456,6 +456,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get undoMark => '清除标记';
 
   @override
+  String get openSchedule => '打开服用安排';
+
+  @override
   String get backToToday => '今天';
 
   @override

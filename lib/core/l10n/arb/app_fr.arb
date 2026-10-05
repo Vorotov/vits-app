@@ -112,6 +112,7 @@
   "markTaken": "Marquer comme prise",
   "markSkipped": "Marquer comme sautée",
   "undoMark": "Retirer la marque",
+  "openSchedule": "Ouvrir les horaires de prise",
   "backToToday": "Aujourd'hui",
   "doseSheetSubtitle": "{time} · {dose}",
   "doseSheetSubtitleTimeOnly": "{time}",

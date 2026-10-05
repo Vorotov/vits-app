@@ -112,6 +112,7 @@
   "markTaken": "Позначити прийнято",
   "markSkipped": "Позначити пропущено",
   "undoMark": "Зняти позначку",
+  "openSchedule": "Відкрити розклад прийому",
   "backToToday": "Сьогодні",
   "doseSheetSubtitle": "{time} · {dose}",
   "doseSheetSubtitleTimeOnly": "{time}",

@@ -466,6 +466,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get undoMark => 'Retirer la marque';
 
   @override
+  String get openSchedule => 'Ouvrir les horaires de prise';
+
+  @override
   String get backToToday => 'Aujourd\'hui';
 
   @override

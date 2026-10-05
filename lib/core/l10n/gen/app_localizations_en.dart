@@ -467,6 +467,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get undoMark => 'Clear mark';
 
   @override
+  String get openSchedule => 'Open dosing schedule';
+
+  @override
   String get backToToday => 'Today';
 
   @override

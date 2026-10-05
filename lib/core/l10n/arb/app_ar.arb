@@ -112,6 +112,7 @@
   "markTaken": "تسجيل التناول",
   "markSkipped": "تسجيل التخطي",
   "undoMark": "إزالة العلامة",
+  "openSchedule": "فتح جدول الجرعات",
   "backToToday": "اليوم",
   "doseSheetSubtitle": "{time} · {dose}",
   "doseSheetSubtitleTimeOnly": "{time}",

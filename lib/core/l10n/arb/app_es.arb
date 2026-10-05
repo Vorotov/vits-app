@@ -112,6 +112,7 @@
   "markTaken": "Marcar como tomada",
   "markSkipped": "Marcar como omitida",
   "undoMark": "Quitar la marca",
+  "openSchedule": "Abrir el horario de tomas",
   "backToToday": "Hoy",
   "doseSheetSubtitle": "{time} · {dose}",
   "doseSheetSubtitleTimeOnly": "{time}",

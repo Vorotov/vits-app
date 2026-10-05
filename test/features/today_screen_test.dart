@@ -45,6 +45,7 @@ import 'package:vitomy/features/calendar/day_progress_ring.dart';
 import 'package:vitomy/features/calendar/dose_row.dart';
 import 'package:vitomy/features/calendar/week_strip.dart';
 import 'package:vitomy/features/settings/settings_screen.dart';
+import 'package:vitomy/features/stack/regimen_editor_screen.dart';
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -1659,6 +1660,7 @@ void main() {
     const markTaken = 'Позначити прийнято';
     const markSkipped = 'Позначити пропущено';
     const undoMark = 'Зняти позначку';
+    const openSchedule = 'Відкрити розклад прийому';
 
     const supplement = Supplement(
       id: 's1',
@@ -1951,6 +1953,84 @@ void main() {
 
       expect(raw().single.status, DoseStatus.pending,
           reason: 'dismissal is not a choice — nothing is written');
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    // --- The way into the dosing schedule (quick task 261005-nc6) ---
+    //
+    // Correcting a dose time used to mean leaving Сьогодні for the Стек tab
+    // and finding the supplement again. The sheet now offers the editor
+    // directly — and, unlike the three mark rows, offers it unconditionally,
+    // because the destination exists whatever happened to this dose.
+
+    testWidgets('uk: the sheet offers the dosing schedule alongside the mark '
+        'rows', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, _, sub) = await pumpRow(tester, container);
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(markTaken).evaluate().isNotEmpty,
+        'the action sheet',
+      );
+
+      expect(find.text(openSchedule), findsOneWidget,
+          reason: 'exactly one row, after the marks — not a second copy '
+              'somewhere, and not absent because this dose is pending');
+      expect(find.text(markSkipped), findsOneWidget,
+          reason: 'the new row is an addition, not a replacement');
+      expect(
+        tester.getCenter(find.text(openSchedule)).dy >
+            tester.getCenter(find.text(markSkipped)).dy,
+        isTrue,
+        reason: 'the mark rows answer "what happened to this dose"; this one '
+            'leaves the screen, so it goes last',
+      );
+      expect(tester.takeException(), isNull);
+      // ignore: unawaited_futures
+      sub.cancel();
+      await tester.pump(const Duration(milliseconds: 10));
+      await tearDownTree(tester, container);
+    });
+
+    testWidgets('uk: choosing the dosing schedule lands on the editor and '
+        'writes nothing', (tester) async {
+      usePhoneSurface(tester);
+      final container = makeContainer(today: pinnedToday, nowMinutes: 400);
+      await container.read(supplementRepoProvider).upsert(supplement);
+      await container.read(regimenRepoProvider).upsert(reg());
+      final (row, raw, sub) = await pumpRow(tester, container);
+
+      await tester.longPress(row);
+      await pumpUntil(
+        tester,
+        () => find.text(openSchedule).evaluate().isNotEmpty,
+        'the action sheet',
+      );
+      // The sheet is mounted before it has finished sliding up; let the route
+      // transition run out so the action row is actually hit-testable.
+      for (var i = 0; i < 30; i++) {
+        await tester.pump(const Duration(milliseconds: 20));
+      }
+
+      await tester.tap(find.text(openSchedule));
+      await pumpUntil(
+        tester,
+        () => find.byType(RegimenEditorScreen).evaluate().isNotEmpty,
+        'the pushed regimen editor',
+      );
+
+      expect(raw().single.status, DoseStatus.pending,
+          reason: 'going to read the schedule is not a statement about the '
+              'dose — this action must write nothing at all');
       expect(tester.takeException(), isNull);
       // ignore: unawaited_futures
       sub.cancel();

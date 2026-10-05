@@ -466,6 +466,9 @@ class AppLocalizationsHi extends AppLocalizations {
   String get undoMark => 'चिह्न हटाएँ';
 
   @override
+  String get openSchedule => 'खुराक शेड्यूल खोलें';
+
+  @override
   String get backToToday => 'आज';
 
   @override

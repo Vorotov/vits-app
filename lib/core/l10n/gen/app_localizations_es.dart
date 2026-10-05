@@ -468,6 +468,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get undoMark => 'Quitar la marca';
 
   @override
+  String get openSchedule => 'Abrir el horario de tomas';
+
+  @override
   String get backToToday => 'Hoy';
 
   @override

@@ -112,6 +112,7 @@
   "markTaken": "标记为已服用",
   "markSkipped": "标记为已跳过",
   "undoMark": "清除标记",
+  "openSchedule": "打开服用安排",
   "backToToday": "今天",
   "doseSheetSubtitle": "{time} · {dose}",
   "doseSheetSubtitleTimeOnly": "{time}",

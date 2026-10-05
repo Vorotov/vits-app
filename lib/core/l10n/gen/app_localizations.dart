@@ -780,6 +780,12 @@ abstract class AppLocalizations {
   /// **'Clear mark'**
   String get undoMark;
 
+  /// Dose-sheet row, and the matching row Semantics action, that leaves Today for this supplement's dosing schedule editor. Names the SCHEDULE rather than the supplement because the destination's supplement header is read-only (PF-5) — it cannot change a name or a dose text — and its own title is scheduleTitle, so the heading repeats the words the user just tapped. Unconditional, unlike the three mark rows: the destination exists whatever the dose's status is
+  ///
+  /// In en, this message translates to:
+  /// **'Open dosing schedule'**
+  String get openSchedule;
+
   /// Header text button clearing the day selection back to 'follow today'; visible only when the resolved day differs from today. Same word as the screen title by design — it names the destination (UI-SPEC S4)
   ///
   /// In en, this message translates to:

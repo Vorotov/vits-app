@@ -489,6 +489,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get undoMark => 'إزالة العلامة';
 
   @override
+  String get openSchedule => 'فتح جدول الجرعات';
+
+  @override
   String get backToToday => 'اليوم';
 
   @override
