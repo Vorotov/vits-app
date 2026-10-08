@@ -5,10 +5,10 @@ milestone_name: Progress
 current_phase: 9
 current_phase_name: Languages & the Release Gate
 status: milestone_shipped_pending_device_pass
-stopped_at: Phase 9 shipped (fc7bfd3); no phase in flight
+stopped_at: Completed quick task 261008-j54 (App Store creative asset); no phase in flight
 last_updated: "2026-09-13T09:57:22.430Z"
-last_activity: 2026-09-11
-last_activity_desc: "Completed quick task 260911-mms: App Store listing: fix the 31-char subtitle and refresh promotional text, description and keywords in store/listing.md with ASO rationale; document the 6.5-inch ASC slot; make tool/make_screenshots.sh derive the 6.5-inch set; commit store/screenshots/ios-6.5"
+last_activity: 2026-10-08
+last_activity_desc: "Completed quick task 261008-j54: tool/make_store_header.py generates store/creative/universal-5244x2950.png, the one 16:9 master that fills both App Store Connect creative slots; store/listing.md documents the slots, the derived safe box and that uploading is a manual ASC step"
 progress:
   total_phases: 2
   completed_phases: 0
@@ -31,12 +31,12 @@ See: .planning/PROJECT.md (updated 2026-08-14)
 Milestone: v1.2 — shipped 2026-09-01
 Phase: 9 (Languages & the Release Gate) — complete
 Plan: none in flight
-Last activity: 2026-10-05 - Completed quick tasks 261005-nc6 (three UI changes:
-dose times above periodicity, Save when editing, Open dosing schedule from the
-Today dose sheet) and 261005-u0x (release prep: 1.1.1+4, regenerated listing
-screenshots, demo walkthrough extended). Three Deferred Items closed. The 1.1.1
-build is being uploaded to App Store Connect; submission for review is the
-owner's step in the ASC UI.
+Last activity: 2026-10-08 - Build 1.1.1 (4) uploaded to App Store Connect
+(Delivery UUID 646c9f2b-931a-405a-92b0-3f65f9220bd5, processed to VALID) using the
+new Admin-role API key YJ84ZXQU9T, which has the cloud-signing right the old key
+lacked. The App Store universal creative asset is generated and committed. Still
+with a human: attach build 4 to the 1.1.1 record, the promotional-text rewrite,
+the screenshot and creative-asset uploads, and Submit for Review.
 
 **VitoMy 1.0 has been public on the App Store since 2026-09-21** (verified
 2026-09-25 against the public lookup API, which still reports 1.0 — so 1.1.0 is
@@ -67,7 +67,9 @@ Progress: [██████████] 9 phases, 8 closed — Phase 7 (Dose 
   builds every icon size for both platforms from one geometry;
   `tool/make_screenshots.sh` drives
   `integration_test/store_screenshots_test.dart` on a 6.9" simulator and
-  collects the listing screenshots. Copy for both consoles is in
+  collects the listing screenshots; `tool/make_store_header.py` builds the
+  App Store Connect creative asset, one 16:9 master at 5244x2950 that fills
+  both the Header and the Search Results slot. Copy for both consoles is in
   `store/listing.md`. Editing a PNG by hand is how that stops being true.
 
 - **SHIP-01 is the one piece of code work queued** — RevenueCat plus a
@@ -367,6 +369,7 @@ starting — what follows is a pointer, not a substitute.
 | 4 | App Review notes: the six-point reply to Apple's 2.1 Information Needed letter, in store/listing.md | 2026-09-13 | 1c1d9bf | — |
 | 261005-nc6 | Three UI updates: dose times above periodicity in the regimen editor; the editor's primary button says Save when editing an existing regimen; the Today dose action sheet gained an Open dosing schedule row | 2026-10-05 | 5b6858a, 9b33e6a | [261005-nc6-move-dose-times-above-periodicity-rename](./quick/261005-nc6-move-dose-times-above-periodicity-rename/) |
 | 261005-u0x | Release prep for 1.1.1: pubspec bumped to 1.1.1+4, the demo walkthrough now films the dose sheet and the schedule it opens, and the listing screenshots regenerated (14 files across ios-6.9, ios-6.5 and android-phone) | 2026-10-05 | deeb126, 8d0cf91, f84894b | [261005-u0x-bump-to-1-1-1-4-regenerate-the-three-sta](./quick/261005-u0x-bump-to-1-1-1-4-regenerate-the-three-sta/) |
+| 261008-j54 | The App Store universal creative asset: tool/make_store_header.py generates one 5244x2950 RGB master that serves both the product page header and the search results slot, with the safe area derived from Apple's two crops and a vocabulary guard that refuses to render banned copy | 2026-10-08 | 14ef641, a97b8d3 | [261008-j54-generate-the-app-store-universal-creativ](./quick/261008-j54-generate-the-app-store-universal-creativ/) |
 
 ## Waiting on a human
 
@@ -382,6 +385,12 @@ an account:
 3. **Apple Developer Program enrolment**, then the **Paid Apps Agreement with
    banking and tax forms** — the second blocks even a sandbox purchase, and the
    tax forms only appear once the agreement is signed. Neither is code.
+4. **Upload the creative asset** (added 2026-10-08).
+   `store/creative/universal-5244x2950.png` is built and committed but is NOT
+   in App Store Connect: it goes in App Information → Creative assets, in both
+   the Header and the Search Results slot, by hand. Nothing in the repo pushes
+   it. Both slots are optional — Apple falls back to the screenshots — so this
+   improves the listing and blocks nothing.
 
 Closed 2026-09-11: the signing keystore, and the app name and bundle id.
 Closed 2026-09-12: the public URL both stores require. `https://vitomy.app`
